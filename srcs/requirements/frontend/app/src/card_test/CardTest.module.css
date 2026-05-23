@@ -1,0 +1,27 @@
+.cards
+{
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	margin-top: 0.5rem;
+}
+
+.card
+{
+	padding: 0.5rem;
+	margin-left: 0.5rem;
+	margin-bottom: 0.5rem;
+	background-color: white;
+}
+
+.buttons
+{
+	margin-right: 0.5rem;
+}
+
+.gameResult
+{
+	margin-top: 0.5rem;
+	font-size: 2rem;
+	font-weight: bold;
+}
