@@ -32,56 +32,34 @@ type Controls =
 type EnemyProps =
 {
 	states: AppStates,
-	// hp: number,
-	// dmg: number,
-	// range: number[],
 }
 
 type PlayerProps =
 {
 	states: AppStates,
-	// hp: number,
 }
 
 type CardsProps =
 {
 	states: AppStates,
-	// cards: string[],
 	controls: Controls,
-	// setPlayerCards: React.Dispatch<React.SetStateAction<string[]>>,
-	// setSelectedCards: React.Dispatch<React.SetStateAction<string[]>>,
 }
 
 type DrawCardsProps =
 {
 	controls: Controls,
-	// drawCards: () => void,
-	// setPlayerCards: React.Dispatch<React.SetStateAction<string[]>>,
 }
 
 type PlaySelectedCards =
 {
 	states: AppStates,
-	// cards: string[],
-	// enemyRange: number[],
 	controls: Controls,
-	// setEnemyHP: React.Dispatch<React.SetStateAction<number>>,
-	// setGameState: React.Dispatch<React.SetStateAction<GameState>>,
-	// setSelectedCards: React.Dispatch<React.SetStateAction<string[]>>,
 }
 
 type ButtonsProps =
 {
 	states: AppStates,
-	// gameState: GameState,
-	// enemyRange: number[],
-	// selectedCards: string[],
 	controls: Controls,
-	// drawCards: () => void,
-	// setGameState: React.Dispatch<React.SetStateAction<GameState>>,
-	// setEnemyHP: React.Dispatch<React.SetStateAction<number>>,
-	// setPlayerCards: React.Dispatch<React.SetStateAction<string[]>>,
-	// setSelectedCards: React.Dispatch<React.SetStateAction<string[]>>,
 }
 
 type GameResultProps =
