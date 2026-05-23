@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import styles from "./CardTest.module.css"
 
-const NUMERIC_CARD_POOL = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ];
+const NUMERIC_CARD_POOL = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const OPERATOR_CARD_POOL = ["+", "-", "*", "/", "%", "^"];
-const ATTACK_INTERVAL = 10000; //seconds
+const ATTACK_INTERVAL = 10000; //milliseconds
 const N_CARDS = 10;
 
 type AppStates =
