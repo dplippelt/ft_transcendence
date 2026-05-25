@@ -353,8 +353,9 @@ export default function CardTest()
 		setPlayerCards(prev =>
 		{
 			const newCards: string[] = [];
+			const cardsToDraw = prev.length === N_CARDS ? N_CARDS : N_CARDS - prev.length;
 
-			for ( let n = 0; n < N_CARDS - prev.length; n++ )
+			for ( let n = 0; n < cardsToDraw; n++ )
 			{
 				let newCard = "";
 				const cardType: CardType = Math.random() < 0.33 ? CardType.operator : CardType.numeric;
@@ -367,6 +368,8 @@ export default function CardTest()
 				newCards.push(newCard);
 			}
 
+			if ( prev.length === N_CARDS )
+				return newCards;
 			return [...prev, ...newCards];
 		});
 		setSelectedCards([]);
