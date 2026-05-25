@@ -1,9 +1,15 @@
+.tester
+{
+	margin: 2rem;
+}
+
 .cards
 {
 	display: flex;
 	flex-direction: row;
 	align-items: center;
 	margin-top: 0.5rem;
+	margin-bottom: 1rem;
 }
 
 .card
@@ -16,7 +22,22 @@
 
 .buttons
 {
+	margin-top: 1rem;
 	margin-right: 0.5rem;
+	background-color: #e6e3d2;
+	padding: 0.1rem 0.2rem;
+}
+
+.generateEnemey
+{
+	background-color: #edcc9a;
+	padding: 0.1rem 0.2rem;
+}
+
+.randomizeHp
+{
+	background-color: #edcc9a;
+	padding: 0.1rem 0.2rem;
 }
 
 .gameResult
@@ -24,4 +45,22 @@
 	margin-top: 0.5rem;
 	font-size: 2rem;
 	font-weight: bold;
+}
+
+.enemy
+{
+	display: flex;
+	flex-direction: row;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+	align-items: center;
+}
+
+.player
+{
+	display: flex;
+	flex-direction: row;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+	align-items: center;
 }

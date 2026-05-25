@@ -3,8 +3,12 @@ import styles from "./CardTest.module.css"
 
 const NUMERIC_CARD_POOL = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
 const OPERATOR_CARD_POOL = ["+", "-", "*", "/", "%", "^"];
+const ENEMY_HP = 25;
+const ENEMY_RANGE = [1, 8];
+const ENEMY_DMG = 1;
 const ATTACK_INTERVAL = 10000; //milliseconds
 const N_CARDS = 10;
+const PLAYER_HP = 10;
 
 type AppStates =
 {
@@ -12,6 +16,7 @@ type AppStates =
 	enemyHP: number,
 	enemyRange: number[],
 	enemyDMG: number,
+	enemyAttackInterval: number,
 	playerHP: number,
 	playerCards: string[],
 	selectedCards: string[],
@@ -23,6 +28,7 @@ type Controls =
 	setEnemyHP: React.Dispatch<React.SetStateAction<number>>,
 	setEnemyRange: React.Dispatch<React.SetStateAction<number[]>>,
 	setEnemyDMG: React.Dispatch<React.SetStateAction<number>>,
+	setEnemyAttackInterval: React.Dispatch<React.SetStateAction<number>>,
 	setPlayerHP: React.Dispatch<React.SetStateAction<number>>,
 	setPlayerCards: React.Dispatch<React.SetStateAction<string[]>>,
 	setSelectedCards: React.Dispatch<React.SetStateAction<string[]>>,
@@ -32,11 +38,13 @@ type Controls =
 type EnemyProps =
 {
 	states: AppStates,
+	controls: Controls,
 }
 
 type PlayerProps =
 {
 	states: AppStates,
+	controls: Controls,
 }
 
 type CardsProps =
@@ -79,17 +87,48 @@ function getRandomInt( min: number, max: number )
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-function Enemy( { states } : EnemyProps )
+function Enemy( { states, controls } : EnemyProps )
 {
+	function generateNewEnemy()
+	{
+		controls.setEnemyHP(getRandomInt(5, 50));
+		controls.setEnemyDMG(getRandomInt(1, 3));
+		controls.setEnemyAttackInterval(getRandomInt(3, 10) * 1000);
+
+		const enemyRange: number[] = [];
+		enemyRange.push(getRandomInt(0, 10));
+		enemyRange.push(enemyRange[0] + getRandomInt(1, 10));
+
+		controls.setEnemyRange(enemyRange);
+		controls.setPlayerHP(PLAYER_HP);
+		controls.setPlayerCards([]);
+		controls.setSelectedCards([]);
+		controls.drawCards();
+		controls.setGameState(GameState.Running);
+	}
+
 	return (
-		<div>{`Enemy HP: ${states.enemyHP}, DMG: ${states.enemyDMG}, Range: ${states.enemyRange[0]} - ${states.enemyRange[1]}`}</div>
+		<div className={styles.enemy}>
+			<div>{`Enemy HP: ${states.enemyHP}, DMG: ${states.enemyDMG}, Attack Interval: ${states.enemyAttackInterval / 1000}s, Range: ${states.enemyRange[0]} - ${states.enemyRange[1]}`}</div>
+			<button className={styles.generateEnemey} onClick={generateNewEnemy}>Generate new enemy</button>
+		</div>
+
 	)
 }
 
-function Player( { states } : PlayerProps )
+function Player( { states, controls } : PlayerProps )
 {
+	function randomizeHP()
+	{
+		controls.setPlayerHP(getRandomInt(5, 20));
+		controls.setGameState(GameState.Running);
+	}
+
 	return (
-		<div>{`Player HP: ${states.playerHP}`}</div>
+		<div className={styles.player}>
+			<div>{`Player HP: ${states.playerHP}`}</div>
+			<button className={styles.randomizeHp} onClick={randomizeHP}>Randomize HP</button>
+		</div>
 	)
 }
 
@@ -230,6 +269,7 @@ function PlaySelectedCards( { states, controls } : PlaySelectedCards )
 		})
 
 		controls.setSelectedCards([]);
+		controls.drawCards();
 	}
 
 	return (
@@ -263,10 +303,11 @@ function GameResult( { states } : GameResultProps )
 export default function CardTest()
 {
 	const [gameState, setGameState] = useState<GameState>(GameState.Running);
-	const [enemyHP, setEnemyHP] = useState<number>(25);
-	const [enemyRange, setEnemyRange] = useState<number[]>([1, 8]);
-	const [enemyDMG, setEnemyDMG] = useState<number>(1);
-	const [playerHP, setPlayerHP] = useState<number>(10);
+	const [enemyHP, setEnemyHP] = useState<number>(ENEMY_HP);
+	const [enemyRange, setEnemyRange] = useState<number[]>(ENEMY_RANGE);
+	const [enemyDMG, setEnemyDMG] = useState<number>(ENEMY_DMG);
+	const [enemyAttackInterval, setEnemyAttackInterval] = useState<number>(ATTACK_INTERVAL);
+	const [playerHP, setPlayerHP] = useState<number>(PLAYER_HP);
 	const [playerCards, setPlayerCards] = useState<string[]>([]);
 	const [selectedCards, setSelectedCards] = useState<string[]>([]);
 	const dmgInterval = useRef<number | undefined>(undefined);
@@ -277,6 +318,7 @@ export default function CardTest()
 		enemyHP: enemyHP,
 		enemyRange: enemyRange,
 		enemyDMG: enemyDMG,
+		enemyAttackInterval: enemyAttackInterval,
 		playerHP: playerHP,
 		playerCards: playerCards,
 		selectedCards: selectedCards,
@@ -288,7 +330,8 @@ export default function CardTest()
 		setEnemyHP: setEnemyHP,
 		setEnemyRange: setEnemyRange,
 		setEnemyDMG: setEnemyDMG,
-		setPlayerHP: setEnemyHP,
+		setEnemyAttackInterval: setEnemyAttackInterval,
+		setPlayerHP: setPlayerHP,
 		setPlayerCards: setPlayerCards,
 		setSelectedCards: setSelectedCards,
 		drawCards: drawCards,
@@ -307,38 +350,40 @@ export default function CardTest()
 
 	function drawCards()
 	{
-		const newCards = [];
-
-		for ( let n = 0; n < N_CARDS; n++ )
+		setPlayerCards(prev =>
 		{
-			let newCard = "";
-			const cardType: CardType = Math.random() < 0.33 ? CardType.operator : CardType.numeric;
+			const newCards: string[] = [];
 
-			if ( cardType === CardType.numeric )
-				newCard = NUMERIC_CARD_POOL[getRandomInt(0, NUMERIC_CARD_POOL.length - 1)];
-			else
-				newCard = OPERATOR_CARD_POOL[getRandomInt(0, OPERATOR_CARD_POOL.length - 1)];
+			for ( let n = 0; n < N_CARDS - prev.length; n++ )
+			{
+				let newCard = "";
+				const cardType: CardType = Math.random() < 0.33 ? CardType.operator : CardType.numeric;
 
-			newCards.push(newCard);
-		}
+				if ( cardType === CardType.numeric )
+					newCard = NUMERIC_CARD_POOL[getRandomInt(0, NUMERIC_CARD_POOL.length - 1)];
+				else
+					newCard = OPERATOR_CARD_POOL[getRandomInt(0, OPERATOR_CARD_POOL.length - 1)];
 
-		setPlayerCards(newCards);
+				newCards.push(newCard);
+			}
+
+			return [...prev, ...newCards];
+		});
 		setSelectedCards([]);
 	}
 
 	useEffect(() =>
 	{
-		dmgInterval.current = setInterval(() => enemyAttack(enemyDMG), ATTACK_INTERVAL);
-
-		return () => clearInterval(dmgInterval.current);
-	}, [enemyDMG]);
-
-	useEffect(() =>
-	{
-		if ( gameState !== GameState.Running )
+		if ( dmgInterval.current )
 			clearInterval(dmgInterval.current);
 
-	}, [gameState]);
+		if ( gameState !== GameState.Running )
+			return;
+
+		dmgInterval.current = setInterval(() => enemyAttack(enemyDMG), enemyAttackInterval);
+
+		return () => clearInterval(dmgInterval.current);
+	}, [enemyDMG, enemyHP, enemyAttackInterval, gameState]);
 
 	useEffect(() =>
 	{
@@ -346,13 +391,13 @@ export default function CardTest()
 	}, [])
 
 	return (
-		<>
-			<Enemy states={states}/>
-			<Player states={states}/>
+		<div className={styles.tester}>
+			<Enemy states={states} controls={controls}/>
+			<Player states={states} controls={controls}/>
 			<Cards states={states} controls={controls}/>
 			<SelectedCards states={states} controls={controls}/>
 			<Buttons states={states} controls={controls}/>
 			<GameResult states={states}/>
-		</>
+		</div>
 	);
 }
