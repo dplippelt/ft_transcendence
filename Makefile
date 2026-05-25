@@ -6,14 +6,18 @@
 #    By: dlippelt <dlippelt@student.codam.nl>       +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/05/18 10:09:39 by dlippelt          #+#    #+#              #
-#    Updated: 2026/05/18 10:19:55 by dlippelt         ###   ########.fr        #
+#    Updated: 2026/05/25 08:36:51 by dlippelt         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
-DCOMP =				./srcs/docker-compose.yml
+DCOMP =			./srcs/docker-compose.yml
 
-# change volume folder name!
-VOLUME_DIRS =		$(HOME)/temp_transc_data
+VOLUME_DIRS =	$(HOME)/ft_transcendence
+
+# use setup only on a freshly cloned repo
+setup:
+	cd srcs/requirements/frontend/app && npm install
+	$(MAKE) build
 
 build:
 	@mkdir -p $(VOLUME_DIRS)/frontend_data
@@ -49,4 +53,4 @@ fclean: clean
 
 fre: fclean re
 
-.PHONY: build up down start stop restart re clean fclean fre
+.PHONY: setup build up down start stop restart re clean fclean fre
