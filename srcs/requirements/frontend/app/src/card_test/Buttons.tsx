@@ -74,6 +74,9 @@ function PlaySelectedCards( { states, controls } : PlaySelectedCardsProps )
 
 	function playCards()
 	{
+		if ( states.selectedCards.length < 3 )
+			return;
+		
 		let result: number | null = null;
 
 		for ( let i = 0; i < states.selectedCards.length; )
