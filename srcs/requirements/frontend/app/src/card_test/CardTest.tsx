@@ -1,16 +1,36 @@
 import { useEffect, useRef, useState } from "react"
 import styles from "./CardTest.module.css"
+import { getRandomInt } from "./utils"
+import Enemy from "./Enemy"
+import Player from "./Player"
+import PlayerCards from "./PlayerCards"
+import SelectedCards from "./SelectedCards"
+import Buttons from "./Buttons"
+import GameResult from "./GameResult"
 
-const NUMERIC_CARD_POOL = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
-const OPERATOR_CARD_POOL = ["+", "-", "*", "/", "%", "^"];
-const ENEMY_HP = 25;
-const ENEMY_RANGE = [1, 8];
-const ENEMY_DMG = 1;
-const ATTACK_INTERVAL = 10000; //milliseconds
-const N_CARDS = 10;
-const PLAYER_HP = 10;
+export const NUMERIC_CARD_POOL = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"];
+export const OPERATOR_CARD_POOL = ["+", "-", "*", "/", "%", "^"];
+export const ENEMY_HP = 25;
+export const ENEMY_RANGE = [1, 8];
+export const ENEMY_DMG = 1;
+export const ATTACK_INTERVAL = 10000; //milliseconds
+export const N_CARDS = 10;
+export const PLAYER_HP = 10;
 
-type AppStates =
+export enum GameState
+{
+	Running,
+	Won,
+	GameOver
+}
+
+export enum CardType
+{
+	numeric,
+	operator,
+}
+
+export type AppStates =
 {
 	gameState: GameState,
 	enemyHP: number,
@@ -22,7 +42,7 @@ type AppStates =
 	selectedCards: string[],
 }
 
-type Controls =
+export type Controls =
 {
 	setGameState: React.Dispatch<React.SetStateAction<GameState>>,
 	setEnemyHP: React.Dispatch<React.SetStateAction<number>>,
@@ -35,270 +55,6 @@ type Controls =
 	drawCards: () => void,
 }
 
-type EnemyProps =
-{
-	states: AppStates,
-	controls: Controls,
-}
-
-type PlayerProps =
-{
-	states: AppStates,
-	controls: Controls,
-}
-
-type CardsProps =
-{
-	states: AppStates,
-	controls: Controls,
-}
-
-type DrawCardsProps =
-{
-	controls: Controls,
-}
-
-type PlaySelectedCards =
-{
-	states: AppStates,
-	controls: Controls,
-}
-
-type ButtonsProps =
-{
-	states: AppStates,
-	controls: Controls,
-}
-
-type GameResultProps =
-{
-	states: AppStates,
-}
-
-enum GameState
-{
-	Running,
-	Won,
-	GameOver
-}
-
-function getRandomInt( min: number, max: number )
-{
-	return Math.floor(Math.random() * (max - min + 1)) + min;
-}
-
-function Enemy( { states, controls } : EnemyProps )
-{
-	function generateNewEnemy()
-	{
-		controls.setEnemyHP(getRandomInt(5, 50));
-		controls.setEnemyDMG(getRandomInt(1, 3));
-		controls.setEnemyAttackInterval(getRandomInt(3, 10) * 1000);
-
-		const enemyRange: number[] = [];
-		enemyRange.push(getRandomInt(0, 10));
-		enemyRange.push(enemyRange[0] + getRandomInt(1, 10));
-
-		controls.setEnemyRange(enemyRange);
-		controls.setPlayerHP(PLAYER_HP);
-		controls.setPlayerCards([]);
-		controls.setSelectedCards([]);
-		controls.drawCards();
-		controls.setGameState(GameState.Running);
-	}
-
-	return (
-		<div className={styles.enemy}>
-			<div>{`Enemy HP: ${states.enemyHP}, DMG: ${states.enemyDMG}, Attack Interval: ${states.enemyAttackInterval / 1000}s, Range: ${states.enemyRange[0]} - ${states.enemyRange[1]}`}</div>
-			<button className={styles.generateEnemey} onClick={generateNewEnemy}>Generate new enemy</button>
-		</div>
-
-	)
-}
-
-function Player( { states, controls } : PlayerProps )
-{
-	function randomizeHP()
-	{
-		controls.setPlayerHP(getRandomInt(5, 20));
-		controls.setGameState(GameState.Running);
-	}
-
-	return (
-		<div className={styles.player}>
-			<div>{`Player HP: ${states.playerHP}`}</div>
-			<button className={styles.randomizeHp} onClick={randomizeHP}>Randomize HP</button>
-		</div>
-	)
-}
-
-function Cards( { states, controls } : CardsProps )
-{
-	function clickHandler( idx: number )
-	{
-		controls.setSelectedCards(prev => [...prev, states.playerCards[idx]]);
-		controls.setPlayerCards(prev => prev.filter((_, i) => i !== idx));
-	}
-
-	return (
-		<div className={styles.cards}>
-			<div>Player Cards:</div>
-			{ states.playerCards.map((card, idx) => (
-				<button className={styles.card} key={idx} onClick={() => clickHandler(idx)}>{card}</button>
-			))}
-		</div>
-	)
-}
-
-function SelectedCards( { states, controls } : CardsProps )
-{
-	function clickHandler( idx: number )
-	{
-		controls.setPlayerCards(prev => [...prev, states.selectedCards[idx]]);
-		controls.setSelectedCards(prev => prev.filter((_, i) => i !== idx));
-	}
-
-	return (
-		<div className={styles.cards}>
-			<div>Selected Cards:</div>
-			{ states.selectedCards.map((card, idx) => (
-				<button className={styles.card} key={idx} onClick={() => clickHandler(idx)}>{card}</button>
-			))}
-		</div>
-	);
-}
-
-enum CardType
-{
-	numeric,
-	operator,
-}
-
-// function DrawCard( { controls } : DrawCardsProps )
-// {
-// 	function drawCard()
-// 	{
-// 		let newCard = "";
-// 		const cardType: CardType = Math.random() < 0.33 ? CardType.operator : CardType.numeric;
-
-// 		if ( cardType === CardType.numeric )
-// 			newCard = NUMERIC_CARD_POOL[getRandomInt(0, NUMERIC_CARD_POOL.length - 1)];
-// 		else
-// 			newCard = OPERATOR_CARD_POOL[getRandomInt(0, OPERATOR_CARD_POOL.length - 1)]
-
-// 		controls.setPlayerCards(prev => [...prev, newCard]);
-// 	}
-
-// 	return (
-// 		<button className={styles.buttons} onClick={drawCard}>DRAW CARD</button>
-// 	)
-// }
-
-
-function DrawCards( { controls } : DrawCardsProps )
-{
-	return (
-		<button className={styles.buttons} onClick={controls.drawCards}>DRAW CARDS</button>
-	)
-}
-
-function PlaySelectedCards( { states, controls } : PlaySelectedCards )
-{
-	function processOperator( result: number, i: number ) : number | null
-	{
-		if ( i + 1 >= states.selectedCards.length )
-			return null;
-
-		switch ( states.selectedCards[i] )
-		{
-			case "+":
-				return result + Number(states.selectedCards[i + 1]);
-			case "-":
-				return result - Number(states.selectedCards[i + 1]);
-			case "*":
-				return result * Number(states.selectedCards[i + 1]);
-			case "/":
-				return result / Number(states.selectedCards[i + 1]);
-			case "%":
-				return result % Number(states.selectedCards[i + 1]);
-			case "^":
-				return Math.pow(result, Number(states.selectedCards[i + 1]));
-			default:
-				return 0;
-		}
-	}
-
-	function playCards()
-	{
-		let result: number | null = null;
-
-		for ( let i = 0; i < states.selectedCards.length; )
-		{
-			if ( i === 0 && !isNaN(Number(states.selectedCards[i])) )
-			{
-				result = Number(states.selectedCards[i]);
-				i++;
-			}
-			else if ( result !== null && isNaN(Number(states.selectedCards[i])) )
-			{
-
-				result = processOperator(result, i);
-				i += 2;
-			}
-			else
-				i++;
-		}
-
-		console.log(result);
-
-		if ( result === null || result < states.enemyRange[0] || result > states.enemyRange[1] )
-			return;
-
-		function getPlayerDamage( nCards: number )
-		{
-			return Math.pow(nCards, 2) - ( Math.floor(nCards / 2) * (nCards + 2) );
-		}
-
-		controls.setEnemyHP(prev =>
-		{
-			const playerDMG = getPlayerDamage(states.selectedCards.length);
-			const newEnemyHP = prev - playerDMG < 0 ? 0 : prev - playerDMG;
-			if ( newEnemyHP === 0 )
-				controls.setGameState(GameState.Won);
-			return newEnemyHP;
-		})
-
-		controls.setSelectedCards([]);
-		controls.drawCards();
-	}
-
-	return (
-		<button className={styles.buttons} onClick={playCards}>PLAY CARDS</button>
-	)
-}
-
-function Buttons( { states, controls } : ButtonsProps )
-{
-	if ( states.gameState === GameState.Running )
-	{
-		return (
-			<>
-				<DrawCards controls={controls}/>
-				<PlaySelectedCards states={states} controls={controls}/>
-			</>
-		)
-	}
-	return null;
-}
-
-function GameResult( { states } : GameResultProps )
-{
-	if ( states.gameState === GameState.GameOver )
-		return <div className={styles.gameResult}>You lost!</div>
-	else if ( states.gameState === GameState.Won )
-		return <div className={styles.gameResult}>You won!</div>
-	return null;
-}
 
 export default function CardTest()
 {
@@ -397,7 +153,7 @@ export default function CardTest()
 		<div className={styles.tester}>
 			<Enemy states={states} controls={controls}/>
 			<Player states={states} controls={controls}/>
-			<Cards states={states} controls={controls}/>
+			<PlayerCards states={states} controls={controls}/>
 			<SelectedCards states={states} controls={controls}/>
 			<Buttons states={states} controls={controls}/>
 			<GameResult states={states}/>

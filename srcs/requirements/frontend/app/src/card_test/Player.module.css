@@ -1,0 +1,14 @@
+.player
+{
+	display: flex;
+	flex-direction: row;
+	gap: 0.5rem;
+	margin-bottom: 1rem;
+	align-items: center;
+}
+
+.randomizeHp
+{
+	background-color: #edcc9a;
+	padding: 0.1rem 0.2rem;
+}
