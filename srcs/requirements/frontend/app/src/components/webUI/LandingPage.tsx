@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import type { AppStates, Controls } from "../../App";
 import styles from "./LandingPage.module.css"
 
@@ -33,14 +34,17 @@ function GameDescription()
 
 function Buttons( { controls } : ButtonsProps )
 {
+	const navigate = useNavigate();
+
 	return (
 		<div className={styles.buttons}>
 			<button>Login</button>
 			<button>Sign-up</button>
 			<button>How to play</button>
 			<button>Continue as guest</button>
-			<button>Game tester</button>
-			<button onClick={controls.toggleExamples}>Toggle example</button>
+			<button>Game dev</button>
+			<button onClick={ () => navigate("/card_tester") }>Card tester</button>
+			<button onClick={ controls.toggleExamples }>Toggle example</button>
 		</div>
 	)
 }

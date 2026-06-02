@@ -10,5 +10,14 @@
 .generateEnemey
 {
 	background-color: #edcc9a;
-	padding: 0.1rem 0.2rem;
+	padding: 0.2rem 0.5rem;
+	color: #3b362f;
+	border-style: solid;
+	border-color: #6e614d;
+}
+
+.generateEnemey:hover
+{
+	background-color: #cfae7d;
+	color: #3b362f;
 }

@@ -1,3 +1,4 @@
+import { BrowserRouter, Routes, Route } from "react-router-dom"
 import CardTest from "./card_test/CardTest"
 import LandingPage from "./components/webUI/LandingPage"
 import useAppControls from "./hooks/useAppControls"
@@ -54,9 +55,13 @@ export default function App()
 	useAppEffects(states, setStates, controls);
 
 	return (
-		<>
+		<BrowserRouter>
+			<Routes>
+				<Route path="/" element={ <LandingPage states={states} controls={controls} /> } />
+				<Route path="/card_tester" element={ <CardTest /> } />
+			</Routes>
 			{/* <CardTest/> */}
-			<LandingPage states={states} controls={controls}/>
-		</>
+			{/* <LandingPage states={states} controls={controls}/> */}
+		</BrowserRouter>
 	)
 }

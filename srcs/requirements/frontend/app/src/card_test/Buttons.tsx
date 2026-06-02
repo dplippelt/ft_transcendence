@@ -1,5 +1,6 @@
 import { GameState, type AppStates, type Controls } from "./CardTest"
 import styles from "./Buttons.module.css"
+import { useNavigate } from "react-router-dom"
 
 type ButtonsProps =
 {
@@ -76,7 +77,7 @@ function PlaySelectedCards( { states, controls } : PlaySelectedCardsProps )
 	{
 		if ( states.selectedCards.length < 3 )
 			return;
-		
+
 		let result: number | null = null;
 
 		for ( let i = 0; i < states.selectedCards.length; )
@@ -126,12 +127,15 @@ function PlaySelectedCards( { states, controls } : PlaySelectedCardsProps )
 
 export default function Buttons( { states, controls } : ButtonsProps )
 {
+	const navigate = useNavigate();
+
 	if ( states.gameState === GameState.Running )
 	{
 		return (
 			<>
 				<DrawCards controls={controls}/>
 				<PlaySelectedCards states={states} controls={controls}/>
+				<button className={styles.buttons} onClick={() => navigate(-1)}>BACK</button>
 			</>
 		)
 	}
