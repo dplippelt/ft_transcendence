@@ -18,7 +18,7 @@ export default function Player( { states, controls } : PlayerProps )
 
 	return (
 		<div className={styles.player}>
-			<div>{`Player HP: ${states.playerHP}`}</div>
+			<div className={styles.playerText}>{`Player HP: ${states.playerHP}`}</div>
 			<button className={styles.randomizeHp} onClick={randomizeHP}>Randomize HP</button>
 		</div>
 	)

@@ -17,7 +17,7 @@ export default function SelectedCards( { states, controls } : CardsProps )
 
 	return (
 		<div className={styles.cards}>
-			<div>Selected Cards:</div>
+			<div className={styles.cardsText}>Selected Cards:</div>
 			{ states.selectedCards.map((card, idx) => (
 				<button className={styles.card} key={idx} onClick={() => clickHandler(idx)}>{card}</button>
 			))}

@@ -7,6 +7,11 @@
 	align-items: center;
 }
 
+.playerText
+{
+	color: #2c1810;
+}
+
 .randomizeHp
 {
 	background-color: #edcc9a;

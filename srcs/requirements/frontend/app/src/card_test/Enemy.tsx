@@ -30,7 +30,7 @@ export default function Enemy( { states, controls } : EnemyProps )
 
 	return (
 		<div className={styles.enemy}>
-			<div>{`Enemy HP: ${states.enemyHP}, DMG: ${states.enemyDMG}, Attack Interval: ${states.enemyAttackInterval / 1000}s, Range: ${states.enemyRange[0]} - ${states.enemyRange[1]}`}</div>
+			<div className={styles.enemyText}>{`Enemy HP: ${states.enemyHP}, DMG: ${states.enemyDMG}, Attack Interval: ${states.enemyAttackInterval / 1000}s, Range: ${states.enemyRange[0]} - ${states.enemyRange[1]}`}</div>
 			<button className={styles.generateEnemey} onClick={generateNewEnemy}>Generate new enemy</button>
 		</div>
 

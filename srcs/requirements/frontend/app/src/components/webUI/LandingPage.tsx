@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type { AppStates, Controls } from "../../App";
 import styles from "./LandingPage.module.css"
+import menuBG from "../../assets/menu_bg.png"
 
 type LandingPageProps =
 {
@@ -61,7 +62,7 @@ function Example( { states } : ExampleProps )
 export default function LandingPage( { states, controls } : LandingPageProps )
 {
 	return (
-		<div className={styles.landingPage}>
+		<div className={styles.landingPage} style={{ backgroundImage: `url(${menuBG})` }}>
 			<AppTitle/>
 			<GameDescription/>
 			<Buttons controls={controls}/>

@@ -3,8 +3,9 @@
 	box-sizing: border-box;
 	margin: 0;
 	padding: 0;
-	background-color: #f5f0e8;
-	color: #2c1810;
+	/* background-color: #f5f0e8; */
+	/* color: #2c1810; */
+	color: #e8dcc8;
 }
 
 html
@@ -18,12 +19,12 @@ button
 	padding-top: 0.25rem;
 	padding-bottom: 0.25rem;
 	font-size: 1rem;
-	background-color: #986b4b;
-	transition: background-color 0.2s ease;
-	color: #f8f3ed;
-	border: none;
+	background-color: #2a2a35;
+	color: #e8dcc8;
+	border: 1px solid #4a4a5a;
 	border-radius: 8px;
 	font-family: 'Lato', sans-serif;
+	transition: background-color 0.2s ease;
 }
 
 button:hover

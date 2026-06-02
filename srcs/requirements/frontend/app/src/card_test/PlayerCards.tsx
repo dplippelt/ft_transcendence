@@ -17,7 +17,7 @@ export default function PlayerCards( { states, controls } : CardsProps )
 
 	return (
 		<div className={styles.cards}>
-			<div>Player Cards:</div>
+			<div className={styles.cardsText}>Player Cards:</div>
 			{ states.playerCards.map((card, idx) => (
 				<button className={styles.card} key={idx} onClick={() => clickHandler(idx)}>{card}</button>
 			))}
