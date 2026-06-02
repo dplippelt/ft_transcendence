@@ -1,0 +1,38 @@
+.landingPage
+{
+	display: flex;
+	flex-direction: column;
+	gap: 1rem;
+	margin-top: 4rem;
+	text-align: center;
+}
+
+.appTitle
+{
+	font-size: 3rem;
+	margin: auto;
+}
+
+.gameDescription
+{
+	width: 650px;
+	font-size: 1.3rem;
+	margin: auto;
+	margin-bottom: 2rem;
+}
+
+.buttons
+{
+	display: flex;
+	flex-direction: column;
+	width: 340px;
+	margin: auto;
+	gap: 1rem;
+}
+
+.example
+{
+	margin-top: 1rem;
+}
+
+

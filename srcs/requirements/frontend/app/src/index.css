@@ -6,3 +6,28 @@
 	background-color: #f5f0e8;
 	color: #2c1810;
 }
+
+html
+{
+	font-size: 24px;
+}
+
+button
+{
+	padding: 0.2rem;
+	padding-top: 0.25rem;
+	padding-bottom: 0.25rem;
+	font-size: 1rem;
+	background-color: #986b4b;
+	transition: background-color 0.2s ease;
+	color: #f8f3ed;
+	border: none;
+	border-radius: 8px;
+	font-family: 'Lato', sans-serif;
+}
+
+button:hover
+{
+	background-color: #7b4d2e;
+	color: #f5f0e8;
+}
