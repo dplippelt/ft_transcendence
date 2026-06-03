@@ -20,7 +20,7 @@
 	justify-content: center;
 	text-align: center;
 	align-content: center;
-	padding-top: 10vh;
+	padding-top: 6vh;
 	padding-bottom: 10vh;
 }
 
@@ -34,6 +34,7 @@
 	padding: 1.5rem 2.5rem;
 	margin: 0 auto;
 	margin-bottom: -1rem;
+	font-family: 'Cinzel Decorative', serif;
 }
 
 .gameDescription
@@ -46,6 +47,7 @@
 	background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 30%, transparent 70%);
 	padding: 1.5rem 2.5rem;
 	margin-top: -2.5rem;
+	font-family: 'Cinzel', serif;
 }
 
 .buttons
