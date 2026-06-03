@@ -1,35 +1,59 @@
+.background
+{
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-size: cover;
+	background-position: center;
+	z-index: -1;
+}
+
 .landingPage
 {
 	width: 100%;
-	height: 100vh;
-	display: flex;
-	flex-direction: column;
+	min-height: 100vh;
+	display: grid;
+	grid-template-rows: auto auto auto;
 	gap: 1rem;
 	justify-content: center;
 	text-align: center;
-	background-size: cover;
-	background-position: center;
+	align-content: center;
+	padding-top: 10vh;
+	padding-bottom: 10vh;
 }
 
 .appTitle
 {
+	width: 100%;
+	max-width: 90vw;
 	font-size: 3rem;
+	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+	background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, transparent 70%);
+	padding: 1.5rem 2.5rem;
 	margin: 0 auto;
+	margin-bottom: -1rem;
 }
 
 .gameDescription
 {
-	width: 650px;
+	width: 100%;
+	max-width: min(650px, 98vw);
 	font-size: 1.3rem;
+	text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8);
 	margin: 0 auto;
-	margin-bottom: 2rem;
+	background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 30%, transparent 70%);
+	padding: 1.5rem 2.5rem;
+	margin-top: -2.5rem;
 }
 
 .buttons
 {
 	display: flex;
 	flex-direction: column;
-	width: 340px;
+	width: 100%;
+	max-width: min(340px, 90vw);
 	margin: 0 auto;
 	gap: 1rem;
 }
