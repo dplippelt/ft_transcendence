@@ -1,9 +1,12 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
-import CardTest from "./card_test/CardTest"
-import LandingPage from "./components/webUI/LandingPage"
 import useAppControls from "./hooks/useAppControls"
 import useAppEffects from "./hooks/useAppEffects"
 import useAppState from "./hooks/useAppState"
+import CardTest from "./card_test/CardTest"
+import LandingPage from "./components/webUI/LandingPage"
+import Login from "./components/webUI/Login"
+import Signup from "./components/webUI/Signup"
+import MainMenu from "./components/webUI/MainMenu"
 
 export type AppStates =
 {
@@ -45,7 +48,10 @@ export default function App()
 		<BrowserRouter>
 			<Routes>
 				<Route path="/" element={ <LandingPage/> } />
-				<Route path="/card_tester" element={ <CardTest/> } />
+				<Route path="/login" element={ <Login/> } />
+				<Route path="/signup" element={ <Signup/> } />
+				<Route path="/main-menu" element={ <MainMenu/> } />
+				<Route path="/card-tester" element={ <CardTest/> } />
 			</Routes>
 		</BrowserRouter>
 	)
