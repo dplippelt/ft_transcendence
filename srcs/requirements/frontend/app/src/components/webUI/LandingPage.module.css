@@ -5,6 +5,7 @@
 	display: grid;
 	/* grid-template-rows: auto auto auto; */
 	gap: 1rem;
+	justify-content: center;
 	text-align: center;
 	align-content: center;
 	padding-top: 6vh;

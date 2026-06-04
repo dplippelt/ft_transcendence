@@ -13,9 +13,10 @@
 	color: #e8dcc8;
 }
 
-html
+body, html
 {
 	font-size: 24px;
+	overflow-x: hidden;
 }
 
 
@@ -79,7 +80,7 @@ button:hover
 	position: fixed;
 	top: 0;
 	left: 0;
-	width: 100%;
+	width: 100vw;
 	height: 100%;
 	background-image: url("./assets/menu_bg.png");
 	background-size: cover;
@@ -102,7 +103,7 @@ button:hover
 .appTitle
 {
 	width: fit-content;
-	max-width: 90%;
+	max-width: 100%;
 	font-size: 3rem;
 	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 	text-align: center;
@@ -117,7 +118,7 @@ button:hover
 .pageTitle
 {
 	width: fit-content;
-	max-width: 90%;
+	max-width: 100%;
 	font-size: 2.5rem;
 	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 	background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, transparent 70%);
