@@ -101,8 +101,8 @@ button:hover
 
 .appTitle
 {
-	width: 100%;
-	max-width: min(fit-content, 90vw);
+	width: fit-content;
+	max-width: 90vw;
 	font-size: 3rem;
 	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
 	background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, transparent 70%);
