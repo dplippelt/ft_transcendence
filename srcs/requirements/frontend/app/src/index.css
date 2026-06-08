@@ -197,3 +197,15 @@ button:hover
 {
 	border-color: #8a7a5a;
 }
+
+
+
+/* MOBILE SPECIFIC STYLING */
+
+@media (max-width: 480px)
+{
+	html
+	{
+		font-size: 20px;
+	}
+}
