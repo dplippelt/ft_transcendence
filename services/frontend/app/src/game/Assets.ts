@@ -1,19 +1,13 @@
-interface IAsset {
-  key: string;
-  url: string;
+export enum AssetsKey {
+  Player = "player",
+  Skeleton = "skeleton",
 }
 
 interface IAssetIndex {
-  readonly [index: string]: IAsset;
+  readonly [index: string]: string;
 }
 
 export const Assets: IAssetIndex = {
-  player: {
-    key: "player",
-    url: new URL("./assets/knight_spritesheet.png", import.meta.url).href,
-  },
-  skeleton: {
-    key: "skeleton",
-    url: new URL("./assets/skeleton_spritesheet.png", import.meta.url).href,
-  },
+  [AssetsKey.Player]: new URL("./assets/knight_spritesheet.png", import.meta.url).href,
+  [AssetsKey.Skeleton]: new URL("./assets/skeleton_spritesheet.png", import.meta.url).href,
 };

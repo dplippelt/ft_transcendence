@@ -1,8 +1,10 @@
-import Phaser from "phaser";
-import { Assets } from "../Assets";
+import { Scene } from "phaser";
+import { AssetsKey } from "../Assets";
 import { EventBus } from "../EventBus";
+import Player from "../gameobjects/Player";
+import { playerOne } from "../components/KeyboardComponent";
 
-export default class GameScene extends Phaser.Scene {
+export default class GameScene extends Scene {
   constructor() {
     super("game");
   }
@@ -12,17 +14,20 @@ export default class GameScene extends Phaser.Scene {
   }
 
   create() {
-    const player = this.add.image(400, 300, Assets.player.key);
-    const skeleton = this.add.image(400, 300, Assets.skeleton.key);
+    const skeleton = this.add.image(400, 300, AssetsKey.Skeleton);
+
+    const player = new Player(this, 40, 40, playerOne);
+    this.add.existing(player);
+    this.physics.add.existing(player);
 
     this.tweens.add({
-      targets: [player, skeleton],
+      targets: [skeleton],
       x: "random(0, 600)",
       y: "random(0, 500)",
       ease: "Cubic.easeIn",
       repeat: -1,
       yoyo: true,
-      duration: 2000
+      duration: 2000,
     });
 
     EventBus.emit('current-scene-ready', this);
