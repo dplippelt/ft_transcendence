@@ -1,5 +1,5 @@
 import type { AppStates, Controls } from "./CardTest"
-import styles from "./SelectedCards.module.css"
+import styles from "./SelectedCards.module.scss"
 
 type CardsProps =
 {

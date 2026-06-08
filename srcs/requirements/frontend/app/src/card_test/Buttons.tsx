@@ -1,5 +1,5 @@
 import { GameState, type AppStates, type Controls } from "./CardTest"
-import styles from "./Buttons.module.css"
+import styles from "./Buttons.module.scss"
 import { useNavigate } from "react-router-dom"
 
 type ButtonsProps =

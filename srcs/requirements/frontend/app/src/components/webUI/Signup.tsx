@@ -10,7 +10,7 @@ enum SignupError
 
 function PageTitle()
 {
-	return <div className="pageTitle">Sign-up</div>
+	return <div className="menuTitle">Sign-up</div>
 }
 
 function SignupQuery()
@@ -62,23 +62,6 @@ function SignupQuery()
 			<div className="loginSignupInstead" onClick={ () => navigate("/login") }>Already have an account? Login</div>
 		</div>
 	);
-
-	// return (
-	// 	<div className="loginSignupQuery">
-	// 		{ error !== SignupError.none && <div className="incorrectCreds">{ errorMsg() }</div> }
-	// 		<div className="text">Username:</div>
-	// 		<input className="textInput" autoComplete="off" type="text" placeholder="Enter new username" onChange={ (e) => setUsername(e.target.value) }/>
-	// 		<div className="text">Password:</div>
-	// 		<input className="textInput" autoComplete="off" type="password" placeholder="Enter new password" onChange={ (e) => setPassword(e.target.value) }/>
-	// 		<div className="text">Repeat password:</div>
-	// 		<input className="textInput" autoComplete="off" type="password" placeholder="Enter new password again" onChange={ (e) => setConfirmPassword(e.target.value) }/>
-	// 		<div className="loginSignupButtons">
-	// 			<button className="buttonV1" onClick={ () => navigate("/login") }>Login</button>
-	// 			<button className="buttonV1" onClick={ signupCheck }>Sign-up</button>
-	// 		</div>
-	// 		<button className="buttonV1">Continue with Google</button>
-	// 	</div>
-	// );
 }
 
 export default function Signup()

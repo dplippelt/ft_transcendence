@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import styles from "./LandingPage.module.css"
+import styles from "./LandingPage.module.scss"
 import type { Controls } from "../../App";
 
 type LandingPageProps =

@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import styles from "./MainMenu.module.css"
+import styles from "./MainMenu.module.scss"
 
 function AppTitle()
 {

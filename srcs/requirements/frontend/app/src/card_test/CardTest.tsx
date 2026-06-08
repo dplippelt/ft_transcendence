@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import styles from "./CardTest.module.css"
+import styles from "./CardTest.module.scss"
 import { getRandomInt } from "./utils"
 import Enemy from "./Enemy"
 import Player from "./Player"

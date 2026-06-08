@@ -1,5 +1,5 @@
 import { GameState, type AppStates } from "./CardTest"
-import styles from "./GameResult.module.css"
+import styles from "./GameResult.module.scss"
 
 type GameResultProps =
 {

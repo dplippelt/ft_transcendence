@@ -1,6 +1,6 @@
 import { GameState, type AppStates, type Controls } from "./CardTest"
 import { getRandomInt } from "./utils"
-import styles from "./Player.module.css"
+import styles from "./Player.module.scss"
 
 type PlayerProps =
 {
