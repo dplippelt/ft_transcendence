@@ -63,3 +63,5 @@ export const PhaserGame = forwardRef<IRefPhaserGame, IProps>(
     );
   },
 );
+
+export default PhaserGame;

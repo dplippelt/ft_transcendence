@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
+import { useRef } from "react"
 import useAppControls from "./hooks/useAppControls"
 import useAppEffects from "./hooks/useAppEffects"
 import useAppState from "./hooks/useAppState"
@@ -7,7 +8,7 @@ import LandingPage from "./components/webUI/LandingPage"
 import Login from "./components/webUI/Login"
 import Signup from "./components/webUI/Signup"
 import MainMenu from "./components/webUI/MainMenu"
-import { PhaserGame } from "./components/PhaserGame"
+import { type IRefPhaserGame, PhaserGame} from "./components/PhaserGame"
 
 export type AppStates =
 {
@@ -26,6 +27,9 @@ export type Controls =
 
 export default function App()
 {
+	//  References to the PhaserGame component (game and scene are exposed)
+	const phaserRef = useRef<IRefPhaserGame | null>(null);
+
 	const
 	{
 		guest, setGuest,
@@ -51,7 +55,12 @@ export default function App()
 		guestLogin: guestLogin,
 	}
 
-	useAppEffects(states, setStates, controls);
+  useAppEffects(states, setStates, controls);
+
+	// Event emitted from the PhaserGame component
+	const currentScene = (scene: Phaser.Scene) => {
+    console.log(`current loaded scene: ${scene.scene.key}`);
+	}
 
 	return (
 		<BrowserRouter>
@@ -61,7 +70,7 @@ export default function App()
 				<Route path="/signup" element={ <Signup/> } />
 				<Route path="/main-menu" element={ <MainMenu/> } />
 				<Route path="/card-tester" element={ <CardTest /> } />
-				<Route path="/game-dev" element={ <PhaserGame /> } />
+				<Route path="/game-dev" element={ <PhaserGame ref={ phaserRef } currentActiveScene={ currentScene } /> } />
 			</Routes>
 		</BrowserRouter>
 	)
