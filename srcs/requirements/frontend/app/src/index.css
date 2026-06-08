@@ -58,6 +58,7 @@ button:hover
 	min-width: 110px;
 	max-width: 90%;
 	margin: 0 auto;
+	margin-bottom: 0.3rem;
 	font-size: 0.8rem;
 	padding: 0.2rem 1rem;
 	padding-bottom: 0.1rem;
@@ -145,7 +146,7 @@ button:hover
 	margin: 0 auto;
 }
 
-.loginSignupButtons
+/* .loginSignupButtons
 {
 	display: flex;
 	flex-direction: row;
@@ -154,6 +155,14 @@ button:hover
 	gap: 2rem;
 	margin: 0 auto;
 	margin-bottom: 0.5rem;
+} */
+
+.loginSignupInstead
+{
+	text-align: center;
+	font-size: 0.7rem;
+	text-decoration: underline;
+	cursor: pointer;
 }
 
 .incorrectCreds
