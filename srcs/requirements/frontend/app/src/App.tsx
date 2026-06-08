@@ -7,6 +7,7 @@ import LandingPage from "./components/webUI/LandingPage"
 import Login from "./components/webUI/Login"
 import Signup from "./components/webUI/Signup"
 import MainMenu from "./components/webUI/MainMenu"
+import { PhaserGame } from "./components/PhaserGame"
 
 export type AppStates =
 {
@@ -59,7 +60,8 @@ export default function App()
 				<Route path="/login" element={ <Login/> } />
 				<Route path="/signup" element={ <Signup/> } />
 				<Route path="/main-menu" element={ <MainMenu/> } />
-				<Route path="/card-tester" element={ <CardTest/> } />
+				<Route path="/card-tester" element={ <CardTest /> } />
+				<Route path="/game-dev" element={ <PhaserGame /> } />
 			</Routes>
 		</BrowserRouter>
 	)
