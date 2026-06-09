@@ -5,8 +5,13 @@ import GameScene from "./scenes/GameScene";
 
 const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-  width: 800,
-  height: 600,
+//   width: window.innerWidth,
+//   height: window.innerHeight,
+  scale:
+  {
+	mode: Phaser.Scale.RESIZE,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+  },
   pixelArt: true,
   loader: {
     path: "./assets",

@@ -8,7 +8,7 @@ import LandingPage from "./components/webUI/LandingPage"
 import Login from "./components/webUI/Login"
 import Signup from "./components/webUI/Signup"
 import MainMenu from "./components/webUI/MainMenu"
-import { type IRefPhaserGame, PhaserGame} from "./components/PhaserGame"
+import PhaserGame, { type IRefPhaserGame } from "./components/webUI/PhaserGame"
 
 export type AppStates =
 {
