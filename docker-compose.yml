@@ -1,0 +1,25 @@
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+    depends_on:
+      - db
+    environment:
+      - DATABASE_URL=postgresql+psycopg://game_user:game_password@db:5432/game_db
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: game_db
+      POSTGRES_USER: game_user
+      POSTGRES_PASSWORD: game_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:

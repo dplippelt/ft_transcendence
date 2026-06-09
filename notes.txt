@@ -1,0 +1,25 @@
+Dungeon crawler with card based battle mechanic ("Slay the Spire" inspired)
+- 2D top down view for map/level traversal, 2D side view for combat
+- collect numbers and operators by fighting enemies and opening chests to fill in a formula to fix the seal on the final door to the next level (clears / finishes level).
+- Unfinished formulas require entering the right numbers and operators in the right locations for the formula to make sense. Multiple valid solutions to a seal might exist (e.g. _ + _ = 6; or 3 _ _ = 6).
+- My thinking for why fixing the magic seal on the final door finishes the level would be that for whatever reason the seals were broken which allowed monsters to come through. So the protagonist's/player's job is essentially to fix the seals to keep the monsters contained.
+- As long as a broken seal is not fixed enemies will keep spawning at its location on a timer (up to a certain number) and start wandering around the level. This essentially introduces an infinite amount of battles and, more importantly, pool of number/operator drops so players do not get soft-locked / stuck because they got unlucky and didn't get the required numbers and/or operators to fix a seal.
+- A level can have multiple seals to fix before the level is cleared (and therefore multiple enemy spawn points).
+- (other) locked doors don't (or don't usually) require completing a formula, but are unlocked by solving a small pattern based puzzle like Bell suggested (e.g. IQ test-like problems or something similar to that)
+- numbers and operators are dropped by defeating enemies and found in chests
+- or numbers dropped by enemies and operators found in chests (?)
+- during battle an enemy has a certain value that is a result of a calculation (e.g. an enemy might be 3 x 4 [12]). Or perhaps better, an enemy has a range of values (e.g. "2 + 3 --- 3 x 4" -> [5, 12]). At first the range might be precalculated, requiring no calculation on the player's side, then either upper or lower bound must be calculated by the player, then both. The size of the range is another variable we could adjust to control enemy difficulty.
+- for certain enemies/battles the range might change after X minutes/seconds.
+- players draw a certain number of cards during battle that consist of a mix of value cards (1, 2, 3, etc.), operator cards (+, -, /, *), joker cards (any value or operator; or you can have separate jokers for values and operators) and modifiers (e.g. extend enemy vulnerability range, multiply damage, protect against next enemy attack).
+- players can play cards to damage the enemy. E.g. if the enemy range is [5, 12], could play three cards such as 2, *, and 3 (=6), or 2, *, 3, +, and 2 (=8) to damage it. Perhaps the amount of damage you do to the enemy depends on the number of cards you play in one attack (e.g. [an adjusted] exponential increase in damage - would need testing for best formula)? Playing a single card should not be allowed.
+- when playing a combination of cards the cards have to be selected in an order that results in a valid formula (3, 3, + would not work, 3, +, 3 would).
+- players can discard and redraw cards as much as they want during battle (avoids frustration if a hand is "unplayable" and makes things easier for us in terms of balancing). Or probably better, drawing cards costs mana/energy/stamina. Mana replenishes either on a timer or by some other mechanic.
+- enemies attack on a timed interval to introduce pressure on doing the calculations quickly and finding a good combo of cards to play.
+- enemy attack is canceled, and attack timer is reset if the player manages to damage to enemy before it attacks. This allows a more aggressive enemy attack interval (shorter) while also encouraging quick plays by the player to protect their own HP
+- whether enemy range calculations are always visible or only on mouse hover is something to look at and test later I think (or it can be a game setting).
+- Enemy calculations, and magic seals become harder and more complex as you progress.
+- 2 player co-op (both draw and play their own cards to defeat enemies). Think about whether players are always grouped together in coop, or if they can also (optionally) explore and do combat separately.
+- optionally a game can have spectators(?)
+- achievements / XP / player levels
+- player character appearance customization
+- player stats in user profile
