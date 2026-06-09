@@ -17,6 +17,7 @@
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	margin-bottom: 0.2rem;
+	align-content: center;
 
 	@media (max-width: 480px)
 	{
@@ -32,12 +33,18 @@
 {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
+	justify-items: center;
 
 	@media (max-width: 480px)
 	{
 		grid-template-columns: 1fr;
 		justify-items: start;
 		gap: 0.4rem;
+	}
+
+	label
+	{
+		justify-self: left;
 	}
 
 	.track
@@ -50,6 +57,17 @@
 {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
+	justify-items: center;
+
+	label
+	{
+		justify-self: left;
+	}
+
+	select
+	{
+		width: 80%;
+	}
 
 	@media (max-width: 480px)
 	{

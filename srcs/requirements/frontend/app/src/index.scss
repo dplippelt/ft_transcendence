@@ -71,6 +71,11 @@ input[type="range"]
 	-webkit-appearance: none;
 	appearance: none;
 	background-color: $grey-dark;
+
+	@media (max-width: 480px)
+	{
+		margin-left: 0.15rem;
+	}
 }
 
 input[type="range"]::-moz-range-track
