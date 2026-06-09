@@ -7,6 +7,7 @@ import LandingPage from "./components/webUI/LandingPage"
 import Login from "./components/webUI/Login"
 import Signup from "./components/webUI/Signup"
 import MainMenu from "./components/webUI/MainMenu"
+import Settings from "./components/webUI/Settings"
 
 export type AppStates =
 {
@@ -59,6 +60,7 @@ export default function App()
 				<Route path="/login" element={ <Login/> } />
 				<Route path="/signup" element={ <Signup/> } />
 				<Route path="/main-menu" element={ <MainMenu/> } />
+				<Route path="/settings" element={ <Settings/> } />
 				<Route path="/card-tester" element={ <CardTest/> } />
 			</Routes>
 		</BrowserRouter>

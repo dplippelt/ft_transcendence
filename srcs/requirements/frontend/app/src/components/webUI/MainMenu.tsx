@@ -19,7 +19,7 @@ function Buttons()
 			<button>Friends</button>
 			<button>Profile</button>
 			<button>Leaderboard</button>
-			<button>Settings</button>
+			<button onClick={ () => navigate("/settings") }>Settings</button>
 			<button>How to play</button>
 			<button onClick={ () => navigate("/") }>Logout</button>
 		</div>

@@ -4,15 +4,21 @@ import type { ReactNode } from "react";
 export type SettingsContextType =
 {
 	// define types for each setting value, setting setter, and other functions that are part of the context
-	dummySetting: boolean,
-	setDummySetting: React.Dispatch<React.SetStateAction<boolean>>,
+	dummyBoolean: boolean,
+	setDummyBoolean: React.Dispatch<React.SetStateAction<boolean>>,
+	dummySlider: number,
+	setDummySlider: React.Dispatch<React.SetStateAction<number>>,
+	dummyDropdown: string,
+	setDummyDropdown: React.Dispatch<React.SetStateAction<string>>,
 	resetSettings: () => void,
 }
 
 type Settings =
 {
 	// define data type for each setting
-	dummySetting: boolean,
+	dummyBoolean: boolean,
+	dummySlider: number,
+	dummyDropdown: string,
 }
 
 const SettingsContext = createContext<SettingsContextType | null>(null);
@@ -20,7 +26,9 @@ const SettingsContext = createContext<SettingsContextType | null>(null);
 const defaultSettings: Settings =
 {
 	// define default settings for each setting
-	dummySetting: true,
+	dummyBoolean: true,
+	dummySlider: 50,
+	dummyDropdown: "default",
 };
 
 function loadSettings()
@@ -34,20 +42,26 @@ export default function SettingsProvider( { children } : {children: ReactNode} )
 	const [settings] = useState<Settings>(loadSettings());
 
 	// define individual settings here, e.g. const [dummySetting, setDummySetting] = useState<boolean>(settings.dummySetting);
-	const [dummySetting, setDummySetting] = useState<boolean>(settings.dummySetting);
+	const [dummyBoolean, setDummyBoolean] = useState<boolean>(settings.dummyBoolean);
+	const [dummySlider, setDummySlider] = useState<number>(settings.dummySlider);
+	const [dummyDropdown, setDummyDropdown] = useState<string>(settings.dummyDropdown)
 
 
 	function resetSettings()
 	{
 		// set each setting to defaultSetting, e.g. setDummySetting(defaultSettings.dummySetting);
-		setDummySetting(defaultSettings.dummySetting);
+		setDummyBoolean(defaultSettings.dummyBoolean);
+		setDummySlider(defaultSettings.dummySlider);
+		setDummyDropdown(defaultSettings.dummyDropdown);
 	}
 
 	return (
 		<SettingsContext.Provider
 			value=
 			{{
-				dummySetting, setDummySetting,
+				dummyBoolean, setDummyBoolean,
+				dummySlider, setDummySlider,
+				dummyDropdown, setDummyDropdown,
 				resetSettings,
 			}}>
 			{children}

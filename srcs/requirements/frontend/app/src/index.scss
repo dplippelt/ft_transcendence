@@ -1,4 +1,5 @@
 @use './variables' as *;
+@use './mixins' as *;
 @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Cinzel Decorative:wght@400&display=swap');
 
@@ -18,6 +19,94 @@ body, html
 {
 	font-size: 24px;
 	overflow-x: hidden;
+}
+
+label
+{
+	user-select: none;
+}
+
+
+
+/* INPUT STYLING */
+
+input[type="number"]
+{
+	width: 7ch;
+}
+
+input[type="number"], select
+{
+	background-color: $input-bg-color;
+	border: 1px solid $input-border-color;
+	border-radius: 2px;
+	padding: 0.2rem;
+	font-size: 0.7rem;
+	font-family: $input-font;
+
+	&:focus
+	{
+		border-color: $input-focus-border-color;
+		outline: none;
+	}
+}
+
+input[type="checkbox"]
+{
+	width: 0.8rem;
+	height: 0.8rem;
+	margin: auto;
+	accent-color: $input-bg-color;
+	outline: 2px solid $input-border-color;
+}
+
+input[type="range"]
+{
+	width: 7rem;
+	-webkit-appearance: none;
+	appearance: none;
+	background-color: $grey-dark;
+}
+
+input[type="range"]::-moz-range-track
+{
+	background-color: $slider-track-bg-color;
+	height: 4px;
+	border-radius: 8px;
+}
+
+input[type="range"]::-webkit-slider-runnable-track
+{
+	background-color: $slider-track-bg-color;
+	height: 4px;
+	border-radius: 8px;
+}
+
+input[type="range"]::-moz-range-thumb
+{
+	background-color: $slider-thumb-bg-color;
+	border-color: $slider-thumb-border-color;
+	border-width: 3px;
+	border-radius: 16px;
+
+	&:hover
+	{
+		background-color: $slider-thumb-focus-bg-color;
+	}
+}
+
+input[type="range"]::-webkit-slider-thumb
+{
+	-webkit-appearance: none;
+	background-color: $slider-thumb-bg-color;
+	border-color: $slider-thumb-border-color;
+	border-width: 3px;
+	border-style: solid;
+	border-radius: 16px;
+	height: 16px;
+	width: 16px;
+	margin-top: -6px;
+	cursor: pointer;
 }
 
 
@@ -52,6 +141,32 @@ button
 	gap: 1rem;
 }
 
+.bottomButtons
+{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	width: 100%;
+	max-width: min(900px, 90%);
+	justify-content: center;
+	margin: 0 auto;
+	margin-top: 0.75rem;
+	gap: clamp(1rem, 5vw, 5rem);
+
+	@media (max-width: 480px)
+	{
+		.backButton
+		{
+			order: 999;
+		}
+
+		.buttonV2
+		{
+			flex: 1;
+		}
+	}
+}
+
 .buttonV1
 {
 	width: fit-content;
@@ -68,6 +183,27 @@ button
 	{
 		background-color: $button-v1-hover-bg-color !important;
 		color: $button-v1-hover-color !important;
+	}
+}
+
+.buttonV2
+{
+	width: fit-content;
+	min-width: 200px;
+	max-width: 90%;
+	padding: 0.25rem 0.2rem;
+	padding-bottom: 0.15rem;
+	background-color: $button-bg-color !important;
+	border: 1px solid $button-border-color !important;
+	border-radius: 8px;
+	font-family: $button-font;
+	font-size: 1rem;
+	transition: background-color 0.2s ease;
+
+	&:hover
+	{
+		background-color: $button-hover-bg-color !important;
+		color: $button-hover-color !important;
 	}
 }
 
@@ -99,27 +235,6 @@ button
 	align-content: start;
 	padding-top: 6vh;
 	padding-bottom: 10vh;
-}
-
-@mixin window
-{
-	width: 100%;
-	background-color: $window-bg-color;
-	border: $window-border;
-	border-radius: $window-border-radius;
-	padding: 0.5rem;
-	margin: 0 auto;
-}
-
-@mixin pageTitle
-{
-	width: fit-content;
-	max-width: 100%;
-	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
-	text-align: center;
-	background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, transparent 70%);
-	margin: 0 auto;
-	margin-bottom: -1rem;
 }
 
 .appTitle
