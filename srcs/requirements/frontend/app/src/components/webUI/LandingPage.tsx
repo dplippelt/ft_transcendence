@@ -31,7 +31,7 @@ function Buttons( { controls } : LandingPageProps )
 			<button onClick={ () => navigate("/signup") }>Sign-up</button>
 			<button>How to play</button>
 			<button onClick={ () => { controls.guestLogin(); navigate("/main-menu"); } }>Continue as guest</button>
-			<button>Game dev</button>
+      <button onClick={ () => navigate("/game-dev") }>Game dev</button>
 			<button onClick={ () => navigate("/card-tester") }>Card tester</button>
 		</div>
 	)
