@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useSettings } from "../../contexts/SettingsContext";
+import { defaultSettings, useSettings, type Settings } from "../../contexts/SettingsContext";
 import styles from "./Settings.module.scss";
 import { useRef, useState } from "react";
 
@@ -37,6 +37,7 @@ type SettingsWindowProps =
 
 type ButtonsProps =
 {
+	setResetKey: React.Dispatch<React.SetStateAction<number>>,
 	settingRefs: SettingRefs,
 }
 
@@ -124,24 +125,44 @@ function SettingsWindow( { settingRefs } : SettingsWindowProps )
 	);
 }
 
-function Buttons( { settingRefs } : ButtonsProps )
+function Buttons( { setResetKey, settingRefs } : ButtonsProps )
 {
 	const navigate = useNavigate();
 	const settings = useSettings();
 
+	function saveSettingsToDB(settings: Settings)
+	{
+		// add saving settings to database here
+		void settings;
+	}
+
+	function resetSettings()
+	{
+		settings.resetSettings();
+		setResetKey(prev => prev + 1);
+		saveSettingsToDB(defaultSettings);
+	}
+
 	function applySettings()
 	{
+		const newSettings: Settings =
+		{
+			dummyBoolean: settingRefs.dummyBoolean.current!.checked,
+			dummySlider: Number(settingRefs.dummySlider.current!.value),
+			dummyDropdown: settingRefs.dummyDropdown.current!.value,
+		};
+
 		settings.setDummyBoolean(settingRefs.dummyBoolean.current!.checked);
 		settings.setDummySlider(Number(settingRefs.dummySlider.current!.value));
 		settings.setDummyDropdown(settingRefs.dummyDropdown.current!.value);
 
-		// add saving settings to database here
+		saveSettingsToDB(newSettings);
 	}
 
 	return (
 		<div className="bottomButtons">
 			<button className="buttonV2 mobileBottom" onClick={ () => navigate(-1) }>Back</button>
-			<button className="buttonV2 mobileTop" onClick={settings.resetSettings}>Reset Defaults</button>
+			<button className="buttonV2 mobileTop" onClick={resetSettings}>Reset Defaults</button>
 			<button className="buttonV2" onClick={applySettings}>Apply</button>
 		</div>
 	);
@@ -149,6 +170,7 @@ function Buttons( { settingRefs } : ButtonsProps )
 
 export default function Settings()
 {
+	const [resetKey, setResetKey] = useState(0);
 	const dummyBooleanRef = useRef<HTMLInputElement | null>(null);
 	const dummySliderRef = useRef<HTMLInputElement | null>(null);
 	const dummyDropdownRef = useRef<HTMLSelectElement | null>(null);
@@ -165,8 +187,8 @@ export default function Settings()
 			<div className="background" />
 			<div className="page">
 				<PageTitle/>
-				<SettingsWindow settingRefs={settingRefs} />
-				<Buttons settingRefs={settingRefs}/>
+				<SettingsWindow key={resetKey} settingRefs={settingRefs} />
+				<Buttons setResetKey={setResetKey} settingRefs={settingRefs}/>
 			</div>
 		</>
 	);

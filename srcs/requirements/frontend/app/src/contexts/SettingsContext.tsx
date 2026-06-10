@@ -13,7 +13,7 @@ export type SettingsContextType =
 	resetSettings: () => void,
 }
 
-type Settings =
+export type Settings =
 {
 	// define data type for each setting
 	dummyBoolean: boolean,
@@ -23,7 +23,7 @@ type Settings =
 
 const SettingsContext = createContext<SettingsContextType | null>(null);
 
-const defaultSettings: Settings =
+export const defaultSettings: Settings =
 {
 	// define default settings for each setting
 	dummyBoolean: true,
@@ -39,7 +39,7 @@ function loadSettings()
 
 export default function SettingsProvider( { children } : {children: ReactNode} )
 {
-	const [settings] = useState<Settings>(loadSettings());
+	const settings: Settings = loadSettings();
 
 	// define individual settings here, e.g. const [dummySetting, setDummySetting] = useState<boolean>(settings.dummySetting);
 	const [dummyBoolean, setDummyBoolean] = useState<boolean>(settings.dummyBoolean);
