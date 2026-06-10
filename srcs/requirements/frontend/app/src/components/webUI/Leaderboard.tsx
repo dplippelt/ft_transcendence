@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import styles from "./Leaderboard.module.scss";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Dropdown } from "./Inputs";
+import useIsMobile from "../../hooks/useIsMobile";
 
 // start temporary example scores for three stats
 const stat_1_scores: Score[] =
@@ -94,15 +95,7 @@ function PageTitle()
 
 function StatsPicker( { setStat } : StatsPickerProps )
 {
-	const [isMobile, setIsMobile] = useState<boolean>(window.matchMedia('(max-width: 480px)').matches);
-
-	useEffect(() =>
-	{
-		const mediaQuery = window.matchMedia('(max-width: 480px)');
-		const eventHandler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
-		mediaQuery.addEventListener("change", eventHandler);
-		return () => mediaQuery.removeEventListener("change", eventHandler);
-	}, []);
+	const isMobile = useIsMobile();
 
 	if ( isMobile )
 	{
