@@ -165,9 +165,14 @@ button
 
 	@media (max-width: 480px)
 	{
-		.backButton
+		.mobileBottom
 		{
 			order: 999;
+		}
+
+		.mobileTop
+		{
+			order: -999;
 		}
 
 		.buttonV2
