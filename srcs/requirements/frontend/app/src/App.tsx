@@ -10,6 +10,7 @@ import Signup from "./components/webUI/Signup"
 import MainMenu from "./components/webUI/MainMenu"
 import Settings from "./components/webUI/Settings"
 import PhaserGame, { type IRefPhaserGame } from "./components/webUI/PhaserGame"
+import Leaderboard from "./components/webUI/Leaderboard"
 
 export type AppStates =
 {
@@ -70,6 +71,7 @@ export default function App()
 				<Route path="/login" element={ <Login/> } />
 				<Route path="/signup" element={ <Signup/> } />
 				<Route path="/main-menu" element={ <MainMenu/> } />
+				<Route path="/leaderboard" element={ <Leaderboard/> } />
 				<Route path="/settings" element={ <Settings/> } />
 				<Route path="/card-tester" element={ <CardTest /> } />
 				<Route path="/game-dev" element={ <PhaserGame ref={ phaserRef } currentActiveScene={ currentScene } /> } />

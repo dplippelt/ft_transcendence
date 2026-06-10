@@ -67,7 +67,7 @@ input[type="checkbox"]
 
 input[type="range"]
 {
-	width: 7rem;
+	width: 100%;
 	-webkit-appearance: none;
 	appearance: none;
 	background-color: $grey-dark;
@@ -263,7 +263,7 @@ button
 .menuTitle
 {
 	@include pageTitle;
-	font-size: 2.5rem;
+	font-size: 2.25rem;
 	padding: 1.5rem 0.5rem;
 	font-family: $page-title-font;
 }
