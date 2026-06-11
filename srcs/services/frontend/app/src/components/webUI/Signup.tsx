@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAccount } from "../../contexts/AccountContext";
 
 enum SignupError
 {
@@ -20,6 +21,7 @@ function SignupQuery()
 	const [confirmPassword, setConfirmPassword] = useState<string>("");
 	const [error, setError] = useState<SignupError>(SignupError.none);
 	const navigate = useNavigate();
+	const { setAccount } = useAccount();
 
 	function signupCheck()
 	{
@@ -32,6 +34,8 @@ function SignupQuery()
 			return setError(SignupError.usernameAlreadyTaken);
 		if ( password !== confirmPassword )
 			return setError(SignupError.passwordsDontMatch);
+
+		setAccount(prev => ({ ...prev, guest: false, username: username, password: password }));
 		navigate("/main-menu");
 	}
 

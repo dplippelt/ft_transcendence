@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAccount } from "../../contexts/AccountContext";
 
 function PageTitle()
 {
@@ -12,6 +13,7 @@ function LoginQuery()
 	const [password, setPassword] = useState<string>("");
 	const [error, setError] = useState<boolean>(false);
 	const navigate = useNavigate();
+	const { setAccount } = useAccount();
 
 	function checkLogin()
 	{
@@ -21,6 +23,8 @@ function LoginQuery()
 		// Mock login check:
 		if ( username !== password )
 			return setError(true);
+
+		setAccount(prev => ({ ...prev, guest: false, username: username, password: password }));
 		navigate("/main-menu");
 	}
 

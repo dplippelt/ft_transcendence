@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import styles from "./MainMenu.module.scss"
+import { defaultAccount, useAccount } from "../../contexts/AccountContext";
 
 function AppTitle()
 {
@@ -11,17 +12,24 @@ function AppTitle()
 function Buttons()
 {
 	const navigate = useNavigate();
+	const { setAccount } = useAccount();
+
+	function logout()
+	{
+		setAccount(defaultAccount);
+		navigate("/");
+	}
 
 	return (
 		<div className="menuButtons">
 			<button>New game</button>
 			<button>Multiplayer</button>
 			<button>Friends</button>
-			<button>Profile</button>
+			<button onClick={ () => navigate("/profile") }>Profile</button>
 			<button onClick={ () => navigate("/leaderboard") }>Leaderboard</button>
 			<button onClick={ () => navigate("/settings") }>Settings</button>
 			<button>How to play</button>
-			<button onClick={ () => navigate("/") }>Logout</button>
+			<button onClick={ logout }>Logout</button>
 		</div>
 	)
 }

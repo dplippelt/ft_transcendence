@@ -6,7 +6,7 @@
 #    By: dlippelt <dlippelt@student.codam.nl>       +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/05/18 10:09:39 by dlippelt          #+#    #+#              #
-#    Updated: 2026/06/11 08:04:13 by dlippelt         ###   ########.fr        #
+#    Updated: 2026/06/11 08:30:55 by dlippelt         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -50,7 +50,8 @@ clean:
 fclean: clean
 	docker volume rm transc_frontend_data 2>/dev/null || true
 	sudo rm -rf $(VOLUME_DIRS)
+	sudo rm -rf srcs/services/frontend/app/node_modules
 
-fre: fclean re
+fre: fclean setup up
 
 .PHONY: setup build up down start stop restart re clean fclean fre

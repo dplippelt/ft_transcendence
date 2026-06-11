@@ -29,7 +29,7 @@ function PageTitle()
 
 function SettingsWindow( { settingRefs } : SettingsWindowProps )
 {
-	const settings = useSettings();
+	const { settings } = useSettings();
 
 	return (
 		<div className={styles.settingsWindow}>
@@ -43,7 +43,7 @@ function SettingsWindow( { settingRefs } : SettingsWindowProps )
 function Buttons( { setResetKey, settingRefs } : ButtonsProps )
 {
 	const navigate = useNavigate();
-	const settings = useSettings();
+	const { setSettings } = useSettings();
 
 	function saveSettingsToDB(settings: Settings)
 	{
@@ -53,7 +53,7 @@ function Buttons( { setResetKey, settingRefs } : ButtonsProps )
 
 	function resetSettings()
 	{
-		settings.resetSettings();
+		setSettings(defaultSettings);
 		setResetKey(prev => prev + 1);
 		saveSettingsToDB(defaultSettings);
 	}
@@ -67,10 +67,7 @@ function Buttons( { setResetKey, settingRefs } : ButtonsProps )
 			dummyDropdown: settingRefs.dummyDropdown.current!.value,
 		};
 
-		settings.setDummyBoolean(settingRefs.dummyBoolean.current!.checked);
-		settings.setDummySlider(Number(settingRefs.dummySlider.current!.value));
-		settings.setDummyDropdown(settingRefs.dummyDropdown.current!.value);
-
+		setSettings(newSettings);
 		saveSettingsToDB(newSettings);
 	}
 

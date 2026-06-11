@@ -3,11 +3,14 @@ import { createRoot } from 'react-dom/client'
 import './index.scss'
 import App from './App.tsx'
 import SettingsProvider from './contexts/SettingsContext.tsx'
+import AccountProvider from './contexts/AccountContext.tsx'
 
 createRoot(document.getElementById('root')!).render(
 	<StrictMode>
-		<SettingsProvider>
-			<App />
-		</SettingsProvider>
+		<AccountProvider>
+			<SettingsProvider>
+				<App />
+			</SettingsProvider>
+		</AccountProvider>
 	</StrictMode>,
 )

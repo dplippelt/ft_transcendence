@@ -1,0 +1,66 @@
+@use '../../mixins' as *;
+@use '../../variables' as *;
+
+.profileWindow
+{
+	@include window;
+	max-width: min(800px, 90%);
+	min-height: min(800px, 60vh);
+	display: grid;
+	row-gap: 1rem;
+	text-align: left;
+	align-content: start;
+	padding: 2rem;
+	font-family: $text-font;
+
+	@media (max-width: 480px)
+	{
+		row-gap: 1.25rem;
+	}
+}
+
+.account
+{
+	width: fit-content;
+	font-size: 0.8rem;
+	border-bottom: 1px solid $primary-text-color;
+}
+
+.accountInfo
+{
+	display: grid;
+	grid-template-columns: max-content minmax(max-content, 1fr) 2fr;
+	column-gap: 1.5rem;
+	row-gap: 0.5rem;
+	font-size: 0.7rem;
+	align-items: center;
+}
+
+.label
+{
+	color: $profile-label-color;
+}
+
+.avatar
+{
+	width: 64px;
+	height: 64px;
+	overflow: hidden;
+	object-fit: cover;
+	border: $window-border;
+	border-radius: 64px;
+	border-color: $profile-avatar-border-color;
+	border-width: 3px;
+	margin-bottom: 0.5rem;
+}
+
+.edit
+{
+	width: fit-content;
+	font-variant: small-caps;
+	text-decoration-line: underline;
+	color: $profile-edit-color;
+	font-size: 0.6rem;
+	align-self: center;
+	cursor: pointer;
+}

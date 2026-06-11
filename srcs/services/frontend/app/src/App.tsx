@@ -11,20 +11,18 @@ import MainMenu from "./components/webUI/MainMenu"
 import Settings from "./components/webUI/Settings"
 import PhaserGame, { type IRefPhaserGame } from "./components/webUI/PhaserGame"
 import Leaderboard from "./components/webUI/Leaderboard"
+import Profile from "./components/webUI/Profile"
 
 export type AppStates =
 {
-	guest: boolean,
 }
 
 export type SetAppStates =
 {
-	setGuest: React.Dispatch<React.SetStateAction<boolean>>,
 }
 
 export type Controls =
 {
-	guestLogin: () => void,
 }
 
 export default function App()
@@ -34,27 +32,22 @@ export default function App()
 
 	const
 	{
-		guest, setGuest,
 	} = useAppState();
 
 	const states: AppStates =
 	{
-		guest: guest,
 	};
 
 	const setStates: SetAppStates =
 	{
-		setGuest: setGuest,
 	};
 
 	const
 	{
-		guestLogin,
 	} = useAppControls(states, setStates);
 
 	const controls: Controls =
 	{
-		guestLogin: guestLogin,
 	}
 
   useAppEffects(states, setStates, controls);
@@ -67,10 +60,11 @@ export default function App()
 	return (
 		<BrowserRouter>
 			<Routes>
-				<Route path="/" element={ <LandingPage controls={controls}/> } />
+				<Route path="/" element={ <LandingPage/> } />
 				<Route path="/login" element={ <Login/> } />
 				<Route path="/signup" element={ <Signup/> } />
 				<Route path="/main-menu" element={ <MainMenu/> } />
+				<Route path="/profile" element={ <Profile/> } />
 				<Route path="/leaderboard" element={ <Leaderboard/> } />
 				<Route path="/settings" element={ <Settings/> } />
 				<Route path="/card-tester" element={ <CardTest /> } />
