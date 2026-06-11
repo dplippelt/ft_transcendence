@@ -3,14 +3,8 @@ import type { ReactNode } from "react";
 
 export type SettingsContextType =
 {
-	// define types for each setting value, setting setter, and other functions that are part of the context
-	dummyBoolean: boolean,
-	setDummyBoolean: React.Dispatch<React.SetStateAction<boolean>>,
-	dummySlider: number,
-	setDummySlider: React.Dispatch<React.SetStateAction<number>>,
-	dummyDropdown: string,
-	setDummyDropdown: React.Dispatch<React.SetStateAction<string>>,
-	resetSettings: () => void,
+	settings: Settings,
+	setSettings: React.Dispatch<React.SetStateAction<Settings>>,
 }
 
 export type Settings =
@@ -31,38 +25,30 @@ export const defaultSettings: Settings =
 	dummyDropdown: "default",
 };
 
-function loadSettings()
-{
-	const settings = defaultSettings; // replace with getter from backend database if exists in database, else load default settings
-	return settings;
-}
-
 export default function SettingsProvider( { children } : {children: ReactNode} )
 {
-	const settings: Settings = loadSettings();
+	const [settings, setSettings] = useState<Settings>(defaultSettings);
 
-	// define individual settings here, e.g. const [dummySetting, setDummySetting] = useState<boolean>(settings.dummySetting);
-	const [dummyBoolean, setDummyBoolean] = useState<boolean>(settings.dummyBoolean);
-	const [dummySlider, setDummySlider] = useState<number>(settings.dummySlider);
-	const [dummyDropdown, setDummyDropdown] = useState<string>(settings.dummyDropdown)
+	// mock template for later when loading settings info from database after login (e.g. when user hits F5 to reload page)
+	// at the moment when you hit F5 everything is rerendered and settings info will be set to default again.
+	// turn it into a custom hook because it also needs to be called in the login / signup button handler after a succesful login/sign-up
 
-
-	function resetSettings()
-	{
-		// set each setting to defaultSetting, e.g. setDummySetting(defaultSettings.dummySetting);
-		setDummyBoolean(defaultSettings.dummyBoolean);
-		setDummySlider(defaultSettings.dummySlider);
-		setDummyDropdown(defaultSettings.dummyDropdown);
-	}
+	// useEffect(() =>
+	// {
+	// 	async function loadSettings()
+	// 	{
+	// 		const sessionToken = localStorage.getItem("sessionToken");
+	// 		if (await isValidToken(sessionToken))
+	// 			setSettings(await fetchDbSettings(sessionToken));
+	// 	}
+	// 	loadSettings();
+	// }, []);
 
 	return (
 		<SettingsContext.Provider
 			value=
 			{{
-				dummyBoolean, setDummyBoolean,
-				dummySlider, setDummySlider,
-				dummyDropdown, setDummyDropdown,
-				resetSettings,
+				settings, setSettings,
 			}}>
 			{children}
 		</SettingsContext.Provider>
