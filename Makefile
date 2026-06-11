@@ -6,7 +6,7 @@
 #    By: dlippelt <dlippelt@student.codam.nl>       +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2026/05/18 10:09:39 by dlippelt          #+#    #+#              #
-#    Updated: 2026/05/25 08:36:51 by dlippelt         ###   ########.fr        #
+#    Updated: 2026/06/11 08:04:13 by dlippelt         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -16,7 +16,7 @@ VOLUME_DIRS =	$(HOME)/ft_transcendence
 
 # use setup only on a freshly cloned repo
 setup:
-	cd srcs/requirements/frontend/app && npm install
+	cd srcs/services/frontend/app && npm install
 	$(MAKE) build
 
 build:
