@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useAccount } from "../../contexts/AccountContext";
-import { errorMsg, AccountError } from "./Signup";
+import { useAccount } from "../contexts/AccountContext";
+import { errorMsg, AccountError } from "../utils/errors";
 import styles from "./EditWindow.module.scss";
 import { EditWindowType } from "./AccountTab";
 
@@ -25,7 +25,6 @@ interface EditContentProp
 
 function EditAvatarContent( { setEditWindowType, setError } : EditContentProp )
 {
-	// const [avatar, setAvatar] = useState<string>("");
 	const { setAccount } = useAccount();
 
 	function avatarCheck(newAvatar: string)
@@ -143,6 +142,5 @@ export default function EditWindow( { editWindowType, setEditWindowType } : Edit
 				<EditWindowContent editWindowType={editWindowType} setEditWindowType={setEditWindowType} setError={setError} />
 			</div>
 		</div>
-
 	);
 }

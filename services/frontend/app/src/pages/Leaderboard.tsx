@@ -1,8 +1,8 @@
-import { useNavigate } from "react-router-dom";
 import styles from "./Leaderboard.module.scss";
 import { useState } from "react";
-import { Dropdown } from "./Inputs";
-import useIsMobile from "../../hooks/useIsMobile";
+import Dropdown from "../components/Dropdown";
+import useIsMobile from "../hooks/useIsMobile";
+import BackButton from "../components/BackButton";
 
 // start temporary example scores for three stats
 const stat_1_scores: Score[] =
@@ -173,11 +173,9 @@ function LeaderboardWindow( { stat, setStat } : LeaderboardWindowProps )
 
 function Buttons()
 {
-	const navigate = useNavigate();
-
 	return (
 		<div className="bottomButtons">
-			<button className="buttonV2 mobileBottom" onClick={ () => navigate(-1) }>Back</button>
+			<BackButton />
 		</div>
 	);
 }

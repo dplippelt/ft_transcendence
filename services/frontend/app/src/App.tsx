@@ -3,15 +3,14 @@ import { useRef } from "react"
 import useAppControls from "./hooks/useAppControls"
 import useAppEffects from "./hooks/useAppEffects"
 import useAppState from "./hooks/useAppState"
-import CardTest from "./card_test/CardTest"
-import LandingPage from "./components/webUI/LandingPage"
-import Login from "./components/webUI/Login"
-import Signup from "./components/webUI/Signup"
-import MainMenu from "./components/webUI/MainMenu"
-import Settings from "./components/webUI/Settings"
-import PhaserGame, { type IRefPhaserGame } from "./components/webUI/PhaserGame"
-import Leaderboard from "./components/webUI/Leaderboard"
-import Profile from "./components/webUI/Profile"
+import LandingPage from "./pages/LandingPage"
+import Login from "./pages/Login"
+import Signup from "./pages/Signup"
+import MainMenu from "./pages/MainMenu"
+import Settings from "./pages/Settings"
+import PhaserGame, { type IRefPhaserGame } from "./pages/PhaserGame"
+import Leaderboard from "./pages/Leaderboard"
+import Profile from "./pages/Profile"
 
 export type AppStates =
 {
@@ -67,7 +66,6 @@ export default function App()
 				<Route path="/profile" element={ <Profile/> } />
 				<Route path="/leaderboard" element={ <Leaderboard/> } />
 				<Route path="/settings" element={ <Settings/> } />
-				<Route path="/card-tester" element={ <CardTest /> } />
 				<Route path="/game-dev" element={ <PhaserGame ref={ phaserRef } currentActiveScene={ currentScene } /> } />
 			</Routes>
 		</BrowserRouter>

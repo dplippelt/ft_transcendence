@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAccount } from "../../contexts/AccountContext";
+import { useAccount } from "../contexts/AccountContext";
 
 function PageTitle()
 {

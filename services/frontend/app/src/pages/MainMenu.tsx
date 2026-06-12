@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import styles from "./MainMenu.module.scss"
-import { defaultAccount, useAccount } from "../../contexts/AccountContext";
+import { defaultAccount, useAccount } from "../contexts/AccountContext";
 
 function AppTitle()
 {

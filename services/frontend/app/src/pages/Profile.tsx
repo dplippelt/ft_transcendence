@@ -1,8 +1,8 @@
-import { useNavigate } from "react-router-dom";
 import styles from "./Profile.module.scss";
 import { useState } from "react";
-import AccountTab from "./AccountTab";
-import StatsTab from "./StatsTab";
+import AccountTab from "../components/AccountTab";
+import StatsTab from "../components/StatsTab";
+import BackButton from "../components/BackButton";
 
 enum Tab
 {
@@ -38,18 +38,16 @@ function ProfileWindow()
 	return (
 		<div className={styles.profileWindow}>
 			<ProfileTabs tab={tab} setTab={setTab} />
-			{ tab === Tab.account ? <AccountTab /> : <StatsTab />}
+			{ tab === Tab.account ? <AccountTab /> : <StatsTab /> }
 		</div>
 	);
 }
 
 function Buttons()
 {
-	const navigate = useNavigate();
-
 	return (
 		<div className="bottomButtons">
-			<button className="buttonV2 mobileBottom" onClick={ () => navigate(-1) }>Back</button>
+			<BackButton />
 		</div>
 	);
 }

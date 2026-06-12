@@ -1,8 +1,10 @@
-import { useNavigate } from "react-router-dom";
-import { defaultSettings, useSettings, type Settings } from "../../contexts/SettingsContext";
+import { defaultSettings, useSettings, type Settings } from "../contexts/SettingsContext";
 import styles from "./Settings.module.scss";
 import { useRef, useState } from "react";
-import { Checkbok, Dropdown, Slider } from "./Inputs";
+import Checkbox from "../components/Checkbox";
+import Slider from "../components/Slider";
+import Dropdown from "../components/Dropdown";
+import BackButton from "../components/BackButton";
 
 type SettingsWindowProps =
 {
@@ -33,7 +35,7 @@ function SettingsWindow( { settingRefs } : SettingsWindowProps )
 
 	return (
 		<div className={styles.settingsWindow}>
-			<Checkbok ref={settingRefs.dummyBoolean} label="Dummy boolean" id="dummyBoolean" setting={settings.dummyBoolean} />
+			<Checkbox ref={settingRefs.dummyBoolean} label="Dummy boolean" id="dummyBoolean" setting={settings.dummyBoolean} />
 			<Slider ref={settingRefs.dummySlider} label="Dummy slider" id="dummySlider" min={0} max={100} setting={settings.dummySlider} />
 			<Dropdown ref={settingRefs.dummyDropdown} label="Dummy dropdown" id="dummyDropdown" options={[ { value: "default", label: "Default setting" }, { value: "alt", label: "Alternative setting" } ]} setting={settings.dummyDropdown} />
 		</div>
@@ -42,7 +44,6 @@ function SettingsWindow( { settingRefs } : SettingsWindowProps )
 
 function Buttons( { setResetKey, settingRefs } : ButtonsProps )
 {
-	const navigate = useNavigate();
 	const { setSettings } = useSettings();
 
 	function saveSettingsToDB(settings: Settings)
@@ -73,7 +74,7 @@ function Buttons( { setResetKey, settingRefs } : ButtonsProps )
 
 	return (
 		<div className="bottomButtons">
-			<button className="buttonV2 mobileBottom" onClick={ () => navigate(-1) }>Back</button>
+			<BackButton />
 			<button className="buttonV2 mobileTop" onClick={resetSettings}>Reset Defaults</button>
 			<button className="buttonV2" onClick={applySettings}>Apply</button>
 		</div>

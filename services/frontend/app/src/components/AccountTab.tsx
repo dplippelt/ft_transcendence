@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useAccount } from "../../contexts/AccountContext";
+import { useAccount } from "../contexts/AccountContext";
 import styles from "./AccountTab.module.scss"
 import EditWindow from "./EditWindow";
 
