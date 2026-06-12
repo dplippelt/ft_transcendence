@@ -196,6 +196,14 @@ button
 
 	@media (max-width: 480px)
 	{
+		flex-direction: column;
+		gap: 0.3rem;
+
+		.buttonV1
+		{
+			width: 100%;
+		}
+
 		.mobileBottom
 		{
 			order: 999;

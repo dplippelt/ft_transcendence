@@ -1,14 +1,9 @@
 @use '../mixins' as *;
-@use '../variables' as *;
 
 .accountInfo
 {
-	display: grid;
+	@include profileInfo;
 	grid-template-columns: max-content minmax(max-content, 1fr) 2fr;
-	column-gap: 1.5rem;
-	row-gap: 1rem;
-	font-size: 0.7rem;
-	align-items: center;
 }
 
 .textInfo
@@ -27,8 +22,18 @@
 	width: 35%;
 	min-width: fit-content;
 
+	@media (max-width: 960px)
+	{
+		width: 80%;
+	}
+
 	@media (max-width: 480px)
 	{
 		width: 100%;
+	}
+
+	@media (max-width: 420px)
+	{
+		width: fit-content;
 	}
 }

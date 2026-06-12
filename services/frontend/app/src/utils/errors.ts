@@ -5,7 +5,7 @@ export enum AccountError
 	usernameCannotBeEmpty,
 	passwordsDontMatch,
 	passwordCannotBeEmpty,
-	avatarCannotBeEmpty,
+	avatarBadFileType,
 }
 
 export function errorMsg( error: AccountError ): string
@@ -20,8 +20,8 @@ export function errorMsg( error: AccountError ): string
 			return "Passwords don't match!";
 		case AccountError.passwordCannotBeEmpty:
 			return "Password cannot be empty!";
-		case AccountError.avatarCannotBeEmpty:
-			return "Avatar cannot be empty!";
+		case AccountError.avatarBadFileType:
+			return "Avatar must be JPEG or PNG!";
 		default:
 			return "";
 	}

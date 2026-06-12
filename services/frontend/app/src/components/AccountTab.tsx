@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useAccount } from "../contexts/AccountContext";
 import styles from "./AccountTab.module.scss"
-import EditWindow from "./EditWindow";
+import Popup from "./Popup";
+import EditPopup from "./EditPopup";
 
 export enum EditWindowType
 {
@@ -75,9 +76,8 @@ export default function Account()
 				<Avatar setEditWindowType={setEditWindowType} />
 				<Username setEditWindowType={setEditWindowType} />
 				{ account.guest ? <div /> : <Password setEditWindowType={setEditWindowType} />}
-				{ editWindowType !== EditWindowType.none && <EditWindow editWindowType={editWindowType} setEditWindowType={setEditWindowType} /> }
+				{ editWindowType !== EditWindowType.none && <Popup> <EditPopup  editWindowType={editWindowType} setEditWindowType={setEditWindowType} /> </Popup> }
 			</div>
 		</>
-
 	);
 }

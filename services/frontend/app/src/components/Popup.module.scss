@@ -1,5 +1,4 @@
 @use '../mixins' as *;
-@use '../variables' as *;
 
 .backdrop
 {
@@ -11,7 +10,7 @@
 	background-color: rgba(0, 0, 0, 0.7);
 }
 
-.editWindow
+.popup
 {
 	@include window;
 	display: grid;
@@ -25,26 +24,5 @@
 	{
 		margin-top: 30vh;
 		max-width: min(400px, 80%);
-	}
-}
-
-.avatars
-{
-	display: flex;
-	flex-wrap: wrap;
-	margin: 0.5rem;
-	justify-content: center;
-	column-gap: 1.75rem;
-	row-gap: 0.75rem;
-
-	:global(.avatar)
-	{
-		cursor: pointer;
-		transition: border-color 0.2s ease;
-
-		&:hover
-		{
-			border-color: $golden-brown
-		}
 	}
 }

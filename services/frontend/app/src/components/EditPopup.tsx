@@ -1,31 +1,36 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useAccount } from "../contexts/AccountContext";
 import { errorMsg, AccountError } from "../utils/errors";
-import styles from "./EditWindow.module.scss";
+import styles from "./EditPopup.module.scss";
 import { EditWindowType } from "./AccountTab";
 
-interface EditWindowProps
+interface EditPopup
 {
 	editWindowType: EditWindowType,
 	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>,
-}
-
-interface EditWindowContent
-{
-	editWindowType: EditWindowType,
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>,
-	setError: React.Dispatch<React.SetStateAction<AccountError>>,
 }
 
 interface EditContentProp
 {
 	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>,
-	setError: React.Dispatch<React.SetStateAction<AccountError>>,
 }
 
-function EditAvatarContent( { setEditWindowType, setError } : EditContentProp )
+function EditAvatarContent( { setEditWindowType } : EditContentProp )
 {
+	const [error, setError] = useState<AccountError>(AccountError.none);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 	const { setAccount } = useAccount();
+
+	function handleUpload(e: React.ChangeEvent<HTMLInputElement>)
+	{
+		const file = e.target.files?.[0];
+		if ( !file )
+			return;
+		if ( file.type !== "image/png" && file.type !== "image/jpeg" )
+			return setError(AccountError.avatarBadFileType);
+		const uploadedAvatar = URL.createObjectURL(file); // upload to database later and fetch from there.
+		avatarCheck(uploadedAvatar);
+	}
 
 	function avatarCheck(newAvatar: string)
 	{
@@ -33,30 +38,35 @@ function EditAvatarContent( { setEditWindowType, setError } : EditContentProp )
 		setEditWindowType(EditWindowType.none);
 	}
 
+	// start temp list of example avatars
 	const avatars =
 	[
 		"/src/assets/guest_avatar_test.jpg",
 		"/src/assets/mesca_avatar_test.png",
 	]
+	// end temp list of example avatars
 
-	// change to list available default avatar as images to pick from.
 	return (
 		<>
-			<div className="text">Edit avatar:</div>
+			{ error !== AccountError.none && <div className="incorrectCreds">{ errorMsg(error) }</div> }
+			<div className="text" style={{ textAlign: "center" }}>Pick an avatar</div>
 			<div className={styles.avatars}>
 				{ avatars.map((avatar, idx) => (
 					<img key={idx} className="avatar" src={avatar} onClick={ () => avatarCheck(avatar) } />
 				))}
 			</div>
 			<div className="popupButtons">
-				<button className="buttonV1" onClick={ () => setEditWindowType(EditWindowType.none) }>Back</button>
+				<button className="buttonV1 mobileBottom" onClick={ () => setEditWindowType(EditWindowType.none) }>Back</button>
+				<button className="buttonV1" onClick={ () => fileInputRef.current?.click() }>Upload</button>
+				<input type="file" ref={fileInputRef} style={{ display: "none" }} onChange={ handleUpload } />
 			</div>
 		</>
 	)
 }
 
-function EditUsernameContent( { setEditWindowType, setError } : EditContentProp )
+function EditUsernameContent( { setEditWindowType } : EditContentProp )
 {
+	const [error, setError] = useState<AccountError>(AccountError.none);
 	const [username, setUsername] = useState<string>("");
 	const { setAccount } = useAccount();
 
@@ -74,6 +84,7 @@ function EditUsernameContent( { setEditWindowType, setError } : EditContentProp 
 
 	return (
 		<>
+			{ error !== AccountError.none && <div className="incorrectCreds">{ errorMsg(error) }</div> }
 			<div className="text">Edit username:</div>
 			<input className="textInput" autoComplete="off" type="text" placeholder="Enter new username" onChange={ (e) => setUsername(e.target.value) }/>
 			<div className="popupButtons">
@@ -84,8 +95,9 @@ function EditUsernameContent( { setEditWindowType, setError } : EditContentProp 
 	)
 }
 
-function EditPasswordContent( { setEditWindowType, setError } : EditContentProp )
+function EditPasswordContent( { setEditWindowType } : EditContentProp )
 {
+	const [error, setError] = useState<AccountError>(AccountError.none);
 	const [password, setPassword] = useState<string>("");
 	const [confirmPassword, setConfirmPassword] = useState<string>("");
 	const { setAccount } = useAccount();
@@ -104,6 +116,7 @@ function EditPasswordContent( { setEditWindowType, setError } : EditContentProp 
 
 	return (
 		<>
+			{ error !== AccountError.none && <div className="incorrectCreds">{ errorMsg(error) }</div> }
 			<div className="text">Edit password:</div>
 			<input className="textInput" autoComplete="off" type="password" placeholder="Enter new password" onChange={ (e) => setPassword(e.target.value) }/>
 			<div className="text">Repeat password:</div>
@@ -116,31 +129,17 @@ function EditPasswordContent( { setEditWindowType, setError } : EditContentProp 
 	)
 }
 
-function EditWindowContent( { editWindowType, setEditWindowType, setError } : EditWindowContent )
+export default function EditPopup( { editWindowType, setEditWindowType } : EditPopup )
 {
 	switch (editWindowType)
 	{
 		case EditWindowType.username:
-			return <EditUsernameContent setEditWindowType={setEditWindowType} setError={setError} />
+			return <EditUsernameContent setEditWindowType={setEditWindowType} />
 		case EditWindowType.password:
-			return <EditPasswordContent setEditWindowType={setEditWindowType} setError={setError} />
+			return <EditPasswordContent setEditWindowType={setEditWindowType} />
 		case EditWindowType.avatar:
-			return <EditAvatarContent setEditWindowType={setEditWindowType} setError={setError} />
+			return <EditAvatarContent setEditWindowType={setEditWindowType} />
 		default:
 			return;
 	}
-}
-
-export default function EditWindow( { editWindowType, setEditWindowType } : EditWindowProps )
-{
-	const [error, setError] = useState<AccountError>(AccountError.none);
-
-	return (
-		<div className={styles.backdrop}>
-			<div className={styles.editWindow}>
-				{ error !== AccountError.none && <div className="incorrectCreds">{ errorMsg(error) }</div> }
-				<EditWindowContent editWindowType={editWindowType} setEditWindowType={setEditWindowType} setError={setError} />
-			</div>
-		</div>
-	);
 }
