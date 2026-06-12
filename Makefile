@@ -1,4 +1,4 @@
-DCOMP =			./srcs/docker-compose.yml
+DCOMP =			./docker-compose.yml
 
 VOLUME_DIRS =	$(HOME)/ft_transcendence
 
