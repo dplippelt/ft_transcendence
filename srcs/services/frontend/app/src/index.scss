@@ -182,23 +182,44 @@ button
 	}
 }
 
+.popupButtons
+{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	width: 100%;
+	max-width: min(900px, 90%);
+	justify-content: center;
+	margin: 0 auto;
+	// margin-top: 0.75rem;
+	gap: clamp(1rem, 5vw, 5rem);
+
+	@media (max-width: 480px)
+	{
+		.mobileBottom
+		{
+			order: 999;
+		}
+
+		.mobileTop
+		{
+			order: -999;
+		}
+
+		.buttonV2
+		{
+			flex: 1;
+		}
+	}
+}
+
 .buttonV1
 {
-	width: fit-content;
+	@include buttonV1;
 	min-width: 110px;
 	max-width: 90%;
 	margin: 0 auto;
 	margin-bottom: 0.3rem;
-	font-size: 0.8rem;
-	padding: 0.2rem 1rem;
-	padding-bottom: 0.1rem;
-	background-color: $button-v1-bg-color !important;
-
-	&:hover
-	{
-		background-color: $button-v1-hover-bg-color !important;
-		color: $button-v1-hover-color !important;
-	}
 }
 
 .buttonV2
@@ -319,6 +340,29 @@ button
 	{
 		border-color: $input-focus-border-color;
 	}
+}
+
+
+
+/* Profile page styling */
+
+.profileLabel
+{
+	color: $profile-label-color;
+}
+
+.avatar
+{
+	width: 64px;
+	height: 64px;
+	overflow: hidden;
+	object-fit: cover;
+	border: $window-border;
+	border-radius: 64px;
+	border-color: $profile-avatar-border-color;
+	border-width: 3px;
+	margin-bottom: 0.5rem;
+	// justify-self: center;
 }
 
 

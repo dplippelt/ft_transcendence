@@ -2,11 +2,33 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAccount } from "../../contexts/AccountContext";
 
-enum SignupError
+export enum AccountError
 {
 	none,
 	usernameAlreadyTaken,
-	passwordsDontMatch
+	usernameCannotBeEmpty,
+	passwordsDontMatch,
+	passwordCannotBeEmpty,
+	avatarCannotBeEmpty,
+}
+
+export function errorMsg( error: AccountError ): string
+{
+	switch (error)
+	{
+		case AccountError.usernameAlreadyTaken:
+			return "Username already taken!";
+		case AccountError.usernameCannotBeEmpty:
+			return "Username cannot be empty!";
+		case AccountError.passwordsDontMatch:
+			return "Passwords don't match!";
+		case AccountError.passwordCannotBeEmpty:
+			return "Password cannot be empty!";
+		case AccountError.avatarCannotBeEmpty:
+			return "Avatar cannot be empty!";
+		default:
+			return "";
+	}
 }
 
 function PageTitle()
@@ -19,7 +41,7 @@ function SignupQuery()
 	const [username, setUsername] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
 	const [confirmPassword, setConfirmPassword] = useState<string>("");
-	const [error, setError] = useState<SignupError>(SignupError.none);
+	const [error, setError] = useState<AccountError>(AccountError.none);
 	const navigate = useNavigate();
 	const { setAccount } = useAccount();
 
@@ -31,30 +53,17 @@ function SignupQuery()
 
 		// Mock signup check
 		if ( username.length === 1 )
-			return setError(SignupError.usernameAlreadyTaken);
+			return setError(AccountError.usernameAlreadyTaken);
 		if ( password !== confirmPassword )
-			return setError(SignupError.passwordsDontMatch);
+			return setError(AccountError.passwordsDontMatch);
 
 		setAccount(prev => ({ ...prev, guest: false, username: username, password: password }));
 		navigate("/main-menu");
 	}
 
-	function errorMsg(): string
-	{
-		switch (error)
-		{
-			case SignupError.usernameAlreadyTaken:
-				return "Username already taken!";
-			case SignupError.passwordsDontMatch:
-				return "Passwords don't match!";
-			default:
-				return "";
-		}
-	}
-
 	return (
 		<div className="loginSignupQuery">
-			{ error !== SignupError.none && <div className="incorrectCreds">{ errorMsg() }</div> }
+			{ error !== AccountError.none && <div className="incorrectCreds">{ errorMsg(error) }</div> }
 			<div className="text">Username:</div>
 			<input className="textInput" autoComplete="off" type="text" placeholder="Enter new username" onChange={ (e) => setUsername(e.target.value) }/>
 			<div className="text">Password:</div>

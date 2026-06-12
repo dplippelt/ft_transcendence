@@ -1,0 +1,50 @@
+@use '../../mixins' as *;
+@use '../../variables' as *;
+
+.backdrop
+{
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100vh;
+	background-color: rgba(0, 0, 0, 0.7);
+}
+
+.editWindow
+{
+	@include window;
+	display: grid;
+	max-width: min(400px, 90%);
+	margin-top: 40vh;
+	gap: 0.2rem;
+	text-align: left;
+	align-content: center;
+
+	@media (max-width: 480px)
+	{
+		margin-top: 30vh;
+		max-width: min(400px, 80%);
+	}
+}
+
+.avatars
+{
+	display: flex;
+	flex-wrap: wrap;
+	margin: 0.5rem;
+	justify-content: center;
+	column-gap: 1.75rem;
+	row-gap: 0.75rem;
+
+	:global(.avatar)
+	{
+		cursor: pointer;
+		transition: border-color 0.2s ease;
+
+		&:hover
+		{
+			border-color: $golden-brown
+		}
+	}
+}

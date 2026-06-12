@@ -1,12 +1,19 @@
 import { useNavigate } from "react-router-dom";
-import { useAccount } from "../../contexts/AccountContext";
 import styles from "./Profile.module.scss";
+import { useState } from "react";
+import AccountTab from "./AccountTab";
+import StatsTab from "./StatsTab";
 
-interface AccountElementProps
+enum Tab
 {
-	label: string,
-	value: string,
-	edit: boolean,
+	account,
+	stats,
+}
+
+interface ProfileTabsProps
+{
+	tab: Tab,
+	setTab: React.Dispatch<React.SetStateAction<Tab>>,
 }
 
 function PageTitle()
@@ -14,48 +21,24 @@ function PageTitle()
 	return <div className="menuTitle">Profile</div>
 }
 
-function AccountAvatar( { label, value, edit } : AccountElementProps )
+function ProfileTabs( { tab, setTab } : ProfileTabsProps )
 {
 	return (
-		<>
-			<div className={styles.label}>{`${label}:`}</div>
-			<img className={styles.avatar} src={value} />
-			{ edit ? <div className={styles.edit}>edit</div> : <div></div> }
-		</>
-	);
-}
-
-function AccountInfo( { label, value, edit } : AccountElementProps )
-{
-	return (
-		<>
-			<div className={styles.label}>{`${label}:`}</div>
-			<div>{value}</div>
-			{ edit ? <div className={styles.edit}>edit</div> : <div></div> }
-		</>
-	);
-}
-
-function Account()
-{
-	const { account } = useAccount();
-
-	return (
-		<>
-			<div className={styles.account}>ACCOUNT</div>
-			<div className={styles.accountInfo}>
-				<AccountAvatar label="Avatar" value={account.avatar} edit={ account.guest ? false : true }/>
-				<AccountInfo label="Username" value={account.username} edit={ account.guest ? false : true }/>
-			</div>
-		</>
+		<div className={styles.tabs}>
+			<div className={styles.tab} style={ tab !== Tab.account ? { borderBottom: "none" } : {} } onClick={ () => setTab(Tab.account) }>ACCOUNT</div>
+			<div className={styles.tab} style={ tab !== Tab.stats ? { borderBottom: "none" } : {} } onClick={ () => setTab(Tab.stats) }>STATS</div>
+		</div>
 	);
 }
 
 function ProfileWindow()
 {
+	const [tab, setTab] = useState<Tab>(Tab.account);
+
 	return (
 		<div className={styles.profileWindow}>
-			<Account />
+			<ProfileTabs tab={tab} setTab={setTab} />
+			{ tab === Tab.account ? <AccountTab /> : <StatsTab />}
 		</div>
 	);
 }

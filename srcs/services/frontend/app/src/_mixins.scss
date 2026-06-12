@@ -20,3 +20,27 @@
 	margin: 0 auto;
 	margin-bottom: -1rem;
 }
+
+@mixin buttonV1
+{
+	width: fit-content;
+	font-size: 0.8rem;
+	padding: 0.2rem 1rem;
+	padding-bottom: 0.1rem;
+	background-color: $button-v1-bg-color !important;
+
+	&:hover
+	{
+		background-color: $button-v1-hover-bg-color !important;
+		color: $button-v1-hover-color !important;
+	}
+}
+
+@mixin profileInfo
+{
+	display: grid;
+	column-gap: 1.5rem;
+	row-gap: 1rem;
+	font-size: 0.7rem;
+	align-items: center;
+}

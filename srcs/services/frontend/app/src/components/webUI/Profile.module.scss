@@ -17,50 +17,30 @@
 	{
 		row-gap: 1.25rem;
 	}
+
+	@media (max-width: 400px)
+	{
+		padding: 1rem;
+	}
 }
 
-.account
+.tabs
+{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	column-gap: 2rem;
+	margin-bottom: 0.75rem;
+}
+
+.tab
 {
 	width: fit-content;
 	font-size: 0.8rem;
 	border-bottom: 1px solid $primary-text-color;
-}
-
-.accountInfo
-{
-	display: grid;
-	grid-template-columns: max-content minmax(max-content, 1fr) 2fr;
-	column-gap: 1.5rem;
-	row-gap: 0.5rem;
-	font-size: 0.7rem;
-	align-items: center;
-}
-
-.label
-{
-	color: $profile-label-color;
-}
-
-.avatar
-{
-	width: 64px;
-	height: 64px;
-	overflow: hidden;
-	object-fit: cover;
-	border: $window-border;
-	border-radius: 64px;
-	border-color: $profile-avatar-border-color;
-	border-width: 3px;
-	margin-bottom: 0.5rem;
-}
-
-.edit
-{
-	width: fit-content;
-	font-variant: small-caps;
-	text-decoration-line: underline;
-	color: $profile-edit-color;
-	font-size: 0.6rem;
-	align-self: center;
 	cursor: pointer;
 }
+
+
+
+
