@@ -1,22 +1,10 @@
-# **************************************************************************** #
-#                                                                              #
-#                                                         :::      ::::::::    #
-#    Makefile                                           :+:      :+:    :+:    #
-#                                                     +:+ +:+         +:+      #
-#    By: dlippelt <dlippelt@student.codam.nl>       +#+  +:+       +#+         #
-#                                                 +#+#+#+#+#+   +#+            #
-#    Created: 2026/05/18 10:09:39 by dlippelt          #+#    #+#              #
-#    Updated: 2026/05/25 08:36:51 by dlippelt         ###   ########.fr        #
-#                                                                              #
-# **************************************************************************** #
-
-DCOMP =			./srcs/docker-compose.yml
+DCOMP =			./docker-compose.yml
 
 VOLUME_DIRS =	$(HOME)/ft_transcendence
 
 # use setup only on a freshly cloned repo
 setup:
-	cd srcs/requirements/frontend/app && npm install
+	cd services/frontend/app && npm install
 	$(MAKE) build
 
 build:
@@ -50,7 +38,8 @@ clean:
 fclean: clean
 	docker volume rm transc_frontend_data 2>/dev/null || true
 	sudo rm -rf $(VOLUME_DIRS)
+	sudo rm -rf services/frontend/app/node_modules
 
-fre: fclean re
+fre: fclean setup up
 
 .PHONY: setup build up down start stop restart re clean fclean fre

@@ -1,7 +1,7 @@
 services:
   frontend:
     build:
-      context: ./requirements/frontend
+      context: ./services/frontend
       dockerfile: Dockerfile
     container_name: ${CONTAINER_FE}
     image: ${CONTAINER_FE}
