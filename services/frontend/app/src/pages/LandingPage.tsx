@@ -1,17 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import styles from "./LandingPage.module.scss"
-import type { Controls } from "../../App";
+import type { Controls } from "../App";
+import { AppTitle } from "../components/PageTitle";
+import { MenuButtons } from "../components/ButtonContainers";
+import Background from "../components/Background";
+import Page from "../components/Page";
 
 type LandingPageProps =
 {
 	controls: Controls,
-}
-
-function AppTitle()
-{
-	return (
-		<div className="appTitle">Math Crawler</div>
-	);
 }
 
 function GameDescription()
@@ -26,14 +23,12 @@ function Buttons( { controls } : LandingPageProps )
 	const navigate = useNavigate();
 
 	return (
-		<div className="menuButtons">
-			<button onClick={ () => navigate("/login") }>Login</button>
-			<button onClick={ () => navigate("/signup") }>Sign-up</button>
-			<button>How to play</button>
+		<MenuButtons>
+			<button onClick={ () => navigate("/auth?mode=login") }>Login</button>
 			<button onClick={ () => { controls.guestLogin(); navigate("/main-menu"); } }>Continue as guest</button>
-      <button onClick={ () => navigate("/game-dev") }>Game dev</button>
-			<button onClick={ () => navigate("/card-tester") }>Card tester</button>
-		</div>
+			<button>How to play</button>
+			<button onClick={ () => navigate("/game-dev") }>Game dev</button>
+		</MenuButtons>
 	)
 }
 
@@ -41,12 +36,12 @@ export default function LandingPage( { controls } : LandingPageProps )
 {
 	return (
 		<>
-			<div className="background"/>
-			<div className={styles.landingPage}>
+			<Background/>
+			<Page>
 				<AppTitle/>
 				<GameDescription/>
 				<Buttons controls={controls}/>
-			</div>
+			</Page>
 		</>
 
 	)

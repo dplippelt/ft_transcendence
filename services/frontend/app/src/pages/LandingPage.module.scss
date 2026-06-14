@@ -1,19 +1,4 @@
-@use '../../variables' as *;
-
-.landingPage
-{
-	width: 100%;
-	min-height: 100vh;
-	display: grid;
-	/* grid-template-rows: auto auto auto; */
-	gap: 1rem;
-	justify-content: center;
-	text-align: center;
-	align-content: center;
-	padding-top: 6vh;
-	padding-bottom: 10vh;
-	margin: 0 auto;
-}
+@use '../variables' as *;
 
 .gameDescription
 {

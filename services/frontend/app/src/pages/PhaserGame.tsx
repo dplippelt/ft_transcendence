@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
-import StartGame from "../../game/main";
-import { EventBus } from "../../game/EventBus";
+import StartGame from "../game/main";
+import { EventBus } from "../game/EventBus";
+import Background from "../components/Background";
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -56,7 +57,7 @@ export default function PhaserGame( { currentActiveScene, ref } : IProps )
 
     return (
       <>
-        <div className="background" />
+        <Background />
 		<div id="game-container" />
       </>
     );
