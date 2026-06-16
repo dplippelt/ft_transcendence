@@ -24,7 +24,7 @@ class CardStyle extends Phaser.GameObjects.Rectangle {
 class CardContent extends Phaser.GameObjects.Text {
 
     readonly textColor!: Phaser.Display.Color;
-    readonly textConfig!: Object;
+    readonly textConfig!: Phaser.Types.GameObjects.Text.TextStyle;
 
     constructor(scene: Scene, x: number, y: number, content: string) {
 
