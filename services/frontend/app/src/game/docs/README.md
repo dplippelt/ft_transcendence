@@ -2,7 +2,7 @@
 
 ### Layout
 
-- The combat scene layout is similar to [Slay the Spire](image.png).
+- The combat scene layout is similar to [Slay the Spire](combatimage.png).
 
 **Objects**
 - Card Hand

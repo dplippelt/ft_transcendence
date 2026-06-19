@@ -1,10 +1,10 @@
 import Phaser from "phaser";
-import { EventBus } from "../../EventBus";
-import CardHand from "./CardHand";
-import NumberCard from "./NumberCard";
-import OperatorCard, { Operator } from "./OperatorCard";
+import { EventBus } from "../EventBus";
+import CardHand from "../gameobjects/cards/CardHand";
+import NumberCard from "../gameobjects/cards/NumberCard";
+import OperatorCard, { Operator } from "../gameobjects/cards/OperatorCard";
 
-export default class Combat extends Phaser.Scene {
+export default class CombatScene extends Phaser.Scene {
 	private cardHand!: CardHand;
 
 	constructor() {
