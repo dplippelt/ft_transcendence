@@ -1,0 +1,16 @@
+.buttons
+{
+	margin-top: 1rem;
+	margin-right: 0.5rem;
+	padding: 0.2rem 0.5rem;
+	background-color: #edcc9a;
+	color: #3b362f;
+	border-style: solid;
+	border-color: #6e614d;
+}
+
+.buttons:hover
+{
+	background-color: #cfae7d;
+	color: #3b362f;
+}

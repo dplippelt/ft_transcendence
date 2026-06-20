@@ -1,5 +1,21 @@
+
 services:
-  backend:
+  frontend:
+    build:
+      context: ./services/frontend
+      dockerfile: Dockerfile
+    container_name: ${CONTAINER_FE}
+    image: ${CONTAINER_FE}
+    restart: unless-stopped
+    ports:
+      - "${FE_PORT}:${FE_PORT}"
+    environment:
+      - FE_PORT=${FE_PORT}
+    volumes:
+      - ${VOLUME_FE_HOST}:${VOLUME_FE_CONTAINER}
+      - ${VOLUME_FE_CONTAINER}/node_modules
+
+   backend:
     build: ./backend
     ports:
       - "8000:8000"
@@ -20,6 +36,6 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
+      
 volumes:
   postgres_data:
