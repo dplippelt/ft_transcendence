@@ -1,26 +1,41 @@
 import Phaser, { Scene } from "phaser";
 
+export interface CardContentConfig {
+    textColorRed: number;
+    textColorGreen: number;
+    textColorBlue: number;
+    textStyle: Phaser.Types.GameObjects.Text.TextStyle;
+}
+
+export const cardContentConfig: CardContentConfig = {
+    textColorRed: 200,
+    textColorGreen: 230,
+    textColorBlue: 20,
+    textStyle: {
+        fontFamily: 'Arial Black',
+        fontSize: '50px',
+        align: 'center',
+    }
+}
 
 export default class CardContent extends Phaser.GameObjects.Text {
 
     readonly textColor!: Phaser.Display.Color;
-    readonly textConfig!: Phaser.Types.GameObjects.Text.TextStyle;
+    readonly textStyle!: Phaser.Types.GameObjects.Text.TextStyle;
 
-    constructor(scene: Scene, x: number, y: number, content: string) {
+    constructor(scene: Scene, x: number, y: number, content: string, config: CardContentConfig) {
 
-        const textColor = new Phaser.Display.Color(200, 230, 20);
+        const textColor = new Phaser.Display.Color(
+            config.textColorRed, config.textColorGreen, config.textColorBlue
+        );
 
-        const textConfig = {
-            fontFamily: 'Arial Black',
-            fontSize: '50px',
-            color: textColor.rgba,
-            align: 'center',
-        }
+        if (!config.textStyle.color)
+            config.textStyle.color = textColor.rgba;
 
-        super(scene, x, y, content, textConfig);
+        super(scene, x, y, content, config.textStyle);
 
         this.textColor = textColor;
-        this.textConfig = textConfig;
+        this.textStyle = config.textStyle;
 
     };
 }
