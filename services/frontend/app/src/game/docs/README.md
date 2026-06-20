@@ -25,6 +25,7 @@
 		1. Create card objects
 		2. Initialize the card hand with card objects.
 		3. Handle card selection with mouse input
+            - [Reference example](https://labs.phaser.io/phaser4-index.html?path=input%2Fmouse)
 		4. Align the card objects like hand card
 		5. Add a new card object (drawing from deck)
 
