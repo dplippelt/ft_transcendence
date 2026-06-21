@@ -1,13 +1,17 @@
 from sqlalchemy import Boolean, DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
-from db.database import Base
+from app.db.database import Base
 
 
 class User(Base):
     __tablename__ = "users"
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(
+        Integer,
+        primary_key=True,
+        index=True,
+    )
 
     username: Mapped[str] = mapped_column(
         String(50),
@@ -33,14 +37,15 @@ class User(Base):
         default=False,
         nullable=False,
     )
-    
+
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
-        nullable=False
-	),
+        nullable=False,
+    )
 
     created_at: Mapped[DateTime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
+        nullable=False,
     )
