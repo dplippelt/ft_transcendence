@@ -14,6 +14,12 @@ const cardBaseConfig: CardBaseConfig = {
     focusDiff: 30,
 }
 
+export enum CardEvents {
+    FOCUSON = "focusOn",
+    FOCUSOFF = "focusOff",
+    SELECTION = "selection",
+};
+
 export default class CardBase extends Phaser.GameObjects.Container {
 
     readonly cardBaseConfig!: CardBaseConfig;
@@ -21,7 +27,6 @@ export default class CardBase extends Phaser.GameObjects.Container {
     readonly style!: CardStyle;
     private isFocused!: boolean;
     private isSelected!: boolean;
-    private focusDiff!: number;
 
     constructor(scene: Scene, text: string) {
 
@@ -44,13 +49,29 @@ export default class CardBase extends Phaser.GameObjects.Container {
 
         this.isFocused = false;
         this.isSelected = false;
-        this.focusDiff = this.cardBaseConfig.focusDiff;
 
-        this.setInteractive()
-        .on("pointerover", this.focusOn, this)
-        .on("pointerout", this.focusOff, this)
-        .on("pointerdown", this.setIsSelect, this);
+        this.setInteractive();
 
+        this.on("pointerover", this.focusOn, this);
+        this.on("pointerout", this.focusOff, this);
+        this.on("pointerdown", this.selected, this);
+
+    }
+
+    getIsSelected() {
+        return this.isSelected;
+    }
+
+    setIsSelected(value: boolean) {
+        this.isSelected = value;
+    }
+
+    getIsFocused() {
+        return this.isFocused;
+    }
+
+    setIsFocused(value: boolean) {
+        this.isFocused = value;
     }
 
     focusOn() {
@@ -60,12 +81,8 @@ export default class CardBase extends Phaser.GameObjects.Container {
 
         this.isFocused = true;
 
-        if (this.input?.hitArea instanceof Phaser.Geom.Rectangle) {
-            
-            this.input.hitArea.height += this.focusDiff;
-            this.setY(this.y - this.focusDiff);
+        this.emit(CardEvents.FOCUSON, this);
 
-        }
     }
 
     focusOff() {
@@ -75,23 +92,12 @@ export default class CardBase extends Phaser.GameObjects.Container {
 
         this.isFocused = false;
 
-        if (this.input?.hitArea instanceof Phaser.Geom.Rectangle) {
+        this.emit(CardEvents.FOCUSOFF, this);
 
-            this.input.hitArea.height -= this.focusDiff;
-            this.setY(this.y + this.focusDiff);
-
-        }
     }
 
-    setIsSelect() {
-
-        if (!this.isSelected)
-            this.isSelected = true;
-        else
-            this.isSelected = false;
-
-        console.log(this.isSelected);
-
+    selected() {
+        this.emit(CardEvents.SELECTION, this);
     }
 
 }
