@@ -35,9 +35,9 @@ export default class CombatScene extends Phaser.Scene {
 		// const player = new PlayerCombat(this, 100, 100);
 		// const enemy = new EnemyCombat(this, 900, 100);
 
-        this.input.once('pointerdown', () => {
-            this.scene.stop().wake('game');
-        })
+        // this.input.once('pointerdown', () => {
+        //     this.scene.stop().wake('game');
+        // })
 	}
 
 	update() {
@@ -56,7 +56,7 @@ export default class CombatScene extends Phaser.Scene {
         this.cardHand.addCard(new OperatorCard(this, Operator.Multiply));
 
         this.cardHand.suffle();
-        this.cardHand.align();
+        // this.cardHand.align();
 
     }
 
