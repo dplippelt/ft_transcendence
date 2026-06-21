@@ -1,4 +1,3 @@
-
 services:
   frontend:
     build:
@@ -15,12 +14,12 @@ services:
       - ${VOLUME_FE_HOST}:${VOLUME_FE_CONTAINER}
       - ${VOLUME_FE_CONTAINER}/node_modules
 
-   backend:
-    build: ./backend
+  backend:
+    build: ./services/backend
     ports:
       - "8000:8000"
     volumes:
-      - ./backend/app:/app/app
+      - ./services/backend/app:/app/app
     depends_on:
       - db
     environment:
