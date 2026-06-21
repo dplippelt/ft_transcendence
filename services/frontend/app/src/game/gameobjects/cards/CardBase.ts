@@ -75,25 +75,17 @@ export default class CardBase extends Phaser.GameObjects.Container {
     }
 
     focusOn() {
-
         if (this.isFocused)
             return ;
 
-        this.isFocused = true;
-
         this.emit(CardEvents.FOCUSON, this);
-
     }
 
     focusOff() {
-
         if (!this.isFocused)
             return ;
 
-        this.isFocused = false;
-
         this.emit(CardEvents.FOCUSOFF, this);
-
     }
 
     selected() {

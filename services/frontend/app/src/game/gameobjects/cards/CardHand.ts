@@ -129,6 +129,11 @@ export default class CardHand {
 
     focusOn(card: CardBase) {
 
+        if (card.getIsSelected())
+            return ;
+
+        card.setIsFocused(true);
+
         const focus = this.cardHandConfig.focus;
         if (card.input?.hitArea instanceof Geom.Rectangle) {
             card.input.hitArea.right += focus.diffX;
@@ -138,6 +143,8 @@ export default class CardHand {
     }
 
     focusOff(card: CardBase) {
+
+        card.setIsFocused(false);
 
         const focus = this.cardHandConfig.focus;
         if (card.input?.hitArea instanceof Geom.Rectangle) {
@@ -149,13 +156,13 @@ export default class CardHand {
 
     select(card: CardBase) {
 
-        const isAlreadySelected = card.getIsSelected();
+        if (card.getIsFocused()) {
+            this.focusOff(card);
+        }
 
-        if (isAlreadySelected) {
-            
+        if (card.getIsSelected()) {
             card.setIsSelected(false);
             return ;
-
         }
 
         const limits = this.cardHandConfig.selectionLimit;
