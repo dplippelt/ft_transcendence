@@ -21,7 +21,7 @@ export const cardStyleConfig: CardStyleConfig = {
     strokeColorRed: 30,
     strokeColorGreen: 40,
     strokeColorBlue: 40,
-    strokeWidth: 10,
+    strokeWidth: 1,
 };
 
 export default class CardStyle extends Phaser.GameObjects.Rectangle {
