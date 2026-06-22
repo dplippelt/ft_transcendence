@@ -17,7 +17,7 @@ export default class CardHand {
 
     };
 
-    suffle() {
+    shuffle() {
 
 		this.cards.shuffle();
 
