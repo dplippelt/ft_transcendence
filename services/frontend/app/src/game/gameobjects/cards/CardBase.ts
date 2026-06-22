@@ -38,9 +38,12 @@ export default class CardBase extends Phaser.GameObjects.Container {
             scene, 0, 0, text, this.cardBaseConfig.cardContentConfig
         );
         const {x, y} = this.content.getCenter();
+        this.content.setOrigin(
+            x / this.content.width, y / this.content.height
+        );
 
         this.style = new CardStyle(
-            scene, x, y, this.cardBaseConfig.cardStyleConfig
+            scene, 0, 0, this.cardBaseConfig.cardStyleConfig
         );
 
         this.add([ this.style, this.content ]);
