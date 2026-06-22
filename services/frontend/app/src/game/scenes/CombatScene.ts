@@ -55,7 +55,7 @@ export default class CombatScene extends Phaser.Scene {
         this.cardHand.addCard(new OperatorCard(this, Operator.Minus));
         this.cardHand.addCard(new OperatorCard(this, Operator.Multiply));
 
-        this.cardHand.suffle();
+        this.cardHand.shuffle();
         // this.cardHand.align();
 
     }
