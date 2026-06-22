@@ -1,7 +1,6 @@
-import { Scenes, Scene, Actions, GameObjects, Geom, Game } from "phaser";
+import { Scenes, Scene, Actions, GameObjects, Geom } from "phaser";
 import CardBase, { CardEvents } from "./CardBase";
-import NumberCard from "./NumberCard";
-import OperatorCard from "./OperatorCard";
+import CardSelection from "./CardSelection";
 
 interface CardHandConfig {
     firstCardCenterX: number;
@@ -10,14 +9,6 @@ interface CardHandConfig {
     handStartY: number;
     handEndX: number;
     handEndY: number;
-    selectionCardStartX: number,
-    selectionCardStartY: number,
-    selectionCardEndX: number,
-    selectionCardEndY: number,
-    selectionLimit: {
-        number: number,
-        operator: number,
-    }
     focus: {
         diffX: number,
         diffY: number,
@@ -31,14 +22,6 @@ const cardHandConfig: CardHandConfig = {
     handStartY: 400,
     handEndX: 800,
     handEndY: 400,
-    selectionCardStartX: 800,
-    selectionCardStartY: 100,
-    selectionCardEndX: 900,
-    selectionCardEndY: 100,
-    selectionLimit: {
-        number: 2,
-        operator: 1,
-    },
     focus: {
         diffX: 0,
         diffY: 30,
@@ -50,11 +33,13 @@ export default class CardHand {
     private readonly cardHandConfig!: CardHandConfig;
     private readonly cards!: GameObjects.Container;
     private handLine!: Geom.Line;
-    private selectionLine!: Geom.Line;
+    private readonly cardSelection!: CardSelection;
 
     constructor(scene: Scene) {
 
         this.cardHandConfig = cardHandConfig;
+
+        this.cardSelection = new CardSelection(scene, 2);
 
         this.cards = scene.add.container(
             this.cardHandConfig.firstCardCenterX, 
@@ -76,16 +61,10 @@ export default class CardHand {
             this.cardHandConfig.handEndY,
         );
 
-        this.selectionLine = new Geom.Line(
-            this.cardHandConfig.selectionCardStartX,
-            this.cardHandConfig.selectionCardStartY,
-            this.cardHandConfig.selectionCardEndX,
-            this.cardHandConfig.selectionCardEndY,
-        )
-
     };
 
     update() {
+        this.cardSelection.align();
         this.align();
     }
 
@@ -100,7 +79,7 @@ export default class CardHand {
 
     };
 
-    suffle() {
+    shuffle() {
 
 		this.cards.shuffle();
 
@@ -108,9 +87,7 @@ export default class CardHand {
 
     align() {
 
-        Actions.PlaceOnLine(this.cards.getAll('isSelected', false), this.handLine);
-
-        Actions.PlaceOnLine(this.cards.getAll('isSelected', true), this.selectionLine);
+        Actions.PlaceOnLine(this.cards.getAll("isSelected", false), this.handLine);
 
         const focusedCard = this.cards.getFirst("isFocused", true) as CardBase;
         if (focusedCard?.input?.hitArea instanceof Geom.Rectangle) {
@@ -161,46 +138,20 @@ export default class CardHand {
         }
 
         if (card.getIsSelected()) {
+
+            this.cardSelection.unsetCardFromSlot(card);
+
             card.setIsSelected(false);
             return ;
-        }
-
-        const limits = this.cardHandConfig.selectionLimit;
-        const isAlreadyFull = (children: CardBase[], limit: number): boolean => {
-
-            let count = 0;
-            for (let child of children) {
-                if (child.getIsSelected())
-                    ++count;
-            }
-
-            return count === limit;
 
         }
 
-        if (card instanceof NumberCard) {
+        if (this.cardSelection.setCardToSlot(card)) {
 
-            const numberCards = this.cards.getAll().filter(
-                (child): child is NumberCard => child instanceof NumberCard 
-            );
-
-            if (isAlreadyFull(numberCards, limits.number))
-                return ;
-
-        } else if (card instanceof OperatorCard) {
-
-            const operatorCards = this.cards.getAll().filter(
-                (child): child is OperatorCard => child instanceof OperatorCard
-            );
-
-            if (isAlreadyFull(operatorCards, limits.operator))
-                return ;
-
-        } else {
+            card.setIsSelected(true);
             return ;
-        }
 
-        card.setIsSelected(true);
+        }
 
     }
 }
