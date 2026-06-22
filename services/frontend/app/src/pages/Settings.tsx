@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { defaultSettings, useSettings, type Settings } from "../contexts/SettingsContext";
 import styles from "./Settings.module.scss";
 import { useRef, useState } from "react";
-import { Checkbok, Dropdown, Slider } from "../components/Inputs";
+import { Checkbox, Dropdown, Slider } from "../components/Inputs";
 import { MenuTitle } from "../components/PageTitle";
 import { BottomButtons } from "../components/ButtonContainers";
 import Background from "../components/Background";
@@ -32,7 +32,7 @@ function SettingsWindow( { settingRefs } : SettingsWindowProps )
 
 	return (
 		<div className={styles.settingsWindow}>
-			<Checkbok ref={settingRefs.dummyBoolean} label="Dummy boolean" id="dummyBoolean" setting={settings.dummyBoolean} />
+			<Checkbox ref={settingRefs.dummyBoolean} label="Dummy boolean" id="dummyBoolean" setting={settings.dummyBoolean} />
 			<Slider ref={settingRefs.dummySlider} label="Dummy slider" id="dummySlider" min={0} max={100} setting={settings.dummySlider} />
 			<Dropdown ref={settingRefs.dummyDropdown} label="Dummy dropdown" id="dummyDropdown" options={[ { value: "default", label: "Default setting" }, { value: "alt", label: "Alternative setting" } ]} setting={settings.dummyDropdown} />
 		</div>

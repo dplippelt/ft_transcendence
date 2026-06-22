@@ -29,7 +29,7 @@ type DropdownProps =
 	onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
-export function Checkbok( { ref, label, id, setting } : CheckboxProps )
+export function Checkbox( { ref, label, id, setting } : CheckboxProps )
 {
 	return (
 		<div className={styles.checkbox}>

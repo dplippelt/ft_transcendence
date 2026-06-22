@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { MenuTitle } from "../components/PageTitle";
@@ -134,6 +134,6 @@ export default function Auth()
 		case "signup":
 			return <Signup/>
 		default:
-			return;
+			return <Navigate to="/auth?mode=login" replace />;
 	}
 }
