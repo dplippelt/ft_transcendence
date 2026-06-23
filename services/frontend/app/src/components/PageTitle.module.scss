@@ -1,0 +1,29 @@
+@use '../variables' as *;
+
+@mixin pageTitle
+{
+	width: fit-content;
+	max-width: 100%;
+	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+	text-align: center;
+	background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, transparent 70%);
+	margin: 0 auto;
+	margin-bottom: -1rem;
+}
+
+.appTitle
+{
+	@include pageTitle;
+	font-size: 3rem;
+	padding: 1.5rem 2.5rem;
+	padding: 1.5rem 0rem;
+	font-family: $app-title-font;
+}
+
+.menuTitle
+{
+	@include pageTitle;
+	font-size: 2.5rem;
+	padding: 1.5rem 0.5rem;
+	font-family: $menu-title-font;
+}

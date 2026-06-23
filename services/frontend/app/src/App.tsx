@@ -3,12 +3,11 @@ import { useRef } from "react"
 import useAppControls from "./hooks/useAppControls"
 import useAppEffects from "./hooks/useAppEffects"
 import useAppState from "./hooks/useAppState"
-import CardTest from "./card_test/CardTest"
-import LandingPage from "./components/webUI/LandingPage"
-import Login from "./components/webUI/Login"
-import Signup from "./components/webUI/Signup"
-import MainMenu from "./components/webUI/MainMenu"
-import PhaserGame, { type IRefPhaserGame } from "./components/webUI/PhaserGame"
+import LandingPage from "./pages/LandingPage"
+import MainMenu from "./pages/MainMenu"
+import Settings from "./pages/Settings"
+import Auth from "./pages/Auth"
+import PhaserGame, { type IRefPhaserGame } from "./pages/PhaserGame"
 
 export type AppStates =
 {
@@ -66,10 +65,9 @@ export default function App()
 		<BrowserRouter>
 			<Routes>
 				<Route path="/" element={ <LandingPage controls={controls}/> } />
-				<Route path="/login" element={ <Login/> } />
-				<Route path="/signup" element={ <Signup/> } />
+				<Route path="/auth" element={ <Auth/> } />
 				<Route path="/main-menu" element={ <MainMenu/> } />
-				<Route path="/card-tester" element={ <CardTest /> } />
+				<Route path="/settings" element={ <Settings/> } />
 				<Route path="/game-dev" element={ <PhaserGame ref={ phaserRef } currentActiveScene={ currentScene } /> } />
 			</Routes>
 		</BrowserRouter>
