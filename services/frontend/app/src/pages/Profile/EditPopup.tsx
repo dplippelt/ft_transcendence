@@ -5,7 +5,7 @@ import styles from "./EditPopup.module.scss";
 import { EditWindowType } from "../../pages/Profile/AccountTab";
 import { PopupButtons } from "../../components/ButtonContainers";
 import ErrorText from "../../components/ErrorText";
-import { EditButton, MossButton } from "../../components/Buttons";
+import { MossButton } from "../../components/Buttons";
 
 interface EditPopup
 {

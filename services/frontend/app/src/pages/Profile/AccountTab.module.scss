@@ -4,6 +4,11 @@
 {
 	@include profileInfo;
 	grid-template-columns: max-content minmax(max-content, 1fr) 2fr;
+
+	@media (max-width: 370px)
+	{
+		grid-template-columns: max-content 50px 2fr;
+	}
 }
 
 .textInfo
@@ -11,5 +16,4 @@
 	margin-left: 0.2rem;
 	overflow: hidden;
 	text-overflow: ellipsis;
-	// text-align: center
 }
