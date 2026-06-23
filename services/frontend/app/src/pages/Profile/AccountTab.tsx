@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useAccount } from "../contexts/AccountContext";
-import styles from "./AccountTab.module.scss"
-import Popup from "./Popup";
+import { useAccount } from "../../contexts/AccountContext";
+import styles from "./AccountTab.module.scss";
+import sharedStyle from "./Tab.module.scss";
+import Popup from "../../components/Popup";
 import EditPopup from "./EditPopup";
 
 export enum EditWindowType
@@ -34,7 +35,7 @@ function Avatar( { setEditWindowType } : AccountInfoProp )
 
 	return (
 		<>
-			<div className="profileLabel">Avatar:</div>
+			<div className={sharedStyle.profileLabel}>Avatar:</div>
 			<img className="avatar" src={account.avatar} />
 			{ account.guest ? <div /> : <EditButton editType={EditWindowType.avatar} setEditWindowType={setEditWindowType} /> }
 		</>
@@ -47,7 +48,7 @@ function Username( { setEditWindowType } : AccountInfoProp )
 
 	return (
 		<>
-			<div className="profileLabel">Username:</div>
+			<div className={sharedStyle.profileLabel}>Username:</div>
 			<div className={styles.textInfo}>{account.username}</div>
 			{ account.guest ? <div /> : <EditButton editType={EditWindowType.username} setEditWindowType={setEditWindowType} /> }
 		</>
@@ -58,7 +59,7 @@ function Password( { setEditWindowType } : AccountInfoProp )
 {
 	return (
 		<>
-			<div className="profileLabel">Password:</div>
+			<div className={sharedStyle.profileLabel}>Password:</div>
 			<div />
 			<EditButton editType={EditWindowType.password} setEditWindowType={setEditWindowType} />
 		</>

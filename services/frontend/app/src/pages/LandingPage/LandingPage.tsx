@@ -1,9 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import styles from "./LandingPage.module.scss"
-import { AppTitle } from "../components/PageTitle";
-import { MenuButtons } from "../components/ButtonContainers";
-import Background from "../components/Background";
-import Page from "../components/Page";
+import { AppTitle } from "../../components/PageTitle";
+import { MenuButtons } from "../../components/ButtonContainers";
+import Background from "../../components/Background";
+import Page from "../../components/Page";
 
 function GameDescription()
 {

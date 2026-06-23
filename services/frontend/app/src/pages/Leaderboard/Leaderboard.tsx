@@ -1,12 +1,12 @@
 import styles from "./Leaderboard.module.scss";
 import { useState } from "react";
-import Dropdown from "../components/Dropdown";
-import useIsMobile from "../hooks/useIsMobile";
-import BackButton from "../components/BackButton";
-import Background from "../components/Background";
-import Page from "../components/Page";
-import { BottomButtons } from "../components/ButtonContainers";
-import { MenuTitle } from "../components/PageTitle";
+import Dropdown from "../../components/Dropdown";
+import useIsMobile from "../../hooks/useIsMobile";
+import BackButton from "../../components/BackButton";
+import Background from "../../components/Background";
+import Page from "../../components/Page";
+import { BottomButtons } from "../../components/ButtonContainers";
+import { MenuTitle } from "../../components/PageTitle";
 
 // start temporary example scores for three stats
 const stat_1_scores: Score[] =

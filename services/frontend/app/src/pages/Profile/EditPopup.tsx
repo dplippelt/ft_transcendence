@@ -1,10 +1,10 @@
 import { useRef, useState } from "react";
-import { useAccount } from "../contexts/AccountContext";
-import { AccountError } from "../utils/errors";
+import { useAccount } from "../../contexts/AccountContext";
+import { AccountError } from "../../utils/errors";
 import styles from "./EditPopup.module.scss";
-import { EditWindowType } from "./AccountTab";
-import { PopupButtons } from "./ButtonContainers";
-import ErrorText from "./ErrorText";
+import { EditWindowType } from "../../pages/Profile/AccountTab";
+import { PopupButtons } from "../../components/ButtonContainers";
+import ErrorText from "../../components/ErrorText";
 
 interface EditPopup
 {

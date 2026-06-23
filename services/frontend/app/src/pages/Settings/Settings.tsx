@@ -1,14 +1,14 @@
-import { defaultSettings, useSettings, type Settings } from "../contexts/SettingsContext";
+import { defaultSettings, useSettings, type Settings } from "../../contexts/SettingsContext";
 import styles from "./Settings.module.scss";
 import { useRef, useState } from "react";
-import { MenuTitle } from "../components/PageTitle";
-import { BottomButtons } from "../components/ButtonContainers";
-import Background from "../components/Background";
-import Page from "../components/Page";
-import BackButton from "../components/BackButton";
-import Checkbox from "../components/Checkbox";
-import Slider from "../components/Slider";
-import Dropdown from "../components/Dropdown";
+import { MenuTitle } from "../../components/PageTitle";
+import { BottomButtons } from "../../components/ButtonContainers";
+import Background from "../../components/Background";
+import Page from "../../components/Page";
+import BackButton from "../../components/BackButton";
+import Checkbox from "../../components/Checkbox";
+import Slider from "../../components/Slider";
+import Dropdown from "../../components/Dropdown";
 
 type SettingsWindowProps =
 {

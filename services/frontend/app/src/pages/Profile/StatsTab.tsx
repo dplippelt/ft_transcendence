@@ -1,4 +1,5 @@
 import styles from  "./StatsTab.module.scss";
+import sharedStyle from "./Tab.module.scss";
 
 interface StatProps
 {
@@ -10,7 +11,7 @@ function Stat( { label, score } : StatProps )
 {
 	return (
 		<>
-			<div className="profileLabel">{`${label}:`}</div>
+			<div className={sharedStyle.profileLabel}>{`${label}:`}</div>
 			<div className={styles.textInfo}>{score}</div>
 		</>
 	)

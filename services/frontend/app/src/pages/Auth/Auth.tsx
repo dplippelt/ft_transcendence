@@ -1,13 +1,13 @@
 import { Navigate, useSearchParams } from "react-router-dom";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { MenuTitle } from "../components/PageTitle";
+import { MenuTitle } from "../../components/PageTitle";
 import styles from "./Auth.module.scss";
-import Background from "../components/Background";
-import Page from "../components/Page";
-import { useAccount } from "../contexts/AccountContext";
-import ErrorText from "../components/ErrorText";
-import { AccountError } from "../utils/errors";
+import Background from "../../components/Background";
+import Page from "../../components/Page";
+import { useAccount } from "../../contexts/AccountContext";
+import ErrorText from "../../components/ErrorText";
+import { AccountError } from "../../utils/errors";
 
 function LoginQuery()
 {

@@ -20,6 +20,14 @@ body, html, #root
 	font-size: 24px;
 	overflow-x: hidden;
 	height: 100%;
+
+	@media (max-width: 480px)
+	{
+		html
+		{
+			font-size: 20px;
+		}
+	}
 }
 
 label
@@ -202,12 +210,7 @@ button
 
 
 
-/* Profile page styling */
-
-.profileLabel
-{
-	color: $profile-label-color;
-}
+/* AVATAR STYLING */
 
 .avatar
 {
@@ -232,16 +235,4 @@ button
 	width: 100%;
 	height: 100%;
 	overflow: hidden;
-}
-
-
-
-/* MOBILE SPECIFIC STYLING */
-
-@media (max-width: 480px)
-{
-	html
-	{
-		font-size: 20px;
-	}
 }
