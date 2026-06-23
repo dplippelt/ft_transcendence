@@ -1,5 +1,6 @@
 fastapi[standard]
 sqlalchemy
 psycopg[binary]
+pydantic-settings
 PyJWT
 pwdlib[argon2]
