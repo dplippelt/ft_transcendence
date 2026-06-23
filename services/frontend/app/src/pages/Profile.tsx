@@ -6,6 +6,7 @@ import BackButton from "../components/BackButton";
 import Background from "../components/Background";
 import Page from "../components/Page";
 import { BottomButtons } from "../components/ButtonContainers";
+import { MenuTitle } from "../components/PageTitle";
 
 enum Tab
 {
@@ -17,11 +18,6 @@ interface ProfileTabsProps
 {
 	tab: Tab,
 	setTab: React.Dispatch<React.SetStateAction<Tab>>,
-}
-
-function PageTitle()
-{
-	return <div className="menuTitle">Profile</div>
 }
 
 function ProfileTabs( { tab, setTab } : ProfileTabsProps )
@@ -61,7 +57,7 @@ export default function Profile()
 		<>
 			<Background />
 			<Page>
-				<PageTitle />
+				<MenuTitle title="Profile" />
 				<ProfileWindow />
 				<Buttons />
 			</Page>

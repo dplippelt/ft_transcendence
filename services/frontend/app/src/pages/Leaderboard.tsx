@@ -6,6 +6,7 @@ import BackButton from "../components/BackButton";
 import Background from "../components/Background";
 import Page from "../components/Page";
 import { BottomButtons } from "../components/ButtonContainers";
+import { MenuTitle } from "../components/PageTitle";
 
 // start temporary example scores for three stats
 const stat_1_scores: Score[] =
@@ -89,11 +90,6 @@ type LeaderboardWindowProps =
 {
 	stat: Stat,
 	setStat: React.Dispatch<React.SetStateAction<Stat>>,
-}
-
-function PageTitle()
-{
-	return <div className="menuTitle">Leaderboard</div>
 }
 
 function StatsPicker( { setStat } : StatsPickerProps )
@@ -191,7 +187,7 @@ export default function Leaderboard()
 		<>
 			<Background />
 			<Page>
-				<PageTitle />
+				<MenuTitle title="Leaderboard" />
 				<LeaderboardWindow stat={stat} setStat={setStat} />
 				<Buttons />
 			</Page>
