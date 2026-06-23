@@ -1,0 +1,23 @@
+@use './variables' as *;
+
+@mixin page
+{
+	width: 100%;
+	min-height: 100vh;
+	display: grid;
+	gap: 1rem;
+	text-align: center;
+	align-content: start;
+	padding-top: 6vh;
+	padding-bottom: 5vh;
+}
+
+@mixin window
+{
+	width: 100%;
+	background-color: $window-bg-color;
+	border: $window-border;
+	border-radius: $window-border-radius;
+	padding: 0.5rem;
+	margin: 0 auto;
+}

@@ -1,28 +1,24 @@
 import { useNavigate } from "react-router-dom";
-import styles from "./MainMenu.module.css"
-
-function AppTitle()
-{
-	return (
-		<div className="appTitle">Math Crawler</div>
-	);
-}
+import styles from "./MainMenu.module.scss"
+import { AppTitle } from "../components/PageTitle";
+import { MenuButtons } from "../components/ButtonContainers";
+import Background from "../components/Background";
 
 function Buttons()
 {
 	const navigate = useNavigate();
 
 	return (
-		<div className="menuButtons">
+		<MenuButtons>
 			<button>New game</button>
 			<button>Multiplayer</button>
 			<button>Friends</button>
 			<button>Profile</button>
 			<button>Leaderboard</button>
-			<button>Settings</button>
 			<button>How to play</button>
+			<button onClick={ () => navigate("/settings") }>Settings</button>
 			<button onClick={ () => navigate("/") }>Logout</button>
-		</div>
+		</MenuButtons>
 	)
 }
 
@@ -30,7 +26,7 @@ export default function MainMenu()
 {
 	return (
 		<>
-			<div className="background"/>
+			<Background/>
 			<div className={styles.mainMenuPage}>
 				<AppTitle/>
 				<Buttons/>
