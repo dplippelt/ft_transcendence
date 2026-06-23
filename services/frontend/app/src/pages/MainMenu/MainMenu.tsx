@@ -4,6 +4,7 @@ import { AppTitle } from "../../components/PageTitle";
 import { MenuButtons } from "../../components/ButtonContainers";
 import Background from "../../components/Background";
 import { defaultAccount, useAccount } from "../../contexts/AccountContext";
+import { MenuButton } from "../../components/Buttons";
 
 function Buttons()
 {
@@ -18,14 +19,14 @@ function Buttons()
 
 	return (
 		<MenuButtons>
-			<button>New game</button>
-			<button>Multiplayer</button>
-			<button>Friends</button>
-			<button onClick={ () => navigate("/profile") }>Profile</button>
-			<button onClick={ () => navigate("/leaderboard") }>Leaderboard</button>
-			<button>How to play</button>
-			<button onClick={ () => navigate("/settings") }>Settings</button>
-			<button onClick={ logout }>Logout</button>
+			<MenuButton label="New game" onClick={ () => {} } />
+			<MenuButton label="Multiplayer" onClick={ () => {} } />
+			<MenuButton label="Friends" onClick={ () => {} } />
+			<MenuButton label="Profile" onClick={ () => navigate("/profile") } />
+			<MenuButton label="Leaderboard" onClick={ () => navigate("/leaderboard") } />
+			<MenuButton label="How to play" onClick={ () => {} } />
+			<MenuButton label="Settings" onClick={ () => navigate("/settings") } />
+			<MenuButton label="Logout" onClick={ logout } />
 		</MenuButtons>
 	)
 }

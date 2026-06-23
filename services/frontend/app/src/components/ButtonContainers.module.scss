@@ -31,15 +31,8 @@
 		{
 			order: -999;
 		}
-
-		:global(.buttonV2)
-		{
-			flex: 1;
-		}
 	}
 }
-
-
 
 .popupButtons
 {
@@ -58,11 +51,6 @@
 		flex-direction: column;
 		gap: 0.3rem;
 
-		:global(.buttonV1)
-		{
-			width: 100%;
-		}
-
 		:global(.mobileBottom)
 		{
 			order: 999;
@@ -71,11 +59,6 @@
 		:global(.mobileTop)
 		{
 			order: -999;
-		}
-
-		:global(.buttonV2)
-		{
-			flex: 1;
 		}
 	}
 }

@@ -5,7 +5,7 @@ import { MenuTitle } from "../../components/PageTitle";
 import { BottomButtons } from "../../components/ButtonContainers";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
-import BackButton from "../../components/BackButton";
+import { BackButton, BottomButton } from "../../components/Buttons";
 import Checkbox from "../../components/Checkbox";
 import Slider from "../../components/Slider";
 import Dropdown from "../../components/Dropdown";
@@ -74,8 +74,8 @@ function Buttons( { setResetKey, settingRefs } : ButtonsProps )
 	return (
 		<BottomButtons>
 			<BackButton />
-			<button className="buttonV2 mobileTop" onClick={resetSettings}>Reset Defaults</button>
-			<button className="buttonV2" onClick={applySettings}>Apply</button>
+			<BottomButton label="Reset Defaults" onClick={resetSettings} mobilePosition="mobileTop" />
+			<BottomButton label="Apply" onClick={applySettings} />
 		</BottomButtons>
 	);
 }

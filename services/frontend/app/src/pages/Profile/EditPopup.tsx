@@ -5,6 +5,7 @@ import styles from "./EditPopup.module.scss";
 import { EditWindowType } from "../../pages/Profile/AccountTab";
 import { PopupButtons } from "../../components/ButtonContainers";
 import ErrorText from "../../components/ErrorText";
+import { EditButton, MossButton } from "../../components/Buttons";
 
 interface EditPopup
 {
@@ -58,8 +59,8 @@ function EditAvatarContent( { setEditWindowType } : EditContentProp )
 				))}
 			</div>
 			<PopupButtons>
-				<button className="buttonV1 mobileBottom" onClick={ () => setEditWindowType(EditWindowType.none) }>Back</button>
-				<button className="buttonV1" onClick={ () => fileInputRef.current?.click() }>Upload</button>
+				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } mobilePosition="mobileBottom" />
+				<MossButton label="Upload" onClick={ () => fileInputRef.current?.click() } mobilePosition="mobileBottom" />
 				<input type="file" ref={fileInputRef} style={{ display: "none" }} onChange={ handleUpload } />
 			</PopupButtons>
 		</>
@@ -90,8 +91,8 @@ function EditUsernameContent( { setEditWindowType } : EditContentProp )
 			<div className="text">Edit username:</div>
 			<input className="textInput" autoComplete="off" type="text" placeholder="Enter new username" onChange={ (e) => setUsername(e.target.value) }/>
 			<PopupButtons>
-				<button className="buttonV1" onClick={ () => setEditWindowType(EditWindowType.none) }>Back</button>
-				<button className="buttonV1" onClick={ usernameCheck }>OK</button>
+				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } />
+				<MossButton label="Ok" onClick={ usernameCheck } />
 			</PopupButtons>
 		</>
 	)
@@ -124,8 +125,8 @@ function EditPasswordContent( { setEditWindowType } : EditContentProp )
 			<div className="text">Repeat password:</div>
 			<input className="textInput" autoComplete="off" type="password" placeholder="Enter new password again" onChange={ (e) => setConfirmPassword(e.target.value) }/>
 			<PopupButtons>
-				<button className="buttonV1" onClick={ () => setEditWindowType(EditWindowType.none) }>Back</button>
-				<button className="buttonV1" onClick={ passwordCheck }>OK</button>
+				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } />
+				<MossButton label="Ok" onClick={ passwordCheck } />
 			</PopupButtons>
 		</>
 	)

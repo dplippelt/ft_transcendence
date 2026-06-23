@@ -8,6 +8,7 @@ import Page from "../../components/Page";
 import { useAccount } from "../../contexts/AccountContext";
 import ErrorText from "../../components/ErrorText";
 import { AccountError } from "../../utils/errors";
+import { MossButton } from "../../components/Buttons";
 
 function LoginQuery()
 {
@@ -37,8 +38,8 @@ function LoginQuery()
 			<input type="text" placeholder="Enter username" onChange={ (e) => setUsername(e.target.value) }/>
 			<div className="text">Password:</div>
 			<input autoComplete="current-password" type="password" placeholder="Enter password" onChange={ (e) => setPassword(e.target.value) }/>
-			<button className="buttonV1" onClick={ checkLogin }>Login</button>
-			<button className="buttonV1">Continue with Google</button>
+			<MossButton label="Login" onClick={checkLogin} />
+			<MossButton label="Continue with Google" onClick={ () => {} } />
 			<div className={styles.loginSignupInstead} onClick={ () => navigate("/auth?mode=signup") }>Don't have an account? Sign-up</div>
 		</div>
 	);
@@ -78,8 +79,8 @@ function SignupQuery()
 			<input autoComplete="new-password" type="password" placeholder="Enter new password" onChange={ (e) => setPassword(e.target.value) }/>
 			<div className="text">Repeat password:</div>
 			<input autoComplete="new-password" type="password" placeholder="Enter new password again" onChange={ (e) => setConfirmPassword(e.target.value) }/>
-			<button className="buttonV1" onClick={ signupCheck }>Sign-up</button>
-			<button className="buttonV1">Continue with Google</button>
+			<MossButton label="Sign-up" onClick={signupCheck} />
+			<MossButton label="Continue with Google" onClick={ () => {} } />
 			<div className={styles.loginSignupInstead} onClick={ () => navigate("/auth?mode=login") }>Already have an account? Login</div>
 		</div>
 	);

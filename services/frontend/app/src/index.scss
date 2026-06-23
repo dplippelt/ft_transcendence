@@ -152,50 +152,10 @@ input[type="range"]::-webkit-slider-thumb
 
 button
 {
-	padding: 0.25rem 0.2rem;
-	padding-bottom: 0.15rem;
-	background-color: $button-bg-color !important;
 	border: 1px solid $button-border-color !important;
 	border-radius: 8px;
 	font-family: $button-font;
-	font-size: 1rem;
 	transition: background-color 0.2s ease;
-
-	&:hover
-	{
-		background-color: $button-hover-bg-color !important;
-		color: $button-hover-color !important;
-	}
-}
-
-.buttonV1
-{
-	@include buttonV1;
-	min-width: 110px;
-	max-width: 90%;
-	margin: 0 auto;
-	margin-bottom: 0.3rem;
-}
-
-.buttonV2
-{
-	width: fit-content;
-	min-width: 200px;
-	max-width: 90%;
-	padding: 0.25rem 0.2rem;
-	padding-bottom: 0.15rem;
-	background-color: $button-bg-color !important;
-	border: 1px solid $button-border-color !important;
-	border-radius: 8px;
-	font-family: $button-font;
-	font-size: 1rem;
-	transition: background-color 0.2s ease;
-
-	&:hover
-	{
-		background-color: $button-hover-bg-color !important;
-		color: $button-hover-color !important;
-	}
 }
 
 

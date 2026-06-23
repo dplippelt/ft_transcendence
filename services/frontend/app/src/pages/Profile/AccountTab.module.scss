@@ -13,27 +13,3 @@
 	text-overflow: ellipsis;
 	// text-align: center
 }
-
-.editButton
-{
-	@include buttonV1;
-	margin: 0;
-	margin-right: 1.75rem;
-	width: 35%;
-	min-width: fit-content;
-
-	@media (max-width: 960px)
-	{
-		width: 80%;
-	}
-
-	@media (max-width: 480px)
-	{
-		width: 100%;
-	}
-
-	@media (max-width: 420px)
-	{
-		width: fit-content;
-	}
-}

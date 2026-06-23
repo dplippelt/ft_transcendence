@@ -2,7 +2,7 @@ import styles from "./Profile.module.scss";
 import { useState } from "react";
 import AccountTab from "./AccountTab";
 import StatsTab from "./StatsTab";
-import BackButton from "../../components/BackButton";
+import { BackButton } from "../../components/Buttons";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { BottomButtons } from "../../components/ButtonContainers";

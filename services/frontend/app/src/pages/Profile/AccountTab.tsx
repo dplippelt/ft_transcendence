@@ -4,6 +4,7 @@ import styles from "./AccountTab.module.scss";
 import sharedStyle from "./Tab.module.scss";
 import Popup from "../../components/Popup";
 import EditPopup from "./EditPopup";
+import { EditButton } from "../../components/Buttons";
 
 export enum EditWindowType
 {
@@ -13,20 +14,9 @@ export enum EditWindowType
 	password,
 }
 
-interface EditButtonProps
-{
-	editType: EditWindowType,
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>,
-}
-
 interface AccountInfoProp
 {
 	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>,
-}
-
-function EditButton( { editType, setEditWindowType } : EditButtonProps )
-{
-	return <button className={styles.editButton} onClick={ () => setEditWindowType(editType) }>Edit</button>;
 }
 
 function Avatar( { setEditWindowType } : AccountInfoProp )

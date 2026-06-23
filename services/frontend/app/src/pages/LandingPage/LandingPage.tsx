@@ -4,6 +4,7 @@ import { AppTitle } from "../../components/PageTitle";
 import { MenuButtons } from "../../components/ButtonContainers";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
+import { MenuButton } from "../../components/Buttons";
 
 function GameDescription()
 {
@@ -18,10 +19,10 @@ function Buttons()
 
 	return (
 		<MenuButtons>
-			<button onClick={ () => navigate("/auth?mode=login") }>Login</button>
-			<button onClick={ () => navigate("/main-menu") }>Continue as guest</button>
-			<button>How to play</button>
-			<button onClick={ () => navigate("/game-dev") }>Game dev</button>
+			<MenuButton label="Start game" onClick={ () => navigate("/game-dev") } />
+			<MenuButton label="Login" onClick={ () => navigate("/auth?mode=login") } />
+			<MenuButton label="How to play" onClick={ () => {} } />
+			<MenuButton label="Game dev" onClick={ () => navigate("/game-dev") } />
 		</MenuButtons>
 	)
 }

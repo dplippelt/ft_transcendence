@@ -2,7 +2,7 @@ import styles from "./Leaderboard.module.scss";
 import { useState } from "react";
 import Dropdown from "../../components/Dropdown";
 import useIsMobile from "../../hooks/useIsMobile";
-import BackButton from "../../components/BackButton";
+import { BackButton, MossButton } from "../../components/Buttons";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { BottomButtons } from "../../components/ButtonContainers";
@@ -107,9 +107,9 @@ function StatsPicker( { setStat } : StatsPickerProps )
 
 	return (
 		<div className={styles.statsPicker}>
-			<button className="buttonV1" onClick={ () => setStat(Stat.stat_1) }>Stat 1</button>
-			<button className="buttonV1" onClick={ () => setStat(Stat.stat_2) }>Stat 2</button>
-			<button className="buttonV1" onClick={ () => setStat(Stat.stat_3) }>Stat 3</button>
+			<MossButton label="Stat 1" onClick={ () => setStat(Stat.stat_1) } />
+			<MossButton label="Stat 2" onClick={ () => setStat(Stat.stat_2) } />
+			<MossButton label="Stat 3" onClick={ () => setStat(Stat.stat_3) } />
 		</div>
 	);
 }
