@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.database import get_db
 from app.models.user import User
-from app.core.security import verify_password, get_password_hash, create_access_token
 from app.schemas.user import UserRegister, UserLogin, UserResponse, Token
+from app.core.security import (verify_password, get_password_hash, create_access_token, DUMMY_PASSWORD_HASH)
 
 
 router = APIRouter()
@@ -45,7 +46,16 @@ def register_user(user_data: UserRegister, db: Session = Depends(get_db)):
     )
 
     db.add(user)
-    db.commit()
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username or email already exists",
+        )
+
     db.refresh(user)
 
     return user
@@ -59,7 +69,10 @@ def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
         .first()
     )
 
-    if not user or not verify_password(user_data.password, user.password_hash):
+    password_hash = user.password_hash if user else DUMMY_PASSWORD_HASH
+    is_valid_password = verify_password(user_data.password, password_hash)
+
+    if not user or not is_valid_password:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
@@ -67,7 +80,7 @@ def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
 
     access_token = create_access_token(data={"sub": user.username})
 
-    return {
-        "access_token": access_token,
-        "token_type": "bearer",
-    }
+    return Token(
+        access_token=access_token,
+        token_type="bearer",
+    )
