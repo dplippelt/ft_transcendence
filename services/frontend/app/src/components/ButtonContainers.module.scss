@@ -1,0 +1,81 @@
+.menuButtons
+{
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	max-width: min(340px, 90%);
+	margin: 0 auto;
+	gap: 1rem;
+}
+
+.bottomButtons
+{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	width: 100%;
+	max-width: min(900px, 90%);
+	justify-content: center;
+	margin: 0 auto;
+	margin-top: 0.75rem;
+	gap: clamp(1rem, 5vw, 5rem);
+
+	@media (max-width: 480px)
+	{
+		.mobileBottom
+		{
+			order: 999;
+		}
+
+		.mobileTop
+		{
+			order: -999;
+		}
+
+		.buttonV2
+		{
+			flex: 1;
+		}
+	}
+}
+
+
+
+.popupButtons
+{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	width: 100%;
+	max-width: min(900px, 90%);
+	justify-content: center;
+	margin: 0 auto;
+	// margin-top: 0.75rem;
+	gap: clamp(1rem, 5vw, 5rem);
+
+	@media (max-width: 480px)
+	{
+		flex-direction: column;
+		gap: 0.3rem;
+
+		.buttonV1
+		{
+			width: 100%;
+		}
+
+		.mobileBottom
+		{
+			order: 999;
+		}
+
+		.mobileTop
+		{
+			order: -999;
+		}
+
+		.buttonV2
+		{
+			flex: 1;
+		}
+	}
+}

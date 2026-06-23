@@ -3,6 +3,9 @@ import { useState } from "react";
 import Dropdown from "../components/Dropdown";
 import useIsMobile from "../hooks/useIsMobile";
 import BackButton from "../components/BackButton";
+import Background from "../components/Background";
+import Page from "../components/Page";
+import { BottomButtons } from "../components/ButtonContainers";
 
 // start temporary example scores for three stats
 const stat_1_scores: Score[] =
@@ -174,9 +177,9 @@ function LeaderboardWindow( { stat, setStat } : LeaderboardWindowProps )
 function Buttons()
 {
 	return (
-		<div className="bottomButtons">
+		<BottomButtons>
 			<BackButton />
-		</div>
+		</BottomButtons>
 	);
 }
 
@@ -186,12 +189,12 @@ export default function Leaderboard()
 
 	return (
 		<>
-			<div className="background" />
-			<div className="page">
+			<Background />
+			<Page>
 				<PageTitle />
 				<LeaderboardWindow stat={stat} setStat={setStat} />
 				<Buttons />
-			</div>
+			</Page>
 		</>
 	);
 }

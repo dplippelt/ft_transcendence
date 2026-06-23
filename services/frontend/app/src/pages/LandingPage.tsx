@@ -1,12 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import styles from "./LandingPage.module.scss"
-
-function AppTitle()
-{
-	return (
-		<div className="appTitle">Math Crawler</div>
-	);
-}
+import { AppTitle } from "../components/PageTitle";
+import { MenuButtons } from "../components/ButtonContainers";
+import Background from "../components/Background";
+import Page from "../components/Page";
 
 function GameDescription()
 {
@@ -20,14 +17,12 @@ function Buttons()
 	const navigate = useNavigate();
 
 	return (
-		<div className="menuButtons">
-			<button onClick={ () => navigate("/login") }>Login</button>
-			<button onClick={ () => navigate("/signup") }>Sign-up</button>
-			<button>How to play</button>
+		<MenuButtons>
+			<button onClick={ () => navigate("/auth?mode=login") }>Login</button>
 			<button onClick={ () => navigate("/main-menu") }>Continue as guest</button>
+			<button>How to play</button>
 			<button onClick={ () => navigate("/game-dev") }>Game dev</button>
-			<button onClick={ () => navigate("/card-tester") }>Card tester</button>
-		</div>
+		</MenuButtons>
 	)
 }
 
@@ -35,12 +30,12 @@ export default function LandingPage()
 {
 	return (
 		<>
-			<div className="background"/>
-			<div className={styles.landingPage}>
+			<Background/>
+			<Page>
 				<AppTitle/>
 				<GameDescription/>
 				<Buttons/>
-			</div>
+			</Page>
 		</>
 
 	)

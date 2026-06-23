@@ -1,10 +1,14 @@
 import { defaultSettings, useSettings, type Settings } from "../contexts/SettingsContext";
 import styles from "./Settings.module.scss";
 import { useRef, useState } from "react";
+import { MenuTitle } from "../components/PageTitle";
+import { BottomButtons } from "../components/ButtonContainers";
+import Background from "../components/Background";
+import Page from "../components/Page";
+import BackButton from "../components/BackButton";
 import Checkbox from "../components/Checkbox";
 import Slider from "../components/Slider";
 import Dropdown from "../components/Dropdown";
-import BackButton from "../components/BackButton";
 
 type SettingsWindowProps =
 {
@@ -22,11 +26,6 @@ type SettingRefs =
 	dummyBoolean: React.RefObject<HTMLInputElement | null>,
 	dummySlider: React.RefObject<HTMLInputElement | null>,
 	dummyDropdown: React.RefObject<HTMLSelectElement | null>,
-}
-
-function PageTitle()
-{
-	return <div className="menuTitle">Settings</div>
 }
 
 function SettingsWindow( { settingRefs } : SettingsWindowProps )
@@ -73,11 +72,11 @@ function Buttons( { setResetKey, settingRefs } : ButtonsProps )
 	}
 
 	return (
-		<div className="bottomButtons">
+		<BottomButtons>
 			<BackButton />
 			<button className="buttonV2 mobileTop" onClick={resetSettings}>Reset Defaults</button>
 			<button className="buttonV2" onClick={applySettings}>Apply</button>
-		</div>
+		</BottomButtons>
 	);
 }
 
@@ -97,12 +96,12 @@ export default function Settings()
 
 	return (
 		<>
-			<div className="background" />
-			<div className="page">
-				<PageTitle/>
+			<Background />
+			<Page>
+				<MenuTitle title="Settings"/>
 				<SettingsWindow key={resetKey} settingRefs={settingRefs} />
 				<Buttons setResetKey={setResetKey} settingRefs={settingRefs}/>
-			</div>
+			</Page>
 		</>
 	);
 }

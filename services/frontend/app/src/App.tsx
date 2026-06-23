@@ -4,13 +4,12 @@ import useAppControls from "./hooks/useAppControls"
 import useAppEffects from "./hooks/useAppEffects"
 import useAppState from "./hooks/useAppState"
 import LandingPage from "./pages/LandingPage"
-import Login from "./pages/Login"
-import Signup from "./pages/Signup"
 import MainMenu from "./pages/MainMenu"
 import Settings from "./pages/Settings"
 import PhaserGame, { type IRefPhaserGame } from "./pages/PhaserGame"
 import Leaderboard from "./pages/Leaderboard"
 import Profile from "./pages/Profile"
+import Auth from "./pages/Auth"
 
 export type AppStates =
 {
@@ -60,8 +59,7 @@ export default function App()
 		<BrowserRouter>
 			<Routes>
 				<Route path="/" element={ <LandingPage/> } />
-				<Route path="/login" element={ <Login/> } />
-				<Route path="/signup" element={ <Signup/> } />
+				<Route path="/auth" element={ <Auth/> } />
 				<Route path="/main-menu" element={ <MainMenu/> } />
 				<Route path="/profile" element={ <Profile/> } />
 				<Route path="/leaderboard" element={ <Leaderboard/> } />

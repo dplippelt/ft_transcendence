@@ -1,5 +1,17 @@
 @use './variables' as *;
 
+@mixin page
+{
+	width: 100%;
+	min-height: 100vh;
+	display: grid;
+	gap: 1rem;
+	text-align: center;
+	align-content: start;
+	padding-top: 6vh;
+	padding-bottom: 5vh;
+}
+
 @mixin window
 {
 	width: 100%;
@@ -8,17 +20,6 @@
 	border-radius: $window-border-radius;
 	padding: 0.5rem;
 	margin: 0 auto;
-}
-
-@mixin pageTitle
-{
-	width: fit-content;
-	max-width: 100%;
-	text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
-	text-align: center;
-	background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, transparent 70%);
-	margin: 0 auto;
-	margin-bottom: -1rem;
 }
 
 @mixin buttonV1

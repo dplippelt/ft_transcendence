@@ -60,5 +60,8 @@ export default function AccountProvider( { children } : {children: ReactNode} )
 // import and use useAccount() anywhere you want to reference or change Account values.
 export function useAccount()
 {
-	return useContext(AccountContext)!;
+	const context = useContext(AccountContext);
+	if ( !context )
+		throw new Error("useAccount() must be used within a SettingsProvider");
+	return context;
 }

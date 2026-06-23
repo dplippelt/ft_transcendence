@@ -3,6 +3,9 @@ import { useState } from "react";
 import AccountTab from "../components/AccountTab";
 import StatsTab from "../components/StatsTab";
 import BackButton from "../components/BackButton";
+import Background from "../components/Background";
+import Page from "../components/Page";
+import { BottomButtons } from "../components/ButtonContainers";
 
 enum Tab
 {
@@ -46,9 +49,9 @@ function ProfileWindow()
 function Buttons()
 {
 	return (
-		<div className="bottomButtons">
+		<BottomButtons>
 			<BackButton />
-		</div>
+		</BottomButtons>
 	);
 }
 
@@ -56,12 +59,12 @@ export default function Profile()
 {
 	return (
 		<>
-			<div className="background" />
-			<div className="page">
+			<Background />
+			<Page>
 				<PageTitle />
 				<ProfileWindow />
 				<Buttons />
-			</div>
+			</Page>
 		</>
 	);
 }

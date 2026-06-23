@@ -58,5 +58,8 @@ export default function SettingsProvider( { children } : {children: ReactNode} )
 // import and use useSettings() anywhere you want to reference or change settings values.
 export function useSettings()
 {
-	return useContext(SettingsContext)!;
+	const context = useContext(SettingsContext);
+	if ( !context )
+		throw new Error("useSettings() must be used within a SettingsProvider");
+	return context;
 }
