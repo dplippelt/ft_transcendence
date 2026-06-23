@@ -31,10 +31,8 @@ export default class CardSelection {
 
     // define and set slots for selected cards 
     // define the maximum number of number cards to set (the number of operator is minus 1)
-    // add number and operator cards into slots when they are added to this class
-    // validate if there are available slots
-    // remove cards from the slots when they are selected again but remain the positions of the rest cards
-    // validate calculation when the selection is finished(0 divider, slots are set enough)
+    // add number and operator cards into slots when there is an available slot
+    // unset cards from the slots when they are selected again but remain the positions of the rest cards
 
     private readonly cardSlotStyleConfig!: CardStyleConfig;
     private readonly selectedCardAlignConfig!: SelectedCardAlignConfig;
