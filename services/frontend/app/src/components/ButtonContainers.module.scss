@@ -22,17 +22,17 @@
 
 	@media (max-width: 480px)
 	{
-		.mobileBottom
+		:global(.mobileBottom)
 		{
 			order: 999;
 		}
 
-		.mobileTop
+		:global(.mobileTop)
 		{
 			order: -999;
 		}
 
-		.buttonV2
+		:global(.buttonV2)
 		{
 			flex: 1;
 		}
@@ -58,22 +58,22 @@
 		flex-direction: column;
 		gap: 0.3rem;
 
-		.buttonV1
+		:global(.buttonV1)
 		{
 			width: 100%;
 		}
 
-		.mobileBottom
+		:global(.mobileBottom)
 		{
 			order: 999;
 		}
 
-		.mobileTop
+		:global(.mobileTop)
 		{
 			order: -999;
 		}
 
-		.buttonV2
+		:global(.buttonV2)
 		{
 			flex: 1;
 		}

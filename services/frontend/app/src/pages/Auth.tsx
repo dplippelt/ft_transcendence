@@ -5,20 +5,17 @@ import { MenuTitle } from "../components/PageTitle";
 import styles from "./Auth.module.scss";
 import Background from "../components/Background";
 import Page from "../components/Page";
-
-enum SignupError
-{
-	none,
-	usernameAlreadyTaken,
-	passwordsDontMatch
-}
+import { useAccount } from "../contexts/AccountContext";
+import ErrorText from "../components/ErrorText";
+import { AccountError } from "../utils/errors";
 
 function LoginQuery()
 {
 	const [username, setUsername] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
-	const [error, setError] = useState<boolean>(false);
+	const [error, setError] = useState<AccountError>(AccountError.none);
 	const navigate = useNavigate();
+	const account = useAccount();
 
 	function checkLogin()
 	{
@@ -27,13 +24,15 @@ function LoginQuery()
 
 		// Mock login check:
 		if ( username !== password )
-			return setError(true);
+			return setError(AccountError.incorrectCreds);
+
+		account.setAccount( prev => ({ ...prev, guest: false, username: username, password: password }));
 		navigate("/main-menu");
 	}
 
 	return (
 		<div className={styles.window}>
-			{ error && <div className="errorText">Incorrect username or password!</div> }
+			{ error !== AccountError.none && <ErrorText error={error}/> }
 			<div className="text">Username:</div>
 			<input type="text" placeholder="Enter username" onChange={ (e) => setUsername(e.target.value) }/>
 			<div className="text">Password:</div>
@@ -50,39 +49,29 @@ function SignupQuery()
 	const [username, setUsername] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
 	const [confirmPassword, setConfirmPassword] = useState<string>("");
-	const [error, setError] = useState<SignupError>(SignupError.none);
+	const [error, setError] = useState<AccountError>(AccountError.none);
 	const navigate = useNavigate();
+	const account = useAccount();
 
 	function signupCheck()
 	{
-		// if username has been taken setError(SignupError.usernameAlreadyExists)
-		// else if password !=== confirmPassword setError(SignupError.passwordsDontMatch)
+		// if username has been taken setError(AccountError.usernameAlreadyExists)
+		// else if password !=== confirmPassword setError(AccountError.passwordsDontMatch)
 		// else naviagte("/main-menu")
 
 		// Mock signup check
 		if ( username.length === 1 )
-			return setError(SignupError.usernameAlreadyTaken);
+			return setError(AccountError.usernameAlreadyTaken);
 		if ( password !== confirmPassword )
-			return setError(SignupError.passwordsDontMatch);
-		navigate("/main-menu");
-	}
+			return setError(AccountError.passwordsDontMatch);
 
-	function errorMsg(): string
-	{
-		switch (error)
-		{
-			case SignupError.usernameAlreadyTaken:
-				return "Username already taken!";
-			case SignupError.passwordsDontMatch:
-				return "Passwords don't match!";
-			default:
-				return "";
-		}
+		account.setAccount( prev => ({ ...prev, guest: false, username: username, password: password }));
+		navigate("/main-menu");
 	}
 
 	return (
 		<div className={styles.window}>
-			{ error !== SignupError.none && <div className="errorText">{ errorMsg() }</div> }
+			{ error !== AccountError.none && <ErrorText error={error}/> }
 			<div className="text">Username:</div>
 			<input type="text" placeholder="Enter new username" onChange={ (e) => setUsername(e.target.value) }/>
 			<div className="text">Password:</div>

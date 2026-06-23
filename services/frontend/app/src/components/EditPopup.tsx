@@ -1,8 +1,10 @@
 import { useRef, useState } from "react";
 import { useAccount } from "../contexts/AccountContext";
-import { errorMsg, AccountError } from "../utils/errors";
+import { AccountError } from "../utils/errors";
 import styles from "./EditPopup.module.scss";
 import { EditWindowType } from "./AccountTab";
+import { PopupButtons } from "./ButtonContainers";
+import ErrorText from "./ErrorText";
 
 interface EditPopup
 {
@@ -48,18 +50,18 @@ function EditAvatarContent( { setEditWindowType } : EditContentProp )
 
 	return (
 		<>
-			{ error !== AccountError.none && <div className="incorrectCreds">{ errorMsg(error) }</div> }
+			{ error !== AccountError.none && <ErrorText error={error}/> }
 			<div className="text" style={{ textAlign: "center" }}>Pick an avatar</div>
 			<div className={styles.avatars}>
 				{ avatars.map((avatar, idx) => (
 					<img key={idx} className="avatar" src={avatar} onClick={ () => avatarCheck(avatar) } />
 				))}
 			</div>
-			<div className="popupButtons">
+			<PopupButtons>
 				<button className="buttonV1 mobileBottom" onClick={ () => setEditWindowType(EditWindowType.none) }>Back</button>
 				<button className="buttonV1" onClick={ () => fileInputRef.current?.click() }>Upload</button>
 				<input type="file" ref={fileInputRef} style={{ display: "none" }} onChange={ handleUpload } />
-			</div>
+			</PopupButtons>
 		</>
 	)
 }
@@ -84,13 +86,13 @@ function EditUsernameContent( { setEditWindowType } : EditContentProp )
 
 	return (
 		<>
-			{ error !== AccountError.none && <div className="incorrectCreds">{ errorMsg(error) }</div> }
+			{ error !== AccountError.none && <ErrorText error={error}/> }
 			<div className="text">Edit username:</div>
 			<input className="textInput" autoComplete="off" type="text" placeholder="Enter new username" onChange={ (e) => setUsername(e.target.value) }/>
-			<div className="popupButtons">
+			<PopupButtons>
 				<button className="buttonV1" onClick={ () => setEditWindowType(EditWindowType.none) }>Back</button>
 				<button className="buttonV1" onClick={ usernameCheck }>OK</button>
-			</div>
+			</PopupButtons>
 		</>
 	)
 }
@@ -116,15 +118,15 @@ function EditPasswordContent( { setEditWindowType } : EditContentProp )
 
 	return (
 		<>
-			{ error !== AccountError.none && <div className="incorrectCreds">{ errorMsg(error) }</div> }
+			{ error !== AccountError.none && <ErrorText error={error}/> }
 			<div className="text">Edit password:</div>
 			<input className="textInput" autoComplete="off" type="password" placeholder="Enter new password" onChange={ (e) => setPassword(e.target.value) }/>
 			<div className="text">Repeat password:</div>
 			<input className="textInput" autoComplete="off" type="password" placeholder="Enter new password again" onChange={ (e) => setConfirmPassword(e.target.value) }/>
-			<div className="popupButtons">
+			<PopupButtons>
 				<button className="buttonV1" onClick={ () => setEditWindowType(EditWindowType.none) }>Back</button>
 				<button className="buttonV1" onClick={ passwordCheck }>OK</button>
-			</div>
+			</PopupButtons>
 		</>
 	)
 }
