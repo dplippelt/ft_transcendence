@@ -26,5 +26,12 @@ export default class GameScene extends Phaser.Scene {
     });
 
     EventBus.emit('current-scene-ready', this);
+
+    // Temporarily added to launch the combat scene by clicking the screen
+    this.input.on('pointerdown', () => {
+
+        this.scene.sleep().launch('combat');
+
+    })
   }
 }
