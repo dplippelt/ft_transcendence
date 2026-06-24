@@ -33,6 +33,11 @@
 	font-family: $text-font;
 	text-align: left;
 	align-content: start;
+
+	@media (max-width: 400px)
+	{
+		padding: 1rem;
+	}
 }
 
 @mixin profileInfo
