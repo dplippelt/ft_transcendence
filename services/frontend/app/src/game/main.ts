@@ -6,11 +6,9 @@ import CombatScene from "./scenes/CombatScene";
 
 const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
-//   width: window.innerWidth,
-//   height: window.innerHeight,
-  scale:
-  {
-	mode: Phaser.Scale.RESIZE,
+  disableContextMenu: true,
+  scale: {
+    mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
   pixelArt: true,
