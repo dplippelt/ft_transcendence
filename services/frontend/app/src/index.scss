@@ -1,0 +1,242 @@
+@use './variables' as *;
+@use './mixins' as *;
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel Decorative:wght@400&display=swap');
+
+
+
+/* GENERAL */
+
+*, *::before, *::after
+{
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	color: $primary-text-color;
+}
+
+body, html, #root
+{
+	font-size: 24px;
+	overflow-x: hidden;
+	height: 100%;
+}
+
+label
+{
+	user-select: none;
+	font-family: $text-font;
+	font-size: 0.8rem;
+}
+
+
+
+/* INPUT STYLING */
+
+input[type="text"], input[type="password"]
+{
+	width: 100%;
+	background-color: $input-bg-color;
+	border: 1px solid $input-border-color;
+	border-radius: 2px;
+	padding: 0.2rem 0.4rem;
+	padding-top: 0.3rem;
+	font-family: $input-font;
+	font-size: 0.7rem;
+	outline: none;
+	margin-bottom: 0.3rem;
+
+	&:focus
+	{
+		border-color: $input-focus-border-color;
+	}
+}
+
+input[type="number"]
+{
+	width: 7ch;
+}
+
+input[type="number"], select
+{
+	background-color: $input-bg-color;
+	border: 1px solid $input-border-color;
+	border-radius: 2px;
+	padding: 0.2rem;
+	padding-left: 0.3rem;
+	padding-top: 0.3rem;
+	font-size: 0.6rem;
+	font-family: $input-font;
+
+	&:focus
+	{
+		border-color: $input-focus-border-color;
+		outline: none;
+	}
+}
+
+input[type="checkbox"]
+{
+	width: 0.7rem;
+	height: 0.7rem;
+	margin: auto;
+	accent-color: $input-bg-color;
+	outline: 2px solid $input-border-color;
+}
+
+input[type="range"]
+{
+	width: 7rem;
+	-webkit-appearance: none;
+	appearance: none;
+	background-color: $grey-dark;
+
+	@media (max-width: 480px)
+	{
+		margin-left: 0.15rem;
+	}
+}
+
+input[type="range"]::-moz-range-track
+{
+	background-color: $slider-track-bg-color;
+	height: 4px;
+	border-radius: 8px;
+}
+
+input[type="range"]::-webkit-slider-runnable-track
+{
+	background-color: $slider-track-bg-color;
+	height: 4px;
+	border-radius: 8px;
+}
+
+input[type="range"]::-moz-range-thumb
+{
+	background-color: $slider-thumb-bg-color;
+	border-color: $slider-thumb-border-color;
+	border-width: 3px;
+	border-radius: 16px;
+
+	&:hover
+	{
+		background-color: $slider-thumb-focus-bg-color;
+	}
+}
+
+input[type="range"]::-webkit-slider-thumb
+{
+	-webkit-appearance: none;
+	background-color: $slider-thumb-bg-color;
+	border-color: $slider-thumb-border-color;
+	border-width: 3px;
+	border-style: solid;
+	border-radius: 16px;
+	height: 16px;
+	width: 16px;
+	margin-top: -6px;
+	cursor: pointer;
+}
+
+
+
+/* BUTTON STYLING */
+
+button
+{
+	padding: 0.25rem 0.2rem;
+	padding-bottom: 0.15rem;
+	background-color: $button-bg-color !important;
+	border: 1px solid $button-border-color !important;
+	border-radius: 8px;
+	font-family: $button-font;
+	font-size: 1rem;
+	transition: background-color 0.2s ease;
+
+	&:hover
+	{
+		background-color: $button-hover-bg-color !important;
+		color: $button-hover-color !important;
+	}
+}
+
+.buttonV1
+{
+	width: fit-content;
+	min-width: 110px;
+	max-width: 90%;
+	margin: 0 auto;
+	margin-bottom: 0.3rem;
+	font-size: 0.8rem;
+	padding: 0.2rem 1rem;
+	padding-bottom: 0.1rem;
+	background-color: $button-v1-bg-color !important;
+
+	&:hover
+	{
+		background-color: $button-v1-hover-bg-color !important;
+		color: $button-v1-hover-color !important;
+	}
+}
+
+.buttonV2
+{
+	width: fit-content;
+	min-width: 200px;
+	max-width: 90%;
+	padding: 0.25rem 0.2rem;
+	padding-bottom: 0.15rem;
+	background-color: $button-bg-color !important;
+	border: 1px solid $button-border-color !important;
+	border-radius: 8px;
+	font-family: $button-font;
+	font-size: 1rem;
+	transition: background-color 0.2s ease;
+
+	&:hover
+	{
+		background-color: $button-hover-bg-color !important;
+		color: $button-hover-color !important;
+	}
+}
+
+
+
+/* TEXT STYLING */
+
+.badInput
+{
+	text-align: center;
+	color: $error-color;
+	font-family: $text-font;
+	font-size: 0.7rem;
+}
+
+.text
+{
+	font-family: $text-font;
+	font-size: 0.8rem;
+}
+
+
+
+/* GAME */
+
+#game-container
+{
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
+}
+
+
+
+/* MOBILE SPECIFIC STYLING */
+
+@media (max-width: 480px)
+{
+	html
+	{
+		font-size: 20px;
+	}
+}

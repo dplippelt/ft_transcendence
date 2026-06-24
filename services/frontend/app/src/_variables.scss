@@ -1,0 +1,43 @@
+$grey-light: #4a4a5a;
+$grey-dark: #2a2a35;
+$grey-darker: #18181f;
+$grey-brown: #71695D;
+$golden-brown: #8a7a5a;
+$creme-beige: #e8dcc8;
+$creme-beige-light: #e6ddce;
+$creme-beige-lighter: #e1dcd3;
+$moss-green-dark: #252729;
+$moss-green-darker: #1b1d1d;
+$muddy-gold: #8a7d5a;
+$muddy-gold-lighter: #a9a183;
+$muddy-gold-light: #938d79;
+$muddy-gold-dark: #4f4728;
+$orange: #ff6600;
+
+$primary-text-color: $creme-beige;
+$button-bg-color: $grey-dark;
+$button-hover-bg-color: $grey-darker;
+$button-hover-color: $creme-beige-lighter;
+$button-border-color: $grey-brown;
+$button-v1-bg-color: $moss-green-dark;
+$button-v1-hover-bg-color: $moss-green-darker;
+$button-v1-hover-color: $creme-beige-light;
+$window-bg-color: $grey-dark;
+$window-border-color: $grey-light;
+$input-bg-color: $grey-darker;
+$input-border-color: $grey-light;
+$input-focus-border-color: $golden-brown;
+$error-color: $orange;
+$slider-track-bg-color: $muddy-gold;
+$slider-thumb-bg-color: $muddy-gold-lighter;
+$slider-thumb-focus-bg-color: $muddy-gold-light;
+$slider-thumb-border-color: $muddy-gold-dark;
+
+$app-title-font: 'Cinzel Decorative', serif;
+$menu-title-font: 'Cinzel', serif;
+$text-font: 'Cinzel', serif;
+$button-font: 'Lato', sans-serif;
+$input-font: 'Lato', sans-serif;
+
+$window-border: 5px solid $window-border-color;
+$window-border-radius: 4px;
