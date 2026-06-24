@@ -71,28 +71,28 @@ type Score =
 	score: number,
 }
 
-type StatsPickerProps =
+interface IStatsPicker
 {
-	setStat: React.Dispatch<React.SetStateAction<Stat>>,
+	setStat: React.Dispatch<React.SetStateAction<Stat>>;
 }
 
-type ColumnTitlesProps =
+interface IColumnTitles
 {
-	stat: Stat,
+	stat: Stat;
 }
 
-type LeaderboardListProps =
+interface ILeaderboardList
 {
-	stat: Stat,
+	stat: Stat;
 }
 
-type LeaderboardWindowProps =
+interface ILeaderboardWindow
 {
-	stat: Stat,
-	setStat: React.Dispatch<React.SetStateAction<Stat>>,
+	stat: Stat;
+	setStat: React.Dispatch<React.SetStateAction<Stat>>;
 }
 
-function StatsPicker( { setStat } : StatsPickerProps )
+function StatsPicker( { setStat } : IStatsPicker )
 {
 	const isMobile = useIsMobile();
 
@@ -114,7 +114,7 @@ function StatsPicker( { setStat } : StatsPickerProps )
 	);
 }
 
-function ColumnTitles( { stat } : ColumnTitlesProps )
+function ColumnTitles( { stat } : IColumnTitles )
 {
 	return (
 		<div className={styles.columnTitles}>
@@ -125,7 +125,7 @@ function ColumnTitles( { stat } : ColumnTitlesProps )
 	);
 }
 
-function LeaderboardList( { stat } : LeaderboardListProps )
+function LeaderboardList( { stat } : ILeaderboardList )
 {
 	// get scores for all users for the specified stat from DB
 	// temporary mock scores getter
@@ -159,7 +159,7 @@ function LeaderboardList( { stat } : LeaderboardListProps )
 	);
 }
 
-function LeaderboardWindow( { stat, setStat } : LeaderboardWindowProps )
+function LeaderboardWindow( { stat, setStat } : ILeaderboardWindow )
 {
 	return (
 		<div className={styles.leaderboardWindow}>

@@ -10,15 +10,15 @@ import Checkbox from "../../components/Checkbox";
 import Slider from "../../components/Slider";
 import Dropdown from "../../components/Dropdown";
 
-type SettingsWindowProps =
+interface ISettingsWindow
 {
-	settingRefs: SettingRefs,
+	settingRefs: SettingRefs;
 }
 
-type ButtonsProps =
+interface IButtons
 {
-	setResetKey: React.Dispatch<React.SetStateAction<number>>,
-	settingRefs: SettingRefs,
+	setResetKey: React.Dispatch<React.SetStateAction<number>>;
+	settingRefs: SettingRefs;
 }
 
 type SettingRefs =
@@ -28,7 +28,7 @@ type SettingRefs =
 	dummyDropdown: React.RefObject<HTMLSelectElement | null>,
 }
 
-function SettingsWindow( { settingRefs } : SettingsWindowProps )
+function SettingsWindow( { settingRefs } : ISettingsWindow )
 {
 	const { settings } = useSettings();
 
@@ -41,7 +41,7 @@ function SettingsWindow( { settingRefs } : SettingsWindowProps )
 	);
 }
 
-function Buttons( { setResetKey, settingRefs } : ButtonsProps )
+function Buttons( { setResetKey, settingRefs } : IButtons )
 {
 	const { setSettings } = useSettings();
 

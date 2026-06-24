@@ -1,14 +1,14 @@
 import styles from "./Checkbox.module.scss"
 
-type CheckboxProps =
+interface ICheckboxProps
 {
-	ref?: React.RefObject<HTMLInputElement | null>,
-	label: string,
-	id: string,
-	setting: boolean,
+	ref?: React.RefObject<HTMLInputElement | null>;
+	label: string;
+	id: string;
+	setting: boolean;
 }
 
-export default function Checkbox( { ref, label, id, setting } : CheckboxProps )
+export default function Checkbox( { ref, label, id, setting } : ICheckboxProps )
 {
 	return (
 		<div className={styles.checkbox}>

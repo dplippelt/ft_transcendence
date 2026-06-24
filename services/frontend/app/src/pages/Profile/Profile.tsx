@@ -15,13 +15,13 @@ enum Tab
 	stats,
 }
 
-interface ProfileTabsProps
+interface IProfileTabs
 {
-	tab: Tab,
-	setTab: React.Dispatch<React.SetStateAction<Tab>>,
+	tab: Tab;
+	setTab: React.Dispatch<React.SetStateAction<Tab>>;
 }
 
-function ProfileTabs( { tab, setTab } : ProfileTabsProps )
+function ProfileTabs( { tab, setTab } : IProfileTabs )
 {
 	return (
 		<div className={styles.tabs}>

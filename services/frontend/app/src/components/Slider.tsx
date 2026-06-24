@@ -1,14 +1,14 @@
 import { useState } from "react";
 import styles from "./Slider.module.scss"
 
-type SliderProps =
+interface SliderProps
 {
-	ref?: React.RefObject<HTMLInputElement | null>,
-	label: string,
-	id: string,
-	min: number,
-	max: number,
-	setting: number,
+	ref?: React.RefObject<HTMLInputElement | null>;
+	label: string;
+	id: string;
+	min: number;
+	max: number;
+	setting: number;
 }
 
 export default function Slider( { ref, label, id, min, max, setting } : SliderProps )

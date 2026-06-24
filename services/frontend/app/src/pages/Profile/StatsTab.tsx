@@ -1,13 +1,13 @@
 import styles from  "./StatsTab.module.scss";
 import sharedStyle from "./Tab.module.scss";
 
-interface StatProps
+interface IStat
 {
-	label: string,
-	score: number,
+	label: string;
+	score: number;
 }
 
-function Stat( { label, score } : StatProps )
+function Stat( { label, score } : IStat )
 {
 	return (
 		<>

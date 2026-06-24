@@ -14,12 +14,12 @@ export enum EditWindowType
 	password,
 }
 
-interface AccountInfoProp
+interface IAccountInfo
 {
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>,
+	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>;
 }
 
-function Avatar( { setEditWindowType } : AccountInfoProp )
+function Avatar( { setEditWindowType } : IAccountInfo )
 {
 	const { user } = useUser();
 
@@ -32,7 +32,7 @@ function Avatar( { setEditWindowType } : AccountInfoProp )
 	);
 }
 
-function Username( { setEditWindowType } : AccountInfoProp )
+function Username( { setEditWindowType } : IAccountInfo )
 {
 	const { user } = useUser();
 
@@ -45,7 +45,7 @@ function Username( { setEditWindowType } : AccountInfoProp )
 	);
 }
 
-function Password( { setEditWindowType } : AccountInfoProp )
+function Password( { setEditWindowType } : IAccountInfo )
 {
 	return (
 		<>

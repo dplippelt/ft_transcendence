@@ -23,10 +23,10 @@ interface IBottomButton
 	mobilePosition?: string;
 }
 
-interface EditButtonProps
+interface IEditButton
 {
-	editType: EditWindowType,
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>,
+	editType: EditWindowType;
+	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>;
 }
 
 export function MenuButton( { label, onClick } : IMenuButton )
@@ -51,7 +51,7 @@ export function BackButton()
 	return <BottomButton label="Back" onClick={ () => navigate(-1) } mobilePosition="mobileBottom" />;
 }
 
-export function EditButton( { editType, setEditWindowType } : EditButtonProps )
+export function EditButton( { editType, setEditWindowType } : IEditButton )
 {
 	return <MossButton label="Edit" onClick={ () => setEditWindowType(editType) } extraStyling={styles.editButton}/>;
 }

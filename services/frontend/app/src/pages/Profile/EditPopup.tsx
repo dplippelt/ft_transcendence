@@ -7,18 +7,18 @@ import ErrorText from "../../components/ErrorText";
 import { MossButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
 
-interface EditPopup
+interface IEditPopup
 {
-	editWindowType: EditWindowType,
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>,
+	editWindowType: EditWindowType;
+	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>;
 }
 
-interface EditContentProp
+interface IEditContent
 {
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>,
+	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>;
 }
 
-function EditAvatarContent( { setEditWindowType } : EditContentProp )
+function EditAvatarContent( { setEditWindowType } : IEditContent )
 {
 	const [error, setError] = useState<AccountError>(AccountError.none);
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -67,7 +67,7 @@ function EditAvatarContent( { setEditWindowType } : EditContentProp )
 	)
 }
 
-function EditUsernameContent( { setEditWindowType } : EditContentProp )
+function EditUsernameContent( { setEditWindowType } : IEditContent )
 {
 	const [error, setError] = useState<AccountError>(AccountError.none);
 	const [username, setUsername] = useState<string>("");
@@ -98,7 +98,7 @@ function EditUsernameContent( { setEditWindowType } : EditContentProp )
 	)
 }
 
-function EditPasswordContent( { setEditWindowType } : EditContentProp )
+function EditPasswordContent( { setEditWindowType } : IEditContent )
 {
 	const [error, setError] = useState<AccountError>(AccountError.none);
 	const [password, setPassword] = useState<string>("");
@@ -131,7 +131,7 @@ function EditPasswordContent( { setEditWindowType } : EditContentProp )
 	)
 }
 
-export default function EditPopup( { editWindowType, setEditWindowType } : EditPopup )
+export default function EditPopup( { editWindowType, setEditWindowType } : IEditPopup )
 {
 	switch (editWindowType)
 	{

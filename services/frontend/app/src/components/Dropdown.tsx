@@ -1,16 +1,16 @@
 import styles from "./Dropdown.module.scss"
 
-type DropdownProps =
+interface IDropdown
 {
-	ref?: React.RefObject<HTMLSelectElement | null>,
-	label: string,
-	id: string,
-	options: { value: string, label:string }[],
-	setting: string,
+	ref?: React.RefObject<HTMLSelectElement | null>;
+	label: string;
+	id: string;
+	options: { value: string, label:string }[];
+	setting: string;
 	onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
-export default function Dropdown( { ref, label, id, options, setting, onChange } : DropdownProps )
+export default function Dropdown( { ref, label, id, options, setting, onChange } : IDropdown )
 {
 	return (
 		<div className={styles.dropdown}>
