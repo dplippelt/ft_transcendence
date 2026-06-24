@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
-import StartGame from "../game/main";
-import { EventBus } from "../game/EventBus";
-import Background from "../components/Background";
+import StartGame from "../../game/main";
+import { EventBus } from "../../game/EventBus";
+import Background from "../../components/Background";
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
