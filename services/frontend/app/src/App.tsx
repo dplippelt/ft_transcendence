@@ -1,8 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { useRef } from "react"
-import useAppControls from "./hooks/useAppControls"
-import useAppEffects from "./hooks/useAppEffects"
-import useAppState from "./hooks/useAppState"
 import LandingPage from "./pages/LandingPage/LandingPage"
 import MainMenu from "./pages/MainMenu/MainMenu"
 import Settings from "./pages/Settings/Settings"
@@ -11,44 +8,10 @@ import Leaderboard from "./pages/Leaderboard/Leaderboard"
 import Profile from "./pages/Profile/Profile"
 import Auth from "./pages/Auth/Auth"
 
-export type AppStates =
-{
-}
-
-export type SetAppStates =
-{
-}
-
-export type Controls =
-{
-}
-
 export default function App()
 {
 	//  References to the PhaserGame component (game and scene are exposed)
 	const phaserRef = useRef<IRefPhaserGame | null>(null);
-
-	const
-	{
-	} = useAppState();
-
-	const states: AppStates =
-	{
-	};
-
-	const setStates: SetAppStates =
-	{
-	};
-
-	const
-	{
-	} = useAppControls(states, setStates);
-
-	const controls: Controls =
-	{
-	}
-
-  useAppEffects(states, setStates, controls);
 
 	// Event emitted from the PhaserGame component
 	const currentScene = (scene: Phaser.Scene) => {
