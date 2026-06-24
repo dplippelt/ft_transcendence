@@ -4,15 +4,7 @@
 .profileWindow
 {
 	@include window;
-	max-width: min(800px, 90%);
-	min-height: min(800px, 60vh);
-	display: grid;
-	overflow: hidden;
-	row-gap: 1rem;
-	text-align: left;
-	align-content: start;
-	padding: 2rem;
-	font-family: $text-font;
+	@include menuWindow;
 
 	@media (max-width: 480px)
 	{

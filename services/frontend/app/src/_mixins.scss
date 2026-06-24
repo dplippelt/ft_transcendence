@@ -22,6 +22,19 @@
 	margin: 0 auto;
 }
 
+@mixin menuWindow
+{
+	max-width: min(800px, 90%);
+	min-height: min(800px, 60vh);
+	display: grid;
+	overflow: hidden;
+	row-gap: 1rem;
+	padding: 2rem;
+	font-family: $text-font;
+	text-align: left;
+	align-content: start;
+}
+
 @mixin profileInfo
 {
 	display: grid;
