@@ -2,11 +2,12 @@ import styles from "./Profile.module.scss";
 import { useState } from "react";
 import AccountTab from "./AccountTab";
 import StatsTab from "./StatsTab";
-import { BackButton } from "../../components/Buttons";
+import { BackButton, BottomButton } from "../../components/Buttons";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { BottomButtons } from "../../components/ButtonContainers";
 import { MenuTitle } from "../../components/PageTitle";
+import { useNavigate } from "react-router-dom";
 
 enum Tab
 {
@@ -44,9 +45,12 @@ function ProfileWindow()
 
 function Buttons()
 {
+	const navigate = useNavigate();
+
 	return (
 		<BottomButtons>
 			<BackButton />
+			<BottomButton label="Leaderboard" onClick={ () => navigate("/leaderboard") } />
 		</BottomButtons>
 	);
 }
