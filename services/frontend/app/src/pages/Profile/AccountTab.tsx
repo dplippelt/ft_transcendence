@@ -1,10 +1,10 @@
 import { useState } from "react";
-import { useAccount } from "../../contexts/AccountContext";
 import styles from "./AccountTab.module.scss";
 import sharedStyle from "./Tab.module.scss";
 import Popup from "../../components/Popup";
 import EditPopup from "./EditPopup";
 import { EditButton } from "../../components/Buttons";
+import { useUser } from "../../contexts/UserContext";
 
 export enum EditWindowType
 {
@@ -21,26 +21,26 @@ interface AccountInfoProp
 
 function Avatar( { setEditWindowType } : AccountInfoProp )
 {
-	const { account } = useAccount();
+	const { user } = useUser();
 
 	return (
 		<>
 			<div className={sharedStyle.profileLabel}>Avatar:</div>
-			<img className="avatar" src={account.avatar} />
-			{ account.guest ? <div /> : <EditButton editType={EditWindowType.avatar} setEditWindowType={setEditWindowType} /> }
+			<img className="avatar" src={user.avatar} />
+			<EditButton editType={EditWindowType.avatar} setEditWindowType={setEditWindowType} />
 		</>
 	);
 }
 
 function Username( { setEditWindowType } : AccountInfoProp )
 {
-	const { account } = useAccount();
+	const { user } = useUser();
 
 	return (
 		<>
 			<div className={sharedStyle.profileLabel}>Username:</div>
-			<div className={styles.textInfo}>{account.username}</div>
-			{ account.guest ? <div /> : <EditButton editType={EditWindowType.username} setEditWindowType={setEditWindowType} /> }
+			<div className={styles.textInfo}>{user.username}</div>
+			<EditButton editType={EditWindowType.username} setEditWindowType={setEditWindowType} />
 		</>
 	);
 }
@@ -59,14 +59,13 @@ function Password( { setEditWindowType } : AccountInfoProp )
 export default function Account()
 {
 	const [editWindowType, setEditWindowType] = useState<EditWindowType>(EditWindowType.none);
-	const { account } = useAccount();
 
 	return (
 		<>
 			<div className={styles.accountInfo}>
 				<Avatar setEditWindowType={setEditWindowType} />
 				<Username setEditWindowType={setEditWindowType} />
-				{ account.guest ? <div /> : <Password setEditWindowType={setEditWindowType} />}
+				<Password setEditWindowType={setEditWindowType} />
 				{ editWindowType !== EditWindowType.none && <Popup> <EditPopup  editWindowType={editWindowType} setEditWindowType={setEditWindowType} /> </Popup> }
 			</div>
 		</>

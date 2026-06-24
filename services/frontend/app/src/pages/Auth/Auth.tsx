@@ -5,10 +5,11 @@ import { MenuTitle } from "../../components/PageTitle";
 import styles from "./Auth.module.scss";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
-import { useAccount } from "../../contexts/AccountContext";
+import { useAuth } from "../../contexts/AuthContext";
 import ErrorText from "../../components/ErrorText";
 import { AccountError } from "../../utils/errors";
 import { MossButton } from "../../components/Buttons";
+import { useUser } from "../../contexts/UserContext";
 
 function LoginQuery()
 {
@@ -16,7 +17,8 @@ function LoginQuery()
 	const [password, setPassword] = useState<string>("");
 	const [error, setError] = useState<AccountError>(AccountError.none);
 	const navigate = useNavigate();
-	const account = useAccount();
+	const auth = useAuth();
+	const user = useUser();
 
 	function checkLogin()
 	{
@@ -27,7 +29,8 @@ function LoginQuery()
 		if ( username !== password )
 			return setError(AccountError.incorrectCreds);
 
-		account.setAccount( prev => ({ ...prev, guest: false, username: username, password: password }));
+		auth.setAuth( prev => ({ ...prev, guest: false, username: username }));
+		user.setUser( prev => ({ ...prev, username: username }));
 		navigate("/main-menu");
 	}
 
@@ -52,7 +55,8 @@ function SignupQuery()
 	const [confirmPassword, setConfirmPassword] = useState<string>("");
 	const [error, setError] = useState<AccountError>(AccountError.none);
 	const navigate = useNavigate();
-	const account = useAccount();
+	const auth = useAuth();
+	const user = useUser();
 
 	function signupCheck()
 	{
@@ -66,7 +70,8 @@ function SignupQuery()
 		if ( password !== confirmPassword )
 			return setError(AccountError.passwordsDontMatch);
 
-		account.setAccount( prev => ({ ...prev, guest: false, username: username, password: password }));
+		auth.setAuth( prev => ({ ...prev, guest: false, username: username }));
+		user.setUser( prev => ({ ...prev, username: username }));
 		navigate("/main-menu");
 	}
 
