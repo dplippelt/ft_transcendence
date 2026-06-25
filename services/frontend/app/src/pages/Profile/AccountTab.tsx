@@ -1,4 +1,5 @@
 import { useState } from "react";
+import type React from "react";
 import styles from "./AccountTab.module.scss";
 import sharedStyle from "./Tab.module.scss";
 import Popup from "../../components/Popup";

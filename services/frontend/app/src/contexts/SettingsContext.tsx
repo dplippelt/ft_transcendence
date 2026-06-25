@@ -1,23 +1,25 @@
 import { createContext, useContext, useState } from "react";
 import type { ReactNode } from "react";
 
-export type SettingsContextType =
+interface ISettingsContext
 {
-	settings: Settings,
-	setSettings: React.Dispatch<React.SetStateAction<Settings>>,
+	settings: ISettings;
+	applySettings: ( newSettings: ISettings ) => void;
+	resetSettings: () => void;
+	// setSettings: React.Dispatch<React.SetStateAction<ISettings>>;
 }
 
-export type Settings =
+export interface ISettings
 {
 	// define data type for each setting
-	dummyBoolean: boolean,
-	dummySlider: number,
-	dummyDropdown: string,
+	dummyBoolean: boolean;
+	dummySlider: number;
+	dummyDropdown: string;
 }
 
-const SettingsContext = createContext<SettingsContextType | null>(null);
+const SettingsContext = createContext<ISettingsContext | null>(null);
 
-export const defaultSettings: Settings =
+export const defaultSettings: ISettings =
 {
 	// define default settings for each setting
 	dummyBoolean: true,
@@ -27,7 +29,17 @@ export const defaultSettings: Settings =
 
 export default function SettingsProvider( { children } : {children: ReactNode} )
 {
-	const [settings, setSettings] = useState<Settings>(defaultSettings);
+	const [settings, setSettings] = useState<ISettings>(defaultSettings);
+
+	function applySettings( newSettings: ISettings )
+	{
+		setSettings(newSettings);
+	}
+
+	function resetSettings()
+	{
+		setSettings(defaultSettings);
+	}
 
 	// mock template for later when loading settings info from database after login (e.g. when user hits F5 to reload page)
 	// at the moment when you hit F5 everything is rerendered and settings info will be set to default again.
@@ -48,7 +60,7 @@ export default function SettingsProvider( { children } : {children: ReactNode} )
 		<SettingsContext.Provider
 			value=
 			{{
-				settings, setSettings,
+				settings, applySettings, resetSettings,
 			}}>
 			{children}
 		</SettingsContext.Provider>

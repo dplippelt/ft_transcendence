@@ -7,6 +7,7 @@ import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { BottomButtons } from "../../components/ButtonContainers";
 import { MenuTitle } from "../../components/PageTitle";
+import type React from "react";
 
 // start temporary example scores for three stats
 const stat_1_scores: Score[] =

@@ -1,6 +1,7 @@
-import { defaultSettings, useSettings, type Settings } from "../../contexts/SettingsContext";
+import { defaultSettings, useSettings, type ISettings } from "../../contexts/SettingsContext";
 import styles from "./Settings.module.scss";
 import { useRef, useState } from "react";
+import type React from "react";
 import { MenuTitle } from "../../components/PageTitle";
 import { BottomButtons } from "../../components/ButtonContainers";
 import Background from "../../components/Background";
@@ -43,9 +44,9 @@ function SettingsWindow( { settingRefs } : ISettingsWindow )
 
 function Buttons( { setResetKey, settingRefs } : IButtons )
 {
-	const { setSettings } = useSettings();
+	const settings = useSettings();
 
-	function saveSettingsToDB(settings: Settings)
+	function saveSettingsToDB(settings: ISettings)
 	{
 		// add saving settings to database here
 		void settings;
@@ -53,21 +54,21 @@ function Buttons( { setResetKey, settingRefs } : IButtons )
 
 	function resetSettings()
 	{
-		setSettings(defaultSettings);
+		settings.resetSettings();
 		setResetKey(prev => prev + 1);
 		saveSettingsToDB(defaultSettings);
 	}
 
 	function applySettings()
 	{
-		const newSettings: Settings =
+		const newSettings: ISettings =
 		{
 			dummyBoolean: settingRefs.dummyBoolean.current!.checked,
 			dummySlider: Number(settingRefs.dummySlider.current!.value),
 			dummyDropdown: settingRefs.dummyDropdown.current!.value,
 		};
 
-		setSettings(newSettings);
+		settings.applySettings(newSettings);
 		saveSettingsToDB(newSettings);
 	}
 

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import type React from "react";
 import { AccountError } from "../../utils/errors";
 import styles from "./EditPopup.module.scss";
 import { EditWindowType } from "../../pages/Profile/AccountTab";
@@ -6,6 +7,8 @@ import { PopupButtons } from "../../components/ButtonContainers";
 import ErrorText from "../../components/ErrorText";
 import { MossButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
+import guestAvatar from  "../../assets/guest_avatar_test.jpg";
+import testAvatar from "../../assets/mesca_avatar_test.png";
 
 interface IEditPopup
 {
@@ -22,7 +25,7 @@ function EditAvatarContent( { setEditWindowType } : IEditContent )
 {
 	const [error, setError] = useState<AccountError>(AccountError.none);
 	const fileInputRef = useRef<HTMLInputElement>(null);
-	const { setUser } = useUser();
+	const user = useUser();
 
 	function handleUpload(e: React.ChangeEvent<HTMLInputElement>)
 	{
@@ -37,15 +40,15 @@ function EditAvatarContent( { setEditWindowType } : IEditContent )
 
 	function avatarCheck(newAvatar: string)
 	{
-		setUser(prev => ({ ...prev, avatar: newAvatar })); //also update database
+		user.updateAvatar(newAvatar); //also update database
 		setEditWindowType(EditWindowType.none);
 	}
 
 	// start temp list of example avatars
 	const avatars =
 	[
-		"/src/assets/guest_avatar_test.jpg",
-		"/src/assets/mesca_avatar_test.png",
+		guestAvatar,
+		testAvatar,
 	]
 	// end temp list of example avatars
 
@@ -71,7 +74,7 @@ function EditUsernameContent( { setEditWindowType } : IEditContent )
 {
 	const [error, setError] = useState<AccountError>(AccountError.none);
 	const [username, setUsername] = useState<string>("");
-	const { setUser } = useUser();
+	const user = useUser();
 
 	function usernameCheck()
 	{
@@ -81,7 +84,7 @@ function EditUsernameContent( { setEditWindowType } : IEditContent )
 		if ( username.length === 1 )
 			return setError(AccountError.usernameAlreadyTaken);
 
-		setUser(prev => ({ ...prev, username: username })); //also update database
+		user.updateUsername(username); //also update database
 		setEditWindowType(EditWindowType.none);
 	}
 

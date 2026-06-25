@@ -1,5 +1,6 @@
 import styles from "./Profile.module.scss";
 import { useState } from "react";
+import type React from "react";
 import AccountTab from "./AccountTab";
 import StatsTab from "./StatsTab";
 import { BackButton, BottomButton } from "../../components/Buttons";

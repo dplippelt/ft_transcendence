@@ -4,13 +4,13 @@
 {
 	padding: 0.25rem 0.2rem;
 	padding-bottom: 0.15rem;
-	background-color: $button-bg-color !important;
+	background-color: $button-bg-color;
 	font-size: 1rem;
 
 	&:hover
 	{
-		background-color: $button-hover-bg-color !important;
-		color: $button-hover-color !important;
+		background-color: $button-hover-bg-color;
+		color: $button-hover-color;
 	}
 }
 
@@ -21,7 +21,7 @@
 	max-width: 90%;
 	padding: 0.25rem 0.2rem;
 	padding-bottom: 0.15rem;
-	background-color: $button-bg-color !important;
+	background-color: $button-bg-color;
 	font-size: 1rem;
 
 	@media (max-width: 480px)
@@ -31,8 +31,8 @@
 
 	&:hover
 	{
-		background-color: $button-hover-bg-color !important;
-		color: $button-hover-color !important;
+		background-color: $button-hover-bg-color;
+		color: $button-hover-color;
 	}
 }
 
@@ -42,7 +42,7 @@
 	font-size: 0.8rem;
 	padding: 0.2rem 1rem;
 	padding-bottom: 0.1rem;
-	background-color: $button-v1-bg-color !important;
+	background-color: $button-v1-bg-color;
 
 	@media (max-width: 480px)
 	{
@@ -51,8 +51,8 @@
 
 	&:hover
 	{
-		background-color: $button-v1-hover-bg-color !important;
-		color: $button-v1-hover-color !important;
+		background-color: $button-v1-hover-bg-color;
+		color: $button-v1-hover-color;
 	}
 }
 

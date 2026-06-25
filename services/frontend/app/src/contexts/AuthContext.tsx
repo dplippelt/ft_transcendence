@@ -1,32 +1,41 @@
 import { createContext, useContext, /* useEffect, */ useState } from "react";
 import type { ReactNode } from "react";
 
-export type AuthContextType =
+interface IAuthContext
 {
-	auth: Auth,
-	setAuth: React.Dispatch<React.SetStateAction<Auth>>,
+	auth: IAuth;
+	login: () => void;
+	logout: () => void;
 }
 
-export type Auth =
+export interface IAuth
 {
 	// define data type for each Auth value
-	guest: boolean,
-	username: string,
+	guest: boolean;
 }
 
-const AuthContext = createContext<AuthContextType | null>(null);
+const AuthContext = createContext<IAuthContext | null>(null);
 
-export const defaultAuth: Auth =
+export const defaultAuth: IAuth =
 {
 	// define default Auth values
 	guest: true,
-	username: "Guest",
 	// add sessionToken
 };
 
 export default function AuthProvider( { children } : {children: ReactNode} )
 {
-	const [auth, setAuth] = useState<Auth>(defaultAuth);
+	const [auth, setAuth] = useState<IAuth>(defaultAuth);
+
+	function login()
+	{
+		setAuth( prev => ({ ...prev, guest: false }) );
+	}
+
+	function logout()
+	{
+		setAuth(defaultAuth);
+	}
 
 	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)
 	// at the moment when you hit F5 everything is rerendered and Auth info will be set to default again.
@@ -47,7 +56,7 @@ export default function AuthProvider( { children } : {children: ReactNode} )
 		<AuthContext.Provider
 			value=
 			{{
-				auth, setAuth,
+				auth, login, logout,
 			}}>
 			{children}
 		</AuthContext.Provider>

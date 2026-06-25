@@ -3,20 +3,20 @@ import styles from "./MainMenu.module.scss"
 import { AppTitle } from "../../components/PageTitle";
 import { MenuButtons } from "../../components/ButtonContainers";
 import Background from "../../components/Background";
-import { defaultAuth, useAuth } from "../../contexts/AuthContext";
+import { useAuth } from "../../contexts/AuthContext";
 import { MenuButton } from "../../components/Buttons";
-import { defaultUser, useUser } from "../../contexts/UserContext";
+import { useUser } from "../../contexts/UserContext";
 
 function Buttons()
 {
 	const navigate = useNavigate();
-	const { setAuth } = useAuth();
-	const { setUser } = useUser();
+	const auth = useAuth();
+	const user = useUser();
 
 	function logout()
 	{
-		setAuth(defaultAuth);
-		setUser(defaultUser);
+		auth.logout();
+		user.resetUsername();
 		navigate("/");
 	}
 

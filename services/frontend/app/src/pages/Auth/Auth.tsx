@@ -29,8 +29,8 @@ function LoginQuery()
 		if ( username !== password )
 			return setError(AccountError.incorrectCreds);
 
-		auth.setAuth( prev => ({ ...prev, guest: false, username: username }));
-		user.setUser( prev => ({ ...prev, username: username }));
+		auth.login();
+		user.updateUsername(username);
 		navigate("/main-menu");
 	}
 
@@ -70,8 +70,8 @@ function SignupQuery()
 		if ( password !== confirmPassword )
 			return setError(AccountError.passwordsDontMatch);
 
-		auth.setAuth( prev => ({ ...prev, guest: false, username: username }));
-		user.setUser( prev => ({ ...prev, username: username }));
+		auth.login();
+		user.updateUsername(username);
 		navigate("/main-menu");
 	}
 

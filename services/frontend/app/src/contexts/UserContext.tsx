@@ -1,31 +1,49 @@
 import { createContext, useContext, /* useEffect, */ useState } from "react";
 import type { ReactNode } from "react";
+import guestAvatar from "../assets/guest_avatar_test.jpg";
 
-export type UserContextType =
+interface IUserContext
 {
-	user: User,
-	setUser: React.Dispatch<React.SetStateAction<User>>,
+	user: IUser;
+	updateUsername: ( username: string ) => void;
+	resetUsername: () => void;
+	updateAvatar: ( newAvatar: string ) => void;
 }
 
-export type User =
+export interface IUser
 {
 	// define data type for each User value
-	username: string,
-	avatar: string,
+	username: string;
+	avatar: string;
 }
 
-const UserContext = createContext<UserContextType | null>(null);
+const UserContext = createContext<IUserContext | null>(null);
 
-export const defaultUser: User =
+export const defaultUser: IUser =
 {
 	// define default User values
 	username: "Guest",
-	avatar: "/src/assets/guest_avatar_test.jpg",
+	avatar: guestAvatar,
 };
 
 export default function UserProvider( { children } : {children: ReactNode} )
 {
-	const [user, setUser] = useState<User>(defaultUser);
+	const [user, setUser] = useState<IUser>(defaultUser);
+
+	function updateUsername( username: string )
+	{
+		setUser( prev => ({ ...prev, username: username }) );
+	}
+
+	function resetUsername()
+	{
+		setUser(defaultUser);
+	}
+
+	function updateAvatar( newAvatar: string )
+	{
+		setUser(prev => ({ ...prev, avatar: newAvatar }));
+	}
 
 	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)
 	// at the moment when you hit F5 everything is rerendered and User info will be set to default again.
@@ -46,7 +64,7 @@ export default function UserProvider( { children } : {children: ReactNode} )
 		<UserContext.Provider
 			value=
 			{{
-				user, setUser,
+				user, updateUsername, resetUsername, updateAvatar,
 			}}>
 			{children}
 		</UserContext.Provider>

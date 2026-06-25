@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import type React from "react";
 import styles from "./Buttons.module.scss";
 import type { EditWindowType } from "../pages/Profile/AccountTab";
 

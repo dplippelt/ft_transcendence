@@ -20,13 +20,13 @@ body, html, #root
 	font-size: 24px;
 	overflow-x: hidden;
 	height: 100%;
+}
 
-	@media (max-width: 480px)
+@media (max-width: 480px)
+{
+	body, html, #root
 	{
-		html
-		{
-			font-size: 20px;
-		}
+		font-size: 20px;
 	}
 }
 
@@ -152,7 +152,7 @@ input[type="range"]::-webkit-slider-thumb
 
 button
 {
-	border: 1px solid $button-border-color !important;
+	border: 1px solid $button-border-color;
 	border-radius: 8px;
 	font-family: $button-font;
 	transition: background-color 0.2s ease;
