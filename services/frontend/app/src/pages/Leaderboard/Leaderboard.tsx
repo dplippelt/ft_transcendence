@@ -1,5 +1,5 @@
 import styles from "./Leaderboard.module.scss";
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import Dropdown from "../../components/Dropdown";
 import useIsMobile from "../../hooks/useIsMobile";
 import { BackButton, MossButton } from "../../components/Buttons";
