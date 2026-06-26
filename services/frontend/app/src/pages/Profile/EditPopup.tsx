@@ -2,13 +2,14 @@ import { useRef, useState } from "react";
 import type React from "react";
 import { AccountError } from "../../utils/errors";
 import styles from "./EditPopup.module.scss";
-import { EditWindowType } from "../../pages/Profile/AccountTab";
 import { PopupButtons } from "../../components/ButtonContainers";
 import ErrorText from "../../components/ErrorText";
 import { MossButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
 import guestAvatar from  "../../assets/guest_avatar_test.jpg";
 import testAvatar from "../../assets/mesca_avatar_test.png";
+import { PasswordInput, TextInput } from "../../components/TextInput";
+import { EditWindowType } from "./enums";
 
 interface IEditPopup
 {
@@ -34,7 +35,7 @@ function EditAvatarContent( { setEditWindowType } : IEditContent )
 			return;
 		if ( file.type !== "image/png" && file.type !== "image/jpeg" )
 			return setError(AccountError.avatarBadFileType);
-		const uploadedAvatar = URL.createObjectURL(file); // upload to database later and fetch from there.
+		const uploadedAvatar = URL.createObjectURL(file); // upload to database later and fetch from there (and revoke object URL after upload to DB and get real URL).
 		avatarCheck(uploadedAvatar);
 	}
 
@@ -55,10 +56,10 @@ function EditAvatarContent( { setEditWindowType } : IEditContent )
 	return (
 		<>
 			{ error !== AccountError.none && <ErrorText error={error}/> }
-			<div className="text" style={{ textAlign: "center" }}>Pick an avatar</div>
+			<label className={styles.avatarsLabel}>Pick an avatar</label>
 			<div className={styles.avatars}>
 				{ avatars.map((avatar, idx) => (
-					<img key={idx} className="avatar" src={avatar} onClick={ () => avatarCheck(avatar) } />
+					<img key={avatar} className="avatar" src={avatar} onClick={ () => avatarCheck(avatar) } alt={`Avatar ${idx + 1}`} />
 				))}
 			</div>
 			<PopupButtons>
@@ -91,8 +92,7 @@ function EditUsernameContent( { setEditWindowType } : IEditContent )
 	return (
 		<>
 			{ error !== AccountError.none && <ErrorText error={error}/> }
-			<div className="text">Edit username:</div>
-			<input className="textInput" autoComplete="off" type="text" placeholder="Enter new username" onChange={ (e) => setUsername(e.target.value) }/>
+			<TextInput label="Edit username:" placeholder="Enter new username" setter={setUsername} id="newUsername" />
 			<PopupButtons>
 				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } />
 				<MossButton label="Ok" onClick={ usernameCheck } />
@@ -122,10 +122,8 @@ function EditPasswordContent( { setEditWindowType } : IEditContent )
 	return (
 		<>
 			{ error !== AccountError.none && <ErrorText error={error}/> }
-			<div className="text">Edit password:</div>
-			<input className="textInput" autoComplete="off" type="password" placeholder="Enter new password" onChange={ (e) => setPassword(e.target.value) }/>
-			<div className="text">Repeat password:</div>
-			<input className="textInput" autoComplete="off" type="password" placeholder="Enter new password again" onChange={ (e) => setConfirmPassword(e.target.value) }/>
+			<PasswordInput label="Edit password:" placeholder="Enter new password" isNewPassword={true} setter={setPassword} id="newPassword" />
+			<PasswordInput label="Confirm password:" placeholder="Confirm new password" isNewPassword={true} setter={setConfirmPassword} id="confirmPassword" />
 			<PopupButtons>
 				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } />
 				<MossButton label="Ok" onClick={ passwordCheck } />
@@ -145,6 +143,6 @@ export default function EditPopup( { editWindowType, setEditWindowType } : IEdit
 		case EditWindowType.avatar:
 			return <EditAvatarContent setEditWindowType={setEditWindowType} />
 		default:
-			return;
+			return null;
 	}
 }

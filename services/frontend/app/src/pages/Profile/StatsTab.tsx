@@ -12,7 +12,7 @@ function Stat( { label, score } : IStat )
 	return (
 		<>
 			<div className={sharedStyle.profileLabel}>{`${label}:`}</div>
-			<div className={styles.textInfo}>{score}</div>
+			<div className={sharedStyle.textInfo}>{score}</div>
 		</>
 	)
 }

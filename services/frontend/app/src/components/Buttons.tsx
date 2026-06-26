@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
-import type { EditWindowType } from "../pages/Profile/AccountTab";
+import { EditWindowType } from "../pages/Profile/enums";
 
 interface IMenuButton
 {
@@ -30,6 +30,19 @@ interface IEditButton
 	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>;
 }
 
+interface ITextButton
+{
+	label: string;
+	onClick: () => void;
+}
+
+interface ITabButton
+{
+	label: string;
+	isSelected: boolean;
+	onClick: () => void;
+}
+
 export function MenuButton( { label, onClick } : IMenuButton )
 {
 	return <button className={styles.menuButton} onClick={onClick}>{label}</button>
@@ -55,4 +68,14 @@ export function BackButton()
 export function EditButton( { editType, setEditWindowType } : IEditButton )
 {
 	return <MossButton label="Edit" onClick={ () => setEditWindowType(editType) } extraStyling={styles.editButton}/>;
+}
+
+export function TextButton( { label, onClick } : ITextButton )
+{
+	return <button className={styles.textButton} onClick={onClick}>{label}</button>
+}
+
+export function TabButton ( { label, isSelected, onClick } : ITabButton )
+{
+	return <button className={ isSelected ? styles.tabSelected : styles.tabNotSelected } onClick={onClick}>{label}</button>
 }

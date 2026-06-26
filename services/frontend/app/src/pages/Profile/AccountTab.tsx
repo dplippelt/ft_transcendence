@@ -6,14 +6,7 @@ import Popup from "../../components/Popup";
 import EditPopup from "./EditPopup";
 import { EditButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
-
-export enum EditWindowType
-{
-	none,
-	avatar,
-	username,
-	password,
-}
+import { EditWindowType } from "./enums";
 
 interface IAccountInfo
 {
@@ -27,7 +20,7 @@ function Avatar( { setEditWindowType } : IAccountInfo )
 	return (
 		<>
 			<div className={sharedStyle.profileLabel}>Avatar:</div>
-			<img className="avatar" src={user.avatar} />
+			<img className="avatar" src={user.avatar} alt="User avatar" />
 			<EditButton editType={EditWindowType.avatar} setEditWindowType={setEditWindowType} />
 		</>
 	);
@@ -40,7 +33,7 @@ function Username( { setEditWindowType } : IAccountInfo )
 	return (
 		<>
 			<div className={sharedStyle.profileLabel}>Username:</div>
-			<div className={styles.textInfo}>{user.username}</div>
+			<div className={sharedStyle.textInfo}>{user.username}</div>
 			<EditButton editType={EditWindowType.username} setEditWindowType={setEditWindowType} />
 		</>
 	);

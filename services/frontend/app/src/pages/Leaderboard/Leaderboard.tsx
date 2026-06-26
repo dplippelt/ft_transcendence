@@ -1,5 +1,5 @@
 import styles from "./Leaderboard.module.scss";
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Dropdown from "../../components/Dropdown";
 import useIsMobile from "../../hooks/useIsMobile";
 import { BackButton, MossButton } from "../../components/Buttons";
@@ -74,12 +74,19 @@ type Score =
 
 interface IStatsPicker
 {
+	stat: Stat;
 	setStat: React.Dispatch<React.SetStateAction<Stat>>;
 }
 
 interface IColumnTitles
 {
 	stat: Stat;
+}
+
+interface ILeaderboardEntry
+{
+	entry: Score;
+	idx: number;
 }
 
 interface ILeaderboardList
@@ -93,16 +100,25 @@ interface ILeaderboardWindow
 	setStat: React.Dispatch<React.SetStateAction<Stat>>;
 }
 
-function StatsPicker( { setStat } : IStatsPicker )
+function StatsPicker( { stat, setStat } : IStatsPicker )
 {
 	const isMobile = useIsMobile();
+
+	function handleChange( e: React.ChangeEvent<HTMLSelectElement, Element> )
+	{
+		setStat(e.target.value as Stat);
+	}
 
 	if ( isMobile )
 	{
 		return (
-			<div className={styles.statsPicker}>
-				<Dropdown label="Sort by" id="stat" options={[ { value: Stat.stat_1, label: "Stat 1" }, { value: Stat.stat_2, label: "Stat 2" }, { value: Stat.stat_3, label: "Stat 3" } ]} setting="stat_1" onChange={ (e) => setStat(e.target.value as Stat) } />
-			</div>
+			<Dropdown
+				extraStyling={styles.dropDownStatsPicker}
+				label="Sort by"
+				id="stat"
+				options={[ { value: Stat.stat_1, label: "Stat 1" }, { value: Stat.stat_2, label: "Stat 2" }, { value: Stat.stat_3, label: "Stat 3" } ]}
+				setting={stat}
+				onChange={handleChange} />
 		);
 	}
 
@@ -126,6 +142,17 @@ function ColumnTitles( { stat } : IColumnTitles )
 	);
 }
 
+function LeaderboardEntry( { entry, idx } : ILeaderboardEntry )
+{
+	return (
+		<>
+			<div>{`${idx + 1}. `}</div>
+			<div>{entry.username}</div>
+			<div className={styles.score}>{entry.score}</div>
+		</>
+	);
+}
+
 function LeaderboardList( { stat } : ILeaderboardList )
 {
 	// get scores for all users for the specified stat from DB
@@ -145,16 +172,12 @@ function LeaderboardList( { stat } : ILeaderboardList )
 		}
 	}
 
-	const sortedScores: Score[] = getScores().sort((a, b) => b.score - a.score).slice(0, 10);
+	const sortedScores: Score[] = [...getScores()].sort((a, b) => b.score - a.score).slice(0, 10);
 
 	return (
 		<div className={styles.leaderboardList}>
 			{sortedScores.map((entry, idx) =>
-				<>
-					<div>{`${idx + 1}. `}</div>
-					<div>{entry.username}</div>
-					<div className={styles.score}>{entry.score}</div>
-				</>
+				<LeaderboardEntry key={entry.username} entry={entry} idx={idx} />
 			)}
 		</div>
 	);
@@ -164,7 +187,7 @@ function LeaderboardWindow( { stat, setStat } : ILeaderboardWindow )
 {
 	return (
 		<div className={styles.leaderboardWindow}>
-			<StatsPicker setStat={setStat} />
+			<StatsPicker stat={stat} setStat={setStat} />
 			<ColumnTitles stat={stat} />
 			<LeaderboardList stat={stat} />
 		</div>

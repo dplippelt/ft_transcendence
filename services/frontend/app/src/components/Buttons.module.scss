@@ -86,3 +86,42 @@
 		padding-right: 0.5rem;
 	}
 }
+
+@mixin textButton
+{
+	border: none;
+	background: none;
+	text-align: center;
+	font-family: $text-font;
+	cursor: pointer;
+}
+
+.textButton
+{
+	@include textButton;
+	text-decoration: underline;
+	font-size: 0.6rem;
+}
+
+@mixin tabButton
+{
+	@include textButton;
+	width: fit-content;
+	font-size: 0.8rem;
+	border-bottom: 1px solid $primary-text-color;
+	border-radius: 0px;
+}
+
+.tabSelected
+{
+	@include tabButton;
+	border-bottom: 1px solid $primary-text-color;
+	border-radius: 0px;
+}
+
+.tabNotSelected
+{
+	@include tabButton;
+	border-bottom: none;
+}
+

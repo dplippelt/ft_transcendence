@@ -3,18 +3,13 @@ import { useState } from "react";
 import type React from "react";
 import AccountTab from "./AccountTab";
 import StatsTab from "./StatsTab";
-import { BackButton, BottomButton } from "../../components/Buttons";
+import { BackButton, BottomButton, TabButton, TextButton } from "../../components/Buttons";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { BottomButtons } from "../../components/ButtonContainers";
 import { MenuTitle } from "../../components/PageTitle";
 import { useNavigate } from "react-router-dom";
-
-enum Tab
-{
-	account,
-	stats,
-}
+import { Tab } from "./enums";
 
 interface IProfileTabs
 {
@@ -26,8 +21,8 @@ function ProfileTabs( { tab, setTab } : IProfileTabs )
 {
 	return (
 		<div className={styles.tabs}>
-			<div className={styles.tab} style={ tab !== Tab.account ? { borderBottom: "none" } : {} } onClick={ () => setTab(Tab.account) }>ACCOUNT</div>
-			<div className={styles.tab} style={ tab !== Tab.stats ? { borderBottom: "none" } : {} } onClick={ () => setTab(Tab.stats) }>STATS</div>
+			<TabButton label="ACCOUNT" isSelected={ tab === Tab.account } onClick={ () => setTab(Tab.account) } />
+			<TabButton label="STATS" isSelected={ tab === Tab.stats } onClick={ () => setTab(Tab.stats) } />
 		</div>
 	);
 }

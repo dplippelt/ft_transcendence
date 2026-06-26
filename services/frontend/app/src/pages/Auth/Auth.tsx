@@ -8,8 +8,9 @@ import Page from "../../components/Page";
 import { useAuth } from "../../contexts/AuthContext";
 import ErrorText from "../../components/ErrorText";
 import { AccountError } from "../../utils/errors";
-import { MossButton } from "../../components/Buttons";
+import { MossButton, TextButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
+import { PasswordInput, TextInput } from "../../components/TextInput";
 
 function LoginQuery()
 {
@@ -37,13 +38,11 @@ function LoginQuery()
 	return (
 		<div className={styles.window}>
 			{ error !== AccountError.none && <ErrorText error={error}/> }
-			<div className="text">Username:</div>
-			<input type="text" placeholder="Enter username" onChange={ (e) => setUsername(e.target.value) }/>
-			<div className="text">Password:</div>
-			<input autoComplete="current-password" type="password" placeholder="Enter password" onChange={ (e) => setPassword(e.target.value) }/>
+			<TextInput label="Username:" placeholder="Enter username" setter={setUsername} id="username" />
+			<PasswordInput label="Password:" placeholder="Enter password" isNewPassword={false} setter={setPassword} id="password" />
 			<MossButton label="Login" onClick={checkLogin} />
 			<MossButton label="Continue with Google" onClick={ () => {} } />
-			<div className={styles.loginSignupInstead} onClick={ () => navigate("/auth?mode=signup") }>Don't have an account? Sign-up</div>
+			<TextButton label="Don't have an account? Sign-up" onClick={ () => navigate("/auth?mode=signup") } />
 		</div>
 	);
 }
@@ -78,15 +77,12 @@ function SignupQuery()
 	return (
 		<div className={styles.window}>
 			{ error !== AccountError.none && <ErrorText error={error}/> }
-			<div className="text">Username:</div>
-			<input type="text" placeholder="Enter new username" onChange={ (e) => setUsername(e.target.value) }/>
-			<div className="text">Password:</div>
-			<input autoComplete="new-password" type="password" placeholder="Enter new password" onChange={ (e) => setPassword(e.target.value) }/>
-			<div className="text">Repeat password:</div>
-			<input autoComplete="new-password" type="password" placeholder="Enter new password again" onChange={ (e) => setConfirmPassword(e.target.value) }/>
+			<TextInput label="Username:" placeholder="Enter new username" setter={setUsername} id="newUsername" />
+			<PasswordInput label="Password:" placeholder="Enter new password" isNewPassword={true} setter={setPassword} id="newPassword" />
+			<PasswordInput label="Confirm password:" placeholder="Confirm new password" isNewPassword={true} setter={setConfirmPassword} id="confirmPassword" />
 			<MossButton label="Sign-up" onClick={signupCheck} />
 			<MossButton label="Continue with Google" onClick={ () => {} } />
-			<div className={styles.loginSignupInstead} onClick={ () => navigate("/auth?mode=login") }>Already have an account? Login</div>
+			<TextButton label="Already have an account? Login" onClick={ () => navigate("/auth?mode=login") } />
 		</div>
 	);
 }

@@ -2,6 +2,7 @@ import styles from "./Dropdown.module.scss"
 
 interface IDropdown
 {
+	extraStyling?: string;
 	ref?: React.RefObject<HTMLSelectElement | null>;
 	label: string;
 	id: string;
@@ -10,10 +11,10 @@ interface IDropdown
 	onChange?: (e: React.ChangeEvent<HTMLSelectElement>) => void;
 }
 
-export default function Dropdown( { ref, label, id, options, setting, onChange } : IDropdown )
+export default function Dropdown( { extraStyling = "", ref, label, id, options, setting, onChange } : IDropdown )
 {
 	return (
-		<div className={styles.dropdown}>
+		<div className={`${styles.dropdown} ${extraStyling}`}>
 			<label htmlFor={id}>{label}</label>
 			<select
 				ref={ref}

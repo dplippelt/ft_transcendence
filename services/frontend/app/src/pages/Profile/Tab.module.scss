@@ -4,3 +4,10 @@
 {
 	color: $profile-label-color;
 }
+
+.textInfo
+{
+	margin-left: 0.2rem;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}

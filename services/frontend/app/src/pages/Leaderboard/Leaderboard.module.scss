@@ -24,22 +24,25 @@
 	{
 		margin: 0 1rem;
 	}
+}
+
+.dropDownStatsPicker
+{
+	label
+	{
+		justify-self: center;
+		font-size: 0.9rem;
+		margin-bottom: -0.25rem;
+	}
+
+	select
+	{
+		width: 60vw;
+	}
 
 	@media (max-width: 480px)
 	{
 		margin: 0 auto;
-
-		label
-		{
-			justify-self: center !important;
-			font-size: 0.9rem;
-			margin-bottom: -0.25rem;
-		}
-
-		select
-		{
-			width: 60vw !important;
-		}
 	}
 }
 
