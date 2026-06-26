@@ -3,7 +3,7 @@ import { useState } from "react";
 import type React from "react";
 import AccountTab from "./AccountTab";
 import StatsTab from "./StatsTab";
-import { BackButton, BottomButton, TabButton, TextButton } from "../../components/Buttons";
+import { BackButton, BottomButton, TabButton } from "../../components/Buttons";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { BottomButtons } from "../../components/ButtonContainers";
