@@ -1,0 +1,29 @@
+.slider
+{
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	justify-items: center;
+	align-items: center;
+
+	@media (max-width: 480px)
+	{
+		grid-template-columns: 1fr;
+		justify-items: start;
+		gap: 0.4rem;
+	}
+
+	label
+	{
+		justify-self: left;
+	}
+
+	.track
+	{
+		display: flex;
+	}
+
+	.numberInput
+	{
+		margin-left: 1rem;
+	}
+}

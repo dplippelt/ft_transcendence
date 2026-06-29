@@ -1,0 +1,32 @@
+.dropdown
+{
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	justify-items: center;
+	align-items: center;
+
+	label
+	{
+		justify-self: left;
+	}
+
+	select
+	{
+		width: 80%;
+	}
+
+	@media (max-width: 960px)
+	{
+		select
+		{
+			width: 100%;
+		}
+	}
+
+	@media (max-width: 480px)
+	{
+		grid-template-columns: 1fr;
+		justify-items: start;
+		gap: 0.4rem;
+	}
+}

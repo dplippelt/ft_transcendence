@@ -1,0 +1,22 @@
+@use '../../mixins' as *;
+@use '../../variables' as *;
+
+.profileWindow
+{
+	@include window;
+	@include menuWindow;
+
+	@media (max-width: 480px)
+	{
+		row-gap: 1.25rem;
+	}
+}
+
+.tabs
+{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	column-gap: 2rem;
+	margin-bottom: 0.75rem;
+}

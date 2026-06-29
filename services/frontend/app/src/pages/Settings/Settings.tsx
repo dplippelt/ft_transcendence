@@ -1,22 +1,25 @@
-import { useNavigate } from "react-router-dom";
-import { defaultSettings, useSettings, type Settings } from "../contexts/SettingsContext";
+import { defaultSettings, useSettings, type ISettings } from "../../contexts/SettingsContext";
 import styles from "./Settings.module.scss";
 import { useRef, useState } from "react";
-import { Checkbox, Dropdown, Slider } from "../components/Inputs";
-import { MenuTitle } from "../components/PageTitle";
-import { BottomButtons } from "../components/ButtonContainers";
-import Background from "../components/Background";
-import Page from "../components/Page";
+import type React from "react";
+import { MenuTitle } from "../../components/PageTitle";
+import { BottomButtons } from "../../components/ButtonContainers";
+import Background from "../../components/Background";
+import Page from "../../components/Page";
+import { BackButton, BottomButton } from "../../components/Buttons";
+import Checkbox from "../../components/Checkbox";
+import Slider from "../../components/Slider";
+import Dropdown from "../../components/Dropdown";
 
-type SettingsWindowProps =
+interface ISettingsWindow
 {
-	settingRefs: SettingRefs,
+	settingRefs: SettingRefs;
 }
 
-type ButtonsProps =
+interface IButtons
 {
-	setResetKey: React.Dispatch<React.SetStateAction<number>>,
-	settingRefs: SettingRefs,
+	setResetKey: React.Dispatch<React.SetStateAction<number>>;
+	settingRefs: SettingRefs;
 }
 
 type SettingRefs =
@@ -26,7 +29,7 @@ type SettingRefs =
 	dummyDropdown: React.RefObject<HTMLSelectElement | null>,
 }
 
-function SettingsWindow( { settingRefs } : SettingsWindowProps )
+function SettingsWindow( { settingRefs } : ISettingsWindow )
 {
 	const { settings } = useSettings();
 
@@ -39,12 +42,11 @@ function SettingsWindow( { settingRefs } : SettingsWindowProps )
 	);
 }
 
-function Buttons( { setResetKey, settingRefs } : ButtonsProps )
+function Buttons( { setResetKey, settingRefs } : IButtons )
 {
-	const navigate = useNavigate();
-	const { setSettings } = useSettings();
+	const settings = useSettings();
 
-	function saveSettingsToDB(settings: Settings)
+	function saveSettingsToDB(settings: ISettings)
 	{
 		// add saving settings to database here
 		void settings;
@@ -52,29 +54,29 @@ function Buttons( { setResetKey, settingRefs } : ButtonsProps )
 
 	function resetSettings()
 	{
-		setSettings(defaultSettings);
+		settings.resetSettings();
 		setResetKey(prev => prev + 1);
 		saveSettingsToDB(defaultSettings);
 	}
 
 	function applySettings()
 	{
-		const newSettings: Settings =
+		const newSettings: ISettings =
 		{
 			dummyBoolean: settingRefs.dummyBoolean.current!.checked,
 			dummySlider: Number(settingRefs.dummySlider.current!.value),
 			dummyDropdown: settingRefs.dummyDropdown.current!.value,
 		};
 
-		setSettings(newSettings);
+		settings.applySettings(newSettings);
 		saveSettingsToDB(newSettings);
 	}
 
 	return (
 		<BottomButtons>
-			<button className="buttonV2 mobileBottom" onClick={ () => navigate(-1) }>Back</button>
-			<button className="buttonV2 mobileTop" onClick={resetSettings}>Reset Defaults</button>
-			<button className="buttonV2" onClick={applySettings}>Apply</button>
+			<BackButton />
+			<BottomButton label="Reset Defaults" onClick={resetSettings} mobilePosition="mobileTop" />
+			<BottomButton label="Apply" onClick={applySettings} />
 		</BottomButtons>
 	);
 }

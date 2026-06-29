@@ -1,0 +1,28 @@
+@use '../mixins' as *;
+
+.backdrop
+{
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100vh;
+	background-color: rgba(0, 0, 0, 0.7);
+}
+
+.popup
+{
+	@include window;
+	display: grid;
+	max-width: min(400px, 90%);
+	margin-top: 40vh;
+	gap: 0.2rem;
+	text-align: left;
+	align-content: center;
+
+	@media (max-width: 480px)
+	{
+		margin-top: 30vh;
+		max-width: min(400px, 80%);
+	}
+}

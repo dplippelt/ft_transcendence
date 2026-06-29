@@ -18,3 +18,12 @@ export function BottomButtons( { children } : { children : React.ReactNode } )
 		</div>
 	);
 }
+
+export function PopupButtons( { children } : { children : React.ReactNode } )
+{
+	return (
+		<div className={styles.popupButtons}>
+			{children}
+		</div>
+	);
+}
