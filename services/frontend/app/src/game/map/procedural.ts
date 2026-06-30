@@ -17,24 +17,28 @@ enum Direction {
   Left
 }
 
-interface Door {
-  position: Vector2;
-  to: Room;
+interface TileMapping {
+  corner: number[],
+  wall: number[][],
+  floor: number[]
 }
 
-class Room {
+interface Door {
+  position: Vector2;
+  direction: Direction
+}
+
+interface Room {
   aabb: BoundingBox;
   doorways: Vector2[];
   roomType: TileType;
 }
 
-class RoomConfig {
-  minWidth: number;
-  maxWidth: number;
-  minHeight: number;
-  maxHeight: number;
-  minDoorCount: number;
-  maxDoorCount: number;
+interface RoomConfig {
+  width: Range;
+  height: Range;
+  doorCount: Range;
+  tileMapping: TileMapping
 }
 
 class PuzzleConfig {
@@ -44,19 +48,20 @@ class PuzzleConfig {
   artifactsDroppedByEnemies: number; // One artifact per enemy
 }
 
-class DungeonConfig {
-  puzzleConfig: PuzzleConfig;
-  puzzleRoom: RoomConfig;
-  treasureRoom: RoomConfig;
-  emptyRoom: RoomConfig;
-  entranceRoom: RoomConfig;
-  exitRoom: RoomConfig;
-}
+// class DungeonConfig {
+//   puzzleConfig: PuzzleConfig;
+//   puzzleRoom: RoomConfig;
+//   treasureRoom: RoomConfig;
+//   emptyRoom: RoomConfig;
+//   entranceRoom: RoomConfig;
+//   exitRoom: RoomConfig;
+// }
 
 class Map {
   map: number[][];
   width: number;
   height: number;
+  rooms: Room[];
 
   constructor(width: number, height: number) {
     this.width = Math.floor(width);
@@ -70,9 +75,9 @@ class Map {
     return !(
       pos.x < 0 ||
       pos.y < 0 ||
-      pos.x > this.width ||
-      pos.y > this.height
-    ); // TODO: Dangerzone!
+      pos.x >= this.width ||
+      pos.y >= this.height
+    ); // TODO: The Dangerzone!
   }
 
   insertTile(pos: Vector2, tile: TileType): void {
@@ -152,7 +157,7 @@ function mapBounds(rooms: Room[]): [Vector2, Vector2] {
   }
 
   offset.flip();
-  return [offset, Vector2.add(mapSize, offset)];
+  return [offset, Vector2.add(mapSize, offset).floor()];
 }
 
 function generateRooms(amount: number, roomConfig: RoomConfig): Room[] {
@@ -163,8 +168,8 @@ function generateRooms(amount: number, roomConfig: RoomConfig): Room[] {
       aabb: new BoundingBox(
         new Vector2(0, 0),
         new Vector2(
-          random(roomConfig.minWidth, roomConfig.maxWidth),
-          random(roomConfig.minHeight, roomConfig.maxHeight),
+          random(roomConfig.width.min, roomConfig.width.max),
+          random(roomConfig.height.min, roomConfig.height.max),
         ),
       ),
       doorways: [],
@@ -185,22 +190,24 @@ function tryPlaceRoom(
   const roomSize = roomToPlace.aabb.halfSize;
   const otherRoomSize = currentRoom.aabb.halfSize;
   const offset: Vector2 = new Vector2(0, 0);
+  const shrink: number = 2;
+
   switch (direction) {
     case Direction.Top:
       offset.y = -(roomSize.y + otherRoomSize.y + 1);
-      offset.x = random(-roomSize.x + 1, otherRoomSize.x - 1);
+      offset.x = random(-roomSize.x + shrink, otherRoomSize.x - shrink);
       break;
     case Direction.Right:
       offset.x = roomSize.x + otherRoomSize.x + 1;
-      offset.y = random(-roomSize.y + 1, otherRoomSize.y - 1);
+      offset.y = random(-roomSize.y + shrink, otherRoomSize.y - shrink);
       break;
     case Direction.Down:
       offset.y = roomSize.y + otherRoomSize.y + 1;
-      offset.x = random(-roomSize.x + 1, otherRoomSize.x - 1);
+      offset.x = random(-roomSize.x + shrink, otherRoomSize.x - shrink);
       break;
     default:
       offset.x = -(roomSize.x + otherRoomSize.x + 1);
-      offset.y = random(-roomSize.y + 1, otherRoomSize.y - 1);
+      offset.y = random(-roomSize.y + shrink, otherRoomSize.y - shrink);
       break;
   }
 
@@ -224,44 +231,43 @@ function tryPlaceRoom(
   }
 }
 
-function placeDoorway(pivotRoom: Room, neighborRoom: Room, direction: Direction) {
+function placeDoorway(
+  pivotRoom: Room,
+  neighborRoom: Room,
+  direction: Direction
+): Door {
   const topLeft = Vector2.max(pivotRoom.aabb.min, neighborRoom.aabb.min);
   const bottomRight = Vector2.min(pivotRoom.aabb.max, neighborRoom.aabb.max);
+  const shrink = 2; // wall + corner
 
+  const door: Door = { position: null, direction: direction };
   switch (direction) {
     case Direction.Top:
-      pivotRoom.doorways.push(
-        new Vector2(
-          random(topLeft.x + 1, bottomRight.x - 1),
-          pivotRoom.aabb.position.y - pivotRoom.aabb.halfSize.y - 1,
-        ),
+      door.position = new Vector2(
+        random(topLeft.x + shrink, bottomRight.x - shrink),
+        pivotRoom.aabb.position.y - pivotRoom.aabb.halfSize.y - 1,
       );
       break;
     case Direction.Right:
-      pivotRoom.doorways.push(
-        new Vector2(
-          pivotRoom.aabb.position.x + pivotRoom.aabb.halfSize.x,
-          random(topLeft.y + 1, bottomRight.y - 1),
-        ),
+      door.position = new Vector2(
+        pivotRoom.aabb.position.x + pivotRoom.aabb.halfSize.x,
+        random(topLeft.y + shrink, bottomRight.y - shrink),
       );
       break;
     case Direction.Down:
-      pivotRoom.doorways.push(
-        new Vector2(
-          random(topLeft.x + 1, bottomRight.x - 1),
-          pivotRoom.aabb.position.y + pivotRoom.aabb.halfSize.y,
-        ),
+      door.position = new Vector2(
+        random(topLeft.x + shrink, bottomRight.x - shrink),
+        pivotRoom.aabb.position.y + pivotRoom.aabb.halfSize.y,
       );
       break;
     default:
-      pivotRoom.doorways.push(
-        new Vector2(
-          pivotRoom.aabb.position.x - pivotRoom.aabb.halfSize.x - 1,
-          random(topLeft.y + 1, bottomRight.y - 1),
-        ),
+      door.position = new Vector2(
+        pivotRoom.aabb.position.x - pivotRoom.aabb.halfSize.x - 1,
+        random(topLeft.y + shrink, bottomRight.y - shrink),
       );
       break;
   }
+  return door;
 }
 
 /*
@@ -269,12 +275,10 @@ function placeDoorway(pivotRoom: Room, neighborRoom: Room, direction: Direction)
  */
 function DungeonGenerator(): Map {
   const roomConfig: RoomConfig = {
-    minWidth: 3,
-    maxWidth: 9,
-    minHeight: 3,
-    maxHeight: 9,
-    minDoorCount: 1,
-    maxDoorCount: 4,
+    width: {min: 3, max: 9},
+    height: { min: 3, max: 9},
+    doorCount: { min: 3, max: 4 },
+    tileMapping: null
   };
   const rooms: Room[] = generateRooms(24, roomConfig);
   const placedRooms: Room[] = [rooms.shift()];
@@ -286,8 +290,8 @@ function DungeonGenerator(): Map {
     shuffle(directions);
     for (
       let roomCount = random(
-        roomConfig.minDoorCount,
-        Math.min(roomConfig.maxDoorCount, rooms.length),
+        roomConfig.doorCount.min,
+        Math.min(roomConfig.doorCount.max, rooms.length),
       );
       roomCount > 0;
       --roomCount
@@ -332,7 +336,7 @@ function DungeonGenerator(): Map {
   return map;
 }
 
-DungeonGenerator().print();
+// DungeonGenerator().print();
 
 // const a: BoundingBox = new BoundingBox(new Vector2(6, 6), new Vector2(10, 10));
 // const b: BoundingBox = new BoundingBox(new Vector2(3, 3), new Vector2(2, 2));
@@ -348,3 +352,140 @@ DungeonGenerator().print();
 // 5. Tile map construction
 // 7. Expand the room to include the border when tryPlaceRoom
 // 8. Assign rooms and apply basic rules (no entrance and exit directly connected)
+
+// Tilemap construction
+//
+// 1. Allow for a dungeon config
+// 2. Generate the rooms and layout
+// 3. Generate the level map data itself
+// 4. display the tilemap layer into the scene
+// 5. Assign walls as colliders
+
+interface Range {
+  min: number;
+  max: number;
+}
+
+// Use this data for the tile map
+export interface MapData {
+  layout: number[][];
+  doors: Door[];
+  rooms: Room[];
+  width: number;
+  height: number;
+}
+
+export interface DungeonConfig {
+  roomCount: Range;
+  emptyRoomConfig: RoomConfig,
+
+  // amount of puzzles
+  // amount of enemies
+  // amount of chests
+}
+
+function paintCorner(top: boolean, left: boolean, corner: number[]): number {
+  if (top) {
+    return left ? corner[0] : corner[1];
+  }
+  return left ? corner[2] : corner[3];
+}
+
+function paintWall(top: boolean, bottom: boolean, left: boolean, wall: number[][]): number {
+  if (top) {
+    return wall[0][random(0, wall[0].length)];
+  } else if (bottom) {
+    return  wall[2][random(0, wall[2].length)];
+  } else if (left) {
+    return wall[3][random(0, wall[3].length)];
+  }
+  return wall[1][random(0, wall[1].length)];
+}
+
+function paintFloor(floor: number[]): number {
+  return floor[random(0, floor.length)];
+}
+
+function layoutPaintRoom(layout: number[][], room: Room, tileMapping: TileMapping) {
+  const min = room.aabb.min.clone().floor();
+  const max = room.aabb.max.clone().floor();
+
+  for (let y: number = min.y; y < max.y; ++y) {
+    for (let x: number = min.x; x < max.x; ++x) {
+      if (y == min.y && (x == min.x || x == max.x - 1) ||
+        y == max.y - 1 && (x == min.x || x == max.x - 1)) {
+        layout[y][x] = paintCorner(y == min.y, x == min.x, tileMapping.corner);
+      } else if (y == min.y || y == max.y - 1 || x == min.x || x == max.x - 1) {
+        layout[y][x] = paintWall(y == min.y, y == max.y - 1, x == min.x, tileMapping.wall);
+      } else {
+        layout[y][x] = paintFloor(tileMapping.floor);
+      }
+    }
+  }
+}
+
+function layoutPaintDoor(layout: number[][], door: Door, tileMapping: TileMapping) {
+  const [x, y] = door.position.clone().floor().unpack();
+
+  layout[y][x] = paintFloor(tileMapping.floor);
+  if (door.direction === Direction.Top || door.direction === Direction.Down) {
+    layout[y][x + 1] = paintWall(false, false, false, tileMapping.wall);
+    layout[y][x - 1] = paintWall(false, false, true, tileMapping.wall);
+
+    layout[y - 1][x] = paintFloor(tileMapping.floor);
+    layout[y + 1][x] = paintFloor(tileMapping.floor);
+  } else {
+    layout[y - 1][x] = paintWall(true, false, false, tileMapping.wall);
+    layout[y + 1][x] = paintWall(false, true, false, tileMapping.wall);
+
+    layout[y][x + 1] = paintFloor(tileMapping.floor);
+    layout[y][x - 1] = paintFloor(tileMapping.floor);
+  }
+}
+
+export function dungeonBuilder(config: DungeonConfig): MapData {
+  console.assert(config.emptyRoomConfig.doorCount.min > 0);
+  console.assert(config.emptyRoomConfig.doorCount.max < 5);
+  console.assert(config.emptyRoomConfig.doorCount.max > config.emptyRoomConfig.doorCount.min);
+
+  // Generated the rooms
+  const roomConfig = config.emptyRoomConfig;
+  const rooms: Room[] = generateRooms(random(config.roomCount.min, config.roomCount.max), roomConfig);
+  const placedRooms: Room[] = [rooms.shift(),];
+  const placedDoors: Door[] = [];
+
+  // Randomize the room placement
+  const directions = [0, 1, 2, 3];
+  for (let i = 0; i < placedRooms.length && rooms.length > 0; ++i) {
+    shuffle(directions);
+    const doorCount = random(roomConfig.doorCount.min, Math.min(roomConfig.doorCount.max, rooms.length));
+    for (let j = 0; j < doorCount; ++j) { // TODO:
+      if (tryPlaceRoom(rooms[0], placedRooms[i], directions[j], placedRooms)) {
+        placedDoors.push(placeDoorway(placedRooms[i], rooms[0], directions[j]))
+        placedRooms.push(rooms.shift());
+      }
+    }
+  }
+
+  // construct the layout
+  const [mapOffset, mapSize]: [Vector2, Vector2] = mapBounds(placedRooms);
+  const layout: number[][] = Array.from({ length: mapSize.y }, () => Array(mapSize.x).fill(-1));
+
+  for (const room of placedRooms) {
+    translateRoom(room, mapOffset);
+    layoutPaintRoom(layout, room, config.emptyRoomConfig.tileMapping);
+  }
+
+  for (const door of placedDoors) {
+    door.position = Vector2.add(door.position, mapOffset);
+    layoutPaintDoor(layout, door, config.emptyRoomConfig.tileMapping);
+  }
+
+  return {
+    layout: layout,
+    doors: placedDoors,
+    rooms: placedRooms,
+    width: mapSize.x,
+    height: mapSize.y
+  }
+}

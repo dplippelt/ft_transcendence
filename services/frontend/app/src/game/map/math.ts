@@ -56,11 +56,29 @@ export class Vector2 {
     return this;
   }
 
+  addXY(x: number, y: number): Vector2 {
+    this.x += x;
+    this.y += y;
+
+    return this;
+  }
+
   sub(other: Vector2): Vector2 {
     this.x -= other.x;
     this.y -= other.y;
 
     return this;
+  }
+
+  subXY(x: number, y: number): Vector2 {
+    this.x -= x;
+    this.y -= y;
+
+    return this;
+  }
+
+  unpack(): [number, number] {
+    return [this.x, this.y];
   }
 
   static max(a: Vector2, b: Vector2): Vector2 {
@@ -95,6 +113,7 @@ export class BoundingBox {
     this.max = Vector2.add(this.position, this.halfSize);
   }
 
+  // TODO: use min/max
   isOverlap(other: BoundingBox): boolean {
     return !(
       this.position.x - this.halfSize.x > other.position.x + other.halfSize.x ||
@@ -121,6 +140,7 @@ export class BoundingBox {
   }
 }
 
+// min inclusive and max exclusive
 export function random(min: number, max: number) {
   return Math.floor(min + Math.random() * (max - min)); // (mx - mn + 1); random => [0..1)
 }
