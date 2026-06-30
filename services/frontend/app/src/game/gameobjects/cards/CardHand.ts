@@ -39,7 +39,7 @@ export default class CardHand {
 
         this.cardHandConfig = cardHandConfig;
 
-        this.cardSelection = new CardSelection(scene, 2);
+        this.cardSelection = new CardSelection(scene, 7);
 
         this.cards = scene.add.container(
             this.cardHandConfig.firstCardCenterX, 
@@ -152,6 +152,16 @@ export default class CardHand {
             return ;
 
         }
+
+    }
+
+    evaluateSelectedCards(): number | null {
+
+        if (!this.cardSelection.isValidSelection())
+            return null;
+
+        // needs to calculate
+        return 42;
 
     }
 }
