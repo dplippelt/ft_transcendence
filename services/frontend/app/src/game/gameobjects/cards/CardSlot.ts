@@ -30,6 +30,7 @@ export default class CardSlot extends CardStyle {
         this.selectedCard = null;
         this.fittingRatioX = cardFittingRatio.x;
         this.fittingRatioY = cardFittingRatio.y;
+        this.setVisible(false);
 
     };
 
@@ -58,6 +59,10 @@ export default class CardSlot extends CardStyle {
             return false;
         }
 
+    }
+
+    getCard() {
+        return this.selectedCard;
     }
 
     isCardMatch(card: CardBase) {
