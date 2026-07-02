@@ -1,7 +1,8 @@
 from sqlalchemy import Boolean, DateTime, Integer, String, func
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -12,23 +13,21 @@ class User(Base):
         index=True,
     )
 
-    username: Mapped[str] = mapped_column(
+    username: Mapped[str | None] = mapped_column(
         String(50),
-        unique=True,
-        index=True,
-        nullable=False,
-    )
-
-    email: Mapped[str | None] = mapped_column(
-        String(255),
         unique=True,
         index=True,
         nullable=True,
     )
 
-    password_hash: Mapped[str] = mapped_column(
-        String(255),
-        nullable=False,
+    display_name: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    avatar_url: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
     )
 
     is_guest: Mapped[bool] = mapped_column(
@@ -47,4 +46,9 @@ class User(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
+    )
+
+    auth_accounts: Mapped[list["AuthAccount"]] = relationship(
+        back_populates="user",
+        cascade="all, delete-orphan",
     )

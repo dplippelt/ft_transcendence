@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
 
     model_config = SettingsConfigDict(env_file=".env")
+    GOOGLE_CLIENT_ID: str
 
 
 @lru_cache
