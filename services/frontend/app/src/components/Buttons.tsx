@@ -34,6 +34,7 @@ interface ITextButton
 {
 	label: string;
 	onClick: () => void;
+	extraStyling?: string,
 }
 
 interface ITabButton
@@ -70,9 +71,9 @@ export function EditButton( { editType, setEditWindowType } : IEditButton )
 	return <MossButton label="Edit" onClick={ () => setEditWindowType(editType) } extraStyling={styles.editButton}/>;
 }
 
-export function TextButton( { label, onClick } : ITextButton )
+export function TextButton( { label, onClick, extraStyling="" } : ITextButton )
 {
-	return <button className={styles.textButton} onClick={onClick}>{label}</button>
+	return <button className={`${styles.textButton} ${extraStyling}`} onClick={onClick}>{label}</button>
 }
 
 export function TabButton ( { label, isSelected, onClick } : ITabButton )

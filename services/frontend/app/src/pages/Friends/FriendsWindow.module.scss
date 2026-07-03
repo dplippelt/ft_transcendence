@@ -1,0 +1,56 @@
+@use '../../mixins' as *;
+@use '../../variables' as *;
+
+.friendsWindow
+{
+	@include window;
+	@include menuWindow;
+
+	max-height: min(800px, 60vh);
+	max-width: min(300px, 30%);
+	row-gap: 0.2rem;
+	padding: 1rem;
+	font-size: 0.7rem;
+	margin-right: 0rem;
+
+	@media (max-width: 480px)
+	{
+		margin: 0 auto;
+		max-width: min(800px, 60vh);;
+	}
+}
+
+.friendsListTitle
+{
+	font-size: 0.9rem;
+	justify-self: center;
+	border-bottom: 1px solid $primary-text-color;
+	margin-bottom: 0.5rem;
+}
+
+.friend
+{
+	cursor: pointer;
+	width: fit-content;
+}
+
+.friendsList
+{
+	overflow-y: auto;
+	min-height: 0;
+	height: 100%;
+
+	& > *
+	{
+		max-width: 70%;
+		text-wrap: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		margin-bottom: 0.3rem;
+	}
+
+	& > *:last-child
+	{
+		margin-bottom: 0rem;
+	}
+}

@@ -7,6 +7,7 @@ import PhaserGame, { type IRefPhaserGame } from "./pages/PhaserGame/PhaserGame"
 import Leaderboard from "./pages/Leaderboard/Leaderboard"
 import Profile from "./pages/Profile/Profile"
 import Auth from "./pages/Auth/Auth"
+import Friends from "./pages/Friends/Friends"
 
 export default function App()
 {
@@ -24,6 +25,7 @@ export default function App()
 				<Route path="/" element={ <LandingPage/> } />
 				<Route path="/auth" element={ <Auth/> } />
 				<Route path="/main-menu" element={ <MainMenu/> } />
+				<Route path="/friends" element={ <Friends/> } />
 				<Route path="/profile" element={ <Profile/> } />
 				<Route path="/leaderboard" element={ <Leaderboard/> } />
 				<Route path="/settings" element={ <Settings/> } />
