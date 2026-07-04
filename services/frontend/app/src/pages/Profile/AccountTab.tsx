@@ -7,6 +7,7 @@ import EditPopup from "./EditPopup";
 import { EditButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
 import { EditWindowType } from "./enums";
+import AvatarImg, { AvatarSize } from "../../components/Avatar";
 
 interface IAccountInfo
 {
@@ -20,7 +21,7 @@ function Avatar( { setEditWindowType } : IAccountInfo )
 	return (
 		<>
 			<div className={sharedStyle.profileLabel}>Avatar:</div>
-			<img className="avatar" src={user.avatar} alt="User avatar" />
+			<AvatarImg src={user.avatar} alt="User avatar" size={AvatarSize.medium} />
 			<EditButton editType={EditWindowType.avatar} setEditWindowType={setEditWindowType} />
 		</>
 	);

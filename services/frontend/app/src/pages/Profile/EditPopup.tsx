@@ -10,6 +10,7 @@ import guestAvatar from  "../../assets/guest_avatar_test.jpg";
 import testAvatar from "../../assets/mesca_avatar_test.png";
 import { PasswordInput, TextInput } from "../../components/TextInput";
 import { EditWindowType } from "./enums";
+import Avatar, { AvatarSize } from "../../components/Avatar";
 
 interface IEditPopup
 {
@@ -59,7 +60,7 @@ function EditAvatarContent( { setEditWindowType } : IEditContent )
 			<label className={styles.avatarsLabel}>Pick an avatar</label>
 			<div className={styles.avatars}>
 				{ avatars.map((avatar, idx) => (
-					<img key={avatar} className="avatar" src={avatar} onClick={ () => avatarCheck(avatar) } alt={`Avatar ${idx + 1}`} />
+					<Avatar key={avatar} src={avatar} alt={`Avatar ${idx + 1}`} size={AvatarSize.medium} onClick={ () => avatarCheck(avatar) } extraStyling={styles.avatar} />
 				))}
 			</div>
 			<PopupButtons>

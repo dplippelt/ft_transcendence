@@ -176,24 +176,6 @@ button
 
 
 
-/* AVATAR STYLING */
-
-.avatar
-{
-	width: 64px;
-	height: 64px;
-	overflow: hidden;
-	object-fit: cover;
-	border: $window-border;
-	border-radius: 64px;
-	border-color: $profile-avatar-border-color;
-	border-width: 3px;
-	margin-bottom: 0.5rem;
-	// justify-self: center;
-}
-
-
-
 /* GAME */
 
 #game-container

@@ -1,0 +1,40 @@
+@use '../variables' as *;
+
+.avatar
+{
+	overflow: hidden;
+	object-fit: cover;
+	border: $window-border;
+	border-color: $profile-avatar-border-color;
+	border-width: 3px;
+	margin-bottom: 0.5rem;
+}
+
+.small
+{
+	width: 32px;
+	height: 32px;
+	border-radius: 32px;
+}
+
+.medium
+{
+	width: 64px;
+	height: 64px;
+	border-radius: 64px;
+}
+
+.large
+{
+	width: 128px;
+	height: 128px;
+	border-radius: 128px;
+}
+
+.avatarButton
+{
+	border: none;
+	background: none;
+	padding: 0;
+	cursor: pointer;
+}
