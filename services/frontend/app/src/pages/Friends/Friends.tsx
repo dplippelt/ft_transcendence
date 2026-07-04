@@ -9,6 +9,7 @@ import ChatWindow from "./ChatWindow";
 import { useState } from "react";
 import useIsMobile from "../../hooks/useIsMobile";
 import React from "react";
+import { MobilePosition } from "../../utils/utils";
 
 interface IButtons
 {
@@ -35,7 +36,7 @@ function Buttons( { mobileView, setMobileView } : IButtons )
 	return (
 		<BottomButtons>
 			{ isMobile && mobileView === MobileView.Chat
-			? <BottomButton label="Back" onClick={ () => setMobileView(MobileView.Friends) } mobilePosition="mobileBottom" />
+			? <BottomButton label="Back" onClick={ () => setMobileView(MobileView.Friends) } mobilePosition={MobilePosition.bottom} />
 			: <BackButton />}
 		</BottomButtons>
 	);

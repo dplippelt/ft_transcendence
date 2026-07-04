@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type React from "react";
-import { AccountError } from "../../utils/errors";
+import { AccountError, MobilePosition } from "../../utils/utils";
 import styles from "./EditPopup.module.scss";
 import { PopupButtons } from "../../components/ButtonContainers";
 import ErrorText from "../../components/ErrorText";
@@ -64,8 +64,8 @@ function EditAvatarContent( { setEditWindowType } : IEditContent )
 				))}
 			</div>
 			<PopupButtons>
-				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } mobilePosition="mobileBottom" />
-				<MossButton label="Upload" onClick={ () => fileInputRef.current?.click() } mobilePosition="mobileBottom" />
+				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } mobilePosition={MobilePosition.bottom} />
+				<MossButton label="Upload" onClick={ () => fileInputRef.current?.click() } mobilePosition={MobilePosition.top} />
 				<input type="file" ref={fileInputRef} style={{ display: "none" }} onChange={ handleUpload } />
 			</PopupButtons>
 		</>

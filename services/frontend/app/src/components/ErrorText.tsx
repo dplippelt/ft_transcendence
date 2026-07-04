@@ -1,4 +1,4 @@
-import { errorMsg, type AccountError } from "../utils/errors"
+import { errorMsg, type AccountError } from "../utils/utils"
 import styles from "./ErrorText.module.scss"
 
 export default function ErrorText( { error } : { error: AccountError } )

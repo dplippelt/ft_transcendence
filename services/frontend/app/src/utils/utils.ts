@@ -29,3 +29,10 @@ export function errorMsg( error: AccountError ): string
 			return "";
 	}
 }
+
+export enum MobilePosition
+{
+	top = "mobileTop",
+	bottom = "mobileBottom",
+}
+

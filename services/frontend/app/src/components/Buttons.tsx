@@ -4,6 +4,7 @@ import styles from "./Buttons.module.scss";
 import { EditWindowType } from "../pages/Profile/enums";
 import { SendHorizontal, Swords, UserMinus } from "lucide-react";
 import Avatar, { AvatarSize } from "./Avatar";
+import { MobilePosition } from "../utils/utils";
 
 interface IMenuButton
 {
@@ -75,7 +76,7 @@ export function BackButton()
 {
 	const navigate = useNavigate();
 
-	return <BottomButton label="Back" onClick={ () => navigate(-1) } mobilePosition="mobileBottom" />;
+	return <BottomButton label="Back" onClick={ () => navigate(-1) } mobilePosition={MobilePosition.bottom} />;
 }
 
 export function EditButton( { editType, setEditWindowType } : IEditButton )

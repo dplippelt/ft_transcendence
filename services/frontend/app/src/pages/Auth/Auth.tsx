@@ -7,7 +7,7 @@ import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { useAuth } from "../../contexts/AuthContext";
 import ErrorText from "../../components/ErrorText";
-import { AccountError } from "../../utils/errors";
+import { AccountError } from "../../utils/utils";
 import { MossButton, TextButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
 import { PasswordInput, TextInput } from "../../components/TextInput";
