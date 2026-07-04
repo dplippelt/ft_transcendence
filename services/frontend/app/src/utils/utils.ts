@@ -1,4 +1,4 @@
-export enum AccountError
+export enum ErrorType
 {
 	none,
 	usernameAlreadyTaken,
@@ -7,24 +7,30 @@ export enum AccountError
 	passwordCannotBeEmpty,
 	incorrectCreds,
 	avatarBadFileType,
+	userDoesNotExist,
+	userAlreadyFriend,
 }
 
-export function errorMsg( error: AccountError ): string
+export function errorMsg( error: ErrorType ): string
 {
 	switch (error)
 	{
-		case AccountError.usernameAlreadyTaken:
+		case ErrorType.usernameAlreadyTaken:
 			return "Username already taken!";
-		case AccountError.usernameCannotBeEmpty:
+		case ErrorType.usernameCannotBeEmpty:
 			return "Username cannot be empty!";
-		case AccountError.passwordsDontMatch:
+		case ErrorType.passwordsDontMatch:
 			return "Passwords don't match!";
-		case AccountError.passwordCannotBeEmpty:
+		case ErrorType.passwordCannotBeEmpty:
 			return "Password cannot be empty!";
-		case AccountError.incorrectCreds:
+		case ErrorType.incorrectCreds:
 			return "Incorrect username or password!";
-		case AccountError.avatarBadFileType:
+		case ErrorType.avatarBadFileType:
 			return "Avatar must be JPEG or PNG!";
+		case ErrorType.userDoesNotExist:
+			return "User does not exist!";
+		case ErrorType.userAlreadyFriend:
+			return "User already in friends list!";
 		default:
 			return "";
 	}

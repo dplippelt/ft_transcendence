@@ -43,7 +43,7 @@ function FriendsList( { friendChat, setFriendChat, setMobileView } : IFriendsWin
 			setFriendChat(undefined);
 	}
 
-	const friends = Object.entries(user.friends);
+	const friends = Object.entries(user.friends).sort(([username_a], [username_b]) => username_a.localeCompare(username_b));
 
 	return (
 		<div className={styles.friendsList}>

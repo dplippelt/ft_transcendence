@@ -7,7 +7,7 @@ import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { useAuth } from "../../contexts/AuthContext";
 import ErrorText from "../../components/ErrorText";
-import { AccountError } from "../../utils/utils";
+import { ErrorType } from "../../utils/utils";
 import { MossButton, TextButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
 import { PasswordInput, TextInput } from "../../components/TextInput";
@@ -16,7 +16,7 @@ function LoginQuery()
 {
 	const [username, setUsername] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
-	const [error, setError] = useState<AccountError>(AccountError.none);
+	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const navigate = useNavigate();
 	const auth = useAuth();
 	const user = useUser();
@@ -28,7 +28,7 @@ function LoginQuery()
 
 		// Mock login check:
 		if ( username !== password )
-			return setError(AccountError.incorrectCreds);
+			return setError(ErrorType.incorrectCreds);
 
 		auth.login();
 		user.updateUsername(username);
@@ -37,7 +37,7 @@ function LoginQuery()
 
 	return (
 		<div className={styles.window}>
-			{ error !== AccountError.none && <ErrorText error={error}/> }
+			{ error !== ErrorType.none && <ErrorText error={error}/> }
 			<TextInput label="Username:" placeholder="Enter username" setter={setUsername} id="username" />
 			<PasswordInput label="Password:" placeholder="Enter password" isNewPassword={false} setter={setPassword} id="password" />
 			<MossButton label="Login" onClick={checkLogin} />
@@ -52,7 +52,7 @@ function SignupQuery()
 	const [username, setUsername] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
 	const [confirmPassword, setConfirmPassword] = useState<string>("");
-	const [error, setError] = useState<AccountError>(AccountError.none);
+	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const navigate = useNavigate();
 	const auth = useAuth();
 	const user = useUser();
@@ -65,9 +65,9 @@ function SignupQuery()
 
 		// Mock signup check
 		if ( username.length === 1 )
-			return setError(AccountError.usernameAlreadyTaken);
+			return setError(ErrorType.usernameAlreadyTaken);
 		if ( password !== confirmPassword )
-			return setError(AccountError.passwordsDontMatch);
+			return setError(ErrorType.passwordsDontMatch);
 
 		auth.login();
 		user.updateUsername(username);
@@ -76,7 +76,7 @@ function SignupQuery()
 
 	return (
 		<div className={styles.window}>
-			{ error !== AccountError.none && <ErrorText error={error}/> }
+			{ error !== ErrorType.none && <ErrorText error={error}/> }
 			<TextInput label="Username:" placeholder="Enter new username" setter={setUsername} id="newUsername" />
 			<PasswordInput label="Password:" placeholder="Enter new password" isNewPassword={true} setter={setPassword} id="newPassword" />
 			<PasswordInput label="Confirm password:" placeholder="Confirm new password" isNewPassword={true} setter={setConfirmPassword} id="confirmPassword" />

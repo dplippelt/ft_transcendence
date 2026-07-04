@@ -10,11 +10,14 @@ import { useState } from "react";
 import useIsMobile from "../../hooks/useIsMobile";
 import React from "react";
 import { MobilePosition } from "../../utils/utils";
+import Popup from "../../components/Popup";
+import AddFriendPopup from "./AddFriendPopup";
 
 interface IButtons
 {
 	mobileView: MobileView;
 	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
+	setPopupVis: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 interface IFriendsContainer
@@ -29,7 +32,7 @@ export enum MobileView
 	Chat,
 }
 
-function Buttons( { mobileView, setMobileView } : IButtons )
+function Buttons( { mobileView, setMobileView, setPopupVis } : IButtons )
 {
 	const isMobile = useIsMobile();
 
@@ -38,6 +41,7 @@ function Buttons( { mobileView, setMobileView } : IButtons )
 			{ isMobile && mobileView === MobileView.Chat
 			? <BottomButton label="Back" onClick={ () => setMobileView(MobileView.Friends) } mobilePosition={MobilePosition.bottom} />
 			: <BackButton />}
+			<BottomButton label="Add Friend" onClick={ () => setPopupVis(true) } />
 		</BottomButtons>
 	);
 }
@@ -69,6 +73,7 @@ function FriendsContainer( { mobileView, setMobileView } : IFriendsContainer )
 export default function Friends()
 {
 	const [mobileView, setMobileView] = useState<MobileView>(MobileView.Friends);
+	const [popupVis, setPopupVis] = useState<boolean>(false);
 
 	return (
 		<>
@@ -76,7 +81,8 @@ export default function Friends()
 			<Page>
 				<MenuTitle title="Friends" />
 				<FriendsContainer mobileView={mobileView} setMobileView={setMobileView} />
-				<Buttons mobileView={mobileView} setMobileView={setMobileView} />
+				<Buttons mobileView={mobileView} setMobileView={setMobileView} setPopupVis={setPopupVis} />
+				{ popupVis && <Popup> <AddFriendPopup setPopupVis={setPopupVis} /> </Popup>}
 			</Page>
 		</>
 	);
