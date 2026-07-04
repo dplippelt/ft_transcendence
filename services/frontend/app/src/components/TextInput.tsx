@@ -1,6 +1,5 @@
 import type React from "react";
 import styles from "./TextInput.module.scss";
-import { useState } from "react";
 
 interface ITextInput
 {
@@ -23,7 +22,8 @@ interface IChatInput
 {
 	placeholder: string;
 	onSend: (message: string) => void;
-	ref?: React.Ref<HTMLTextAreaElement>;
+	msg: string;
+	setMsg: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export function TextInput( { label, placeholder, id, setter } : ITextInput )
@@ -65,13 +65,11 @@ export function PasswordInput( { label, placeholder, isNewPassword, id, setter }
 	);
 }
 
-export function ChatInput( { placeholder, onSend, ref } : IChatInput )
+export function ChatInput( { placeholder, onSend, msg, setMsg } : IChatInput )
 {
-	const [value, setValue] = useState<string>("");
-
 	function handleChange( e: React.ChangeEvent<HTMLTextAreaElement> )
 	{
-		setValue(e.target.value);
+		setMsg(e.target.value);
 	}
 
 	function handleKeyDown( e: React.KeyboardEvent<HTMLTextAreaElement> )
@@ -79,11 +77,7 @@ export function ChatInput( { placeholder, onSend, ref } : IChatInput )
 		if ( e.key === "Enter" && !e.shiftKey )
 		{
 			e.preventDefault();
-			if ( value.trim().length > 0 )
-			{
-				onSend(value);
-				setValue("");
-			}
+			onSend(msg);
 		}
 	}
 
@@ -91,8 +85,7 @@ export function ChatInput( { placeholder, onSend, ref } : IChatInput )
 				className={styles.chatInput}
 				rows={2}
 				placeholder={placeholder}
-				value={value}
+				value={msg}
 				onChange={handleChange}
-				onKeyDown={handleKeyDown}
-				ref={ref} />;
+				onKeyDown={handleKeyDown} />;
 }

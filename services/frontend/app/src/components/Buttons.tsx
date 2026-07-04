@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
 import { EditWindowType } from "../pages/Profile/enums";
+import { SendHorizontal } from "lucide-react";
 
 interface IMenuButton
 {
@@ -44,6 +45,11 @@ interface ITabButton
 	onClick: () => void;
 }
 
+interface ISendButton
+{
+	onClick: () => void;
+}
+
 export function MenuButton( { label, onClick } : IMenuButton )
 {
 	return <button className={styles.menuButton} onClick={onClick}>{label}</button>
@@ -76,7 +82,16 @@ export function TextButton( { label, onClick, extraStyling="" } : ITextButton )
 	return <button className={`${styles.textButton} ${extraStyling}`} onClick={onClick}>{label}</button>
 }
 
-export function TabButton ( { label, isSelected, onClick } : ITabButton )
+export function TabButton( { label, isSelected, onClick } : ITabButton )
 {
 	return <button className={ isSelected ? styles.tabSelected : styles.tabNotSelected } onClick={onClick}>{label}</button>
+}
+
+export function SendButton( { onClick } : ISendButton )
+{
+	return (
+		<button className={styles.sendButton} onClick={onClick}>
+			<SendHorizontal />
+		</button>
+	);
 }

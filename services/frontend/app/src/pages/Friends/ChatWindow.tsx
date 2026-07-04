@@ -1,8 +1,8 @@
 import { ChatInput } from "../../components/TextInput";
 import styles from "./ChatWindow.module.scss";
 import { useUser } from "../../contexts/UserContext";
-import { useLayoutEffect, useRef } from "react";
-import { SendHorizontal } from "lucide-react";
+import { useLayoutEffect, useRef, useState } from "react";
+import { SendButton } from "../../components/Buttons";
 
 interface IChatTitle
 {
@@ -76,27 +76,26 @@ function ChatHistory( { chatHistory } : IChatHistory )
 function ChatBox( { addMessage } : IChatBox )
 {
 	const { user } = useUser();
-	const chatInputRef = useRef<HTMLTextAreaElement>(null);
+	const [msg, setMsg] = useState<string>("");
 
-	function handleOnSend( message: string )
+	function handleSend( message: string )
 	{
-		addMessage({username: user.username, message: message })
+		if ( msg.trim().length > 0 )
+		{
+			addMessage({ username: user.username, message: message })
+			setMsg("");
+		}
 	}
 
-	function handleOnClick()
+	function handleClick()
 	{
-		if ( !chatInputRef.current )
-			return;
-		handleOnSend(chatInputRef.current.value);
+		handleSend(msg);
 	}
 
 	return (
 		<div className={styles.chatBox}>
-			<ChatInput placeholder="Type here..." onSend={handleOnSend} ref={chatInputRef} />
-			<div className={styles.sendButton} onClick={handleOnClick}>
-				<SendHorizontal />
-			</div>
-
+			<ChatInput placeholder="Type here..." onSend={handleSend} msg={msg} setMsg={setMsg} />
+			<SendButton onClick={handleClick} />
 		</div>
 	);
 }

@@ -1,3 +1,4 @@
+import { useUser } from "../../contexts/UserContext";
 import useIsMobile from "../../hooks/useIsMobile";
 import { MobileView } from "./Friends";
 import styles from "./FriendsWindow.module.scss";
@@ -9,29 +10,6 @@ interface IFriendsWindow
 	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>,
 }
 
-// start temporary friend usernames
-const friends =
-[
-	"Mesca",
-	"Valr",
-	"Lemon",
-	"Crawly",
-	"Takato",
-	"Seungah",
-	"Bell",
-	"José",
-	"Friend 1",
-	"Friend 2",
-	"Friend 3",
-	"Friend 4",
-	"Friend 5",
-	"Friend 6",
-	"Friend 7",
-	"Friend 8",
-	"Friend 9",
-];
-// end temporary friend usernames
-
 function FriendsListTitle()
 {
 	return <div className={styles.friendsListTitle}>My Friends</div>
@@ -40,6 +18,7 @@ function FriendsListTitle()
 function FriendsList( { setFriendChat, setMobileView } : IFriendsWindow )
 {
 	const isMobile = useIsMobile();
+	const { user } = useUser();
 
 	function handleOnClick( username: string )
 	{
@@ -51,7 +30,7 @@ function FriendsList( { setFriendChat, setMobileView } : IFriendsWindow )
 
 	return (
 		<div className={styles.friendsList}>
-			{ friends.map((username) =>
+			{ user.friends.map((username) =>
 				<div key={username} className={styles.friend} onClick={ () => handleOnClick(username) }>{username}</div>
 			)}
 		</div>

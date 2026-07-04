@@ -46,6 +46,7 @@
 	font-size: 0.65rem;
 	align-content: center;
 	margin-top: 0.05rem;
+	white-space: pre-wrap;
 }
 
 .chatHistory
@@ -75,22 +76,4 @@
 {
 	display: grid;
 	grid-template-columns: 1fr auto;
-}
-
-.sendButton
-{
-	background-color: $input-bg-color;
-	border: 1px solid $input-border-color;
-	border-left: none;
-	border-radius: 2px;
-	align-content: center;
-	height: 100%;
-	padding-inline: 0.4rem;
-	padding-top: 0.2rem;
-}
-
-.mobileBackToFriends
-{
-	text-decoration: none;
-	font-size: 1rem;
 }

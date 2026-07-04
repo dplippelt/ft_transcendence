@@ -2,6 +2,29 @@ import { createContext, useContext, /* useEffect, */ useState } from "react";
 import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
 
+// start temporary friend usernames
+const friends =
+[
+	"Mesca",
+	"Valr",
+	"Lemon",
+	"Crawly",
+	"Takato",
+	"Seungah",
+	"Bell",
+	"José",
+	"Friend 1",
+	"Friend 2",
+	"Friend 3",
+	"Friend 4",
+	"Friend 5",
+	"Friend 6",
+	"Friend 7",
+	"Friend 8",
+	"Friend 9",
+];
+// end temporary friend usernames
+
 interface IUserContext
 {
 	user: IUser;
@@ -15,6 +38,7 @@ export interface IUser
 	// define data type for each User value
 	username: string;
 	avatar: string;
+	friends: string[];
 }
 
 const UserContext = createContext<IUserContext | null>(null);
@@ -24,6 +48,7 @@ export const defaultUser: IUser =
 	// define default User values
 	username: "Guest",
 	avatar: guestAvatar,
+	friends: friends,
 };
 
 export default function UserProvider( { children } : {children: ReactNode} )

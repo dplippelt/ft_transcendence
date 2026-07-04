@@ -125,3 +125,21 @@
 	border-bottom: none;
 }
 
+.sendButton
+{
+	background-color: $input-bg-color;
+	border: 1px solid $input-border-color;
+	border-left: none;
+	border-radius: 2px;
+	align-content: center;
+	height: 100%;
+	padding-inline: 0.4rem;
+	padding-top: 0.2rem;
+
+	&:focus
+	{
+		border-left: 1px solid $input-border-color;
+		border-color: $input-focus-border-color;
+	}
+}
+
