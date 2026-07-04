@@ -7,7 +7,7 @@
 	@include menuWindow;
 
 	max-height: min(800px, 60vh);
-	max-width: min(300px, 30%);
+	max-width: min(300px, 40%);
 	row-gap: 0.2rem;
 	padding: 1rem;
 	font-size: 0.7rem;
@@ -28,43 +28,19 @@
 	margin-bottom: 0.5rem;
 }
 
-.friend
-{
-	display: flex;
-	flex-direction: row;
-	cursor: pointer;
-	width: fit-content;
-	column-gap: 0.4rem;
-}
-
-.username
-{
-	margin-top: 0.05rem;
-
-	@media (max-width: 480px)
-	{
-		margin-top: 0.2rem;
-	}
-}
-
 .friendsList
 {
 	overflow-y: auto;
 	min-height: 0;
 	height: 100%;
 	align-content: center;
+}
 
-	& > *
-	{
-		max-width: 70%;
-		text-wrap: nowrap;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		// margin-bottom: 0.3rem;
-	}
-
-	& > *:last-child
-	{
-		margin-bottom: 0rem;
-	}
+.friend
+{
+	display: grid;
+	grid-template-columns: 1fr auto auto;
+	width: 100%;
+	max-width: 90%;
+	column-gap: 0.4rem;
 }

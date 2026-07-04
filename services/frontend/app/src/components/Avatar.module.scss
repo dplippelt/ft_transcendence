@@ -6,7 +6,6 @@
 	object-fit: cover;
 	border: $window-border;
 	border-color: $profile-avatar-border-color;
-	margin-bottom: 0.5rem;
 }
 
 .smaller
@@ -23,7 +22,6 @@
 	height: 32px;
 	border-radius: 32px;
 	border-width: 2px;
-	margin-bottom: 0rem;
 }
 
 .medium
@@ -32,6 +30,7 @@
 	height: 64px;
 	border-radius: 64px;
 	border-width: 3px;
+	margin-bottom: 0.5rem;
 }
 
 .large

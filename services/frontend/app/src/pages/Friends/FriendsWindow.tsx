@@ -1,5 +1,5 @@
-import Avatar, { AvatarSize } from "../../components/Avatar";
-import { useUser, type Friends } from "../../contexts/UserContext";
+import { FriendButton, InviteToPlayButton, RemoveFriendButton } from "../../components/Buttons";
+import { useUser } from "../../contexts/UserContext";
 import useIsMobile from "../../hooks/useIsMobile";
 import { MobileView } from "./Friends";
 import styles from "./FriendsWindow.module.scss";
@@ -19,9 +19,9 @@ function FriendsListTitle()
 function FriendsList( { setFriendChat, setMobileView } : IFriendsWindow )
 {
 	const isMobile = useIsMobile();
-	const { user } = useUser();
+	const { user, ...userFunc } = useUser();
 
-	function handleOnClick( username: string )
+	function handleOpenChat( username: string )
 	{
 		setFriendChat(username);
 
@@ -29,14 +29,26 @@ function FriendsList( { setFriendChat, setMobileView } : IFriendsWindow )
 			setMobileView(MobileView.Chat);
 	}
 
+	// placeholder function
+	function handleInviteToPlay( username: string )
+	{
+		void username;
+	}
+
+	function handleRemoveFriend( username: string )
+	{
+		userFunc.removeFriend(username);
+	}
+
 	const friends = Object.entries(user.friends);
 
 	return (
 		<div className={styles.friendsList}>
 			{ friends.map(([username, avatar]) =>
-				<div key={username} className={styles.friend} onClick={ () => handleOnClick(username) }>
-					<Avatar src={avatar} alt={`${username}'s avatar`} size={AvatarSize.smaller} />
-					<div className={styles.username}>{username}</div>
+				<div className={styles.friend} key={username}>
+					<FriendButton username={username} avatar={avatar} onClick={ () => handleOpenChat(username) } />
+					<InviteToPlayButton onClick={ () => handleInviteToPlay(username) } />
+					<RemoveFriendButton onClick={ () => handleRemoveFriend(username) } />
 				</div>
 			)}
 		</div>

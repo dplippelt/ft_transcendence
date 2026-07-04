@@ -2,7 +2,8 @@ import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
 import { EditWindowType } from "../pages/Profile/enums";
-import { SendHorizontal } from "lucide-react";
+import { SendHorizontal, Swords, UserMinus } from "lucide-react";
+import Avatar, { AvatarSize } from "./Avatar";
 
 interface IMenuButton
 {
@@ -50,6 +51,11 @@ interface ISendButton
 	onClick: () => void;
 }
 
+interface IInviteToPlay
+{
+	onClick: () => void;
+}
+
 export function MenuButton( { label, onClick } : IMenuButton )
 {
 	return <button className={styles.menuButton} onClick={onClick}>{label}</button>
@@ -92,6 +98,41 @@ export function SendButton( { onClick } : ISendButton )
 	return (
 		<button className={styles.sendButton} onClick={onClick}>
 			<SendHorizontal />
+		</button>
+	);
+}
+
+interface IFriendButton
+{
+	username: string;
+	avatar: string;
+	onClick: () => void;
+}
+
+export function FriendButton( { username, avatar, onClick } : IFriendButton )
+{
+	return (
+		<button className={styles.friendButton} onClick={onClick}>
+			<Avatar src={avatar} alt={`${username}'s avatar`} size={AvatarSize.smaller} />
+			<div className={styles.friendUsername}>{username}</div>
+		</button>
+	)
+}
+
+export function InviteToPlayButton( { onClick} : IInviteToPlay )
+{
+	return (
+		<button className={styles.inviteToPlayButton} onClick={onClick}>
+			<Swords size={20} />
+		</button>
+	);
+}
+
+export function RemoveFriendButton( { onClick} : IInviteToPlay )
+{
+	return (
+		<button className={styles.inviteToPlayButton} onClick={onClick}>
+			<UserMinus size={20} />
 		</button>
 	);
 }

@@ -36,6 +36,8 @@ interface IUserContext
 	updateUsername: ( username: string ) => void;
 	resetUsername: () => void;
 	updateAvatar: ( newAvatar: string ) => void;
+	addFriend: ( username: string ) => void;
+	removeFriend: ( username: string ) => void;
 }
 
 export interface IUser
@@ -75,6 +77,20 @@ export default function UserProvider( { children } : {children: ReactNode} )
 		setUser(prev => ({ ...prev, avatar: newAvatar }));
 	}
 
+	function addFriend( username: string )
+	{
+		//Temp mock random avatar image, fetch from DB later
+		const avatar = username.length % 2 ? testAvatar : guestAvatar;
+
+		setUser(prev => ({ ...prev, friends: { ...prev.friends, [username]: avatar } }));
+	}
+
+	function removeFriend( username: string )
+	{
+		const { [username]: _removedFriend, ...remainingFriends } = user.friends;
+		setUser(prev => ({ ...prev, friends: remainingFriends }));
+	}
+
 	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)
 	// at the moment when you hit F5 everything is rerendered and User info will be set to default again.
 	// turn it into a custom hook because it also needs to be called in the login / signup button handler after a succesful login/sign-up
@@ -94,7 +110,7 @@ export default function UserProvider( { children } : {children: ReactNode} )
 		<UserContext.Provider
 			value=
 			{{
-				user, updateUsername, resetUsername, updateAvatar,
+				user, updateUsername, resetUsername, updateAvatar, addFriend, removeFriend,
 			}}>
 			{children}
 		</UserContext.Provider>

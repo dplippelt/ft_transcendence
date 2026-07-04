@@ -135,11 +135,44 @@
 	height: 100%;
 	padding-inline: 0.4rem;
 	padding-top: 0.2rem;
+	cursor: pointer;
 
 	&:focus
 	{
 		border-left: 1px solid $input-border-color;
 		border-color: $input-focus-border-color;
 	}
+}
+
+.friendButton
+{
+	display: flex;
+	flex-direction: row;
+	column-gap: 0.4rem;
+	background: none;
+	border: none;
+	align-items: center;
+	font-family: $text-font;
+	margin-bottom: 0.4rem;
+	cursor: pointer;
+}
+
+.friendUsername
+{
+	text-wrap: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	font-size: 0.7rem;
+}
+
+.inviteToPlayButton
+{
+	background: none;
+	border: none;
+	align-content: center;
+	justify-self: right;
+	height: 100%;
+	padding-bottom: 0.2rem;
+	cursor: pointer;
 }
 
