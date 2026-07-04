@@ -5,7 +5,7 @@ import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
 import FriendsWindow from "./FriendsWindow";
 import styles from "./Friends.module.scss";
-import ChatWindow, { type IChatMsg } from "./ChatWindow";
+import ChatWindow from "./ChatWindow";
 import { useState } from "react";
 import useIsMobile from "../../hooks/useIsMobile";
 import React from "react";
@@ -21,8 +21,6 @@ interface IFriendsContainer
 	mobileView: MobileView;
 	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
 }
-
-type ChatHistory = Record<string, IChatMsg[]>;
 
 export enum MobileView
 {
@@ -48,41 +46,21 @@ function FriendsContainer( { mobileView, setMobileView } : IFriendsContainer )
 	const isMobile = useIsMobile();
 	const [friendChat, setFriendChat] = useState<string | undefined>(undefined);
 
-	// temporary state var for saving chat history -- needs to be replaced with database fetch
-	const [allChatHist, setAllChatHist] = useState<ChatHistory>({});
-
-	function chatHistory() : IChatMsg[]
-	{
-		if ( friendChat )
-			return allChatHist[friendChat] ?? [];
-		return [];
-	}
-
-	function addMessage( message: IChatMsg )
-	{
-		if ( !friendChat )
-			return;
-		setAllChatHist(prev => ({
-			...prev,
-			[friendChat]: [...(prev[friendChat] ?? []), message]
-		}));
-	}
-
 	if ( isMobile )
 	{
 		return (
 			<div className={styles.container}>
 				{ mobileView === MobileView.Friends
-				? <FriendsWindow setFriendChat={setFriendChat} setMobileView={setMobileView} />
-				: <ChatWindow key={friendChat} friendChat={friendChat} chatHistory={chatHistory} addMessage={addMessage} /> }
+				? <FriendsWindow friendChat={friendChat} setFriendChat={setFriendChat} setMobileView={setMobileView} />
+				: <ChatWindow key={friendChat} friendChat={friendChat} /> }
 			</div>
 		);
 	}
 
 	return (
 		<div className={styles.container}>
-			<FriendsWindow setFriendChat={setFriendChat} setMobileView={setMobileView} />
-			<ChatWindow key={friendChat} friendChat={friendChat} chatHistory={chatHistory} addMessage={addMessage} />
+			<FriendsWindow friendChat={friendChat} setFriendChat={setFriendChat} setMobileView={setMobileView} />
+			<ChatWindow key={friendChat} friendChat={friendChat} />
 		</div>
 	);
 }

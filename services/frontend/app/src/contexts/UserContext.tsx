@@ -3,32 +3,45 @@ import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
 import testAvatar from "../assets/mesca_avatar_test.png";
 
-// start temporary friends list
-type username = string;
-type avatar = string;
-export type Friends = Record<username, avatar>;
+//Note: Do we want a separate ChatHistoryContext or FriendsContext later or keep it grouped with other user data like this?
 
+export interface IChatMsg
+{
+	username: string;
+	message: string;
+}
+
+interface IFriendData
+{
+	avatar: string;
+	chatHistory: IChatMsg[];
+}
+
+type username = string;
+type Friends = Record<username, IFriendData>;
+
+// start temporary default friends list
 const friends: Friends =
 {
-	"Mesca": testAvatar,
-	"Valr": guestAvatar,
-	"Lemon": testAvatar,
-	"Crawly": guestAvatar,
-	"Takato": testAvatar,
-	"Seungah": guestAvatar,
-	"Bell": testAvatar,
-	"José": guestAvatar,
-	"Friend 1": testAvatar,
-	"Friend 2": guestAvatar,
-	"Friend 3": testAvatar,
-	"Friend 4": guestAvatar,
-	"Friend 5": testAvatar,
-	"Friend 6": guestAvatar,
-	"Friend 7": testAvatar,
-	"Friend 8": guestAvatar,
-	"Friend 9": testAvatar,
+	"Mesca": {avatar: testAvatar, chatHistory: []},
+	"Valr": {avatar: guestAvatar, chatHistory: []},
+	"Lemon": {avatar: testAvatar, chatHistory: []},
+	"Crawly": {avatar: guestAvatar, chatHistory: []},
+	"Takato": {avatar: testAvatar, chatHistory: []},
+	"Seungah": {avatar: guestAvatar, chatHistory: []},
+	"Bell": {avatar: testAvatar, chatHistory: []},
+	"José": {avatar: guestAvatar, chatHistory: []},
+	"Friend 1": {avatar: testAvatar, chatHistory: []},
+	"Friend 2": {avatar: guestAvatar, chatHistory: []},
+	"Friend 3": {avatar: testAvatar, chatHistory: []},
+	"Friend 4": {avatar: guestAvatar, chatHistory: []},
+	"Friend 5": {avatar: testAvatar, chatHistory: []},
+	"Friend 6": {avatar: guestAvatar, chatHistory: []},
+	"Friend 7": {avatar: testAvatar, chatHistory: []},
+	"Friend 8": {avatar: guestAvatar, chatHistory: []},
+	"Friend 9": {avatar: testAvatar, chatHistory: []},
 }
-// end temporary friends list
+// end temporary default friends list
 
 interface IUserContext
 {
@@ -36,6 +49,7 @@ interface IUserContext
 	updateUsername: ( username: string ) => void;
 	resetUsername: () => void;
 	updateAvatar: ( newAvatar: string ) => void;
+	addChatHistory: ( username: string, message: string ) => void;
 	addFriend: ( username: string ) => void;
 	removeFriend: ( username: string ) => void;
 }
@@ -77,18 +91,40 @@ export default function UserProvider( { children } : {children: ReactNode} )
 		setUser(prev => ({ ...prev, avatar: newAvatar }));
 	}
 
+	function addChatHistory( username: string, message: string )
+	{
+		const newMsg: IChatMsg = { username: user.username, message: message };
+
+		setUser(prev => ({
+			...prev,
+			friends: {
+				...prev.friends,
+				[username]: {
+					...prev.friends[username],
+					chatHistory: [...prev.friends[username].chatHistory, newMsg]
+				}
+			}
+		}));
+	}
+
 	function addFriend( username: string )
 	{
 		//Temp mock random avatar image, fetch from DB later
 		const avatar = username.length % 2 ? testAvatar : guestAvatar;
 
-		setUser(prev => ({ ...prev, friends: { ...prev.friends, [username]: avatar } }));
+		setUser(prev => ({
+			...prev,
+			friends: { ...prev.friends, [username]: { avatar: avatar, chatHistory: [] } }
+		}));
 	}
 
 	function removeFriend( username: string )
 	{
-		const { [username]: _removedFriend, ...remainingFriends } = user.friends;
-		setUser(prev => ({ ...prev, friends: remainingFriends }));
+		setUser(prev =>
+		{
+			const { [username]: _removedFriend, ...remainingFriends } = prev.friends;
+			return { ...prev, friends: remainingFriends };
+		});
 	}
 
 	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)
@@ -110,7 +146,7 @@ export default function UserProvider( { children } : {children: ReactNode} )
 		<UserContext.Provider
 			value=
 			{{
-				user, updateUsername, resetUsername, updateAvatar, addFriend, removeFriend,
+				user, updateUsername, resetUsername, updateAvatar, addChatHistory, addFriend, removeFriend,
 			}}>
 			{children}
 		</UserContext.Provider>

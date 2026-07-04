@@ -7,6 +7,7 @@ import React from "react";
 
 interface IFriendsWindow
 {
+	friendChat: string | undefined;
 	setFriendChat: React.Dispatch<React.SetStateAction<string | undefined>>,
 	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>,
 }
@@ -16,7 +17,7 @@ function FriendsListTitle()
 	return <div className={styles.friendsListTitle}>My Friends</div>
 }
 
-function FriendsList( { setFriendChat, setMobileView } : IFriendsWindow )
+function FriendsList( { friendChat, setFriendChat, setMobileView } : IFriendsWindow )
 {
 	const isMobile = useIsMobile();
 	const { user, ...userFunc } = useUser();
@@ -38,13 +39,15 @@ function FriendsList( { setFriendChat, setMobileView } : IFriendsWindow )
 	function handleRemoveFriend( username: string )
 	{
 		userFunc.removeFriend(username);
+		if ( friendChat === username )
+			setFriendChat(undefined);
 	}
 
 	const friends = Object.entries(user.friends);
 
 	return (
 		<div className={styles.friendsList}>
-			{ friends.map(([username, avatar]) =>
+			{ friends.map(([username, {avatar}]) =>
 				<div className={styles.friend} key={username}>
 					<FriendButton username={username} avatar={avatar} onClick={ () => handleOpenChat(username) } />
 					<InviteToPlayButton onClick={ () => handleInviteToPlay(username) } />
@@ -55,12 +58,12 @@ function FriendsList( { setFriendChat, setMobileView } : IFriendsWindow )
 	)
 }
 
-export default function FriendsWindow( { setFriendChat, setMobileView } : IFriendsWindow )
+export default function FriendsWindow( { friendChat, setFriendChat, setMobileView } : IFriendsWindow )
 {
 	return (
 		<div className={styles.friendsWindow}>
 			<FriendsListTitle />
-			<FriendsList setFriendChat={setFriendChat} setMobileView={setMobileView} />
+			<FriendsList friendChat={friendChat} setFriendChat={setFriendChat} setMobileView={setMobileView} />
 		</div>
 	)
 }

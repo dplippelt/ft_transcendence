@@ -1,39 +1,27 @@
 import { ChatInput } from "../../components/TextInput";
 import styles from "./ChatWindow.module.scss";
-import { useUser } from "../../contexts/UserContext";
+import { useUser, type IChatMsg } from "../../contexts/UserContext";
 import { useLayoutEffect, useRef, useState } from "react";
 import { SendButton } from "../../components/Buttons";
 import Avatar, { AvatarSize } from "../../components/Avatar";
 
-interface IChatTitle
+interface IChatWindow
 {
 	friendChat: string | undefined;
 }
 
-export interface IChatMsg
+interface IChatMessage
 {
 	username: string;
 	message: string;
 }
 
-interface IChatHistory
+interface IChat
 {
-	chatHistory: IChatMsg[];
+	friendChat: string;
 }
 
-interface IChatBox
-{
-	addMessage: ( message: IChatMsg ) => void;
-}
-
-interface IChatWindow
-{
-	friendChat: string | undefined;
-	chatHistory: () => IChatMsg[];
-	addMessage: ( message: IChatMsg ) => void;
-}
-
-function ChatTitle( { friendChat } : IChatTitle )
+function ChatTitle( { friendChat } : IChatWindow )
 {
 	const { user } = useUser();
 
@@ -46,13 +34,13 @@ function ChatTitle( { friendChat } : IChatTitle )
 
 	return(
 		<div className={styles.chatTitle}>
-			{ friendChat && <Avatar src={user.friends[friendChat]} alt={`${friendChat}'s avatar`}  size={AvatarSize.small} /> }
+			{ friendChat && <Avatar src={user.friends[friendChat].avatar} alt={`${friendChat}'s avatar`}  size={AvatarSize.small} /> }
 			<div className={styles.chatTitleText}>{chatTitle()}</div>
 		</div>
 	);
 }
 
-function ChatMsg( { username, message } : IChatMsg )
+function ChatMessage( { username, message } : IChatMessage )
 {
 	return (
 		<div className={styles.chatMsg}>
@@ -62,9 +50,11 @@ function ChatMsg( { username, message } : IChatMsg )
 	);
 }
 
-function ChatHistory( { chatHistory } : IChatHistory )
+function ChatHistory( { friendChat } : IChat )
 {
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const { user } = useUser();
+	const chatHistory: IChatMsg[] = user.friends[friendChat].chatHistory;
 
 	useLayoutEffect(() =>
 	{
@@ -75,22 +65,22 @@ function ChatHistory( { chatHistory } : IChatHistory )
 	return (
 		<div className={styles.chatHistory} ref={scrollRef}>
 			{ chatHistory.map((chatMsg, idx) =>
-				<ChatMsg key={idx} username={chatMsg.username} message={chatMsg.message} />
+				<ChatMessage key={idx} username={chatMsg.username} message={chatMsg.message} />
 			)}
 		</div>
 	);
 }
 
-function ChatBox( { addMessage } : IChatBox )
+function ChatBox( { friendChat } : IChat )
 {
-	const { user } = useUser();
+	const { user, ...userFunc } = useUser();
 	const [msg, setMsg] = useState<string>("");
 
 	function handleSend( message: string )
 	{
 		if ( msg.trim().length > 0 )
 		{
-			addMessage({ username: user.username, message: message })
+			userFunc.addChatHistory(friendChat, message);
 			setMsg("");
 		}
 	}
@@ -108,13 +98,13 @@ function ChatBox( { addMessage } : IChatBox )
 	);
 }
 
-export default function ChatWindow( { friendChat, chatHistory, addMessage } : IChatWindow )
+export default function ChatWindow( { friendChat } : IChatWindow )
 {
 	return (
 		<div className={styles.chatWindow}>
 			<ChatTitle friendChat={friendChat} />
-			<ChatHistory chatHistory={chatHistory()} />
-			<ChatBox addMessage={addMessage} />
+			{ friendChat && <ChatHistory friendChat={friendChat} /> }
+			{ friendChat && <ChatBox friendChat={friendChat} /> }
 		</div>
 	)
 }
