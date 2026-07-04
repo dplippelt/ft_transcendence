@@ -23,10 +23,22 @@
 
 .chatTitle
 {
+	display: flex;
+	flex-direction: row;
+	column-gap: 0.4rem;
 	font-size: 0.9rem;
 	justify-self: center;
-	border-bottom: 1px solid $primary-text-color;
 	margin-bottom: 0.5rem;
+}
+
+.chatTitleText
+{
+	margin-top: 0.1rem;
+
+	@media (max-width: 480px)
+	{
+		margin-top: 0.25rem;
+	}
 }
 
 .chatMsg

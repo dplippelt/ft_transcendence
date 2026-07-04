@@ -3,6 +3,7 @@ import styles from "./Avatar.module.scss";
 
 export enum AvatarSize
 {
+	smaller,
 	small,
 	medium,
 	large,
@@ -10,6 +11,7 @@ export enum AvatarSize
 
 const sizes: Record<AvatarSize, string> =
 {
+	[AvatarSize.smaller]: styles.smaller,
 	[AvatarSize.small]: styles.small,
 	[AvatarSize.medium]: styles.medium,
 	[AvatarSize.large]: styles.large,

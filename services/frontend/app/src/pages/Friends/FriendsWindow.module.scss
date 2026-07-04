@@ -16,7 +16,7 @@
 	@media (max-width: 480px)
 	{
 		margin: 0 auto;
-		max-width: min(800px, 60vh);;
+		max-width: min(800px, 60vh);
 	}
 }
 
@@ -30,8 +30,21 @@
 
 .friend
 {
+	display: flex;
+	flex-direction: row;
 	cursor: pointer;
 	width: fit-content;
+	column-gap: 0.4rem;
+}
+
+.username
+{
+	margin-top: 0.05rem;
+
+	@media (max-width: 480px)
+	{
+		margin-top: 0.2rem;
+	}
 }
 
 .friendsList
@@ -39,6 +52,7 @@
 	overflow-y: auto;
 	min-height: 0;
 	height: 100%;
+	align-content: center;
 
 	& > *
 	{
@@ -46,7 +60,7 @@
 		text-wrap: nowrap;
 		overflow: hidden;
 		text-overflow: ellipsis;
-		margin-bottom: 0.3rem;
+		// margin-bottom: 0.3rem;
 	}
 
 	& > *:last-child

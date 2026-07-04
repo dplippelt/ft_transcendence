@@ -3,6 +3,7 @@ import styles from "./ChatWindow.module.scss";
 import { useUser } from "../../contexts/UserContext";
 import { useLayoutEffect, useRef, useState } from "react";
 import { SendButton } from "../../components/Buttons";
+import Avatar, { AvatarSize } from "../../components/Avatar";
 
 interface IChatTitle
 {
@@ -34,6 +35,8 @@ interface IChatWindow
 
 function ChatTitle( { friendChat } : IChatTitle )
 {
+	const { user } = useUser();
+
 	function chatTitle() : string
 	{
 		if (friendChat)
@@ -41,7 +44,12 @@ function ChatTitle( { friendChat } : IChatTitle )
 		return "No chat selected";
 	}
 
-	return <div className={styles.chatTitle}>{chatTitle()}</div>
+	return(
+		<div className={styles.chatTitle}>
+			{ friendChat && <Avatar src={user.friends[friendChat]} alt={`${friendChat}'s avatar`}  size={AvatarSize.small} /> }
+			<div className={styles.chatTitleText}>{chatTitle()}</div>
+		</div>
+	);
 }
 
 function ChatMsg( { username, message } : IChatMsg )

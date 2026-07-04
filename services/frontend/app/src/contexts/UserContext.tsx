@@ -1,29 +1,34 @@
 import { createContext, useContext, /* useEffect, */ useState } from "react";
 import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
+import testAvatar from "../assets/mesca_avatar_test.png";
 
-// start temporary friend usernames
-const friends =
-[
-	"Mesca",
-	"Valr",
-	"Lemon",
-	"Crawly",
-	"Takato",
-	"Seungah",
-	"Bell",
-	"José",
-	"Friend 1",
-	"Friend 2",
-	"Friend 3",
-	"Friend 4",
-	"Friend 5",
-	"Friend 6",
-	"Friend 7",
-	"Friend 8",
-	"Friend 9",
-];
-// end temporary friend usernames
+// start temporary friends list
+type username = string;
+type avatar = string;
+export type Friends = Record<username, avatar>;
+
+const friends: Friends =
+{
+	"Mesca": testAvatar,
+	"Valr": guestAvatar,
+	"Lemon": testAvatar,
+	"Crawly": guestAvatar,
+	"Takato": testAvatar,
+	"Seungah": guestAvatar,
+	"Bell": testAvatar,
+	"José": guestAvatar,
+	"Friend 1": testAvatar,
+	"Friend 2": guestAvatar,
+	"Friend 3": testAvatar,
+	"Friend 4": guestAvatar,
+	"Friend 5": testAvatar,
+	"Friend 6": guestAvatar,
+	"Friend 7": testAvatar,
+	"Friend 8": guestAvatar,
+	"Friend 9": testAvatar,
+}
+// end temporary friends list
 
 interface IUserContext
 {
@@ -38,7 +43,7 @@ export interface IUser
 	// define data type for each User value
 	username: string;
 	avatar: string;
-	friends: string[];
+	friends: Friends;
 }
 
 const UserContext = createContext<IUserContext | null>(null);
