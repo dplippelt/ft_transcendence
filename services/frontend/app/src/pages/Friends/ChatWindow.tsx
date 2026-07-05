@@ -76,24 +76,19 @@ function ChatBox( { friendChat } : IChat )
 	const { user, ...userFunc } = useUser();
 	const [msg, setMsg] = useState<string>("");
 
-	function handleSend( message: string )
+	function handleSend()
 	{
 		if ( msg.trim().length > 0 )
 		{
-			userFunc.addChatHistory(friendChat, message);
+			userFunc.addChatHistory(friendChat, msg);
 			setMsg("");
 		}
-	}
-
-	function handleClick()
-	{
-		handleSend(msg);
 	}
 
 	return (
 		<div className={styles.chatBox}>
 			<ChatInput placeholder="Type here..." onSend={handleSend} msg={msg} setMsg={setMsg} />
-			<SendButton onClick={handleClick} />
+			<SendButton onClick={handleSend} />
 		</div>
 	);
 }

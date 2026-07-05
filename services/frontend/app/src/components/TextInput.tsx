@@ -21,7 +21,7 @@ interface IPasswordInput
 interface IChatInput
 {
 	placeholder: string;
-	onSend: (message: string) => void;
+	onSend: () => void;
 	msg: string;
 	setMsg: React.Dispatch<React.SetStateAction<string>>;
 }
@@ -77,7 +77,7 @@ export function ChatInput( { placeholder, onSend, msg, setMsg } : IChatInput )
 		if ( e.key === "Enter" && !e.shiftKey )
 		{
 			e.preventDefault();
-			onSend(msg);
+			onSend();
 		}
 	}
 
