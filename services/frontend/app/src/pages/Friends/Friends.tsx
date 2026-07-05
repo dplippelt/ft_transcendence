@@ -47,7 +47,7 @@ function Buttons( { mobileView, setMobileView, setPopuptype } : IButtons )
 			{ isMobile && mobileView === MobileView.chat
 			? <BottomButton label="Back" onClick={ () => setMobileView(MobileView.friends) } mobilePosition={MobilePosition.bottom} />
 			: <BackButton />}
-			{ isMobile && mobileView === MobileView.friends && <BottomButton label="Add Friend" onClick={ () => setPopuptype(PopupType.addFriend) } /> }
+			{ ( !isMobile || ( isMobile && mobileView === MobileView.friends )) && <BottomButton label="Add Friend" onClick={ () => setPopuptype(PopupType.addFriend) } /> }
 		</BottomButtons>
 	);
 }
