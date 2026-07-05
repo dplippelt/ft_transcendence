@@ -7,7 +7,7 @@ import Avatar, { AvatarSize } from "../../components/Avatar";
 
 interface IChatWindow
 {
-	friendChat: string | undefined;
+	activeChat: string | undefined;
 }
 
 interface IChatMessage
@@ -18,23 +18,23 @@ interface IChatMessage
 
 interface IChat
 {
-	friendChat: string;
+	activeChat: string;
 }
 
-function ChatTitle( { friendChat } : IChatWindow )
+function ChatTitle( { activeChat } : IChatWindow )
 {
 	const { user } = useUser();
 
 	function chatTitle() : string
 	{
-		if (friendChat)
-			return `${friendChat}'s Chat`;
+		if (activeChat)
+			return `${activeChat}'s Chat`;
 		return "No chat selected";
 	}
 
 	return(
 		<div className={styles.chatTitle}>
-			{ friendChat && <Avatar src={user.friends[friendChat].avatar} alt={`${friendChat}'s avatar`}  size={AvatarSize.small} /> }
+			{ activeChat && <Avatar src={user.friends[activeChat].avatar} alt={`${activeChat}'s avatar`}  size={AvatarSize.small} /> }
 			<div className={styles.chatTitleText}>{chatTitle()}</div>
 		</div>
 	);
@@ -50,11 +50,11 @@ function ChatMessage( { username, message } : IChatMessage )
 	);
 }
 
-function ChatHistory( { friendChat } : IChat )
+function ChatHistory( { activeChat } : IChat )
 {
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const { user } = useUser();
-	const chatHistory: IChatMsg[] = user.friends[friendChat].chatHistory;
+	const chatHistory: IChatMsg[] = user.friends[activeChat].chatHistory;
 
 	useLayoutEffect(() =>
 	{
@@ -71,7 +71,7 @@ function ChatHistory( { friendChat } : IChat )
 	);
 }
 
-function ChatBox( { friendChat } : IChat )
+function ChatBox( { activeChat } : IChat )
 {
 	const { user, ...userFunc } = useUser();
 	const [msg, setMsg] = useState<string>("");
@@ -80,7 +80,7 @@ function ChatBox( { friendChat } : IChat )
 	{
 		if ( msg.trim().length > 0 )
 		{
-			userFunc.addChatHistory(friendChat, msg);
+			userFunc.addChatHistory(activeChat, msg);
 			setMsg("");
 		}
 	}
@@ -93,13 +93,13 @@ function ChatBox( { friendChat } : IChat )
 	);
 }
 
-export default function ChatWindow( { friendChat } : IChatWindow )
+export default function ChatWindow( { activeChat } : IChatWindow )
 {
 	return (
 		<div className={styles.chatWindow}>
-			<ChatTitle friendChat={friendChat} />
-			{ friendChat && <ChatHistory friendChat={friendChat} /> }
-			{ friendChat && <ChatBox friendChat={friendChat} /> }
+			<ChatTitle activeChat={activeChat} />
+			{ activeChat && <ChatHistory activeChat={activeChat} /> }
+			{ activeChat && <ChatBox activeChat={activeChat} /> }
 		</div>
 	)
 }

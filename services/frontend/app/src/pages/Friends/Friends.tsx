@@ -12,18 +12,29 @@ import React from "react";
 import { MobilePosition } from "../../utils/utils";
 import Popup from "../../components/Popup";
 import AddFriendPopup from "./AddFriendPopup";
+import { PopupType } from "./enums";
+import RemoveFriendPopup from "./RemoveFriendPopup";
 
 interface IButtons
 {
 	mobileView: MobileView;
 	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
-	setPopupVis: React.Dispatch<React.SetStateAction<boolean>>;
+	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
+}
+
+export interface ISetFriendPageState
+{
+	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
+	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
+	setRemoveFriend: React.Dispatch<React.SetStateAction<string>>;
+	setActiveChat: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
 interface IFriendsContainer
 {
 	mobileView: MobileView;
-	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
+	activeChat: string | undefined;
+	setPageState: ISetFriendPageState;
 }
 
 export enum MobileView
@@ -32,7 +43,7 @@ export enum MobileView
 	Chat,
 }
 
-function Buttons( { mobileView, setMobileView, setPopupVis } : IButtons )
+function Buttons( { mobileView, setMobileView, setPopuptype } : IButtons )
 {
 	const isMobile = useIsMobile();
 
@@ -41,31 +52,30 @@ function Buttons( { mobileView, setMobileView, setPopupVis } : IButtons )
 			{ isMobile && mobileView === MobileView.Chat
 			? <BottomButton label="Back" onClick={ () => setMobileView(MobileView.Friends) } mobilePosition={MobilePosition.bottom} />
 			: <BackButton />}
-			<BottomButton label="Add Friend" onClick={ () => setPopupVis(true) } />
+			<BottomButton label="Add Friend" onClick={ () => setPopuptype(PopupType.addFriend) } />
 		</BottomButtons>
 	);
 }
 
-function FriendsContainer( { mobileView, setMobileView } : IFriendsContainer )
+function FriendsContainer( { mobileView, activeChat, setPageState } : IFriendsContainer )
 {
 	const isMobile = useIsMobile();
-	const [friendChat, setFriendChat] = useState<string | undefined>(undefined);
 
 	if ( isMobile )
 	{
 		return (
 			<div className={styles.container}>
 				{ mobileView === MobileView.Friends
-				? <FriendsWindow friendChat={friendChat} setFriendChat={setFriendChat} setMobileView={setMobileView} />
-				: <ChatWindow key={friendChat} friendChat={friendChat} /> }
+				? <FriendsWindow setPageState={setPageState} />
+				: <ChatWindow key={activeChat} activeChat={activeChat} /> }
 			</div>
 		);
 	}
 
 	return (
 		<div className={styles.container}>
-			<FriendsWindow friendChat={friendChat} setFriendChat={setFriendChat} setMobileView={setMobileView} />
-			<ChatWindow key={friendChat} friendChat={friendChat} />
+			<FriendsWindow setPageState={setPageState} />
+			<ChatWindow key={activeChat} activeChat={activeChat} />
 		</div>
 	);
 }
@@ -73,16 +83,20 @@ function FriendsContainer( { mobileView, setMobileView } : IFriendsContainer )
 export default function Friends()
 {
 	const [mobileView, setMobileView] = useState<MobileView>(MobileView.Friends);
-	const [popupVis, setPopupVis] = useState<boolean>(false);
+	const [popupType, setPopuptype] = useState<PopupType>(PopupType.none);
+	const [removeFriend, setRemoveFriend] = useState<string>("");
+	const [activeChat, setActiveChat] = useState<string | undefined>(undefined);
+	const setPageState: ISetFriendPageState = { setMobileView, setPopuptype, setRemoveFriend, setActiveChat };
 
 	return (
 		<>
 			<Background />
 			<Page>
 				<MenuTitle title="Friends" />
-				<FriendsContainer mobileView={mobileView} setMobileView={setMobileView} />
-				<Buttons mobileView={mobileView} setMobileView={setMobileView} setPopupVis={setPopupVis} />
-				{ popupVis && <Popup> <AddFriendPopup setPopupVis={setPopupVis} /> </Popup>}
+				<FriendsContainer mobileView={mobileView} activeChat={activeChat} setPageState={setPageState} />
+				<Buttons mobileView={mobileView} setMobileView={setMobileView} setPopuptype={setPopuptype} />
+				{ popupType === PopupType.addFriend && <Popup> <AddFriendPopup setPopuptype={setPopuptype} /> </Popup>}
+				{ popupType === PopupType.removeFriend && <Popup> <RemoveFriendPopup activeChat={activeChat} setActiveChat={setActiveChat} username={removeFriend} setPopuptype={setPopuptype} /> </Popup>}
 			</Page>
 		</>
 	);

@@ -5,13 +5,14 @@ import { ErrorType } from "../../utils/utils";
 import { TextInput } from "../../components/TextInput";
 import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
+import { PopupType } from "./enums";
 
 interface IAddFriendPopup
 {
-	setPopupVis: React.Dispatch<React.SetStateAction<boolean>>;
+	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-export default function AddFriendPopup( { setPopupVis } : IAddFriendPopup )
+export default function AddFriendPopup( { setPopuptype } : IAddFriendPopup )
 {
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [username, setUsername] = useState<string>("");
@@ -28,7 +29,7 @@ export default function AddFriendPopup( { setPopupVis } : IAddFriendPopup )
 			return setError(ErrorType.userAlreadyFriend);
 
 		userFunc.addFriend(username);
-		setPopupVis(false);
+		setPopuptype(PopupType.none);
 	}
 
 	return (
@@ -36,7 +37,7 @@ export default function AddFriendPopup( { setPopupVis } : IAddFriendPopup )
 			{ error !== ErrorType.none && <ErrorText error={error}/> }
 			<TextInput label="Add new friend:" placeholder="Friend's username" setter={setUsername} id="newUsername" />
 			<PopupButtons>
-				<MossButton label="Back" onClick={ () => setPopupVis(false) } />
+				<MossButton label="Back" onClick={ () => setPopuptype(PopupType.none) } />
 				<MossButton label="Ok" onClick={ usernameCheck } />
 			</PopupButtons>
 		</>
