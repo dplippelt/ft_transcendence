@@ -1,8 +1,8 @@
 import { FriendButton, InviteToPlayButton, RemoveFriendButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
 import useIsMobile from "../../hooks/useIsMobile";
-import { PopupType } from "./enums";
-import { MobileView, type ISetFriendPageState } from "./Friends";
+import { MobileView, PopupType } from "./enums";
+import type { ISetFriendPageState } from "./Friends";
 import styles from "./FriendsWindow.module.scss";
 
 interface IFriendsWindow
@@ -19,26 +19,26 @@ function FriendsList( { setPageState } : IFriendsWindow )
 {
 	const isMobile = useIsMobile();
 	const { user } = useUser();
-	const { setMobileView, setActiveChat, setPopuptype, setRemoveFriend } = setPageState;
+	const { setMobileView, setActiveChat, setPopuptype, setSelectedFriend } = setPageState;
 
 	function handleOpenChat( username: string )
 	{
 		setActiveChat(username);
 
 		if ( isMobile )
-			setMobileView(MobileView.Chat);
+			setMobileView(MobileView.chat);
 	}
 
-	// placeholder function
 	function handleInviteToPlay( username: string )
 	{
-		void username;
+		setPopuptype(PopupType.inviteFriend);
+		setSelectedFriend(username);
 	}
 
 	function handleRemoveFriend( username: string )
 	{
 		setPopuptype(PopupType.removeFriend);
-		setRemoveFriend(username);
+		setSelectedFriend(username);
 	}
 
 	// Convert Friends Record to an array of [username, data] pairs so it can be looped over (and sort alphabetically on username)

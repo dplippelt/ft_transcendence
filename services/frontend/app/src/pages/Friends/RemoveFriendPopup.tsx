@@ -3,7 +3,7 @@ import { MossButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
 import { PopupType } from "./enums";
 import React from "react";
-import styles from "./RemoveFriendPopup.module.scss";
+import styles from "./FriendPopup.module.scss";
 
 interface IRemoveFriendPopup
 {
