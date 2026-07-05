@@ -20,7 +20,7 @@ interface IFriendData
 type username = string;
 type Friends = Record<username, IFriendData>;
 
-// start temporary default friends list
+// start temporary default friends list for testing
 const friends: Friends =
 {
 	"Mesca": {avatar: testAvatar, chatHistory: []},
@@ -41,7 +41,7 @@ const friends: Friends =
 	"Friend 8": {avatar: guestAvatar, chatHistory: []},
 	"Friend 9": {avatar: testAvatar, chatHistory: []},
 }
-// end temporary default friends list
+// end temporary default friends list for testing
 
 interface IUserContext
 {
@@ -76,9 +76,31 @@ export default function UserProvider( { children } : {children: ReactNode} )
 {
 	const [user, setUser] = useState<IUser>(defaultUser);
 
-	function updateUsername( username: string )
+	function updateUsername( newUsername: string )
 	{
-		setUser( prev => ({ ...prev, username: username }) );
+		setUser( prev =>
+		{
+			const oldUsername = prev.username;
+
+			// Convert the Friend Record into an array of [username, data] pairs so we can loop over it
+			// in order to update the user's username in every friend chat
+			const updatedHistory: [string, IFriendData][] = Object.entries(prev.friends).map(([friendName, data]) => [
+				friendName,
+				{
+					...data,
+					chatHistory: data.chatHistory.map(msg =>
+						msg.username === oldUsername
+							? { ...msg, username: newUsername }
+							: msg
+					)
+				}
+			]);
+
+			// Convert the updated array back into a Friend Record
+			const updatedFriends: Friends = Object.fromEntries(updatedHistory);
+
+			return { ...prev, username: newUsername, friends: updatedFriends };
+		});
 	}
 
 	function resetUsername()
@@ -114,7 +136,13 @@ export default function UserProvider( { children } : {children: ReactNode} )
 
 		setUser(prev => ({
 			...prev,
-			friends: { ...prev.friends, [username]: { avatar: avatar, chatHistory: [] } }
+			friends: {
+				...prev.friends,
+				[username]: {
+					avatar: avatar,
+					chatHistory: []
+				}
+			}
 		}));
 	}
 
