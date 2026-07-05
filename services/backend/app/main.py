@@ -1,3 +1,4 @@
+
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -5,6 +6,7 @@ from fastapi import FastAPI
 from app.db.database import Base, engine
 from app.api.v1 import auth, users, dungeons, cards, puzzles, scores, leaderboard
 
+import app.models
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
