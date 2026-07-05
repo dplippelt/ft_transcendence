@@ -27,6 +27,7 @@ export default class CardBase extends Phaser.GameObjects.Container {
     readonly style!: CardStyle;
     private isFocused!: boolean;
     private isSelected!: boolean;
+    private value: any | undefined;
 
     constructor(scene: Scene, text: string) {
 
@@ -93,6 +94,14 @@ export default class CardBase extends Phaser.GameObjects.Container {
 
     selected() {
         this.emit(CardEvents.SELECTION, this);
+    }
+
+    setValue(value: any) {
+        this.value = value;
+    }
+
+    getValue() {
+        return this.value;
     }
 
 }
