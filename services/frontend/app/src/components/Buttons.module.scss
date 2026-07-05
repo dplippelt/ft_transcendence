@@ -137,10 +137,15 @@
 	padding-top: 0.2rem;
 	cursor: pointer;
 
-	&:focus
+	& > *
 	{
-		border-left: 1px solid $input-border-color;
-		border-color: $input-focus-border-color;
+		opacity: 75%;
+		transition: opacity 0.05s ease;
+
+		&:active
+		{
+			opacity: 100%;
+		}
 	}
 }
 
@@ -165,7 +170,7 @@
 	font-size: 0.7rem;
 }
 
-.inviteToPlayButton
+.actionButton
 {
 	background: none;
 	border: none;
@@ -174,5 +179,15 @@
 	height: 100%;
 	padding-bottom: 0.2rem;
 	cursor: pointer;
-}
 
+	& > *
+	{
+		opacity: 75%;
+		transition: opacity 0.05s ease;
+
+		&:active
+		{
+			opacity: 100%;
+		}
+	}
+}

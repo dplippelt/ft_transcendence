@@ -63,8 +63,8 @@
 
 .chatHistory
 {
-	overflow-y: auto;
-	min-height: 0;
+	@include scrollbar;
+	
 	height: 100%;
 	padding: 0.5rem;
 

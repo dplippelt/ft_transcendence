@@ -47,12 +47,19 @@ interface ITabButton
 	onClick: () => void;
 }
 
+interface IFriendButton
+{
+	username: string;
+	avatar: string;
+	onClick: () => void;
+}
+
 interface ISendButton
 {
 	onClick: () => void;
 }
 
-interface IInviteToPlay
+interface IActionButton
 {
 	onClick: () => void;
 }
@@ -103,13 +110,6 @@ export function SendButton( { onClick } : ISendButton )
 	);
 }
 
-interface IFriendButton
-{
-	username: string;
-	avatar: string;
-	onClick: () => void;
-}
-
 export function FriendButton( { username, avatar, onClick } : IFriendButton )
 {
 	return (
@@ -120,19 +120,19 @@ export function FriendButton( { username, avatar, onClick } : IFriendButton )
 	)
 }
 
-export function InviteToPlayButton( { onClick} : IInviteToPlay )
+export function InviteToPlayButton( { onClick } : IActionButton )
 {
 	return (
-		<button className={styles.inviteToPlayButton} onClick={onClick}>
+		<button className={styles.actionButton} onClick={onClick}>
 			<Swords size={20} />
 		</button>
 	);
 }
 
-export function RemoveFriendButton( { onClick} : IInviteToPlay )
+export function RemoveFriendButton( { onClick } : IActionButton )
 {
 	return (
-		<button className={styles.inviteToPlayButton} onClick={onClick}>
+		<button className={styles.actionButton} onClick={onClick}>
 			<UserMinus size={20} />
 		</button>
 	);
