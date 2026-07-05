@@ -28,17 +28,13 @@
 	column-gap: 0.4rem;
 	font-size: 0.9rem;
 	justify-self: center;
+	align-items: center;
 	margin-bottom: 0.3rem;
 }
 
 .chatTitleText
 {
 	margin-top: 0.1rem;
-
-	@media (max-width: 480px)
-	{
-		margin-top: 0.25rem;
-	}
 }
 
 .chatMsg
@@ -64,7 +60,7 @@
 .chatHistory
 {
 	@include scrollbar;
-	
+
 	height: 100%;
 	padding: 0.5rem;
 

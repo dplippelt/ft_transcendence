@@ -47,7 +47,7 @@ function Buttons( { mobileView, setMobileView, setPopuptype } : IButtons )
 			{ isMobile && mobileView === MobileView.chat
 			? <BottomButton label="Back" onClick={ () => setMobileView(MobileView.friends) } mobilePosition={MobilePosition.bottom} />
 			: <BackButton />}
-			<BottomButton label="Add Friend" onClick={ () => setPopuptype(PopupType.addFriend) } />
+			{ isMobile && mobileView === MobileView.friends && <BottomButton label="Add Friend" onClick={ () => setPopuptype(PopupType.addFriend) } /> }
 		</BottomButtons>
 	);
 }
@@ -55,6 +55,7 @@ function Buttons( { mobileView, setMobileView, setPopuptype } : IButtons )
 function FriendsContainer( { mobileView, activeChat, setPageState } : IFriendsContainer )
 {
 	const isMobile = useIsMobile();
+	const { setPopuptype, setSelectedFriend } = setPageState;
 
 	if ( isMobile )
 	{
@@ -62,7 +63,7 @@ function FriendsContainer( { mobileView, activeChat, setPageState } : IFriendsCo
 			<div className={styles.container}>
 				{ mobileView === MobileView.friends
 				? <FriendsWindow setPageState={setPageState} />
-				: <ChatWindow key={activeChat} activeChat={activeChat} /> }
+				: <ChatWindow key={activeChat} activeChat={activeChat} setPopuptype={setPopuptype} setSelectedFriend={setSelectedFriend} /> }
 			</div>
 		);
 	}
@@ -70,7 +71,7 @@ function FriendsContainer( { mobileView, activeChat, setPageState } : IFriendsCo
 	return (
 		<div className={styles.container}>
 			<FriendsWindow setPageState={setPageState} />
-			<ChatWindow key={activeChat} activeChat={activeChat} />
+			<ChatWindow key={activeChat} activeChat={activeChat} setPopuptype={setPopuptype} setSelectedFriend={setSelectedFriend} />
 		</div>
 	);
 }

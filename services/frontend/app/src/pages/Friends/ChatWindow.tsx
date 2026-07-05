@@ -1,13 +1,18 @@
+import React from "react";
 import { ChatInput } from "../../components/TextInput";
 import styles from "./ChatWindow.module.scss";
 import { useUser, type IChatMsg } from "../../contexts/UserContext";
 import { useLayoutEffect, useRef, useState } from "react";
-import { SendButton } from "../../components/Buttons";
+import { InviteToPlayButton, SendButton } from "../../components/Buttons";
 import Avatar, { AvatarSize } from "../../components/Avatar";
+import useIsMobile from "../../hooks/useIsMobile";
+import { PopupType } from "./enums";
 
 interface IChatWindow
 {
 	activeChat: string | undefined;
+	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
+	setSelectedFriend: React.Dispatch<React.SetStateAction<string>>;
 }
 
 interface IChatMessage
@@ -21,9 +26,10 @@ interface IChat
 	activeChat: string;
 }
 
-function ChatTitle( { activeChat } : IChatWindow )
+function ChatTitle( { activeChat, setPopuptype, setSelectedFriend } : IChatWindow )
 {
 	const { user } = useUser();
+	const isMobile = useIsMobile();
 
 	function chatTitle() : string
 	{
@@ -32,10 +38,17 @@ function ChatTitle( { activeChat } : IChatWindow )
 		return "No chat selected";
 	}
 
+	function handleInviteToPlay( username: string )
+	{
+		setPopuptype(PopupType.inviteFriend);
+		setSelectedFriend(username);
+	}
+
 	return(
 		<div className={styles.chatTitle}>
 			{ activeChat && <Avatar src={user.friends[activeChat].avatar} alt={`${activeChat}'s avatar`}  size={AvatarSize.small} /> }
 			<div className={styles.chatTitleText}>{chatTitle()}</div>
+			{ isMobile && activeChat && <InviteToPlayButton onClick={ () => handleInviteToPlay(activeChat) } />}
 		</div>
 	);
 }
@@ -93,11 +106,11 @@ function ChatBox( { activeChat } : IChat )
 	);
 }
 
-export default function ChatWindow( { activeChat } : IChatWindow )
+export default function ChatWindow( { activeChat, setPopuptype, setSelectedFriend } : IChatWindow )
 {
 	return (
 		<div className={styles.chatWindow}>
-			<ChatTitle activeChat={activeChat} />
+			<ChatTitle activeChat={activeChat} setPopuptype={setPopuptype} setSelectedFriend={setSelectedFriend} />
 			{ activeChat && <ChatHistory activeChat={activeChat} /> }
 			{ activeChat && <ChatBox activeChat={activeChat} /> }
 		</div>
