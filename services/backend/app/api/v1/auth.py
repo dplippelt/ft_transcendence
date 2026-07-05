@@ -1,6 +1,9 @@
+from typing import Annotated
+
 import cachecontrol
 import requests
 from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordRequestForm
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from sqlalchemy.exc import IntegrityError
@@ -21,6 +24,8 @@ from app.schemas.user import GoogleLogin, Token, UserLogin, UserRegister, UserRe
 
 router = APIRouter()
 settings = get_settings()
+DbSession = Annotated[Session, Depends(get_db)]
+OAuth2Form = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 GOOGLE_PROVIDER = "google"
 PASSWORD_PROVIDER = "password"
@@ -81,8 +86,39 @@ def ensure_username_is_available(db: Session, username: str | None) -> None:
         )
 
 
+def authenticate_password_user(db: Session, email: str, password: str) -> User:
+    email = normalize_email(email)
+
+    auth_account = get_password_account_by_email(db, email)
+
+    password_hash = (
+        auth_account.password_hash
+        if auth_account and auth_account.password_hash
+        else DUMMY_PASSWORD_HASH
+    )
+
+    is_valid_password = verify_password(password, password_hash)
+
+    if not auth_account or not is_valid_password:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid email or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user = auth_account.user
+
+    if not user or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account is inactive",
+        )
+
+    return user
+
+
 @router.post("/register", response_model=UserResponse)
-def register_user(user_data: UserRegister, db: Session = Depends(get_db)):
+def register_user(user_data: UserRegister, db: DbSession):
     email = normalize_email(user_data.email)
 
     existing_auth_account = get_password_account_by_email(db, email)
@@ -128,43 +164,40 @@ def register_user(user_data: UserRegister, db: Session = Depends(get_db)):
 
 
 @router.post("/login", response_model=Token)
-def login_user(user_data: UserLogin, db: Session = Depends(get_db)):
-    email = normalize_email(user_data.email)
-
-    auth_account = get_password_account_by_email(db, email)
-
-    password_hash = (
-        auth_account.password_hash
-        if auth_account and auth_account.password_hash
-        else DUMMY_PASSWORD_HASH
+def login_user(user_data: UserLogin, db: DbSession):
+    user = authenticate_password_user(
+        db,
+        user_data.email,
+        user_data.password,
     )
 
-    is_valid_password = verify_password(user_data.password, password_hash)
+    return create_token_for_user(user)
 
-    if not auth_account or not is_valid_password:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
-        )
 
-    user = auth_account.user
-
-    if not user or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive",
-        )
+@router.post("/token", response_model=Token)
+def login_for_access_token(form_data: OAuth2Form, db: DbSession):
+    user = authenticate_password_user(
+        db,
+        form_data.username,
+        form_data.password,
+    )
 
     return create_token_for_user(user)
 
 
 @router.post("/google", response_model=Token)
-def google_login(user_data: GoogleLogin, db: Session = Depends(get_db)):
+def google_login(user_data: GoogleLogin, db: DbSession):
+    if not settings.settings.google_client_id:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google login is not configured",
+        )
+
     try:
         google_user = id_token.verify_oauth2_token(
             user_data.credential,
             google_request,
-            settings.GOOGLE_CLIENT_ID,
+            settings.settings.google_client_id,
         )
     except ValueError:
         raise HTTPException(
@@ -190,18 +223,75 @@ def google_login(user_data: GoogleLogin, db: Session = Depends(get_db)):
             detail="Google account has no email",
         )
 
+    if not email_verified:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google email is not verified",
+        )
+
     email = normalize_email(email)
 
-    auth_account = get_google_account_by_sub(db, google_sub)
+    google_auth_account = get_google_account_by_sub(db, google_sub)
 
-    if auth_account:
-        user = auth_account.user
+    if google_auth_account:
+        user = google_auth_account.user
 
         if not user or not user.is_active:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="User account is inactive",
             )
+
+        return create_token_for_user(user)
+
+    password_auth_account = get_password_account_by_email(db, email)
+
+    if password_auth_account:
+        user = password_auth_account.user
+
+        if not user or not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="User account is inactive",
+            )
+
+        google_auth_account = AuthAccount(
+            user=user,
+            provider=GOOGLE_PROVIDER,
+            provider_account_id=google_sub,
+            email=email,
+            email_verified=True,
+            password_hash=None,
+        )
+
+        if not user.display_name and display_name:
+            user.display_name = display_name
+
+        if not user.avatar_url and avatar_url:
+            user.avatar_url = avatar_url
+
+        db.add(google_auth_account)
+
+        try:
+            db.commit()
+        except IntegrityError:
+            db.rollback()
+
+            existing_google_auth_account = get_google_account_by_sub(db, google_sub)
+
+            if (
+                existing_google_auth_account
+                and existing_google_auth_account.user
+                and existing_google_auth_account.user.is_active
+            ):
+                return create_token_for_user(existing_google_auth_account.user)
+
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Google account could not be linked",
+            )
+
+        db.refresh(user)
 
         return create_token_for_user(user)
 
@@ -212,22 +302,32 @@ def google_login(user_data: GoogleLogin, db: Session = Depends(get_db)):
         is_guest=False,
     )
 
-    auth_account = AuthAccount(
+    google_auth_account = AuthAccount(
         user=user,
         provider=GOOGLE_PROVIDER,
         provider_account_id=google_sub,
         email=email,
-        email_verified=bool(email_verified),
+        email_verified=True,
         password_hash=None,
     )
 
     db.add(user)
-    db.add(auth_account)
+    db.add(google_auth_account)
 
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
+
+        existing_google_auth_account = get_google_account_by_sub(db, google_sub)
+
+        if (
+            existing_google_auth_account
+            and existing_google_auth_account.user
+            and existing_google_auth_account.user.is_active
+        ):
+            return create_token_for_user(existing_google_auth_account.user)
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Google account could not be registered",
