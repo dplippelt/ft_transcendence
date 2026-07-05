@@ -56,7 +56,14 @@ export default class CombatScene extends Phaser.Scene {
 
     execute() {
 
-        let hitPoint = this.cardHand.evaluateSelectedCards();
+        const cards = this.cardHand.getSelectedCards();
+
+        if (!cards.length) {
+            console.log("no cards");
+            return ;
+        }
+
+        let hitPoint = this.cardHand.evaluateSelectedCards(cards);
         
         console.log(hitPoint);
         // Give the enemy damages or give the player penalty
