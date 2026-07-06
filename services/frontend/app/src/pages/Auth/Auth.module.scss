@@ -1,0 +1,11 @@
+@use '../../mixins' as *;
+
+.window
+{
+	@include window;
+	max-width: min(400px, 90%);
+	display: grid;
+	gap: 0.2rem;
+	text-align: left;
+	align-content: center;
+}

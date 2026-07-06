@@ -1,0 +1,8 @@
+@use '../../mixins' as *;
+
+.mainMenuPage
+{
+	@include page;
+	gap: 3rem;
+}
+

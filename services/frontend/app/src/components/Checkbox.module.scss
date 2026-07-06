@@ -1,0 +1,16 @@
+.checkbox
+{
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	margin-bottom: 0.2rem;
+	align-items: center;
+
+	@media (max-width: 480px)
+	{
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		gap: 1rem;
+		margin-bottom: 0.5rem;
+	}
+}

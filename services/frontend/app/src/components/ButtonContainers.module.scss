@@ -22,19 +22,43 @@
 
 	@media (max-width: 480px)
 	{
-		.mobileBottom
+		:global(.mobileBottom)
 		{
 			order: 999;
 		}
 
-		.mobileTop
+		:global(.mobileTop)
 		{
 			order: -999;
 		}
+	}
+}
 
-		.buttonV2
+.popupButtons
+{
+	display: flex;
+	flex-direction: row;
+	flex-wrap: wrap;
+	width: 100%;
+	max-width: min(900px, 90%);
+	justify-content: center;
+	margin: 0 auto;
+	// margin-top: 0.75rem;
+	gap: clamp(1rem, 5vw, 5rem);
+
+	@media (max-width: 480px)
+	{
+		flex-direction: column;
+		gap: 0.3rem;
+
+		:global(.mobileBottom)
 		{
-			flex: 1;
+			order: 999;
+		}
+
+		:global(.mobileTop)
+		{
+			order: -999;
 		}
 	}
 }

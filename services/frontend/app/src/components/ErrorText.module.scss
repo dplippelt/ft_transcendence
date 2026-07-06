@@ -1,0 +1,9 @@
+@use '../variables' as *;
+
+.errorText
+{
+	text-align: center;
+	color: $error-color;
+	font-family: $text-font;
+	font-size: 0.7rem;
+}
