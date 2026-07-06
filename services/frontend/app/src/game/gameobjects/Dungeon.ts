@@ -10,7 +10,7 @@ export class Dungeon extends Tilemaps.Tilemap {
   mapColliders: Physics.Arcade.Collider[];
 
   constructor(scene: Scene, dungeonConfig: DungeonConfig, scale: number = 1.0) {
-    super(scene, new Tilemaps.MapData({tileWidth: 16, tileHeight: 16}));
+    super(scene, new Tilemaps.MapData({ tileWidth: 16, tileHeight: 16 }));
 
     const tileSet = this.addTilesetImage(AssetsKey.TileSet);
     if (tileSet === null) {
@@ -24,7 +24,7 @@ export class Dungeon extends Tilemaps.Tilemap {
   }
 
   generate(dungeonConfig: DungeonConfig) {
-    this.mapColliders.forEach(col => col.destroy());
+    this.mapColliders.forEach((col) => col.destroy());
     this.mapColliders = [];
     this.removeAllLayers();
     this.mapData = dungeonBuilder(dungeonConfig);
@@ -32,7 +32,14 @@ export class Dungeon extends Tilemaps.Tilemap {
       (this.scene.scale.width - this.mapData.width * this.tileWidth * this.scale) * 0.5,
       (this.scene.scale.height - this.mapData.height * this.tileHeight * this.scale) * 0.5,
     );
-    const layer = this.createBlankLayer("map", this.tileSet, this.origin.x, this.origin.y, this.mapData.width, this.mapData.height);
+    const layer = this.createBlankLayer(
+      "map",
+      this.tileSet,
+      this.origin.x,
+      this.origin.y,
+      this.mapData.width,
+      this.mapData.height,
+    );
     if (layer === null) {
       throw new TypeError("Failed to create blank layer");
     }
@@ -48,7 +55,12 @@ export class Dungeon extends Tilemaps.Tilemap {
 
   insertSprite(object: Physics.Arcade.Sprite, hasLayerCollision: boolean = false, depthOffset: number = 0) {
     const room: Room = pMath.RND.pick(this.mapData.rooms);
-    const [x, y] = room.aabb.min.clone().addXY(1.5, 1.5).scale(16 * this.scale).addXY(this.origin.x, this.origin.y).unpack();
+    const [x, y] = room.aabb.min
+      .clone()
+      .addXY(1.5, 1.5)
+      .scale(16 * this.scale)
+      .addXY(this.origin.x, this.origin.y)
+      .unpack();
     object.setPosition(x, y);
 
     const layer = this.getLayer(0)?.tilemapLayer;

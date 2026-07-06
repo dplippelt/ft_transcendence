@@ -145,10 +145,7 @@ export function random(min: number, max: number): number {
 }
 
 export function randomPoint(min: Vector2, max: Vector2): Vector2 {
-  return new Vector2(
-    random(min.x, max.x),
-    random(min.y, max.y)
-  );
+  return new Vector2(random(min.x, max.x), random(min.y, max.y));
 }
 
 export interface weight {
@@ -158,10 +155,9 @@ export interface weight {
 
 /// source: https://blog.bruce-hill.com/a-faster-weighted-random-choice
 export function weightedRandom(weights: weight[]): weight {
-  let remaining: number = Math.random() * weights.reduce(
-    (sum: number, curr: weight) => sum + curr.weight,
-    0
-  );
+  let remaining: number =
+    Math.random() *
+    weights.reduce((sum: number, curr: weight) => sum + curr.weight, 0);
 
   for (const element of weights) {
     remaining -= element.weight;
@@ -176,6 +172,6 @@ export function weightedRandom(weights: weight[]): weight {
 export function shuffle(arr: Array<number>): void {
   for (let i = arr.length - 1; i > 0; --i) {
     const pick = random(0, i + 1);
-    [arr[pick], arr[i]] = [arr[i], arr[pick]]
+    [arr[pick], arr[i]] = [arr[i], arr[pick]];
   }
 }

@@ -13,7 +13,12 @@ const dungeonConfig: DungeonConfig = {
     tileMapping: {
       corner: [2, 5, 41, 44],
       innerCorner: [16, 17, 29, 30],
-      wall: [[3, 4], [18, 18, 31], [42, 43], [15, 15, 28]],
+      wall: [
+        [3, 4],
+        [18, 18, 31],
+        [42, 43],
+        [15, 15, 28],
+      ],
       floor: [
         { index: 0, weight: 20 },
         { index: 1, weight: 4 },
@@ -21,11 +26,11 @@ const dungeonConfig: DungeonConfig = {
         { index: 14, weight: 8 },
         { index: 26, weight: 0.5 },
         { index: 27, weight: 0.5 },
-      ]
-    }
+      ],
+    },
   },
   roomCount: { min: 8, max: 32 },
-}
+};
 
 export default class GameScene extends Scene {
   constructor() {
@@ -45,13 +50,13 @@ export default class GameScene extends Scene {
     map.insertSprite(player, true);
 
     // Temporarily added to launch the combat scene by clicking the screen
-    this.input.on('pointerdown', () => {
+    this.input.on("pointerdown", () => {
       // this.scene.sleep().launch('combat');
       map.generate(dungeonConfig);
       map.insertSprite(player, true);
     });
 
     this.cameras.main.startFollow(player);
-    EventBus.emit('current-scene-ready', this);
+    EventBus.emit("current-scene-ready", this);
   }
 }
