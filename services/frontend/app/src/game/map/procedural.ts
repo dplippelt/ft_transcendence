@@ -11,14 +11,20 @@ enum TileType {
 }
 
 enum Direction {
-  Top,
-  Right,
-  Down,
-  Left
+  None = 0x0,
+  Top = 0x01,
+  Right = 0x02,
+  Down = 0x04,
+  Left = 0x08,
+  TopLeft = Top | Left,
+  TopRight = Top | Right,
+  DownLeft = Down | Left,
+  DownRight = Down | Right,
 }
 
 interface TileMapping {
   corner: number[],
+  innerCorner: number[],
   wall: number[][],
   floor: number[]
 }
@@ -28,7 +34,7 @@ interface Door {
   direction: Direction
 }
 
-interface Room {
+export interface Room {
   aabb: BoundingBox;
   doorways: Vector2[];
   roomType: TileType;
@@ -41,101 +47,29 @@ interface RoomConfig {
   tileMapping: TileMapping
 }
 
-class PuzzleConfig {
-  amountOfPuzzles: number;
-  maxPuzzlePerRoom: number; // cannot exceed amount of puzzles
-  artifactsInTreasure: number; // One artifact per treasure chest
-  artifactsDroppedByEnemies: number; // One artifact per enemy
+interface Range {
+  min: number;
+  max: number;
 }
 
-// class DungeonConfig {
-//   puzzleConfig: PuzzleConfig;
-//   puzzleRoom: RoomConfig;
-//   treasureRoom: RoomConfig;
-//   emptyRoom: RoomConfig;
-//   entranceRoom: RoomConfig;
-//   exitRoom: RoomConfig;
-// }
-
-class Map {
+export interface MapData {
   map: number[][];
+  doors: Door[];
+  rooms: Room[];
   width: number;
   height: number;
-  rooms: Room[];
-
-  constructor(width: number, height: number) {
-    this.width = Math.floor(width);
-    this.height = Math.floor(height);
-    this.map = Array.from({ length: this.height }, () =>
-      Array(this.width).fill(0),
-    );
-  }
-
-  isBounded(pos: Vector2): boolean {
-    return !(
-      pos.x < 0 ||
-      pos.y < 0 ||
-      pos.x >= this.width ||
-      pos.y >= this.height
-    ); // TODO: The Dangerzone!
-  }
-
-  insertTile(pos: Vector2, tile: TileType): void {
-    if (!this.isBounded(pos)) {
-      return;
-    }
-    this.map[pos.y][pos.x] = tile;
-  }
-
-  insertTiles(min: Vector2, max: Vector2, tile: TileType): boolean {
-    if (!this.isBounded(min) || !this.isBounded(max)) {
-      return false;
-    }
-
-    for (let y = min.y; y < max.y; ++y) {
-      for (let x = min.x; x < max.x; ++x) {
-        this.map[y][x] = tile;
-      }
-    }
-    return true;
-  }
-
-  print(): void {
-    const alphanum: string = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
-    for (const row of this.map) {
-      for (const column of row) {
-        if (column === 0) {
-          process.stdout.write(`${alphanum[column]}`);
-        } else {
-          process.stdout.write(`\x1b[1;44m${alphanum[column]}\x1b[0m`);
-        }
-      }
-      process.stdout.write("\n");
-    }
-  }
 }
 
-/*
-  Rooms are always connected
-  Exit must be minimum of x rooms aways from entrance
-  Puzzle must be minimum of y rooms away from entrance
-  !Puzzle must be minimum of z rooms away from another puzzle room
+export interface DungeonConfig {
+  roomCount: Range;
+  emptyRoomConfig: RoomConfig,
 
-  Distance from entrance
-  1. Generate Entrance, Exit, Puzzle Rooms
-  2. Generate Mob Rooms and Treasure Rooms
-  3. Queue entrance
-  4. While unconnected Rooms
-  5. Put newly connected Rooms in Queue
-  6. Back to point 4
+  // amount of puzzles
+  // amount of enemies
+  // amount of chests
+}
 
-  1. Generate n rooms
-  2. Randomly select room as starting
-  3.
-
-*/
-
+// Translate the room position into the map's local space
 function translateRoom(room: Room, offset: Vector2): void {
   room.aabb.move(offset);
   for (let i = 0; i < room.doorways.length; ++i) {
@@ -143,6 +77,7 @@ function translateRoom(room: Room, offset: Vector2): void {
   }
 }
 
+// Calculate the map bounds based on the bounding box of the rooms
 function mapBounds(rooms: Room[]): [Vector2, Vector2] {
   const mapSize: Vector2 = new Vector2(0, 0);
   const offset: Vector2 = new Vector2(999999, 999999);
@@ -160,6 +95,7 @@ function mapBounds(rooms: Room[]): [Vector2, Vector2] {
   return [offset, Vector2.add(mapSize, offset).floor()];
 }
 
+// Generate a set of rooms based on the given configuration
 function generateRooms(amount: number, roomConfig: RoomConfig): Room[] {
   const rooms: Room[] = [];
 
@@ -180,7 +116,7 @@ function generateRooms(amount: number, roomConfig: RoomConfig): Room[] {
   return rooms;
 }
 
-// TODO: Allow rooms to be adjusted in their position when they are overlapping
+// Randomly place the room in the direction of the current room. If it overlaps will return false
 function tryPlaceRoom(
   roomToPlace: Room,
   currentRoom: Room,
@@ -214,7 +150,7 @@ function tryPlaceRoom(
   roomToPlace.aabb.place(Vector2.add(currentRoom.aabb.position, offset));
   console.assert(
     roomToPlace.aabb.isOverlap(currentRoom.aabb) === false,
-    "SOMETHING WENT WRONG!",
+    "roomToPlace is overlapping currentRoom",
   );
 
   const overlapBoxes: BoundingBox[] = [];
@@ -223,14 +159,10 @@ function tryPlaceRoom(
       overlapBoxes.push(room.aabb);
     }
   }
-
-  if (overlapBoxes.length === 0) {
-    return true;
-  } else {
-    return false;
-  }
+  return overlapBoxes.length === 0;
 }
 
+// Randomly place a doorway between two rooms
 function placeDoorway(
   pivotRoom: Room,
   neighborRoom: Room,
@@ -240,7 +172,7 @@ function placeDoorway(
   const bottomRight = Vector2.min(pivotRoom.aabb.max, neighborRoom.aabb.max);
   const shrink = 2; // wall + corner
 
-  const door: Door = { position: null, direction: direction };
+  const door: Door = { position: new Vector2(0, 0), direction: direction };
   switch (direction) {
     case Direction.Top:
       door.position = new Vector2(
@@ -270,179 +202,91 @@ function placeDoorway(
   return door;
 }
 
-/*
- * Per entrance keep attaching rooms until all conditions are matched
- */
-function DungeonGenerator(): Map {
-  const roomConfig: RoomConfig = {
-    width: {min: 3, max: 9},
-    height: { min: 3, max: 9},
-    doorCount: { min: 3, max: 4 },
-    tileMapping: null
-  };
-  const rooms: Room[] = generateRooms(24, roomConfig);
-  const placedRooms: Room[] = [rooms.shift()];
-  const queue: Room[] = [placedRooms[0]];
-
-  const directions: Direction[] = [Direction.Top, Direction.Right, Direction.Down, Direction.Left];
-  while (queue.length > 0 && rooms.length > 0) {
-    const pivotRoom = queue.shift();
-    shuffle(directions);
-    for (
-      let roomCount = random(
-        roomConfig.doorCount.min,
-        Math.min(roomConfig.doorCount.max, rooms.length),
-      );
-      roomCount > 0;
-      --roomCount
-    ) {
-      const direction: Direction = directions[roomCount];
-      if (tryPlaceRoom(rooms[0], pivotRoom, direction, placedRooms)) {
-        placeDoorway(pivotRoom, rooms[0], direction);
-        placedRooms.push(rooms.shift());
-        queue.push(placedRooms[placedRooms.length - 1]);
-      } else {
-        console.log("No suitable room placement found! Skipping...");
-      }
-    }
+// Get the door corner tile based on whether the connecting wall tile is a corner or not
+function getDoorCornerTile(tile: number, wall: Direction, corner: Direction, tileMapping: TileMapping): number {
+  if (tileMapping.corner.includes(tile)) {
+    return getWallTile(wall, tileMapping.wall);
   }
+  return getCornerTile(corner, tileMapping.innerCorner);
+}
 
-  console.log("room count: ", placedRooms.length);
-  const [mapOffset, mapSize]: [Vector2, Vector2] = mapBounds(placedRooms);
-  const map: Map = new Map(mapSize.x, mapSize.y);
-  for (const room of placedRooms) {
-    translateRoom(room, mapOffset);
-    if (
-      !map.insertTiles(
-        room.aabb.min.clone().floor(),
-        room.aabb.max.clone().floor(),
-        room.roomType,
-      )
-    ) {
-      console.log("Not inserted room", room);
-    }
-
-    for (const door of room.doorways) {
-      map.insertTile(door.floor(), TileType.Hallway);
-    }
+// Get the corner tile based on the corner direction
+function getCornerTile(direction: Direction, corner: number[]): number {
+  if (direction == Direction.TopLeft) {
+    return corner[0];
+  } else if (direction == Direction.TopRight) {
+    return corner[1];
+  } else if (direction == Direction.DownLeft) {
+    return corner[2]
   }
-
-  // TODO: For debugging; draw the doors afterwards
-  // for (const room of placedRooms) {
-  //   for (const door of room.doorways) {
-  //     map.insertTile(door.floor(), TileType.Hallway);
-  //   }
-  // }
-  return map;
+  return corner[3];
 }
 
-// DungeonGenerator().print();
-
-// const a: BoundingBox = new BoundingBox(new Vector2(6, 6), new Vector2(10, 10));
-// const b: BoundingBox = new BoundingBox(new Vector2(3, 3), new Vector2(2, 2));
-
-// console.log("a: ", a, "b: ", b);
-// console.log(a.min(), a.max());
-// console.log(b.min(), b.max());
-// console.log("a => b: ", a.isOverlap(b));
-// console.log("b => a: ", b.isOverlap(a));
-
-// TODO:
-// 4. Scan code and clean up where needed
-// 5. Tile map construction
-// 7. Expand the room to include the border when tryPlaceRoom
-// 8. Assign rooms and apply basic rules (no entrance and exit directly connected)
-
-// Tilemap construction
-//
-// 1. Allow for a dungeon config
-// 2. Generate the rooms and layout
-// 3. Generate the level map data itself
-// 4. display the tilemap layer into the scene
-// 5. Assign walls as colliders
-
-interface Range {
-  min: number;
-  max: number;
-}
-
-// Use this data for the tile map
-export interface MapData {
-  layout: number[][];
-  doors: Door[];
-  rooms: Room[];
-  width: number;
-  height: number;
-}
-
-export interface DungeonConfig {
-  roomCount: Range;
-  emptyRoomConfig: RoomConfig,
-
-  // amount of puzzles
-  // amount of enemies
-  // amount of chests
-}
-
-function paintCorner(top: boolean, left: boolean, corner: number[]): number {
-  if (top) {
-    return left ? corner[0] : corner[1];
-  }
-  return left ? corner[2] : corner[3];
-}
-
-function paintWall(top: boolean, bottom: boolean, left: boolean, wall: number[][]): number {
-  if (top) {
+// Get the wall tile based on the wall direction
+function getWallTile(direction: Direction, wall: number[][]): number {
+  if (direction == Direction.Top) {
     return wall[0][random(0, wall[0].length)];
-  } else if (bottom) {
+  } else if (direction == Direction.Right) {
+    return wall[1][random(0, wall[1].length)];
+  } else if (direction == Direction.Down) {
     return  wall[2][random(0, wall[2].length)];
-  } else if (left) {
-    return wall[3][random(0, wall[3].length)];
   }
-  return wall[1][random(0, wall[1].length)];
+  return wall[3][random(0, wall[3].length)];
 }
 
-function paintFloor(floor: number[]): number {
+function getFloorTile(floor: number[]): number {
   return floor[random(0, floor.length)];
 }
 
-function layoutPaintRoom(layout: number[][], room: Room, tileMapping: TileMapping) {
+// Put the room tiles into the dungeon map
+function layoutPutRoom(map: number[][], room: Room, tileMapping: TileMapping): void {
   const min = room.aabb.min.clone().floor();
   const max = room.aabb.max.clone().floor();
 
   for (let y: number = min.y; y < max.y; ++y) {
     for (let x: number = min.x; x < max.x; ++x) {
-      if (y == min.y && (x == min.x || x == max.x - 1) ||
-        y == max.y - 1 && (x == min.x || x == max.x - 1)) {
-        layout[y][x] = paintCorner(y == min.y, x == min.x, tileMapping.corner);
-      } else if (y == min.y || y == max.y - 1 || x == min.x || x == max.x - 1) {
-        layout[y][x] = paintWall(y == min.y, y == max.y - 1, x == min.x, tileMapping.wall);
+      let direction = y === min.y ? Direction.Top : y === max.y - 1 ? Direction.Down : Direction.None;
+      direction |= x === min.x ? Direction.Left : x === max.x - 1 ? Direction.Right : Direction.None;
+
+      if (direction === Direction.TopLeft || direction === Direction.TopRight
+        || direction === Direction.DownLeft || direction === Direction.DownRight) {
+        map[y][x] = getCornerTile(direction, tileMapping.corner);
+      } else if (direction === Direction.Top || direction === Direction.Right
+        || direction === Direction.Down || direction === Direction.Left) {
+        map[y][x] = getWallTile(direction, tileMapping.wall);
       } else {
-        layout[y][x] = paintFloor(tileMapping.floor);
+        map[y][x] = getFloorTile(tileMapping.floor);
       }
     }
   }
 }
 
-function layoutPaintDoor(layout: number[][], door: Door, tileMapping: TileMapping) {
+// Put the door tiles into dungeon map
+function layoutPutDoor(map: number[][], door: Door, tileMapping: TileMapping): void {
   const [x, y] = door.position.clone().floor().unpack();
-
-  layout[y][x] = paintFloor(tileMapping.floor);
+  map[y][x] = getFloorTile(tileMapping.floor);
   if (door.direction === Direction.Top || door.direction === Direction.Down) {
-    layout[y][x + 1] = paintWall(false, false, false, tileMapping.wall);
-    layout[y][x - 1] = paintWall(false, false, true, tileMapping.wall);
-
-    layout[y - 1][x] = paintFloor(tileMapping.floor);
-    layout[y + 1][x] = paintFloor(tileMapping.floor);
+    map[y][x + 1] = getWallTile(Direction.Right, tileMapping.wall);
+    map[y][x - 1] = getWallTile(Direction.Left, tileMapping.wall);
+    map[y - 1][x - 1] = getDoorCornerTile(map[y - 1][x - 1], Direction.Left, Direction.TopRight, tileMapping);
+    map[y - 1][x + 1] = getDoorCornerTile(map[y - 1][x + 1], Direction.Right, Direction.TopLeft, tileMapping);
+    map[y + 1][x - 1] = getDoorCornerTile(map[y + 1][x - 1], Direction.Left, Direction.DownRight, tileMapping);
+    map[y + 1][x + 1] = getDoorCornerTile(map[y + 1][x + 1], Direction.Right, Direction.DownLeft, tileMapping);
+    map[y - 1][x] = getFloorTile(tileMapping.floor);
+    map[y + 1][x] = getFloorTile(tileMapping.floor);
   } else {
-    layout[y - 1][x] = paintWall(true, false, false, tileMapping.wall);
-    layout[y + 1][x] = paintWall(false, true, false, tileMapping.wall);
-
-    layout[y][x + 1] = paintFloor(tileMapping.floor);
-    layout[y][x - 1] = paintFloor(tileMapping.floor);
+    map[y - 1][x] = getWallTile(Direction.Top, tileMapping.wall);
+    map[y + 1][x] = getWallTile(Direction.Down, tileMapping.wall);
+    map[y - 1][x - 1] = getDoorCornerTile(map[y - 1][x - 1], Direction.Top, Direction.DownLeft, tileMapping);
+    map[y - 1][x + 1] = getDoorCornerTile(map[y - 1][x + 1], Direction.Top, Direction.DownRight, tileMapping);
+    map[y + 1][x - 1] = getDoorCornerTile(map[y + 1][x - 1], Direction.Down, Direction.TopLeft, tileMapping);
+    map[y + 1][x + 1] = getDoorCornerTile(map[y + 1][x + 1], Direction.Down, Direction.TopRight, tileMapping);
+    map[y][x + 1] = getFloorTile(tileMapping.floor);
+    map[y][x - 1] = getFloorTile(tileMapping.floor);
   }
 }
 
+// Procedurally generate a dungeon layout based on the dungeon config
 export function dungeonBuilder(config: DungeonConfig): MapData {
   console.assert(config.emptyRoomConfig.doorCount.min > 0);
   console.assert(config.emptyRoomConfig.doorCount.max < 5);
@@ -451,38 +295,38 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
   // Generated the rooms
   const roomConfig = config.emptyRoomConfig;
   const rooms: Room[] = generateRooms(random(config.roomCount.min, config.roomCount.max), roomConfig);
-  const placedRooms: Room[] = [rooms.shift(),];
+  const placedRooms: Room[] = [rooms.shift()!,];
   const placedDoors: Door[] = [];
 
   // Randomize the room placement
-  const directions = [0, 1, 2, 3];
+  const directions:Direction[] = [Direction.Top, Direction.Right, Direction.Down, Direction.Left];
   for (let i = 0; i < placedRooms.length && rooms.length > 0; ++i) {
     shuffle(directions);
     const doorCount = random(roomConfig.doorCount.min, Math.min(roomConfig.doorCount.max, rooms.length));
-    for (let j = 0; j < doorCount; ++j) { // TODO:
+    for (let j = 0; j < doorCount; ++j) {
       if (tryPlaceRoom(rooms[0], placedRooms[i], directions[j], placedRooms)) {
         placedDoors.push(placeDoorway(placedRooms[i], rooms[0], directions[j]))
-        placedRooms.push(rooms.shift());
+        placedRooms.push(rooms.shift()!);
       }
     }
   }
 
   // construct the layout
   const [mapOffset, mapSize]: [Vector2, Vector2] = mapBounds(placedRooms);
-  const layout: number[][] = Array.from({ length: mapSize.y }, () => Array(mapSize.x).fill(-1));
+  const map: number[][] = Array.from({ length: mapSize.y }, () => Array(mapSize.x).fill(-1));
 
   for (const room of placedRooms) {
     translateRoom(room, mapOffset);
-    layoutPaintRoom(layout, room, config.emptyRoomConfig.tileMapping);
+    layoutPutRoom(map, room, config.emptyRoomConfig.tileMapping);
   }
 
   for (const door of placedDoors) {
     door.position = Vector2.add(door.position, mapOffset);
-    layoutPaintDoor(layout, door, config.emptyRoomConfig.tileMapping);
+    layoutPutDoor(map, door, config.emptyRoomConfig.tileMapping);
   }
 
   return {
-    layout: layout,
+    map: map,
     doors: placedDoors,
     rooms: placedRooms,
     width: mapSize.x,

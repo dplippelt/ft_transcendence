@@ -113,13 +113,12 @@ export class BoundingBox {
     this.max = Vector2.add(this.position, this.halfSize);
   }
 
-  // TODO: use min/max
   isOverlap(other: BoundingBox): boolean {
     return !(
-      this.position.x - this.halfSize.x > other.position.x + other.halfSize.x ||
-      this.position.x + this.halfSize.x < other.position.x - other.halfSize.x ||
-      this.position.y - this.halfSize.y > other.position.y + other.halfSize.y ||
-      this.position.y + this.halfSize.y < other.position.y - other.halfSize.y
+      this.min.x > other.max.x ||
+      this.max.x < other.min.x ||
+      this.min.y > other.max.y ||
+      this.max.y < other.min.y
     );
   }
 
