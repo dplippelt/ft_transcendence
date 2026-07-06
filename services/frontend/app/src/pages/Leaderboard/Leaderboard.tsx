@@ -8,6 +8,8 @@ import Page from "../../components/Page";
 import { BottomButtons } from "../../components/ButtonContainers";
 import { MenuTitle } from "../../components/PageTitle";
 import type React from "react";
+import { useLocation } from "react-router-dom";
+import { RoutePath } from "../../utils/utils";
 
 // start temporary example scores for three stats
 const stat_1_scores: Score[] =
@@ -196,9 +198,12 @@ function LeaderboardWindow( { stat, setStat } : ILeaderboardWindow )
 
 function Buttons()
 {
+	const location = useLocation();
+	const path = location.state ? location.state.from : RoutePath.mainMenu;
+
 	return (
 		<BottomButtons>
-			<BackButton />
+			<BackButton path={path} />
 		</BottomButtons>
 	);
 }

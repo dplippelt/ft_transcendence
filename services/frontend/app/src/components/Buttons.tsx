@@ -27,6 +27,11 @@ interface IBottomButton
 	mobilePosition?: string;
 }
 
+interface IBackButton
+{
+	path: string;
+}
+
 interface IEditButton
 {
 	editType: EditWindowType;
@@ -79,11 +84,11 @@ export function BottomButton( { label, onClick, mobilePosition="" } : IBottomBut
 	return <button className={`${styles.bottomButton} type="button" ${mobilePosition}`} onClick={onClick}>{label}</button>;
 }
 
-export function BackButton()
+export function BackButton( { path } : IBackButton )
 {
 	const navigate = useNavigate();
 
-	return <BottomButton label="Back" onClick={ () => navigate(-1) } mobilePosition={MobilePosition.bottom} />;
+	return <BottomButton label="Back" onClick={ () => navigate(path) } mobilePosition={MobilePosition.bottom} />;
 }
 
 export function EditButton( { editType, setEditWindowType } : IEditButton )

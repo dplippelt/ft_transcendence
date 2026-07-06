@@ -10,7 +10,7 @@ import { BackButton, BottomButton } from "../../components/Buttons";
 import Checkbox from "../../components/Checkbox";
 import Slider from "../../components/Slider";
 import Dropdown from "../../components/Dropdown";
-import { MobilePosition } from "../../utils/utils";
+import { MobilePosition, RoutePath } from "../../utils/utils";
 
 interface ISettingsWindow
 {
@@ -75,7 +75,7 @@ function Buttons( { setResetKey, settingRefs } : IButtons )
 
 	return (
 		<BottomButtons>
-			<BackButton />
+			<BackButton path={RoutePath.mainMenu} />
 			<BottomButton label="Reset Defaults" onClick={resetSettings} mobilePosition={MobilePosition.top} />
 			<BottomButton label="Apply" onClick={applySettings} />
 		</BottomButtons>

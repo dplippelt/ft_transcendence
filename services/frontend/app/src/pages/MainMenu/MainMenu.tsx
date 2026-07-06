@@ -6,6 +6,7 @@ import Background from "../../components/Background";
 import { useAuth } from "../../contexts/AuthContext";
 import { MenuButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
+import { RoutePath } from "../../utils/utils";
 
 function Buttons()
 {
@@ -17,18 +18,18 @@ function Buttons()
 	{
 		auth.logout();
 		user.resetUser();
-		navigate("/");
+		navigate(RoutePath.landingPage);
 	}
 
 	return (
 		<MenuButtons>
 			<MenuButton label="New game" onClick={ () => {} } />
 			<MenuButton label="Multiplayer" onClick={ () => {} } />
-			<MenuButton label="Friends" onClick={ () => navigate("/friends") } />
-			<MenuButton label="Profile" onClick={ () => navigate("/profile") } />
-			<MenuButton label="Leaderboard" onClick={ () => navigate("/leaderboard") } />
+			<MenuButton label="Friends" onClick={ () => navigate(RoutePath.friends) } />
+			<MenuButton label="Profile" onClick={ () => navigate(RoutePath.profile) } />
+			<MenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: RoutePath.mainMenu } }) } />
 			<MenuButton label="How to play" onClick={ () => {} } />
-			<MenuButton label="Settings" onClick={ () => navigate("/settings") } />
+			<MenuButton label="Settings" onClick={ () => navigate(RoutePath.settings) } />
 			<MenuButton label="Logout" onClick={ logout } />
 		</MenuButtons>
 	)

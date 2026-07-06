@@ -9,7 +9,7 @@ import ChatWindow from "./ChatWindow";
 import { useState } from "react";
 import useIsMobile from "../../hooks/useIsMobile";
 import React from "react";
-import { MobilePosition } from "../../utils/utils";
+import { MobilePosition, RoutePath } from "../../utils/utils";
 import Popup from "../../components/Popup";
 import AddFriendPopup from "./AddFriendPopup";
 import { MobileView, PopupType } from "./enums";
@@ -46,7 +46,7 @@ function Buttons( { mobileView, setMobileView, setPopuptype } : IButtons )
 		<BottomButtons>
 			{ isMobile && mobileView === MobileView.chat
 			? <BottomButton label="Back" onClick={ () => setMobileView(MobileView.friends) } mobilePosition={MobilePosition.bottom} />
-			: <BackButton />}
+			: <BackButton path={RoutePath.mainMenu} />}
 			{ ( !isMobile || ( isMobile && mobileView === MobileView.friends )) && <BottomButton label="Add Friend" onClick={ () => setPopuptype(PopupType.addFriend) } /> }
 		</BottomButtons>
 	);

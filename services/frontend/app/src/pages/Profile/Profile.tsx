@@ -10,6 +10,7 @@ import { BottomButtons } from "../../components/ButtonContainers";
 import { MenuTitle } from "../../components/PageTitle";
 import { useNavigate } from "react-router-dom";
 import { Tab } from "./enums";
+import { RoutePath } from "../../utils/utils";
 
 interface IProfileTabs
 {
@@ -45,8 +46,8 @@ function Buttons()
 
 	return (
 		<BottomButtons>
-			<BackButton />
-			<BottomButton label="Leaderboard" onClick={ () => navigate("/leaderboard") } />
+			<BackButton path={RoutePath.mainMenu} />
+			<BottomButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: RoutePath.profile } }) } />
 		</BottomButtons>
 	);
 }

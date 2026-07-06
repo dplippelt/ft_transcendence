@@ -7,7 +7,7 @@ import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { useAuth } from "../../contexts/AuthContext";
 import ErrorText from "../../components/ErrorText";
-import { ErrorType } from "../../utils/utils";
+import { ErrorType, RouteParam, RoutePath } from "../../utils/utils";
 import { MossButton, TextButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
 import { PasswordInput, TextInput } from "../../components/TextInput";
@@ -38,7 +38,7 @@ function LoginQuery()
 
 		auth.login();
 		user.updateUsername(validUsername);
-		navigate("/main-menu");
+		navigate(RoutePath.mainMenu);
 	}
 
 	return (
@@ -48,7 +48,7 @@ function LoginQuery()
 			<PasswordInput label="Password:" placeholder="Enter password" isNewPassword={false} setter={setPassword} id="password" />
 			<MossButton label="Login" onClick={checkLogin} />
 			<MossButton label="Continue with Google" onClick={ () => {} } />
-			<TextButton label="Don't have an account? Sign-up" onClick={ () => navigate("/auth?mode=signup") } />
+			<TextButton label="Don't have an account? Sign-up" onClick={ () => navigate(RoutePath.auth + RouteParam.signup) } />
 		</div>
 	);
 }
@@ -75,7 +75,7 @@ function SignupQuery()
 
 		// if username has been taken setError(Error.usernameAlreadyExists)
 		// else if password !=== confirmPassword setError(Error.passwordsDontMatch)
-		// else naviagte("/main-menu")
+		// else naviagte(RoutePath.mainMenu)
 
 		// Mock signup check
 		if ( validUsername.length === 1 )
@@ -86,7 +86,7 @@ function SignupQuery()
 		auth.login();
 		user.setUserID(validUsername + "_ID"); // TODO: Replace with stable userID instead of using username
 		user.updateUsername(validUsername);
-		navigate("/main-menu");
+		navigate(RoutePath.mainMenu);
 	}
 
 	return (
@@ -97,7 +97,7 @@ function SignupQuery()
 			<PasswordInput label="Confirm password:" placeholder="Confirm new password" isNewPassword={true} setter={setConfirmPassword} id="confirmPassword" />
 			<MossButton label="Sign-up" onClick={signupCheck} />
 			<MossButton label="Continue with Google" onClick={ () => {} } />
-			<TextButton label="Already have an account? Login" onClick={ () => navigate("/auth?mode=login") } />
+			<TextButton label="Already have an account? Login" onClick={ () => navigate(RoutePath.auth + RouteParam.login) } />
 		</div>
 	);
 }

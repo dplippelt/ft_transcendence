@@ -52,3 +52,23 @@ export function errorMsg( error: ErrorType ): string
 			return "";
 	}
 }
+
+export enum RoutePath
+{
+	landingPage = "/",
+	auth = "/auth",
+	mainMenu = "/main-menu",
+	friends = "/friends",
+	profile = "/profile",
+	leaderboard = "/leaderboard",
+	settings = "/settings",
+	gameDev = "/game-dev",
+	game = "/game-dev", //TODO: change path to just "/game" or "/sp-game" later
+}
+
+export enum RouteParam
+{
+	login = "?mode=login",
+	signup = "?mode=signup",
+}
+

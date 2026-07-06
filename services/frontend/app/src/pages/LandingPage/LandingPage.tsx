@@ -5,6 +5,7 @@ import { MenuButtons } from "../../components/ButtonContainers";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuButton } from "../../components/Buttons";
+import { RouteParam, RoutePath } from "../../utils/utils";
 
 function GameDescription()
 {
@@ -19,10 +20,10 @@ function Buttons()
 
 	return (
 		<MenuButtons>
-			<MenuButton label="Start game" onClick={ () => navigate("/game-dev") } />
-			<MenuButton label="Login" onClick={ () => navigate("/auth?mode=login") } />
+			<MenuButton label="Start game" onClick={ () => navigate(RoutePath.game) } />
+			<MenuButton label="Login" onClick={ () => navigate(RoutePath.auth + RouteParam.login) } />
 			<MenuButton label="How to play" onClick={ () => {} } />
-			<MenuButton label="Game dev" onClick={ () => navigate("/game-dev") } />
+			<MenuButton label="Game dev" onClick={ () => navigate(RoutePath.gameDev) } />
 		</MenuButtons>
 	)
 }
