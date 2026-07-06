@@ -8,7 +8,6 @@ import { buttonContentConfig, buttonStyleConfig } from "../gameobjects/utils/but
 
 export default class CombatScene extends Phaser.Scene {
 	private cardHand!: CardHand;
-    private executeButton!: BoxedText;
 
 	constructor() {
 		super("combat");
