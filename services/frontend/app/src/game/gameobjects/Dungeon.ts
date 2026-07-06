@@ -46,7 +46,7 @@ export class Dungeon extends Tilemaps.Tilemap {
     this.setCollisionBetween(41, 44);
   }
 
-  insertSprite(object: Physics.Arcade.Sprite, hasLayerCollision: boolean = false) {
+  insertSprite(object: Physics.Arcade.Sprite, hasLayerCollision: boolean = false, depthOffset: number = 0) {
     const room: Room = pMath.RND.pick(this.mapData.rooms);
     const [x, y] = room.aabb.min.clone().addXY(1.5, 1.5).scale(16 * this.scale).addXY(this.origin.x, this.origin.y).unpack();
     object.setPosition(x, y);
@@ -55,6 +55,7 @@ export class Dungeon extends Tilemaps.Tilemap {
     if (layer === undefined) {
       return;
     }
+    object.setDepth(layer.depth + 1 + depthOffset);
 
     if (hasLayerCollision) {
       this.mapColliders.push(this.scene.physics.add.collider(object, layer));

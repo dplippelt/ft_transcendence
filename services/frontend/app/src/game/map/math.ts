@@ -15,7 +15,7 @@ export class Vector2 {
     return new Vector2(this.x, this.y);
   }
 
-  flip() {
+  flip(): Vector2 {
     this.x *= -1;
     this.y *= -1;
     return this;
@@ -139,20 +139,41 @@ export class BoundingBox {
   }
 }
 
-// min inclusive and max exclusive
-export function random(min: number, max: number) {
-  return Math.floor(min + Math.random() * (max - min)); // (mx - mn + 1); random => [0..1)
+// min inclusive and max exclusive => [min, max)
+export function random(min: number, max: number): number {
+  return Math.floor(min + Math.random() * (max - min));
 }
 
-export function randomPoint(min: Vector2, max: Vector2) {
+export function randomPoint(min: Vector2, max: Vector2): Vector2 {
   return new Vector2(
     random(min.x, max.x),
     random(min.y, max.y)
   );
 }
 
+export interface weight {
+  index: number;
+  weight: number;
+}
+
+/// source: https://blog.bruce-hill.com/a-faster-weighted-random-choice
+export function weightedRandom(weights: weight[]): weight {
+  let remaining: number = Math.random() * weights.reduce(
+    (sum: number, curr: weight) => sum + curr.weight,
+    0
+  );
+
+  for (const element of weights) {
+    remaining -= element.weight;
+    if (remaining < 0) {
+      return element;
+    }
+  }
+  throw new Error("Unreachable code reached");
+}
+
 // Fisher–Yates shuffle
-export function shuffle(arr: Array<number>) {
+export function shuffle(arr: Array<number>): void {
   for (let i = arr.length - 1; i > 0; --i) {
     const pick = random(0, i + 1);
     [arr[pick], arr[i]] = [arr[i], arr[pick]]

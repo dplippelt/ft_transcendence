@@ -1,4 +1,4 @@
-import { Vector2, BoundingBox, random, shuffle } from "./math";
+import { Vector2, BoundingBox, random, shuffle, weightedRandom, type weight } from "./math";
 
 enum TileType {
   Closed,
@@ -26,7 +26,7 @@ interface TileMapping {
   corner: number[],
   innerCorner: number[],
   wall: number[][],
-  floor: number[]
+  floor: weight[]
 }
 
 interface Door {
@@ -234,8 +234,8 @@ function getWallTile(direction: Direction, wall: number[][]): number {
   return wall[3][random(0, wall[3].length)];
 }
 
-function getFloorTile(floor: number[]): number {
-  return floor[random(0, floor.length)];
+function getFloorTile(floor: weight[]): number {
+  return weightedRandom(floor).index;
 }
 
 // Put the room tiles into the dungeon map

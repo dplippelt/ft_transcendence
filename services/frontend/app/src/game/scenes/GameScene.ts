@@ -14,7 +14,14 @@ const dungeonConfig: DungeonConfig = {
       corner: [2, 5, 41, 44],
       innerCorner: [16, 17, 29, 30],
       wall: [[3, 4], [18, 18, 31], [42, 43], [15, 15, 28]],
-      floor: [0, 1, 0, 1, 0, 1, 0, 0, 0, 13, 14, 13, 14, 26, 27, 39, 40]
+      floor: [
+        { index: 0, weight: 20 },
+        { index: 1, weight: 4 },
+        { index: 13, weight: 2 },
+        { index: 14, weight: 8 },
+        { index: 26, weight: 0.5 },
+        { index: 27, weight: 0.5 },
+      ]
     }
   },
   roomCount: { min: 8, max: 32 },
