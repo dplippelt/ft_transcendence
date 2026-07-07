@@ -17,7 +17,6 @@ import RemoveFriendPopup from "./RemoveFriendPopup";
 import InviteFriendPopup from "./InviteFriendPopup";
 import { PopupType } from "../../components/Chat/enums";
 import { useLocation } from "react-router-dom";
-import SideBar from "../../components/SideBar";
 
 interface IButtons
 {
