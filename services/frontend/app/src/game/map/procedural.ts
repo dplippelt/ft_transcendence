@@ -121,24 +121,24 @@ function tryPlaceRoom(roomToPlace: Room, currentRoom: Room, direction: Direction
   const roomSize = roomToPlace.aabb.halfSize;
   const otherRoomSize = currentRoom.aabb.halfSize;
   const offset: Vector2 = new Vector2(0, 0);
-  const shrink: number = 2;
+  const shrink: number = 1;
 
   switch (direction) {
     case Direction.Top:
       offset.y = -(roomSize.y + otherRoomSize.y + 1);
-      offset.x = random(-roomSize.x + shrink, otherRoomSize.x - shrink);
+      offset.x = random(-roomSize.x + shrink, otherRoomSize.x);
       break;
     case Direction.Right:
       offset.x = roomSize.x + otherRoomSize.x + 1;
-      offset.y = random(-roomSize.y + shrink, otherRoomSize.y - shrink);
+      offset.y = random(-roomSize.y + shrink, otherRoomSize.y);
       break;
     case Direction.Down:
       offset.y = roomSize.y + otherRoomSize.y + 1;
-      offset.x = random(-roomSize.x + shrink, otherRoomSize.x - shrink);
+      offset.x = random(-roomSize.x + shrink, otherRoomSize.x);
       break;
     default:
       offset.x = -(roomSize.x + otherRoomSize.x + 1);
-      offset.y = random(-roomSize.y + shrink, otherRoomSize.y - shrink);
+      offset.y = random(-roomSize.y + shrink, otherRoomSize.y);
       break;
   }
 
@@ -158,7 +158,7 @@ function tryPlaceRoom(roomToPlace: Room, currentRoom: Room, direction: Direction
 function placeDoorway(pivotRoom: Room, neighborRoom: Room, direction: Direction): Door {
   const topLeft = Vector2.max(pivotRoom.aabb.min, neighborRoom.aabb.min);
   const bottomRight = Vector2.min(pivotRoom.aabb.max, neighborRoom.aabb.max);
-  const shrink = 2; // wall + corner
+  const shrink = 2;
 
   const door: Door = { position: new Vector2(0, 0), direction: direction };
   switch (direction) {
@@ -281,7 +281,7 @@ function layoutPutDoor(map: number[][], door: Door, tileMapping: TileMapping): v
 // Procedurally generate a dungeon layout based on the dungeon config
 export function dungeonBuilder(config: DungeonConfig): MapData {
   console.assert(config.emptyRoomConfig.doorCount.min > 0);
-  console.assert(config.emptyRoomConfig.doorCount.max < 5);
+  console.assert(config.emptyRoomConfig.doorCount.max < 5); // BUG: More than 4 causes doorways to be incorrectly placed
   console.assert(config.emptyRoomConfig.doorCount.max > config.emptyRoomConfig.doorCount.min);
 
   // Generated the rooms
@@ -294,9 +294,9 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
   const directions: Direction[] = [Direction.Top, Direction.Right, Direction.Down, Direction.Left];
   for (let i = 0; i < placedRooms.length && rooms.length > 0; ++i) {
     shuffle(directions);
-    const doorCount = random(roomConfig.doorCount.min, Math.min(roomConfig.doorCount.max, rooms.length));
+    const doorCount = random(roomConfig.doorCount.min, Math.min(roomConfig.doorCount.max + 1, rooms.length));
     for (let j = 0; j < doorCount; ++j) {
-      if (tryPlaceRoom(rooms[0], placedRooms[i], directions[j], placedRooms)) {
+      if (tryPlaceRoom(rooms[0], placedRooms[i], directions[j % directions.length], placedRooms)) {
         placedDoors.push(placeDoorway(placedRooms[i], rooms[0], directions[j]));
         placedRooms.push(rooms.shift()!);
       }

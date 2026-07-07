@@ -8,8 +8,8 @@ import { type DungeonConfig } from "../map/procedural";
 const dungeonConfig: DungeonConfig = {
   emptyRoomConfig: {
     doorCount: { min: 2, max: 4 },
-    width: { min: 4, max: 7 },
-    height: { min: 4, max: 7 },
+    width: { min: 5, max: 9 },
+    height: { min: 5, max: 9 },
     tileMapping: {
       corner: [2, 5, 41, 44],
       innerCorner: [16, 17, 29, 30],
