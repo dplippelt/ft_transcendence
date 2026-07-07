@@ -16,6 +16,8 @@ import { MobileView } from "./enums";
 import RemoveFriendPopup from "./RemoveFriendPopup";
 import InviteFriendPopup from "./InviteFriendPopup";
 import { PopupType } from "../../components/Chat/enums";
+import { useLocation } from "react-router-dom";
+import SideBar from "../../components/SideBar";
 
 interface IButtons
 {
@@ -42,12 +44,14 @@ interface IFriendsContainer
 function Buttons( { mobileView, setMobileView, setPopuptype } : IButtons )
 {
 	const isMobile = useIsMobile();
+	const location = useLocation();
+	const path = location.state ? location.state.from : RoutePath.mainMenu;
 
 	return (
 		<BottomButtons>
 			{ isMobile && mobileView === MobileView.chat
 			? <BottomButton label="Back" onClick={ () => setMobileView(MobileView.friends) } mobilePosition={MobilePosition.bottom} />
-			: <BackButton path={RoutePath.mainMenu} />}
+			: <BackButton path={path} />}
 			{ ( !isMobile || ( isMobile && mobileView === MobileView.friends )) && <BottomButton label="Add Friend" onClick={ () => setPopuptype(PopupType.addFriend) } /> }
 		</BottomButtons>
 	);

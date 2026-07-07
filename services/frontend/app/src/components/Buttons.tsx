@@ -72,7 +72,7 @@ interface IActionButton
 	onClick: () => void;
 }
 
-interface IOpenChatSideBar
+interface IOpenSideBarButton
 {
 	hasNewMsg: boolean;
 	onClick: () => void;
@@ -172,7 +172,7 @@ export function RemoveFriendButton( { onClick } : IActionButton )
 	);
 }
 
-export function OpenSideBarButton( { hasNewMsg, onClick } : IOpenChatSideBar )
+export function OpenSideBarButton( { hasNewMsg, onClick } : IOpenSideBarButton )
 {
 	if ( hasNewMsg )
 		return (

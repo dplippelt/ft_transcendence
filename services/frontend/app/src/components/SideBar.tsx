@@ -6,10 +6,12 @@ import ChatHistory from "./Chat/ChatHistory";
 import ChatBox from "./Chat/ChatBox";
 import { ChatTitleSideBar } from "./Chat/ChatTitle";
 import { useUser } from "../contexts/UserContext";
+import useIsMobile from "../hooks/useIsMobile";
+import { useLocation, useNavigate } from "react-router-dom";
+import { RoutePath } from "../utils/utils";
 
-interface ICollapsedSideBar
+interface ISidePanelToggle
 {
-	collapsed: boolean;
 	setCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
@@ -24,14 +26,25 @@ function FriendsListTitle()
 	return <div className={styles.friendsListTitle}>My Friends</div>
 }
 
-function SideBarToggle( { setCollapsed } : ICollapsedSideBar )
+function SidePanelToggle( { setCollapsed } : ISidePanelToggle )
 {
 	const userFunc = useUser();
+	const isMobile = useIsMobile();
+	const navigate = useNavigate();
+	const location = useLocation();
 
-	return <OpenSideBarButton hasNewMsg={userFunc.hasNewMsg()} onClick={ () => setCollapsed(prev => !prev) } />;
+	function handleClick()
+	{
+		if ( isMobile )
+			navigate(RoutePath.friends, { state: { from: location.pathname } });
+		else
+			setCollapsed(prev => !prev);
+	}
+
+	return <OpenSideBarButton hasNewMsg={userFunc.hasNewMsg()} onClick={handleClick} />;
 }
 
-function SideBar( { activeChat, setActiveChat } : ISideBar )
+function SidePanel( { activeChat, setActiveChat } : ISideBar )
 {
 	function handleOpenChat( username: string )
 	{
@@ -59,15 +72,15 @@ function SideBar( { activeChat, setActiveChat } : ISideBar )
 	);
 }
 
-export default function ChatSideBar()
+export default function SideBar()
 {
 	const [collapsed, setCollapsed] = useState<boolean>(true);
 	const [activeChat, setActiveChat] = useState<string | undefined>(undefined);
 
 	return (
 		<div className={styles.sideBar}>
-			<SideBarToggle collapsed={collapsed} setCollapsed={setCollapsed} />
-			{ !collapsed && <SideBar activeChat={activeChat} setActiveChat={setActiveChat} /> }
+			<SidePanelToggle setCollapsed={setCollapsed} />
+			{ !collapsed && <SidePanel activeChat={activeChat} setActiveChat={setActiveChat} /> }
 		</div>
 	);
 }

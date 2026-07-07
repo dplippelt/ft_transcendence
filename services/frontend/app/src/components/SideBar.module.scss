@@ -6,7 +6,6 @@
 	top: 0;
 	right: 0;
 	height: 100vh;
-
 	display: flex;
 	flex-direction: row;
 }
@@ -38,10 +37,4 @@
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 
 	row-gap: 0.2rem;
-
-	@media (max-width: 480px)
-	{
-		margin: 0 auto;
-		max-width: min(800px, 60vh);
-	}
 }

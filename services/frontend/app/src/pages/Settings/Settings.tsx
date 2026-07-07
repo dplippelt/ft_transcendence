@@ -11,6 +11,7 @@ import Checkbox from "../../components/Checkbox";
 import Slider from "../../components/Slider";
 import Dropdown from "../../components/Dropdown";
 import { MobilePosition, RoutePath } from "../../utils/utils";
+import SideBar from "../../components/SideBar";
 
 interface ISettingsWindow
 {
@@ -103,6 +104,7 @@ export default function Settings()
 				<MenuTitle title="Settings"/>
 				<SettingsWindow key={resetKey} settingRefs={settingRefs} />
 				<Buttons setResetKey={setResetKey} settingRefs={settingRefs}/>
+				<SideBar />
 			</Page>
 		</>
 	);
