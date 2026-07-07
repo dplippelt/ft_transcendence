@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
 import { EditWindowType } from "../pages/Profile/enums";
-import { SendHorizontal, Swords, UserMinus } from "lucide-react";
+import { MessageCircle, MessageCircleWarning, SendHorizontal, Swords, UserMinus } from "lucide-react";
 import Avatar, { AvatarSize } from "./Avatar";
 import { MobilePosition } from "../utils/utils";
 
@@ -66,6 +66,12 @@ interface ISendButton
 
 interface IActionButton
 {
+	onClick: () => void;
+}
+
+interface IOpenChatSideBar
+{
+	hasNewMsg: boolean;
 	onClick: () => void;
 }
 
@@ -139,6 +145,22 @@ export function RemoveFriendButton( { onClick } : IActionButton )
 	return (
 		<button className={styles.actionButton} type="button" aria-label="Remove user from friends list" title="Remove friend" onClick={onClick}>
 			<UserMinus size={20} />
+		</button>
+	);
+}
+
+export function OpenChatSideBarButton( { hasNewMsg, onClick } : IOpenChatSideBar )
+{
+	if ( hasNewMsg )
+		return (
+			<button className={styles.sideBarButton} onClick={onClick}>
+				<MessageCircleWarning size={40} />
+			</button>
+		);
+
+	return (
+		<button className={styles.sideBarButton} onClick={onClick}>
+			<MessageCircle size={30} />
 		</button>
 	);
 }
