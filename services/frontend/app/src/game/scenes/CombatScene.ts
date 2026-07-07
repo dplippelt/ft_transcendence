@@ -5,80 +5,71 @@ import NumberCard from "../gameobjects/cards/NumberCard";
 import OperatorCard, { Operator } from "../gameobjects/cards/OperatorCard";
 
 export default class CombatScene extends Phaser.Scene {
-	private cardHand!: CardHand;
-    private executeButton!: GameObjects.Rectangle;
+  private cardHand!: CardHand;
+  private executeButton!: GameObjects.Rectangle;
 
-	constructor() {
-		super("combat");
-	}
+  constructor() {
+    super("combat");
+  }
 
-	preload() {
-		// load images for the combat scene
-		// needs to know which enemy the player is going to fight
-		// needs to know the status such as health point or the items (?) it has
-		// temporarily set the background color for ths combat scene, needs to be replace by an image
-		const backgroundColor = new Phaser.Display.Color(200, 200, 200);
-		this.cameras.main.setBackgroundColor(backgroundColor.color);
-	}
+  preload() {
+    // load images for the combat scene
+    // needs to know which enemy the player is going to fight
+    // needs to know the status such as health point or the items (?) it has
+    // temporarily set the background color for ths combat scene, needs to be replace by an image
+    const backgroundColor = new Phaser.Display.Color(200, 200, 200);
+    this.cameras.main.setBackgroundColor(backgroundColor.color);
+  }
 
-	create() {
+  create() {
+    this.cardHand = new CardHand(this);
 
-		this.cardHand = new CardHand(this);
+    // Will make this button to be a class object
+    this.executeButton = this.add.rectangle(100, 50, 100, 50);
+    this.add.text(65, 45, "Execute!");
+    this.executeButton.setInteractive();
+    const bg = new Phaser.Display.Color(100, 100, 100);
+    this.executeButton.setFillStyle(bg.color);
+    this.executeButton.on("pointerdown", this.execute, this);
 
-        // Will make this button to be a class object
-        this.executeButton = this.add.rectangle(100, 50, 100, 50);
-        this.add.text(65, 45, "Execute!");
-        this.executeButton.setInteractive();
-        const bg = new Phaser.Display.Color(100, 100, 100);
-        this.executeButton.setFillStyle(bg.color);
-        this.executeButton.on("pointerdown", this.execute, this);
+    // test for creation and alignment of hand of cards
+    this.sampleInitCardHand();
 
-        // test for creation and alignment of hand of cards
-        this.sampleInitCardHand();
+    EventBus.emit("current-scene-ready", this);
 
-		EventBus.emit('current-scene-ready', this);
+    // TODOs
+    // const selectedCard = initSelectedCard;
+    // const timer = initTimer();
+    // const player = new PlayerCombat(this, 100, 100);
+    // const enemy = new EnemyCombat(this, 900, 100);
 
-        // TODOs
-		// const selectedCard = initSelectedCard;
-		// const timer = initTimer();
-		// const player = new PlayerCombat(this, 100, 100);
-		// const enemy = new EnemyCombat(this, 900, 100);
+    // this.input.once('pointerdown', () => {
+    //     this.scene.stop().wake('game');
+    // })
+  }
 
-        // this.input.once('pointerdown', () => {
-        //     this.scene.stop().wake('game');
-        // })
-	}
+  update() {}
 
-	update() {
+  execute() {
+    let hitPoint = this.cardHand.evaluateSelectedCards();
 
+    console.log(hitPoint);
+    // Give the enemy damages or give the player penalty
+    // Generate new card hands
+    // Clear selected cards from slot
+    // Reset timer
+  }
 
-	}
-
-    execute() {
-
-        let hitPoint = this.cardHand.evaluateSelectedCards();
-        
-        console.log(hitPoint);
-        // Give the enemy damages or give the player penalty
-        // Generate new card hands
-        // Clear selected cards from slot
-        // Reset timer
-
+  sampleInitCardHand() {
+    for (let i = 1; i <= 5; ++i) {
+      this.cardHand.addCard(new NumberCard(this, i));
     }
 
-    sampleInitCardHand() {
+    this.cardHand.addCard(new OperatorCard(this, Operator.Plus));
+    this.cardHand.addCard(new OperatorCard(this, Operator.Minus));
+    this.cardHand.addCard(new OperatorCard(this, Operator.Multiply));
 
-        for (let i = 1; i <= 5; ++i) {
-            this.cardHand.addCard(new NumberCard(this, i));
-        }
-
-        this.cardHand.addCard(new OperatorCard(this, Operator.Plus));
-        this.cardHand.addCard(new OperatorCard(this, Operator.Minus));
-        this.cardHand.addCard(new OperatorCard(this, Operator.Multiply));
-
-        this.cardHand.shuffle();
-        // this.cardHand.align();
-
-    }
-
+    this.cardHand.shuffle();
+    // this.cardHand.align();
+  }
 }
