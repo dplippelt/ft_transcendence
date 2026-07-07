@@ -7,7 +7,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { MenuButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
 import { RoutePath } from "../../utils/utils";
-import ChatSideBar from "../../components/ChatSideBar/ChatSideBar";
+import ChatSideBar from "../../components/SideBar";
 
 function Buttons()
 {
@@ -42,8 +42,8 @@ export default function MainMenu()
 		<>
 			<Background/>
 			<div className={styles.mainMenuPage}>
-				<AppTitle/>
-				<Buttons/>
+				<AppTitle />
+				<Buttons />
 				<ChatSideBar />
 			</div>
 		</>

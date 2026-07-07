@@ -2,9 +2,11 @@ import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
 import { EditWindowType } from "../pages/Profile/enums";
-import { MessageCircle, MessageCircleWarning, SendHorizontal, Swords, UserMinus } from "lucide-react";
+import { ChevronLeft, MessageCircle, MessageCircleWarning, SendHorizontal, Swords, UserMinus } from "lucide-react";
 import Avatar, { AvatarSize } from "./Avatar";
 import { MobilePosition } from "../utils/utils";
+import { useUser } from "../contexts/UserContext";
+import { Dot } from "lucide-react";
 
 interface IMenuButton
 {
@@ -56,6 +58,7 @@ interface IFriendButton
 {
 	username: string;
 	avatar: string;
+	panel: boolean;
 	onClick: () => void;
 }
 
@@ -72,6 +75,11 @@ interface IActionButton
 interface IOpenChatSideBar
 {
 	hasNewMsg: boolean;
+	onClick: () => void;
+}
+
+interface ISideBarBackButton
+{
 	onClick: () => void;
 }
 
@@ -121,12 +129,27 @@ export function SendButton( { onClick } : ISendButton )
 	);
 }
 
-export function FriendButton( { username, avatar, onClick } : IFriendButton )
+export function FriendButton( { username, avatar, panel, onClick } : IFriendButton )
 {
+	const userFunc = useUser();
+	const numUnreadMsg = userFunc.numUnreadMsg(username);
+
+	function usernameStyle() : string
+	{
+		let usernameStyle = styles.friendUsername;
+
+		if ( numUnreadMsg )
+			usernameStyle += " " + styles.friendUnread;
+
+		return usernameStyle;
+	}
+
 	return (
 		<button className={styles.friendButton} type="button" onClick={onClick}>
 			<Avatar src={avatar} alt={`${username}'s avatar`} size={AvatarSize.smaller} />
-			<div className={styles.friendUsername}>{username}</div>
+			<div className={usernameStyle()}>{username}</div>
+			{ !panel && numUnreadMsg !== 0 && <div className={usernameStyle()}>{"(" + (numUnreadMsg > 99 ? "99+" : numUnreadMsg) + ")"}</div> }
+			{ panel && numUnreadMsg !== 0 && <Dot size={24} /> }
 		</button>
 	)
 }
@@ -149,18 +172,27 @@ export function RemoveFriendButton( { onClick } : IActionButton )
 	);
 }
 
-export function OpenChatSideBarButton( { hasNewMsg, onClick } : IOpenChatSideBar )
+export function OpenSideBarButton( { hasNewMsg, onClick } : IOpenChatSideBar )
 {
 	if ( hasNewMsg )
 		return (
 			<button className={styles.sideBarButton} onClick={onClick}>
-				<MessageCircleWarning size={40} />
+				<MessageCircleWarning size={30} className={styles.newMsgGlow} />
 			</button>
 		);
 
 	return (
 		<button className={styles.sideBarButton} onClick={onClick}>
 			<MessageCircle size={30} />
+		</button>
+	);
+}
+
+export function SideBarBackButton( { onClick } : ISideBarBackButton )
+{
+	return (
+		<button className={styles.actionButton} onClick={onClick}>
+			<ChevronLeft />
 		</button>
 	);
 }

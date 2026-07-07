@@ -12,9 +12,10 @@ import React from "react";
 import { MobilePosition, RoutePath } from "../../utils/utils";
 import Popup from "../../components/Popup";
 import AddFriendPopup from "./AddFriendPopup";
-import { MobileView, PopupType } from "./enums";
+import { MobileView } from "./enums";
 import RemoveFriendPopup from "./RemoveFriendPopup";
 import InviteFriendPopup from "./InviteFriendPopup";
+import { PopupType } from "../../components/Chat/enums";
 
 interface IButtons
 {

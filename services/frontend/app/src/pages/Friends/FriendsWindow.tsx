@@ -1,7 +1,8 @@
 import { FriendButton, InviteToPlayButton, RemoveFriendButton } from "../../components/Buttons";
+import { PopupType } from "../../components/Chat/enums";
 import TheFriendsList from "../../components/FriendsList";
 import useIsMobile from "../../hooks/useIsMobile";
-import { MobileView, PopupType } from "./enums";
+import { MobileView } from "./enums";
 import type { ISetFriendPageState } from "./Friends";
 import styles from "./FriendsWindow.module.scss";
 
@@ -44,7 +45,7 @@ function FriendsList( { setPageState } : IFriendsWindow )
 		<TheFriendsList>
 			{ (userID, username, avatar) => (
 				<>
-					<FriendButton username={username} avatar={avatar} onClick={ () => handleOpenChat(userID) } />
+					<FriendButton username={username} avatar={avatar} panel={false} onClick={ () => handleOpenChat(userID) } />
 					<InviteToPlayButton onClick={ () => handleInviteToPlay(username) } />
 					<RemoveFriendButton onClick={ () => handleRemoveFriend(username) } />
 				</>
