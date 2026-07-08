@@ -25,6 +25,13 @@
 		1. Create card objects
 		2. Initialize the card hand with card objects.
 		3. Handle card selection with mouse input
+            - [Reference example](https://labs.phaser.io/phaser4-index.html?path=input%2Fmouse)
+            - Handling Input (mouse events) and Selection
+                - The CardHand container should be responsible for managing card positions including aligning the cards with a line. 
+                CardBase only know whether it is currently hovered or not, while CardHand handles the visual response (e.g., moving the card slightly upward). The hit area, particularly its height, should be adjusted while the card is hovered. Otherwise, pointer events may repeatedly fire when the cursor is positioned near the boundary of the hit area.
+                - Card selection by clicking a card should only be update the card's internal boolean. The CardHand container is also responsible for arranging cards according to their current state (in hand or selected) during the update cycle.
+                - Selection rules (for example, allowing only two number cards and one operator card) should be enforced by the CardHand container. Therefore, CardHand should control whether individual cards are allowed to respond to input (only click event) interactions.
+                - The CardSelection object within CardHand is responsible for card selection and validation. During initialization, it creates a fixed number of Slot objects according to the number of operands given. Each Slot may or may not hold a  Card and manage the Card's position, while the overall layout of the slots and setting / unsetting a card are managed by the CardSelection 
 		4. Align the card objects like hand card
 		5. Add a new card object (drawing from deck)
 
