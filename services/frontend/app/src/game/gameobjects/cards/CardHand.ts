@@ -135,104 +135,86 @@ export default class CardHand {
     }
   }
 
-    getSelectedCards() {
-        return this.cardSelection.getSelectedCards();
+  getSelectedCards() {
+    return this.cardSelection.getSelectedCards();
+  }
+
+  evaluateSelectedCards(selectedCards: CardBase[]) {
+    const isValidSelection = (cards: CardBase[]) => {
+      if (cards.length % 2 === 0) return false;
+
+      for (let i = 0; i < cards.length; ++i) {
+        let card = cards[i];
+
+        if (i % 2 === 0) {
+          if (!(card instanceof NumberCard)) return false;
+        } else {
+          if (!(card instanceof OperatorCard)) return false;
+        }
+      }
+      return true;
+    };
+
+    if (!isValidSelection(selectedCards)) return null;
+
+    let nums: Array<number | Operator> = [];
+
+    for (let i = 0; i < selectedCards.length; ++i) {
+      let card = selectedCards[i];
+
+      if (i % 2 === 0) {
+        let value = card.getValue() as number;
+
+        if (!nums.length) {
+          nums.push(value);
+        } else {
+          let operator = nums.pop() as Operator;
+          let prevValue = nums.pop() as number;
+
+          switch (operator) {
+            case Operator.Multiply:
+              nums.push(prevValue * value);
+              break;
+
+            case Operator.Divide:
+              if (value === 0) return null;
+              nums.push(prevValue / value);
+              break;
+
+            default:
+              nums.push(prevValue);
+              nums.push(operator);
+              nums.push(value);
+              break;
+          }
+        }
+      } else {
+        let value = card.getValue() as Operator;
+
+        nums.push(value);
+      }
     }
 
-    evaluateSelectedCards(selectedCards: CardBase[]) {
+    let num = nums[0] as number;
 
-        const isValidSelection = (cards: CardBase[]) => {
+    for (let i = 1; i < nums.length; i += 2) {
+      let operator = nums[i] as Operator;
+      let value = nums[i + 1] as number;
 
-            if (cards.length % 2 === 0)
-                return false;
-        
-            for (let i = 0; i < cards.length; ++i) {
-                let card = cards[i];
-        
-                if (i % 2 === 0) {
-                    if (!(card instanceof NumberCard))
-                        return false;
-                } else {        
-                    if (!(card instanceof OperatorCard))
-                        return false;
-                }
-            }
-            return true;
+      switch (operator) {
+        case Operator.Plus:
+          num += value;
+          break;
 
-        };
-        
-        if (!isValidSelection(selectedCards))
-            return null;
+        case Operator.Minus:
+          num -= value;
+          break;
 
-        let nums: Array<number | Operator> = [];
-
-        for (let i = 0; i < selectedCards.length; ++i) {
-
-            let card = selectedCards[i];
-
-            if (i % 2 === 0) {
-
-                let value = card.getValue() as number;
-
-                if (!nums.length) {
-
-                    nums.push(value);
-
-                } else {
-
-                    let operator = nums.pop() as Operator;
-                    let prevValue = nums.pop() as number;
-
-                    switch (operator) {
-                        case Operator.Multiply:
-                            nums.push(prevValue * value);
-                            break;
-
-                        case Operator.Divide:
-                            if (value === 0)
-                                return null;
-                            nums.push(prevValue / value);
-                            break;
-
-                        default:
-                            nums.push(prevValue);
-                            nums.push(operator);
-                            nums.push(value);
-                            break;
-                    }
-                }
-            } else {
-
-                let value = card.getValue() as Operator;
-
-                nums.push(value);
-
-            }
-
-        }
-
-        let num = nums[0] as number;
-
-        for (let i = 1; i < nums.length; i += 2) {
-
-            let operator = nums[i] as Operator;
-            let value = nums[i + 1] as number;
-
-            switch (operator) {
-                case Operator.Plus:
-                    num += value;
-                    break;
-                
-                case Operator.Minus:
-                    num -= value;
-                    break;
-
-                default:
-                    break;
-            }
-        }
-
-        return num;
-
+        default:
+          break;
+      }
     }
+
+    return num;
+  }
 }

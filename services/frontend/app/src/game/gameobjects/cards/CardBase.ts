@@ -84,12 +84,11 @@ export default class CardBase extends Phaser.GameObjects.Container {
   selected() {
     this.emit(CardEvents.SELECTION, this);
   }
-    setValue(value: any) {
-        this.value = value;
-    }
+  setValue(value: any) {
+    this.value = value;
+  }
 
-    getValue() {
-        return this.value;
-    }
-
+  getValue() {
+    return this.value;
+  }
 }
