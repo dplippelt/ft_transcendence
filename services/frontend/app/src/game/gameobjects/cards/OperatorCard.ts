@@ -17,7 +17,5 @@ export default class OperatorCard extends CardBase {
     super(scene, operator);
 
     this.setValue(operator);
-    // this.setDataEnabled();
-    // this.setData('operator', operator);
   }
 }

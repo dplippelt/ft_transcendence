@@ -9,7 +9,5 @@ export default class NumberCard extends CardBase {
     super(scene, num.toString());
 
     this.setValue(num);
-    // this.setDataEnabled();
-    // this.setData('number', num);
   }
 }
