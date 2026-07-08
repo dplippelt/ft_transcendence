@@ -1,5 +1,5 @@
 import { Scenes, Scene, Actions, GameObjects, Geom } from "phaser";
-import CardBase, { CardEvents } from "./CardBase";
+import CardBase, { CardEvents, type CardValue } from "./CardBase";
 import CardSelection from "./CardSelection";
 import NumberCard from "./NumberCard";
 import OperatorCard, { Operator } from "./OperatorCard";
@@ -33,7 +33,7 @@ const cardHandConfig: CardHandConfig = {
 export default class CardHand {
   private readonly cardHandConfig!: CardHandConfig;
   private readonly cards!: GameObjects.Container;
-  private handLine!: Geom.Line;
+  private readonly handLine!: Geom.Line;
   private readonly cardSelection!: CardSelection;
 
   constructor(scene: Scene) {
@@ -140,74 +140,59 @@ export default class CardHand {
   }
 
   evaluateSelectedCards(selectedCards: CardBase[]) {
-    const isValidSelection = (cards: CardBase[]) => {
-      if (cards.length % 2 === 0) return false;
+    if (!this.isValidSelection(selectedCards)) return null;
 
-      for (let i = 0; i < cards.length; ++i) {
-        let card = cards[i];
-
-        if (i % 2 === 0) {
-          if (!(card instanceof NumberCard)) return false;
-        } else {
-          if (!(card instanceof OperatorCard)) return false;
-        }
-      }
-      return true;
-    };
-
-    if (!isValidSelection(selectedCards)) return null;
-
-    let nums: Array<number | Operator> = [];
+    const values: CardValue[] = [];
 
     for (let i = 0; i < selectedCards.length; ++i) {
-      let card = selectedCards[i];
+      const card = selectedCards[i];
 
       if (i % 2 === 0) {
-        let value = card.getValue() as number;
+        const currNum = card.getValue() as number;
 
-        if (!nums.length) {
-          nums.push(value);
-        } else {
-          let operator = nums.pop() as Operator;
-          let prevValue = nums.pop() as number;
+        if (!values.length) {
+          values.push(currNum);
+          continue;
+        }
 
-          switch (operator) {
-            case Operator.Multiply:
-              nums.push(prevValue * value);
-              break;
+        const operator = values.pop() as Operator;
+        const preNum = values.pop() as number;
 
-            case Operator.Divide:
-              if (value === 0) return null;
-              nums.push(prevValue / value);
-              break;
+        switch (operator) {
+          case Operator.Multiply:
+            values.push(preNum * currNum);
+            break;
 
-            default:
-              nums.push(prevValue);
-              nums.push(operator);
-              nums.push(value);
-              break;
-          }
+          case Operator.Divide:
+            if (currNum === 0) return null;
+            values.push(preNum / currNum);
+            break;
+
+          default:
+            values.push(preNum);
+            values.push(operator);
+            values.push(currNum);
+            break;
         }
       } else {
-        let value = card.getValue() as Operator;
-
-        nums.push(value);
+        const operator = card.getValue() as Operator;
+        values.push(operator);
       }
     }
 
-    let num = nums[0] as number;
+    let num = values[0] as number;
 
-    for (let i = 1; i < nums.length; i += 2) {
-      let operator = nums[i] as Operator;
-      let value = nums[i + 1] as number;
+    for (let i = 2; i < values.length; i += 2) {
+      const currNum = values[i] as number;
+      const operator = values[i - 1] as Operator;
 
       switch (operator) {
         case Operator.Plus:
-          num += value;
+          num += currNum;
           break;
 
         case Operator.Minus:
-          num -= value;
+          num -= currNum;
           break;
 
         default:
@@ -216,5 +201,20 @@ export default class CardHand {
     }
 
     return num;
+  }
+
+  isValidSelection(selectedCard: CardBase[]) {
+    if (selectedCard.length % 2 === 0) return false;
+
+    for (let i = 0; i < selectedCard.length; ++i) {
+      const card = selectedCard[i];
+
+      if (i % 2 === 0) {
+        if (!(card instanceof NumberCard)) return false;
+      } else {
+        if (!(card instanceof OperatorCard)) return false;
+      }
+    }
+    return true;
   }
 }
