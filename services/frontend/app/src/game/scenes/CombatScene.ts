@@ -44,7 +44,7 @@ export default class CombatScene extends Phaser.Scene {
   update() {}
 
   createExecuteButton(text: string) {
-    let button = new BoxedText(this, text, buttonContentConfig, buttonStyleConfig, 100, 50);
+    const button = new BoxedText(this, text, buttonContentConfig, buttonStyleConfig, 100, 50);
 
     button.setInteractive();
     button.on("pointerdown", this.execute, this);
@@ -60,7 +60,7 @@ export default class CombatScene extends Phaser.Scene {
       return;
     }
 
-    let hitPoint = this.cardHand.evaluateSelectedCards(cards);
+    const hitPoint = this.cardHand.evaluateSelectedCards(cards);
 
     console.log(hitPoint);
     // Give the enemy damages or give the player penalty
