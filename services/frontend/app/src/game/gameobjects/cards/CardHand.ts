@@ -203,6 +203,7 @@ export default class CardHand {
     return num;
   }
 
+  // TODO: If the classes derived from CardBase are used only for classification, they can be replaced with the CardValue type and removed
   isValidSelection(selectedCard: CardBase[]) {
     if (selectedCard.length % 2 === 0) return false;
 
