@@ -85,24 +85,6 @@ export default class CardSelection {
     return false;
   }
 
-  isValidSelection(): boolean {
-    const selectedCards = this.getSelectedCards();
-
-    if (selectedCards.length % 2 === 0) return false;
-
-    for (let i = 0; i < selectedCards.length; ++i) {
-      const card = selectedCards[i];
-
-      if (i % 2 === 0) {
-        if (!(card instanceof NumberCard)) return false;
-      } else {
-        if (!(card instanceof OperatorCard)) return false;
-      }
-    }
-
-    return true;
-  }
-
   getSelectedCards(): CardBase[] {
     const slots = this.slots.getAll() as CardSlot[];
     const selectedCards: CardBase[] = [];
