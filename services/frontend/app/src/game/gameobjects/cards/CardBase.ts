@@ -1,6 +1,7 @@
 import Phaser, { Scene } from "phaser";
 import CardStyle, { cardStyleConfig, type CardStyleConfig } from "./CardStyle";
 import CardContent, { cardContentConfig, type CardContentConfig } from "./CardContent";
+import type { Operator } from "./OperatorCard";
 
 interface CardBaseConfig {
   cardStyleConfig: CardStyleConfig;
@@ -14,6 +15,8 @@ const cardBaseConfig: CardBaseConfig = {
   focusDiff: 30,
 };
 
+export type CardValue = number | Operator;
+
 export enum CardEvents {
   FOCUSON = "focusOn",
   FOCUSOFF = "focusOff",
@@ -26,7 +29,7 @@ export default class CardBase extends Phaser.GameObjects.Container {
   readonly style!: CardStyle;
   private isFocused!: boolean;
   private isSelected!: boolean;
-  private value: any | undefined;
+  private value: CardValue | undefined;
 
   constructor(scene: Scene, text: string) {
     super(scene);
@@ -84,7 +87,8 @@ export default class CardBase extends Phaser.GameObjects.Container {
   selected() {
     this.emit(CardEvents.SELECTION, this);
   }
-  setValue(value: any) {
+
+  setValue(value: CardValue) {
     this.value = value;
   }
 
