@@ -11,7 +11,7 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,
   },
-  pixelArt: false,
+  pixelArt: true,
   loader: {
     path: "./assets",
   },

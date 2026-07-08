@@ -2,12 +2,12 @@ import { Scene } from "phaser";
 import CardBase from "./CardBase";
 
 export enum Operator {
-    Plus = "+",
-    Minus = "-",
-    Multiply = "×",
-    Divide = "/",
-    Modulo = "mod",
-};
+  Plus = "+",
+  Minus = "-",
+  Multiply = "×",
+  Divide = "/",
+  Modulo = "mod",
+}
 
 export default class OperatorCard extends CardBase {
 
