@@ -23,6 +23,7 @@ export enum CardEvents {
   SELECTION = "selection",
 }
 
+// TOB : can be derived from BoxedText instead of GameObjects.Container
 export default class CardBase extends Phaser.GameObjects.Container {
   readonly cardBaseConfig!: CardBaseConfig;
   readonly content!: CardContent;
