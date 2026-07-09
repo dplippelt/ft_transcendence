@@ -187,7 +187,7 @@ def login_for_access_token(form_data: OAuth2Form, db: DbSession):
 
 @router.post("/google", response_model=Token)
 def google_login(user_data: GoogleLogin, db: DbSession):
-    if not settings.settings.google_client_id:
+    if not settings.google_client_id:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Google login is not configured",
@@ -197,7 +197,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
         google_user = id_token.verify_oauth2_token(
             user_data.credential,
             google_request,
-            settings.settings.google_client_id,
+            settings.google_client_id,
         )
     except ValueError:
         raise HTTPException(
