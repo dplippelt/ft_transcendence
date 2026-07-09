@@ -1,16 +1,6 @@
 import { Vector2, BoundingBox, random, shuffle, weightedRandom, type weight } from "./math";
 
-enum TileType {
-  Closed,
-  Hallway,
-  Entrance,
-  Exit,
-  Treasure,
-  Puzzle,
-  Empty,
-}
-
-enum Direction {
+export enum Direction {
   None = 0x0,
   Top = 0x01,
   Right = 0x02,
@@ -22,11 +12,18 @@ enum Direction {
   DownRight = Down | Right,
 }
 
+export enum FloorType {
+  default
+}
+
+type CornerDirection = Direction.TopLeft | Direction.TopRight | Direction.DownLeft | Direction.DownRight;
+type WallDirection = Direction.Top | Direction.Right | Direction.Down | Direction.Left;
+
 interface TileMapping {
-  corner: number[];
-  innerCorner: number[];
-  wall: number[][];
-  floor: weight[];
+  corners: Record<CornerDirection, number>;
+  innerCorners: Record<CornerDirection, number>;
+  walls: Record<WallDirection, number[]>;
+  floor: Record<FloorType, weight[]>;
 }
 
 interface Door {
@@ -49,7 +46,6 @@ interface Range {
 export interface Room {
   aabb: BoundingBox;
   doorways: Vector2[];
-  roomType: TileType;
 }
 
 export interface MapData {
@@ -109,7 +105,6 @@ function generateRooms(amount: number, roomConfig: RoomConfig): Room[] {
         ),
       ),
       doorways: [],
-      roomType: i + 1,
     });
   }
 
@@ -191,39 +186,25 @@ function placeDoorway(pivotRoom: Room, neighborRoom: Room, direction: Direction)
 }
 
 // Get the door corner tile based on whether the connecting wall tile is a corner or not
-function getDoorCornerTile(tile: number, wall: Direction, corner: Direction, tileMapping: TileMapping): number {
-  if (tileMapping.corner.includes(tile)) {
-    return getWallTile(wall, tileMapping.wall);
+function getDoorCornerTile(tile: number, wall: WallDirection, corner: CornerDirection, tileMapping: TileMapping): number {
+  if (Object.values(tileMapping.corners).includes(tile)) {
+    return getWallTile(wall, tileMapping.walls);
   }
-  return getCornerTile(corner, tileMapping.innerCorner);
+  return getCornerTile(corner, tileMapping.innerCorners);
 }
 
 // Get the corner tile based on the corner direction
-function getCornerTile(direction: Direction, corner: number[]): number {
-  if (direction == Direction.TopLeft) {
-    return corner[0];
-  } else if (direction == Direction.TopRight) {
-    return corner[1];
-  } else if (direction == Direction.DownLeft) {
-    return corner[2];
-  }
-  return corner[3];
+function getCornerTile(direction: CornerDirection, corner: Record<CornerDirection, number>): number {
+  return corner[direction];
 }
 
 // Get the wall tile based on the wall direction
-function getWallTile(direction: Direction, wall: number[][]): number {
-  if (direction == Direction.Top) {
-    return wall[0][random(0, wall[0].length)];
-  } else if (direction == Direction.Right) {
-    return wall[1][random(0, wall[1].length)];
-  } else if (direction == Direction.Down) {
-    return wall[2][random(0, wall[2].length)];
-  }
-  return wall[3][random(0, wall[3].length)];
+function getWallTile(direction: WallDirection, wall: Record<WallDirection, number[]>): number {
+  return wall[direction][random(0, wall[direction].length)];
 }
 
-function getFloorTile(floor: weight[]): number {
-  return weightedRandom(floor).index;
+function getFloorTile(floor: Record<FloorType, weight[]>, floorType: FloorType = FloorType.default): number {
+  return weightedRandom(floor[floorType]).index;
 }
 
 // Put the room tiles into the dungeon map
@@ -240,12 +221,12 @@ function layoutPutRoom(map: number[][], room: Room, tileMapping: TileMapping): v
         direction === Direction.TopRight ||
         direction === Direction.DownLeft ||
         direction === Direction.DownRight) {
-        map[y][x] = getCornerTile(direction, tileMapping.corner);
+        map[y][x] = getCornerTile(direction, tileMapping.corners);
       } else if (direction === Direction.Top ||
         direction === Direction.Right ||
         direction === Direction.Down ||
         direction === Direction.Left) {
-        map[y][x] = getWallTile(direction, tileMapping.wall);
+        map[y][x] = getWallTile(direction, tileMapping.walls);
       } else {
         map[y][x] = getFloorTile(tileMapping.floor);
       }
@@ -258,8 +239,8 @@ function layoutPutDoor(map: number[][], door: Door, tileMapping: TileMapping): v
   const [x, y] = door.position.clone().floor().unpack();
   map[y][x] = getFloorTile(tileMapping.floor);
   if (door.direction === Direction.Top || door.direction === Direction.Down) {
-    map[y][x + 1] = getWallTile(Direction.Right, tileMapping.wall);
-    map[y][x - 1] = getWallTile(Direction.Left, tileMapping.wall);
+    map[y][x + 1] = getWallTile(Direction.Right, tileMapping.walls);
+    map[y][x - 1] = getWallTile(Direction.Left, tileMapping.walls);
     map[y - 1][x - 1] = getDoorCornerTile(map[y - 1][x - 1], Direction.Left, Direction.TopRight, tileMapping);
     map[y - 1][x + 1] = getDoorCornerTile(map[y - 1][x + 1], Direction.Right, Direction.TopLeft, tileMapping);
     map[y + 1][x - 1] = getDoorCornerTile(map[y + 1][x - 1], Direction.Left, Direction.DownRight, tileMapping);
@@ -267,8 +248,8 @@ function layoutPutDoor(map: number[][], door: Door, tileMapping: TileMapping): v
     map[y - 1][x] = getFloorTile(tileMapping.floor);
     map[y + 1][x] = getFloorTile(tileMapping.floor);
   } else {
-    map[y - 1][x] = getWallTile(Direction.Top, tileMapping.wall);
-    map[y + 1][x] = getWallTile(Direction.Down, tileMapping.wall);
+    map[y - 1][x] = getWallTile(Direction.Top, tileMapping.walls);
+    map[y + 1][x] = getWallTile(Direction.Down, tileMapping.walls);
     map[y - 1][x - 1] = getDoorCornerTile(map[y - 1][x - 1], Direction.Top, Direction.DownLeft, tileMapping);
     map[y - 1][x + 1] = getDoorCornerTile(map[y - 1][x + 1], Direction.Top, Direction.DownRight, tileMapping);
     map[y + 1][x - 1] = getDoorCornerTile(map[y + 1][x - 1], Direction.Down, Direction.TopLeft, tileMapping);
