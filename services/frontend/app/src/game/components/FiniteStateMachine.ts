@@ -1,6 +1,7 @@
 import Component from "./Component";
 import { GameObjects } from "phaser";
 
+// TODO: Include time and delta for update
 export interface IFiniteState {
   onEnter?(): void;
   onUpdate(): IFiniteState | null;
