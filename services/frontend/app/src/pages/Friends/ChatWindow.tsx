@@ -1,7 +1,7 @@
 import React from "react";
 import { ChatInput } from "../../components/TextInput";
 import styles from "./ChatWindow.module.scss";
-import { useUser, type IChatMsg, type IFriendData } from "../../contexts/UserContext";
+import { useUser, type IFriendData } from "../../contexts/UserContext";
 import { useLayoutEffect, useRef, useState } from "react";
 import { InviteToPlayButton, SendButton } from "../../components/Buttons";
 import Avatar, { AvatarSize } from "../../components/Avatar";
