@@ -1,5 +1,5 @@
-import type { StyledTextConfig } from "../cards/CardContent";
-import type { StyledBoxConfig } from "../cards/CardStyle";
+import type { StyledBoxConfig } from "./StyledBox";
+import type { StyledTextConfig } from "./StyledText";
 
 export const buttonStyleConfig: StyledBoxConfig = {
   width: 100,

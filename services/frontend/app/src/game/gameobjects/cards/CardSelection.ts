@@ -1,7 +1,7 @@
 import Phaser, { Actions, Scene } from "phaser";
 import CardBase from "./CardBase";
 import CardSlot, { cardSlotStyleConfig } from "./CardSlot";
-import { type StyledBoxConfig } from "./CardStyle";
+import { type StyledBoxConfig } from "../utils/StyledBox";
 
 interface SelectedCardAlignConfig {
   firstSlotCenter: {

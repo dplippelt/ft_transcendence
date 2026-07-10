@@ -1,6 +1,6 @@
 import Phaser, { Scene } from "phaser";
-import StyledText, { type StyledTextConfig } from "../cards/CardContent";
-import StyledBox, { type StyledBoxConfig } from "../cards/CardStyle";
+import StyledText, { type StyledTextConfig } from "./StyledText";
+import StyledBox, { type StyledBoxConfig } from "./StyledBox";
 
 export default class BoxedText extends Phaser.GameObjects.Container {
   readonly content!: StyledText;

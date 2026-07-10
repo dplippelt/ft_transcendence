@@ -1,6 +1,6 @@
 import { Scene } from "phaser";
 import CardBase from "./CardBase";
-import StyledBox, { type StyledBoxConfig } from "./CardStyle";
+import StyledBox, { type StyledBoxConfig } from "../utils/StyledBox";
 
 export const cardSlotStyleConfig: StyledBoxConfig = {
   width: 70,

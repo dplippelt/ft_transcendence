@@ -12,18 +12,6 @@ export interface StyledBoxConfig {
   strokeWidth: number;
 }
 
-export const cardStyleConfig: StyledBoxConfig = {
-  width: 140,
-  height: 190,
-  bgColorRed: 50,
-  bgColorGreen: 80,
-  bgColorBlue: 80,
-  strokeColorRed: 30,
-  strokeColorGreen: 40,
-  strokeColorBlue: 40,
-  strokeWidth: 1,
-};
-
 export default class StyledBox extends Phaser.GameObjects.Rectangle {
   readonly backGroundColor!: Phaser.Display.Color;
   readonly stroke!: Phaser.Display.Color;

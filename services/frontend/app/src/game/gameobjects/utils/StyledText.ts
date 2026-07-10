@@ -7,17 +7,6 @@ export interface StyledTextConfig {
   textStyle: Phaser.Types.GameObjects.Text.TextStyle;
 }
 
-export const cardContentConfig: StyledTextConfig = {
-  textColorRed: 200,
-  textColorGreen: 230,
-  textColorBlue: 20,
-  textStyle: {
-    fontFamily: "Arial Black",
-    fontSize: "50px",
-    align: "center",
-  },
-};
-
 export default class StyledText extends Phaser.GameObjects.Text {
   readonly textColor!: Phaser.Display.Color;
   readonly textStyle!: Phaser.Types.GameObjects.Text.TextStyle;
