@@ -142,6 +142,14 @@ export default class CardHand {
   evaluateSelectedCards(selectedCards: CardBase[]) {
     if (!this.isValidSelection(selectedCards)) return null;
 
+    const values = this.evaluateHighPrecedenceOperations(selectedCards);
+    if (!values) return null;
+
+    const result = this.evaluateLowPrecedenceOperations(values);
+    return result;
+  }
+
+  evaluateHighPrecedenceOperations(selectedCards: CardBase[]) {
     const values: CardValue[] = [];
 
     for (let i = 0; i < selectedCards.length; ++i) {
@@ -168,6 +176,11 @@ export default class CardHand {
             values.push(preNum / currNum);
             break;
 
+          case Operator.Modulo:
+            if (currNum === 0) return null;
+            values.push(preNum % currNum);
+            break;
+
           default:
             values.push(preNum);
             values.push(operator);
@@ -180,6 +193,10 @@ export default class CardHand {
       }
     }
 
+    return values;
+  }
+
+  evaluateLowPrecedenceOperations(values: CardValue[]) {
     let num = values[0] as number;
 
     for (let i = 2; i < values.length; i += 2) {
@@ -202,7 +219,6 @@ export default class CardHand {
 
     return num;
   }
-
   // TODO: If the classes derived from CardBase are used only for classification, they can be replaced with the CardValue type and removed
   isValidSelection(selectedCard: CardBase[]) {
     if (selectedCard.length % 2 === 0) return false;
