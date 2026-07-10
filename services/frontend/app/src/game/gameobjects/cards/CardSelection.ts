@@ -1,7 +1,5 @@
 import Phaser, { Actions, Scene } from "phaser";
 import CardBase from "./CardBase";
-import NumberCard from "./NumberCard";
-import OperatorCard from "./OperatorCard";
 import CardSlot, { cardSlotStyleConfig } from "./CardSlot";
 import { type CardStyleConfig } from "./CardStyle";
 

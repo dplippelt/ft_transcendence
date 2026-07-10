@@ -1,4 +1,4 @@
-import Phaser, { GameObjects } from "phaser";
+import Phaser from "phaser";
 import { EventBus } from "../EventBus";
 import CardHand from "../gameobjects/cards/CardHand";
 import NumberCard from "../gameobjects/cards/NumberCard";
