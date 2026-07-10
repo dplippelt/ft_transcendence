@@ -1,20 +1,7 @@
 import { Scene } from "phaser";
-import { cardStyleConfig, type StyledBoxConfig } from "./CardStyle";
-import { cardContentConfig, type StyledTextConfig } from "./CardContent";
 import type { Operator } from "./OperatorCard";
 import BoxedText from "../utils/BoxedText";
-
-interface CardBaseConfig {
-  cardStyleConfig: StyledBoxConfig;
-  cardContentConfig: StyledTextConfig;
-  focusDiff: number;
-}
-
-const cardBaseConfig: CardBaseConfig = {
-  cardStyleConfig: cardStyleConfig,
-  cardContentConfig: cardContentConfig,
-  focusDiff: 30,
-};
+import { cardConfig, type CardConfig } from "../utils/cardConfig";
 
 export type CardValue = number | Operator;
 
@@ -25,15 +12,15 @@ export enum CardEvents {
 }
 
 export default class CardBase extends BoxedText {
-  readonly cardBaseConfig!: CardBaseConfig;
+  readonly cardBaseConfig!: CardConfig;
   private isFocused!: boolean;
   private isSelected!: boolean;
   private value: CardValue | undefined;
 
   constructor(scene: Scene, text: string) {
-    super(scene, text, cardBaseConfig.cardContentConfig, cardBaseConfig.cardStyleConfig);
+    super(scene, text, cardConfig.cardContentConfig, cardConfig.cardStyleConfig);
 
-    this.cardBaseConfig = cardBaseConfig;
+    this.cardBaseConfig = cardConfig;
 
     this.isFocused = false;
     this.isSelected = false;
