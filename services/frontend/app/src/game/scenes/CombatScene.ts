@@ -60,9 +60,9 @@ export default class CombatScene extends Phaser.Scene {
       return;
     }
 
-    const hitPoint = this.cardHand.evaluateSelectedCards(cards);
+    const result = this.cardHand.evaluateSelectedCards(cards);
 
-    console.log(hitPoint);
+    console.log(result);
     // Give the enemy damages or give the player penalty
     // Generate new card hands
     // Clear selected cards from slot
