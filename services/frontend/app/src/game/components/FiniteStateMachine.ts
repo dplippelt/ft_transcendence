@@ -1,10 +1,9 @@
 import Component from "./Component";
 import { GameObjects } from "phaser";
 
-// TODO: Include time and delta for update
 export interface IFiniteState {
   onEnter?(): void;
-  onUpdate(): IFiniteState | null;
+  onUpdate(time: number, delta: number): IFiniteState | null;
   onExit?(): void;
 }
 
@@ -18,8 +17,8 @@ export class FiniteStateMachine extends Component {
     this.currentState.onEnter?.();
   }
 
-  update() {
-    const nextState: IFiniteState | null = this.currentState.onUpdate();
+  update(time: number, delta: number) {
+    const nextState: IFiniteState | null = this.currentState.onUpdate(time, delta);
     if (nextState !== null) {
       this.currentState.onExit?.();
       nextState.onEnter?.();

@@ -16,129 +16,28 @@
 // Recall -> Chase
 // Recall -> Idle
 
-import { Scene, Physics, Math as pMath } from "phaser";
-import { type IFiniteState } from "../components/FiniteStateMachine";
+import { Scene, Physics } from "phaser";
 import { AssetsKey } from "../Assets";
 import { FiniteStateMachine } from "../components/FiniteStateMachine";
-import type IPlayerInput from "../components/IPlayerInput";
 import MovementComponent from "../components/MovementComponent";
+import { IdleState, WanderState, ChaseState, RecallState, type EnemyStates } from "./EnemyStates";
+import { EnemyInput } from "../components/EnemyInput";
 
 interface Range {
   minimum: number,
   maximum: number
 }
 
-interface EnemyState extends IFiniteState {
-  enemyData: EnemyData;
-  // reference to body?
-  // the ai logic is within the states
-}
-
-class IdleState implements EnemyState {
-  enemyData: EnemyData;
-
-  constructor(enemyData: EnemyData) {
-    this.enemyData = enemyData;
-  }
-
-  onEnter(): void {
-    // randomize wait time
-  }
-
-  onUpdate(): IFiniteState | null {
-    return this.enemyData.states.wander;
-  }
-}
-
-class WanderState implements EnemyState {
-  enemyData: EnemyData;
-
-  constructor(enemyData: EnemyData) {
-    this.enemyData = enemyData;
-  }
-
-  onEnter(): void {
-    // choose tile
-  }
-
-  onUpdate(): IFiniteState | null {
-    // move towards tile
-    return null;
-  }
-}
-
-class ChaseState implements EnemyState {
-  enemyData: EnemyData;
-
-  constructor(enemyData: EnemyData) {
-    this.enemyData = enemyData;
-  }
-
-  onUpdate(): IFiniteState | null {
-    // range check and move towards target
-    return null;
-  }
-
-  onExit(): void {
-    // clear target
-  }
-}
-
-class RecallState implements EnemyState {
-  enemyData: EnemyData;
-
-  constructor(enemyData: EnemyData) {
-    this.enemyData = enemyData;
-  }
-
-  onEnter() {
-    // path towards room
-  }
-
-  onUpdate(): IFiniteState | null {
-    // range check and move back towards room
-    return null;
-  }
-}
-
-interface EnemyStates {
-  idle: IFiniteState | null;
-  wander: IFiniteState | null;
-  chase: IFiniteState | null;
-  recall: IFiniteState | null;
-}
-
-interface EnemyData {
+export interface EnemyData {
   idleTime: Range,
   chaseDistance: Range,
   movementSpeed: Range, // min = walk, max = run
-  states: EnemyStates
+  states: EnemyStates,
 }
 
-class EnemyInput implements IPlayerInput {
-  direction: pMath.Vector2;
-  action: boolean;
+type PhysicBody = Physics.Arcade.Body;
 
-  constructor() {
-    this.direction = pMath.Vector2.ZERO.clone();
-    this.action = false;
-  }
-
-  setInputDirection(x: number, y: number): void {
-    this.direction.x = x;
-    this.direction.y = y;
-  }
-
-  getInputDirection(): pMath.Vector2 {
-    return this.direction;
-  }
-
-  getInteraction(): boolean {
-    return this.action;
-  }
-}
-
-class Enemy extends Physics.Arcade.Sprite {
+export class Enemy extends Physics.Arcade.Sprite {
   fsm: FiniteStateMachine;
   movement: MovementComponent;
 
@@ -160,12 +59,18 @@ class Enemy extends Physics.Arcade.Sprite {
     const input = new EnemyInput();
 
     // Setup up the FSM
-    enemyData.states.idle = new IdleState(enemyData);
-    enemyData.states.wander = new WanderState(enemyData);
-    enemyData.states.chase = new ChaseState(enemyData);
-    enemyData.states.recall = new RecallState(enemyData);
+    enemyData.states.idle = new IdleState(this, enemyData);
+    enemyData.states.wander = new WanderState(this, enemyData);
+    enemyData.states.chase = new ChaseState(this, enemyData);
+    enemyData.states.recall = new RecallState(this, enemyData);
     this.fsm = new FiniteStateMachine(this, enemyData.states.idle);
 
     this.movement = new MovementComponent(this, enemyData.movementSpeed.maximum, input);
   }
+
+  findNearbyPlayer(searchRadius: number): PhysicBody | undefined {
+    const bodies = this.scene.physics.overlapCirc(this.x, this.y, searchRadius, true, false) as PhysicBody[];
+    return bodies.find(body => body.gameObject.name === "player");
+  }
+
 }

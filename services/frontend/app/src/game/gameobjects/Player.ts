@@ -14,5 +14,6 @@ export default class Player extends Physics.Arcade.Sprite {
 
     this.playerInput = new KeyboardComponent(this, keySchema);
     this.movement = new MovementComponent(this, 200, this.playerInput);
+    this.name = "player";
   }
 }
