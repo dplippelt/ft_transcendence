@@ -1,7 +1,7 @@
-import type { CardContentConfig } from "../cards/CardContent";
-import type { CardStyleConfig } from "../cards/CardStyle";
+import type { StyledTextConfig } from "../cards/CardContent";
+import type { StyledBoxConfig } from "../cards/CardStyle";
 
-export const buttonStyleConfig: CardStyleConfig = {
+export const buttonStyleConfig: StyledBoxConfig = {
   width: 100,
   height: 50,
   bgColorRed: 100,
@@ -13,7 +13,7 @@ export const buttonStyleConfig: CardStyleConfig = {
   strokeWidth: 1,
 };
 
-export const buttonContentConfig: CardContentConfig = {
+export const buttonContentConfig: StyledTextConfig = {
   textColorRed: 255,
   textColorBlue: 255,
   textColorGreen: 255,

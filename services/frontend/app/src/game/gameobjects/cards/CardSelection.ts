@@ -1,7 +1,7 @@
 import Phaser, { Actions, Scene } from "phaser";
 import CardBase from "./CardBase";
 import CardSlot, { cardSlotStyleConfig } from "./CardSlot";
-import { type CardStyleConfig } from "./CardStyle";
+import { type StyledBoxConfig } from "./CardStyle";
 
 interface SelectedCardAlignConfig {
   firstSlotCenter: {
@@ -30,7 +30,7 @@ export default class CardSelection {
   // add number and operator cards into slots when there is an available slot
   // unset cards from the slots when they are selected again but remain the positions of the rest cards
 
-  private readonly cardSlotStyleConfig!: CardStyleConfig;
+  private readonly cardSlotStyleConfig!: StyledBoxConfig;
   private readonly selectedCardAlignConfig!: SelectedCardAlignConfig;
   private readonly slots!: Phaser.GameObjects.Container;
   private numSlots!: number;

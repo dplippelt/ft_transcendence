@@ -1,6 +1,6 @@
 import Phaser, { Scene } from "phaser";
 
-export interface CardStyleConfig {
+export interface StyledBoxConfig {
   width: number;
   height: number;
   bgColorRed: number;
@@ -12,7 +12,7 @@ export interface CardStyleConfig {
   strokeWidth: number;
 }
 
-export const cardStyleConfig: CardStyleConfig = {
+export const cardStyleConfig: StyledBoxConfig = {
   width: 140,
   height: 190,
   bgColorRed: 50,
@@ -24,11 +24,11 @@ export const cardStyleConfig: CardStyleConfig = {
   strokeWidth: 1,
 };
 
-export default class CardStyle extends Phaser.GameObjects.Rectangle {
+export default class StyledBox extends Phaser.GameObjects.Rectangle {
   readonly backGroundColor!: Phaser.Display.Color;
   readonly stroke!: Phaser.Display.Color;
 
-  constructor(scene: Scene, x: number, y: number, config: CardStyleConfig) {
+  constructor(scene: Scene, x: number, y: number, config: StyledBoxConfig) {
     super(scene, x, y, config.width, config.height);
 
     this.backGroundColor = new Phaser.Display.Color(config.bgColorRed, config.bgColorGreen, config.bgColorBlue);

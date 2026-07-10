@@ -1,8 +1,8 @@
 import { Scene } from "phaser";
 import CardBase from "./CardBase";
-import CardStyle, { type CardStyleConfig } from "./CardStyle";
+import StyledBox, { type StyledBoxConfig } from "./CardStyle";
 
-export const cardSlotStyleConfig: CardStyleConfig = {
+export const cardSlotStyleConfig: StyledBoxConfig = {
   width: 70,
   height: 95,
   bgColorRed: 255,
@@ -16,12 +16,12 @@ export const cardSlotStyleConfig: CardStyleConfig = {
 
 const cardFittingRatio = { x: 0.7, y: 0.7 };
 
-export default class CardSlot extends CardStyle {
+export default class CardSlot extends StyledBox {
   private selectedCard: CardBase | null;
   private fittingRatioX!: number;
   private fittingRatioY!: number;
 
-  constructor(scene: Scene, config: CardStyleConfig) {
+  constructor(scene: Scene, config: StyledBoxConfig) {
     super(scene, 0, 0, config);
     scene.add.existing(this);
     this.selectedCard = null;

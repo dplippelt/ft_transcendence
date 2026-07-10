@@ -1,12 +1,12 @@
 import { Scene } from "phaser";
-import { cardStyleConfig, type CardStyleConfig } from "./CardStyle";
-import { cardContentConfig, type CardContentConfig } from "./CardContent";
+import { cardStyleConfig, type StyledBoxConfig } from "./CardStyle";
+import { cardContentConfig, type StyledTextConfig } from "./CardContent";
 import type { Operator } from "./OperatorCard";
 import BoxedText from "../utils/BoxedText";
 
 interface CardBaseConfig {
-  cardStyleConfig: CardStyleConfig;
-  cardContentConfig: CardContentConfig;
+  cardStyleConfig: StyledBoxConfig;
+  cardContentConfig: StyledTextConfig;
   focusDiff: number;
 }
 
