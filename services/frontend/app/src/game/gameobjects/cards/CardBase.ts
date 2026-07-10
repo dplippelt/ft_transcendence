@@ -1,6 +1,6 @@
-import Phaser, { Scene } from "phaser";
-import CardStyle, { cardStyleConfig, type CardStyleConfig } from "./CardStyle";
-import CardContent, { cardContentConfig, type CardContentConfig } from "./CardContent";
+import { Scene } from "phaser";
+import { cardStyleConfig, type CardStyleConfig } from "./CardStyle";
+import { cardContentConfig, type CardContentConfig } from "./CardContent";
 import type { Operator } from "./OperatorCard";
 import BoxedText from "../utils/BoxedText";
 
