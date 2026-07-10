@@ -1,7 +1,7 @@
 import React from "react";
 import { ChatInput } from "../../components/TextInput";
 import styles from "./ChatWindow.module.scss";
-import { useUser, type IChatMsg } from "../../contexts/UserContext";
+import { useUser, type IChatMsg, type IFriendData } from "../../contexts/UserContext";
 import { useLayoutEffect, useRef, useState } from "react";
 import { InviteToPlayButton, SendButton } from "../../components/Buttons";
 import Avatar, { AvatarSize } from "../../components/Avatar";
@@ -15,6 +15,13 @@ interface IChatWindow
 	setSelectedFriend: React.Dispatch<React.SetStateAction<string>>;
 }
 
+interface IChatTitle
+{
+	activeFriend: IFriendData | undefined;
+	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
+	setSelectedFriend: React.Dispatch<React.SetStateAction<string>>;
+}
+
 interface IChatMessage
 {
 	username: string;
@@ -23,18 +30,17 @@ interface IChatMessage
 
 interface IChat
 {
-	activeChat: string;
+	activeFriend: IFriendData;
 }
 
-function ChatTitle( { activeChat, setPopuptype, setSelectedFriend } : IChatWindow )
+function ChatTitle( { activeFriend, setPopuptype, setSelectedFriend } : IChatTitle )
 {
-	const { user } = useUser();
 	const isMobile = useIsMobile();
 
 	function chatTitle() : string
 	{
-		if (activeChat)
-			return `${activeChat}'s Chat`;
+		if (activeFriend)
+			return `${activeFriend.username}'s Chat`;
 		return "No chat selected";
 	}
 
@@ -46,9 +52,9 @@ function ChatTitle( { activeChat, setPopuptype, setSelectedFriend } : IChatWindo
 
 	return(
 		<div className={styles.chatTitle}>
-			{ activeChat && <Avatar src={user.friends[activeChat].avatar} alt={`${activeChat}'s avatar`}  size={AvatarSize.small} /> }
+			{ activeFriend && <Avatar src={activeFriend.avatar} alt={`${activeFriend.username}'s avatar`}  size={AvatarSize.small} /> }
 			<div className={styles.chatTitleText}>{chatTitle()}</div>
-			{ isMobile && activeChat && <InviteToPlayButton onClick={ () => handleInviteToPlay(activeChat) } />}
+			{ isMobile && activeFriend && <InviteToPlayButton onClick={ () => handleInviteToPlay(activeFriend.username) } />}
 		</div>
 	);
 }
@@ -63,37 +69,35 @@ function ChatMessage( { username, message } : IChatMessage )
 	);
 }
 
-function ChatHistory( { activeChat } : IChat )
+function ChatHistory( { activeFriend } : IChat )
 {
 	const scrollRef = useRef<HTMLDivElement>(null);
-	const { user } = useUser();
-	const chatHistory: IChatMsg[] = user.friends[activeChat].chatHistory;
 
 	useLayoutEffect(() =>
 	{
 		if (scrollRef.current)
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-	}, [chatHistory]);
+	}, [activeFriend.chatHistory]);
 
 	return (
 		<div className={styles.chatHistory} ref={scrollRef}>
-			{ chatHistory.map((chatMsg, idx) =>
+			{ activeFriend.chatHistory.map((chatMsg, idx) =>
 				<ChatMessage key={idx} username={chatMsg.username} message={chatMsg.message} />
 			)}
 		</div>
 	);
 }
 
-function ChatBox( { activeChat } : IChat )
+function ChatBox( { activeFriend } : IChat )
 {
-	const { user, ...userFunc } = useUser();
+	const { addChatHistory } = useUser();
 	const [msg, setMsg] = useState<string>("");
 
 	function handleSend()
 	{
 		if ( msg.trim().length > 0 )
 		{
-			userFunc.addChatHistory(activeChat, msg);
+			addChatHistory(activeFriend.username, msg);
 			setMsg("");
 		}
 	}
@@ -108,11 +112,14 @@ function ChatBox( { activeChat } : IChat )
 
 export default function ChatWindow( { activeChat, setPopuptype, setSelectedFriend } : IChatWindow )
 {
+	const { user } = useUser();
+	const activeFriend = activeChat ? user.friends[activeChat] : undefined;
+
 	return (
 		<div className={styles.chatWindow}>
-			<ChatTitle activeChat={activeChat} setPopuptype={setPopuptype} setSelectedFriend={setSelectedFriend} />
-			{ activeChat && <ChatHistory activeChat={activeChat} /> }
-			{ activeChat && <ChatBox activeChat={activeChat} /> }
+			<ChatTitle activeFriend={activeFriend} setPopuptype={setPopuptype} setSelectedFriend={setSelectedFriend} />
+			{ activeFriend && <ChatHistory activeFriend={activeFriend} /> }
+			{ activeFriend && <ChatBox activeFriend={activeFriend} /> }
 		</div>
 	)
 }

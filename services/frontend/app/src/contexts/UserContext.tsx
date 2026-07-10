@@ -11,43 +11,47 @@ export interface IChatMsg
 	message: string;
 }
 
-interface IFriendData
+export interface IFriendData
 {
+	username: string;
 	avatar: string;
 	chatHistory: IChatMsg[];
 }
 
-type username = string;
-type Friends = Record<username, IFriendData>;
+// TODO: Use a stable UserID for the Record key instead of username and add username property to IFriendData
+// username field already added to IFriendData but userIDs are just equal to the usernames now for now.
+type userID = string;
+type Friends = Record<userID, IFriendData>;
 
 // start temporary default friends list for testing
 const friends: Friends =
 {
-	"Mesca": {avatar: testAvatar, chatHistory: []},
-	"Valr": {avatar: guestAvatar, chatHistory: []},
-	"Lemon": {avatar: testAvatar, chatHistory: []},
-	"Crawly": {avatar: guestAvatar, chatHistory: []},
-	"Takato": {avatar: testAvatar, chatHistory: []},
-	"Seungah": {avatar: guestAvatar, chatHistory: []},
-	"Bell": {avatar: testAvatar, chatHistory: []},
-	"José": {avatar: guestAvatar, chatHistory: []},
-	"Friend 1": {avatar: testAvatar, chatHistory: []},
-	"Friend 2": {avatar: guestAvatar, chatHistory: []},
-	"Friend 3": {avatar: testAvatar, chatHistory: []},
-	"Friend 4": {avatar: guestAvatar, chatHistory: []},
-	"Friend 5": {avatar: testAvatar, chatHistory: []},
-	"Friend 6": {avatar: guestAvatar, chatHistory: []},
-	"Friend 7": {avatar: testAvatar, chatHistory: []},
-	"Friend 8": {avatar: guestAvatar, chatHistory: []},
-	"Friend 9": {avatar: testAvatar, chatHistory: []},
+	"Mesca": {username: "Mesca", avatar: testAvatar, chatHistory: []},
+	"Valr": {username: "Valr", avatar: guestAvatar, chatHistory: []},
+	"Lemon": {username: "Lemon", avatar: testAvatar, chatHistory: []},
+	"Crawly": {username: "Crawly", avatar: guestAvatar, chatHistory: []},
+	"Takato": {username: "Takato", avatar: testAvatar, chatHistory: []},
+	"Seungah": {username: "Seungah", avatar: guestAvatar, chatHistory: []},
+	"Bell": {username: "Bell", avatar: testAvatar, chatHistory: []},
+	"José": {username: "José", avatar: guestAvatar, chatHistory: []},
+	"Friend 1": {username: "Friend 1", avatar: testAvatar, chatHistory: []},
+	"Friend 2": {username: "Friend 2", avatar: guestAvatar, chatHistory: []},
+	"Friend 3": {username: "Friend 3", avatar: testAvatar, chatHistory: []},
+	"Friend 4": {username: "Friend 4", avatar: guestAvatar, chatHistory: []},
+	"Friend 5": {username: "Friend 5", avatar: testAvatar, chatHistory: []},
+	"Friend 6": {username: "Friend 6", avatar: guestAvatar, chatHistory: []},
+	"Friend 7": {username: "Friend 7", avatar: testAvatar, chatHistory: []},
+	"Friend 8": {username: "Friend 8", avatar: guestAvatar, chatHistory: []},
+	"Friend 9": {username: "Friend 9", avatar: testAvatar, chatHistory: []},
 }
 // end temporary default friends list for testing
 
 interface IUserContext
 {
 	user: IUser;
+	setUserID: ( userID: string ) => void;
 	updateUsername: ( username: string ) => void;
-	resetUsername: () => void;
+	resetUser: () => void;
 	updateAvatar: ( newAvatar: string ) => void;
 	addChatHistory: ( username: string, message: string ) => void;
 	addFriend: ( username: string ) => void;
@@ -57,6 +61,7 @@ interface IUserContext
 export interface IUser
 {
 	// define data type for each User value
+	userID: string;
 	username: string;
 	avatar: string;
 	friends: Friends;
@@ -67,6 +72,7 @@ const UserContext = createContext<IUserContext | null>(null);
 export const defaultUser: IUser =
 {
 	// define default User values
+	userID: "Guest",
 	username: "Guest",
 	avatar: guestAvatar,
 	friends: friends,
@@ -75,6 +81,11 @@ export const defaultUser: IUser =
 export default function UserProvider( { children } : {children: ReactNode} )
 {
 	const [user, setUser] = useState<IUser>(defaultUser);
+
+	function setUserID( newUserID: string )
+	{
+		setUser( prev => ({ ...prev, userID: newUserID }));
+	}
 
 	function updateUsername( newUsername: string )
 	{
@@ -103,7 +114,7 @@ export default function UserProvider( { children } : {children: ReactNode} )
 		});
 	}
 
-	function resetUsername()
+	function resetUser()
 	{
 		setUser(defaultUser);
 	}
@@ -139,6 +150,7 @@ export default function UserProvider( { children } : {children: ReactNode} )
 			friends: {
 				...prev.friends,
 				[username]: {
+					username: username,
 					avatar: avatar,
 					chatHistory: []
 				}
@@ -174,7 +186,7 @@ export default function UserProvider( { children } : {children: ReactNode} )
 		<UserContext.Provider
 			value=
 			{{
-				user, updateUsername, resetUsername, updateAvatar, addChatHistory, addFriend, removeFriend,
+				user, setUserID, updateUsername, resetUser, updateAvatar, addChatHistory, addFriend, removeFriend,
 			}}>
 			{children}
 		</UserContext.Provider>

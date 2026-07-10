@@ -66,17 +66,17 @@ interface IActionButton
 
 export function MenuButton( { label, onClick } : IMenuButton )
 {
-	return <button className={styles.menuButton} onClick={onClick}>{label}</button>
+	return <button className={styles.menuButton} type="button" onClick={onClick}>{label}</button>
 }
 
 export function MossButton( { label, onClick, extraStyling="", mobilePosition="" } : IMossButton )
 {
-	return <button className={`${styles.mossButton} ${extraStyling} ${mobilePosition}`} onClick={onClick}>{label}</button>;
+	return <button className={`${styles.mossButton} type="button" ${extraStyling} ${mobilePosition}`} onClick={onClick}>{label}</button>;
 }
 
 export function BottomButton( { label, onClick, mobilePosition="" } : IBottomButton )
 {
-	return <button className={`${styles.bottomButton} ${mobilePosition}`} onClick={onClick}>{label}</button>;
+	return <button className={`${styles.bottomButton} type="button" ${mobilePosition}`} onClick={onClick}>{label}</button>;
 }
 
 export function BackButton()
@@ -93,18 +93,18 @@ export function EditButton( { editType, setEditWindowType } : IEditButton )
 
 export function TextButton( { label, onClick, extraStyling="" } : ITextButton )
 {
-	return <button className={`${styles.textButton} ${extraStyling}`} onClick={onClick}>{label}</button>
+	return <button className={`${styles.textButton} ${extraStyling}`} type="button" onClick={onClick}>{label}</button>
 }
 
 export function TabButton( { label, isSelected, onClick } : ITabButton )
 {
-	return <button className={ isSelected ? styles.tabSelected : styles.tabNotSelected } onClick={onClick}>{label}</button>
+	return <button className={ isSelected ? styles.tabSelected : styles.tabNotSelected } type="button" onClick={onClick}>{label}</button>
 }
 
 export function SendButton( { onClick } : ISendButton )
 {
 	return (
-		<button className={styles.sendButton} onClick={onClick}>
+		<button className={styles.sendButton} type="button" aria-label="Send message" title="Send"  onClick={onClick}>
 			<SendHorizontal />
 		</button>
 	);
@@ -113,7 +113,7 @@ export function SendButton( { onClick } : ISendButton )
 export function FriendButton( { username, avatar, onClick } : IFriendButton )
 {
 	return (
-		<button className={styles.friendButton} onClick={onClick}>
+		<button className={styles.friendButton} type="button" onClick={onClick}>
 			<Avatar src={avatar} alt={`${username}'s avatar`} size={AvatarSize.smaller} />
 			<div className={styles.friendUsername}>{username}</div>
 		</button>
@@ -123,7 +123,7 @@ export function FriendButton( { username, avatar, onClick } : IFriendButton )
 export function InviteToPlayButton( { onClick } : IActionButton )
 {
 	return (
-		<button className={styles.actionButton} onClick={onClick}>
+		<button className={styles.actionButton} type="button" aria-label="Invite user to co-op game" title="Invite to co-op" onClick={onClick}>
 			<Swords size={20} />
 		</button>
 	);
@@ -132,7 +132,7 @@ export function InviteToPlayButton( { onClick } : IActionButton )
 export function RemoveFriendButton( { onClick } : IActionButton )
 {
 	return (
-		<button className={styles.actionButton} onClick={onClick}>
+		<button className={styles.actionButton} type="button" aria-label="Remove user from friends list" title="Remove friend" onClick={onClick}>
 			<UserMinus size={20} />
 		</button>
 	);

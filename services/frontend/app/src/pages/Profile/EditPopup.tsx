@@ -11,6 +11,7 @@ import testAvatar from "../../assets/mesca_avatar_test.png";
 import { PasswordInput, TextInput } from "../../components/TextInput";
 import { EditWindowType } from "./enums";
 import Avatar, { AvatarSize } from "../../components/Avatar";
+import { getValidUsername, isErrorType } from "../../utils/usernameCheck";
 
 interface IEditPopup
 {
@@ -80,13 +81,17 @@ function EditUsernameContent( { setEditWindowType } : IEditContent )
 
 	function usernameCheck()
 	{
+		const result: string | ErrorType = getValidUsername(username);
+		if ( isErrorType(result) )
+			return setError(result);
+
+		const validUsername = result;
+
 		// Mock username check
-		if ( username.length === 0 )
-			return setError(ErrorType.usernameCannotBeEmpty);
-		if ( username.length === 1 )
+		if ( validUsername.length === 1 )
 			return setError(ErrorType.usernameAlreadyTaken);
 
-		user.updateUsername(username); //also update database
+		user.updateUsername(validUsername); //also update database
 		setEditWindowType(EditWindowType.none);
 	}
 

@@ -16,7 +16,7 @@ function Buttons()
 	function logout()
 	{
 		auth.logout();
-		user.resetUsername();
+		user.resetUser();
 		navigate("/");
 	}
 

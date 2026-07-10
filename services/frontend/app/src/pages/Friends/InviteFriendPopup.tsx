@@ -23,7 +23,7 @@ export default function InviteFriendPopup( { username, setPopuptype } : IInviteP
 			<>
 				<label className={styles.query}>{`Invite ${username} to a co-op game?`}</label>
 				<PopupButtons>
-					<MossButton label="Ok" onClick={handleInvite} />
+					<MossButton label="Invite" onClick={handleInvite} />
 					<MossButton label="Cancel" onClick={ () => setPopuptype(PopupType.none) } />
 				</PopupButtons>
 			</>

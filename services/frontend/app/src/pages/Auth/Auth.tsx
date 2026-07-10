@@ -11,6 +11,7 @@ import { ErrorType } from "../../utils/utils";
 import { MossButton, TextButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
 import { PasswordInput, TextInput } from "../../components/TextInput";
+import { getValidUsername, isErrorType } from "../../utils/usernameCheck";
 
 function LoginQuery()
 {
@@ -23,15 +24,20 @@ function LoginQuery()
 
 	function checkLogin()
 	{
-		//if invalid username + password combo setError(true)
-		//else navigate("/main-menu")
+		const result: string | ErrorType = getValidUsername(username);
+		if ( isErrorType(result) )
+			return setError(result);
+
+		const validUsername = result;
+
+		// TODO: check creds against back-end data.
 
 		// Mock login check:
-		if ( username !== password )
+		if ( validUsername !== password )
 			return setError(ErrorType.incorrectCreds);
 
 		auth.login();
-		user.updateUsername(username);
+		user.updateUsername(validUsername);
 		navigate("/main-menu");
 	}
 
@@ -59,18 +65,27 @@ function SignupQuery()
 
 	function signupCheck()
 	{
-		// if username has been taken setError(AccountError.usernameAlreadyExists)
-		// else if password !=== confirmPassword setError(AccountError.passwordsDontMatch)
+		const result: string | ErrorType = getValidUsername(username);
+		if ( isErrorType(result) )
+			return setError(result);
+
+		const validUsername = result;
+
+		// TODO: check creds against back-end data.
+
+		// if username has been taken setError(Error.usernameAlreadyExists)
+		// else if password !=== confirmPassword setError(Error.passwordsDontMatch)
 		// else naviagte("/main-menu")
 
 		// Mock signup check
-		if ( username.length === 1 )
+		if ( validUsername.length === 1 )
 			return setError(ErrorType.usernameAlreadyTaken);
 		if ( password !== confirmPassword )
 			return setError(ErrorType.passwordsDontMatch);
 
 		auth.login();
-		user.updateUsername(username);
+		user.setUserID(validUsername); // TODO: Replace with stable userID instead of using username
+		user.updateUsername(validUsername);
 		navigate("/main-menu");
 	}
 

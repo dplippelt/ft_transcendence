@@ -6,6 +6,7 @@ import { TextInput } from "../../components/TextInput";
 import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
 import { PopupType } from "./enums";
+import { getValidUsername, isErrorType } from "../../utils/usernameCheck";
 
 interface IAddFriendPopup
 {
@@ -20,12 +21,19 @@ export default function AddFriendPopup( { setPopuptype } : IAddFriendPopup )
 
 	function usernameCheck()
 	{
-		// Mock username check
-		if ( username.length === 0 )
-			return setError(ErrorType.usernameCannotBeEmpty);
-		if ( username.length === 1 )
+		const result: string | ErrorType = getValidUsername(username);
+		if ( isErrorType(result) )
+			return setError(result);
+
+		const validUsername = result;
+
+		if ( validUsername === user.username )
+			return setError(ErrorType.cannotAddSelf)
+
+		// Mock username checks
+		if ( validUsername.length === 1 )
 			return setError(ErrorType.userDoesNotExist);
-		if ( username in user.friends )
+		if ( validUsername in user.friends )
 			return setError(ErrorType.userAlreadyFriend);
 
 		userFunc.addFriend(username);
@@ -37,8 +45,8 @@ export default function AddFriendPopup( { setPopuptype } : IAddFriendPopup )
 			{ error !== ErrorType.none && <ErrorText error={error}/> }
 			<TextInput label="Add new friend:" placeholder="Friend's username" setter={setUsername} id="newUsername" />
 			<PopupButtons>
-				<MossButton label="Back" onClick={ () => setPopuptype(PopupType.none) } />
-				<MossButton label="Ok" onClick={ usernameCheck } />
+				<MossButton label="Add" onClick={ usernameCheck } />
+				<MossButton label="Cancel" onClick={ () => setPopuptype(PopupType.none) } />
 			</PopupButtons>
 		</>
 	)

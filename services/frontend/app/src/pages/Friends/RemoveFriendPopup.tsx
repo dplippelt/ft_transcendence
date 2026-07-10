@@ -29,7 +29,7 @@ export default function RemoveFriendPopup( { activeChat, setActiveChat, username
 			<>
 				<label className={styles.query}>{`Are you sure you want to remove ${username} from your friends list?`}</label>
 				<PopupButtons>
-					<MossButton label="Ok" onClick={handleRemoveFriend} />
+					<MossButton label="Remove" onClick={handleRemoveFriend} />
 					<MossButton label="Cancel" onClick={ () => setPopuptype(PopupType.none) } />
 				</PopupButtons>
 			</>
