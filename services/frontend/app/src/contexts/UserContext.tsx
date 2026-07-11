@@ -2,7 +2,6 @@ import { createContext, useContext, /* useEffect, */ useState } from "react";
 import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
 import testAvatar from "../assets/mesca_avatar_test.png";
-import { Key } from "lucide-react";
 
 // TODO: Add Separate ChatHistoryContext and FriendsContext
 
