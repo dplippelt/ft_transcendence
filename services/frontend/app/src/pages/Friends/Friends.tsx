@@ -92,7 +92,7 @@ export default function Friends()
 				<FriendsContainer mobileView={mobileView} activeChat={activeChat} setPageState={setPageState} />
 				<Buttons mobileView={mobileView} setMobileView={setMobileView} setPopuptype={setPopuptype} />
 				{ popupType === PopupType.addFriend && <Popup> <AddFriendPopup setPopuptype={setPopuptype} /> </Popup>}
-				{ popupType === PopupType.removeFriend && <Popup> <RemoveFriendPopup activeChat={activeChat} setActiveChat={setActiveChat} username={selectedFriend} setPopuptype={setPopuptype} /> </Popup>}
+				{ popupType === PopupType.removeFriend && <Popup> <RemoveFriendPopup username={selectedFriend} setPopuptype={setPopuptype} /> </Popup>}
 				{ popupType === PopupType.inviteFriend && <Popup> <InviteFriendPopup username={selectedFriend} setPopuptype={setPopuptype} /> </Popup>}
 			</Page>
 		</>

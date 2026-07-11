@@ -28,12 +28,12 @@ export default function AddFriendPopup( { setPopuptype } : IAddFriendPopup )
 		const validUsername = result;
 
 		if ( validUsername === user.username )
-			return setError(ErrorType.cannotAddSelf)
+			return setError(ErrorType.cannotAddSelf);
 
 		// Mock username checks
 		if ( validUsername.length === 1 )
 			return setError(ErrorType.userDoesNotExist);
-		if ( validUsername in user.friends )
+		if ( Object.values(user.friends).some(friend => friend.username === validUsername) )
 			return setError(ErrorType.userAlreadyFriend);
 
 		userFunc.addFriend(username);

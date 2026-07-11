@@ -7,21 +7,17 @@ import styles from "./FriendPopup.module.scss";
 
 interface IRemoveFriendPopup
 {
-	activeChat: string | undefined;
-	setActiveChat: React.Dispatch<React.SetStateAction<string | undefined>>;
 	username: string;
 	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-export default function RemoveFriendPopup( { activeChat, setActiveChat, username, setPopuptype } : IRemoveFriendPopup )
+export default function RemoveFriendPopup( { username, setPopuptype } : IRemoveFriendPopup )
 {
 	const userFunc = useUser();
 
 	function handleRemoveFriend()
 	{
 		userFunc.removeFriend(username);
-		if ( activeChat === username )
-			setActiveChat(undefined);
 		setPopuptype(PopupType.none);
 	}
 

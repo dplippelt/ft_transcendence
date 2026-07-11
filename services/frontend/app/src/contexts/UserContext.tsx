@@ -2,6 +2,7 @@ import { createContext, useContext, /* useEffect, */ useState } from "react";
 import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
 import testAvatar from "../assets/mesca_avatar_test.png";
+import { Key } from "lucide-react";
 
 //Note: Do we want a separate ChatHistoryContext or FriendsContext later or keep it grouped with other user data like this?
 
@@ -26,23 +27,23 @@ type Friends = Record<userID, IFriendData>;
 // start temporary default friends list for testing
 const friends: Friends =
 {
-	"Mesca": {username: "Mesca", avatar: testAvatar, chatHistory: []},
-	"Valr": {username: "Valr", avatar: guestAvatar, chatHistory: []},
-	"Lemon": {username: "Lemon", avatar: testAvatar, chatHistory: []},
-	"Crawly": {username: "Crawly", avatar: guestAvatar, chatHistory: []},
-	"Takato": {username: "Takato", avatar: testAvatar, chatHistory: []},
-	"Seungah": {username: "Seungah", avatar: guestAvatar, chatHistory: []},
-	"Bell": {username: "Bell", avatar: testAvatar, chatHistory: []},
-	"José": {username: "José", avatar: guestAvatar, chatHistory: []},
-	"Friend 1": {username: "Friend 1", avatar: testAvatar, chatHistory: []},
-	"Friend 2": {username: "Friend 2", avatar: guestAvatar, chatHistory: []},
-	"Friend 3": {username: "Friend 3", avatar: testAvatar, chatHistory: []},
-	"Friend 4": {username: "Friend 4", avatar: guestAvatar, chatHistory: []},
-	"Friend 5": {username: "Friend 5", avatar: testAvatar, chatHistory: []},
-	"Friend 6": {username: "Friend 6", avatar: guestAvatar, chatHistory: []},
-	"Friend 7": {username: "Friend 7", avatar: testAvatar, chatHistory: []},
-	"Friend 8": {username: "Friend 8", avatar: guestAvatar, chatHistory: []},
-	"Friend 9": {username: "Friend 9", avatar: testAvatar, chatHistory: []},
+	"Mesca_ID": {username: "Mesca", avatar: testAvatar, chatHistory: []},
+	"Valr_ID": {username: "Valr", avatar: guestAvatar, chatHistory: []},
+	"Lemon_ID": {username: "Lemon", avatar: testAvatar, chatHistory: []},
+	"Crawly_ID": {username: "Crawly", avatar: guestAvatar, chatHistory: []},
+	"Takato_ID": {username: "Takato", avatar: testAvatar, chatHistory: []},
+	"Seungah_ID": {username: "Seungah", avatar: guestAvatar, chatHistory: []},
+	"Bell_ID": {username: "Bell", avatar: testAvatar, chatHistory: []},
+	"José_ID": {username: "José", avatar: guestAvatar, chatHistory: []},
+	"Friend_1_ID": {username: "Friend 1", avatar: testAvatar, chatHistory: []},
+	"Friend_2_ID": {username: "Friend 2", avatar: guestAvatar, chatHistory: []},
+	"Friend_3_ID": {username: "Friend 3", avatar: testAvatar, chatHistory: []},
+	"Friend_4_ID": {username: "Friend 4", avatar: guestAvatar, chatHistory: []},
+	"Friend_5_ID": {username: "Friend 5", avatar: testAvatar, chatHistory: []},
+	"Friend_6_ID": {username: "Friend 6", avatar: guestAvatar, chatHistory: []},
+	"Friend_7_ID": {username: "Friend 7", avatar: testAvatar, chatHistory: []},
+	"Friend_8_ID": {username: "Friend 8", avatar: guestAvatar, chatHistory: []},
+	"Friend_9_ID": {username: "Friend 9", avatar: testAvatar, chatHistory: []},
 }
 // end temporary default friends list for testing
 
@@ -93,13 +94,13 @@ export default function UserProvider( { children } : {children: ReactNode} )
 		{
 			const oldUsername = prev.username;
 
-			// Convert the Friend Record into an array of [username, data] pairs so we can loop over it
+			// Convert the Friend Record into an array of [friendID, friend] pairs so we can loop over it
 			// in order to update the user's username in every friend chat
-			const updatedHistory: [string, IFriendData][] = Object.entries(prev.friends).map(([friendName, data]) => [
-				friendName,
+			const updatedHistory: [string, IFriendData][] = Object.entries(prev.friends).map(([friendID, friend]) => [
+				friendID,
 				{
-					...data,
-					chatHistory: data.chatHistory.map(msg =>
+					...friend,
+					chatHistory: friend.chatHistory.map(msg =>
 						msg.username === oldUsername
 							? { ...msg, username: newUsername }
 							: msg
@@ -130,26 +131,28 @@ export default function UserProvider( { children } : {children: ReactNode} )
 
 		setUser(prev => ({
 			...prev,
-			friends: {
-				...prev.friends,
-				[username]: {
-					...prev.friends[username],
-					chatHistory: [...prev.friends[username].chatHistory, newMsg]
-				}
-			}
+			friends: Object.fromEntries(
+				Object.entries(prev.friends).map(([key, friend]) =>
+					friend.username === username
+						? [key, { ...friend, chatHistory: [...friend.chatHistory, newMsg] }]
+						: [key, friend]
+				)
+			)
 		}));
 	}
 
 	function addFriend( username: string )
 	{
-		//Temp mock random avatar image, fetch from DB later
+		// Temp mock random avatar image
+		// TODO: fetch from DB later
 		const avatar = username.length % 2 ? testAvatar : guestAvatar;
 
+		// TODO: remember to set key of Friends object below ( [username]: ) to the userID fetched from DB based on current username instead of just the username
 		setUser(prev => ({
 			...prev,
 			friends: {
 				...prev.friends,
-				[username]: {
+				[username + "_ID"]: {
 					username: username,
 					avatar: avatar,
 					chatHistory: []
@@ -160,11 +163,12 @@ export default function UserProvider( { children } : {children: ReactNode} )
 
 	function removeFriend( username: string )
 	{
-		setUser(prev =>
-		{
-			const { [username]: _removedFriend, ...remainingFriends } = prev.friends;
-			return { ...prev, friends: remainingFriends };
-		});
+		setUser(prev => ({
+			...prev,
+			friends: Object.fromEntries(
+				Object.entries(prev.friends).filter(([_key, friend]) => friend.username !== username)
+			)
+		}));
 	}
 
 	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)

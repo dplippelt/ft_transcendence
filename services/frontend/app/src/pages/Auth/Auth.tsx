@@ -84,7 +84,7 @@ function SignupQuery()
 			return setError(ErrorType.passwordsDontMatch);
 
 		auth.login();
-		user.setUserID(validUsername); // TODO: Replace with stable userID instead of using username
+		user.setUserID(validUsername + "_ID"); // TODO: Replace with stable userID instead of using username
 		user.updateUsername(validUsername);
 		navigate("/main-menu");
 	}
