@@ -1,3 +1,5 @@
+import { maxUsernameLength, minUserNameLength } from "./usernameCheck";
+
 export enum MobilePosition
 {
 	top = "mobileTop",
@@ -9,6 +11,7 @@ export enum ErrorType
 	none,
 	usernameAlreadyTaken,
 	usernameCannotBeEmpty,
+	badUserNameLength,
 	usernameContainsInvalChars,
 	passwordsDontMatch,
 	passwordCannotBeEmpty,
@@ -27,6 +30,8 @@ export function errorMsg( error: ErrorType ): string
 			return "Username already taken!";
 		case ErrorType.usernameCannotBeEmpty:
 			return "Username cannot be empty!";
+		case ErrorType.badUserNameLength:
+			return "Username must be between " + minUserNameLength + " and " + maxUsernameLength + " characters long!";
 		case ErrorType.usernameContainsInvalChars:
 			return "Username may only contain letters, numbers and the symbols _ . -";
 		case ErrorType.passwordsDontMatch:
