@@ -1,5 +1,5 @@
 import React from "react";
-import { useUser, type IFriendData } from "../../contexts/UserContext";
+import type { IFriendData } from "../../contexts/UserContext";
 import useIsMobile from "../../hooks/useIsMobile";
 import Avatar, { AvatarSize } from "../Avatar";
 import { InviteToPlayButton, SideBarBackButton } from "../Buttons";
@@ -8,7 +8,7 @@ import styles from "./ChatTitle.module.scss";
 
 interface IChatTitleSideBar
 {
-	activeChat: string;
+	activeFriend: IFriendData;
 	setActiveChat: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
@@ -19,15 +19,13 @@ interface IChatTitle
 	setSelectedFriend: React.Dispatch<React.SetStateAction<string>>;
 }
 
-export function ChatTitleSideBar( { activeChat, setActiveChat } : IChatTitleSideBar )
+export function ChatTitleSideBar( { activeFriend, setActiveChat } : IChatTitleSideBar )
 {
-	const { user } = useUser();
-
 	return(
 		<div className={styles.chatTitle}>
 			<SideBarBackButton onClick={ () => setActiveChat(undefined) } />
-			<Avatar src={user.friends[activeChat].avatar} alt={`${activeChat}'s avatar`}  size={AvatarSize.small} />
-			<div className={styles.chatTitleText}>{`${activeChat}'s Chat`}</div>
+			<Avatar src={activeFriend.avatar} alt={`${activeFriend.username}'s avatar`}  size={AvatarSize.small} />
+			<div className={styles.chatTitleText}>{`${activeFriend.username}'s Chat`}</div>
 		</div>
 	);
 }

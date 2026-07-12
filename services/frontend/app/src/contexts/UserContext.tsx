@@ -53,7 +53,7 @@ interface IUserContext
 	resetUser: () => void;
 	updateAvatar: ( newAvatar: string ) => void;
 	addChatHistory: ( username: string, message: string ) => void;
-	setChatToRead: ( username: string ) => void;
+	setChatToRead: ( activeFriend: IFriendData ) => void;
 	hasNewMsg: () => boolean;
 	numUnreadMsg: ( username: string ) => number;
 	addFriend: ( username: string ) => void;
@@ -131,7 +131,7 @@ export default function UserProvider( { children } : {children: ReactNode} )
 		// NOTE: Setting read to false only for demonstration purposes.
 		// 		 Should be true eventually as a message written by the user themselves should never be "unread" for them
 		//		 For now, writing a new message to a friend will create new "unread" messages which will trigger the "new/unread messages" effect
-		//		 To "read" them you will need to (re)open the friends chat window
+		//		 To "read" them you will need to (re)open the friend's chat window
 		const newMsg: IChatMsg = { username: user.username, message: message, read: false }; // TODO: set read to true later!!!;
 
 		setUser(prev => ({
@@ -146,23 +146,21 @@ export default function UserProvider( { children } : {children: ReactNode} )
 		}));
 	}
 
-	function setChatToRead( username: string )
+	function setChatToRead( activeFriend: IFriendData )
 	{
 		setUser(prev =>
 		{
-			const friend = prev.friends[username];
-			const hasUnread = friend.chatHistory.some(msg => !msg.read);
-
+			const hasUnread = activeFriend.chatHistory.some(msg => !msg.read);
 			if ( !hasUnread )
 				return prev;
 
-			const updatedFriends: Friends = {
-				...prev.friends,
-				[username]: {
-					...friend,
-					chatHistory: friend.chatHistory.map(msg => ({ ...msg, read: true })),
-				},
-			};
+			const updatedFriends: Friends = Object.fromEntries(
+				Object.entries(prev.friends).map(([key, friend]) =>
+					friend.username === activeFriend.username
+						? [key, {...friend, chatHistory: friend.chatHistory.map(msg => ({ ...msg, read: true }))}]
+						: [key, friend]
+				)
+			);
 
 			return { ...prev, friends: updatedFriends };
 		})
@@ -177,9 +175,13 @@ export default function UserProvider( { children } : {children: ReactNode} )
 
 	function numUnreadMsg( username: string ) : number
 	{
-		const chatHistory: IChatMsg[] = user.friends[username].chatHistory;
+		const friend: [string, IFriendData] | undefined = Object.entries(user.friends).find(([_key, friend]) => friend.username === username);
+		if ( !friend )
+			return 0;
 
-		return chatHistory.filter(({read}) => !read).length;
+		const [_friendID, friendData] = friend;
+
+		return friendData.chatHistory.filter(({read}) => !read).length;
 	}
 
 	function addFriend( username: string )

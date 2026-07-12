@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef } from "react";
-import type { IFriendData } from "../../contexts/UserContext";
+import { useUser, type IFriendData } from "../../contexts/UserContext";
 import styles from "./ChatHistory.module.scss";
 
 interface IChatMessage
@@ -26,12 +26,18 @@ function ChatMessage( { username, message } : IChatMessage )
 export default function ChatHistory( { activeFriend } : IChatHistory )
 {
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const userFunc = useUser();
 
 	useLayoutEffect(() =>
 	{
 		if (scrollRef.current)
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
 	}, [activeFriend.chatHistory]);
+
+	useLayoutEffect(() =>
+	{
+		userFunc.setChatToRead(activeFriend);
+	}, [activeFriend.username]);
 
 	return (
 		<div className={styles.chatHistory} ref={scrollRef}>

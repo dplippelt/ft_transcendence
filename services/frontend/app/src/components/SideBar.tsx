@@ -46,18 +46,21 @@ function SidePanelToggle( { setCollapsed } : ISidePanelToggle )
 
 function SidePanel( { activeChat, setActiveChat } : ISideBar )
 {
-	function handleOpenChat( username: string )
+	const { user } = useUser();
+	const activeFriend = activeChat ? user.friends[activeChat] : undefined;
+
+	function handleOpenChat( userID: string )
 	{
-		setActiveChat(username);
+		setActiveChat(userID);
 	}
 
-	if ( activeChat )
+	if ( activeFriend )
 	{
 		return (
 			<div className={styles.friendsPanel}>
-				<ChatTitleSideBar activeChat={activeChat} setActiveChat={setActiveChat} />
-				<ChatHistory activeChat={activeChat} />
-				<ChatBox activeChat={activeChat} />
+				<ChatTitleSideBar activeFriend={activeFriend} setActiveChat={setActiveChat} />
+				<ChatHistory activeFriend={activeFriend} />
+				<ChatBox activeFriend={activeFriend} />
 			</div>
 		);
 	}
@@ -66,7 +69,7 @@ function SidePanel( { activeChat, setActiveChat } : ISideBar )
 		<div className={styles.friendsPanel}>
 			<FriendsListTitle />
 			<FriendsList>
-				{ (username, avatar) => <FriendButton username={username} avatar={avatar} panel={true} onClick={ () => handleOpenChat(username) } /> }
+				{ (userID, username, avatar) => <FriendButton username={username} avatar={avatar} panel={true} onClick={ () => handleOpenChat(userID) } /> }
 			</FriendsList>
 		</div>
 	);

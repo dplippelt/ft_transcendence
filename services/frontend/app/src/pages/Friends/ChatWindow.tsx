@@ -1,6 +1,6 @@
 import React from "react";
 import styles from "./ChatWindow.module.scss";
-import ChatBox from "../../components/Chat/ChatBox";
+import ChatBox from  "../../components/Chat/ChatBox";
 import ChatHistory from "../../components/Chat/ChatHistory";
 import { ChatTitle } from "../../components/Chat/ChatTitle";
 import { PopupType } from "../../components/Chat/enums";
