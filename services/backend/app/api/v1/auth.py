@@ -4,6 +4,7 @@ import cachecontrol
 import requests
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
+from google.auth import exceptions as google_auth_exceptions
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
 from sqlalchemy.exc import IntegrityError
@@ -15,8 +16,8 @@ from app.core.security import (
     get_password_hash,
     verify_password,
 )
+from app.api.dependencies import DbSession
 from app.core.settings import get_settings
-from app.db.database import get_db
 from app.models.auth_account import AuthAccount
 from app.models.user import User
 from app.schemas.user import GoogleLogin, Token, UserLogin, UserRegister, UserResponse
@@ -24,7 +25,6 @@ from app.schemas.user import GoogleLogin, Token, UserLogin, UserRegister, UserRe
 
 router = APIRouter()
 settings = get_settings()
-DbSession = Annotated[Session, Depends(get_db)]
 OAuth2Form = Annotated[OAuth2PasswordRequestForm, Depends()]
 
 GOOGLE_PROVIDER = "google"
@@ -44,6 +44,14 @@ def create_token_for_user(user: User) -> Token:
     return Token(
         access_token=access_token,
         token_type="bearer",
+    )
+
+
+def get_auth_account_by_email(db: Session, email: str) -> AuthAccount | None:
+    return (
+        db.query(AuthAccount)
+        .filter(AuthAccount.email == email)
+        .first()
     )
 
 
@@ -121,7 +129,7 @@ def authenticate_password_user(db: Session, email: str, password: str) -> User:
 def register_user(user_data: UserRegister, db: DbSession):
     email = normalize_email(user_data.email)
 
-    existing_auth_account = get_password_account_by_email(db, email)
+    existing_auth_account = get_auth_account_by_email(db, email)
 
     if existing_auth_account:
         raise HTTPException(
@@ -194,12 +202,13 @@ def google_login(user_data: GoogleLogin, db: DbSession):
         )
 
     try:
+        # Verifies the token signature, audience, expiry, and Google issuer.
         google_user = id_token.verify_oauth2_token(
             user_data.credential,
             google_request,
             settings.google_client_id,
         )
-    except ValueError:
+    except (ValueError, google_auth_exceptions.GoogleAuthError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid Google credentials",
