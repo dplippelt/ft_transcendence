@@ -1,8 +1,7 @@
 import { Scenes, Scene, Actions, GameObjects, Geom } from "phaser";
-import CardBase, { CardEvents, type CardValue } from "./CardBase";
+import CardBase, { CardEvents, Operator, type CardValue } from "./CardBase";
 import CardSelection from "./CardSelection";
-import NumberCard from "./NumberCard";
-import OperatorCard, { Operator } from "./OperatorCard";
+import CardDeck, { cardDeckConfig } from "./CardDeck";
 
 interface CardHandConfig {
   firstCardCenterX: number;
@@ -35,6 +34,7 @@ export default class CardHand {
   private readonly cards!: GameObjects.Container;
   private readonly handLine!: Geom.Line;
   private readonly cardSelection!: CardSelection;
+  private readonly cardDeck!: CardDeck;
 
   constructor(scene: Scene) {
     this.cardHandConfig = cardHandConfig;
@@ -61,6 +61,25 @@ export default class CardHand {
       this.cardHandConfig.handEndX,
       this.cardHandConfig.handEndY,
     );
+
+    this.cardDeck = new CardDeck(scene, cardDeckConfig);
+    const card = this.cardDeck.generateCard(this.cardDeck.baseWeights);
+    this.cardDeck.addCardToDeck(card);
+  }
+
+  drawNewCard() {
+    // get status of current hands
+    // create weights on number and operator based on the hand status
+    // along with the weight, generate the random number or operator
+    // operator needs its weight for generating
+    // construct Card with the value randomely selected
+    // this.cards.add(card);
+  }
+
+  initHand(amount: number) {
+    // while (amount--) {
+    //     this.drawNewCard();
+    // }
   }
 
   update() {
@@ -219,7 +238,7 @@ export default class CardHand {
 
     return num;
   }
-  // TODO: If the classes derived from CardBase are used only for classification, they can be replaced with the CardValue type and removed
+
   isValidSelection(selectedCard: CardBase[]) {
     if (selectedCard.length % 2 === 0) return false;
 
@@ -227,9 +246,9 @@ export default class CardHand {
       const card = selectedCard[i];
 
       if (i % 2 === 0) {
-        if (!(card instanceof NumberCard)) return false;
+        if (!card.isValueNumber()) return false;
       } else {
-        if (!(card instanceof OperatorCard)) return false;
+        if (!card.isValueOperator()) return false;
       }
     }
     return true;

@@ -1,7 +1,5 @@
-import type { NonIndexRouteObject } from "react-router-dom";
 import type { CardValue } from "./CardBase";
-import { Operator } from "./OperatorCard";
-import CardBase from "./CardBase";
+import CardBase, { OPERATORS } from "./CardBase";
 import type { Scene } from "phaser";
 
 interface CardDeckConfig {
@@ -71,13 +69,12 @@ export default class CardDeck {
     const minNum = config.numberRange.min;
     const maxNum = config.numberRange.max;
     const numberWeight = config.weight.numbers / (maxNum - minNum + 1);
-    const operators = Object.values(Operator);
-    const operatorWeight = config.weight.operators / operators.length;
+    const operatorWeight = config.weight.operators / OPERATORS.length;
 
     for (let i = minNum; i <= maxNum; ++i) {
       baseWeights.push({ value: i, weight: numberWeight });
     }
-    for (const operator of operators) {
+    for (const operator of OPERATORS) {
       baseWeights.push({ value: operator, weight: operatorWeight });
     }
     return baseWeights;
@@ -96,15 +93,7 @@ export default class CardDeck {
     const cardWeight = weightedRandom(normalizedWeights);
     console.log("selected card " + cardWeight.value + " weight " + cardWeight.weight);
 
-    if (typeof cardWeight.value === "number") {
-      const card = new CardBase(this.scene, cardWeight.value.toString());
-      card.setValue(cardWeight.value);
-      return card;
-    } else {
-      const card = new CardBase(this.scene, cardWeight.value);
-      card.setValue(cardWeight.value);
-      return card;
-    }
+    return new CardBase(this.scene, cardWeight.value);
   }
 
   addCardToDeck(card: CardBase) {
