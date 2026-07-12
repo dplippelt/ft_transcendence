@@ -45,6 +45,7 @@ export default class CombatScene extends Phaser.Scene {
 
   createExecuteButton(text: string) {
     const button = new BoxedText(this, text, buttonContentConfig, buttonStyleConfig, 100, 50);
+    this.add.existing(button);
 
     button.setInteractive();
     button.on("pointerdown", this.execute, this);

@@ -15,7 +15,6 @@ export default class BoxedText extends Phaser.GameObjects.Container {
     posY: number = 0,
   ) {
     super(scene);
-    scene.add.existing(this);
 
     this.content = new StyledText(scene, 0, 0, text, contentConfig);
 
