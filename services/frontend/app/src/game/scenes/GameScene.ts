@@ -3,7 +3,7 @@ import { EventBus } from "../EventBus";
 import Player from "../gameobjects/Player";
 import { playerOne } from "../components/KeyboardComponent";
 import { Dungeon } from "../gameobjects/Dungeon";
-import { FloorType, Direction, type DungeonConfig } from "../map/procedural";
+import { FloorType, Direction, type DungeonConfig, WallType } from "../map/procedural";
 
 const dungeonConfig: DungeonConfig = {
   emptyRoomConfig: {
@@ -24,20 +24,32 @@ const dungeonConfig: DungeonConfig = {
         [Direction.DownRight]: 30,
       },
       walls: {
-        [Direction.Top]: [3, 4],
-        [Direction.Right]: [18, 18, 31],
-        [Direction.Down]: [42, 43],
-        [Direction.Left]: [15, 15, 28],
+        [Direction.Top]: {
+          [WallType.Moss]: 3,
+          [WallType.MoreMoss]: 4,
+        },
+        [Direction.Right]: {
+          [WallType.ThinA]: 18,
+          [WallType.ThinB]: 18,
+          [WallType.Thick]: 31,
+        },
+        [Direction.Down]: {
+          [WallType.Moss]: 42,
+          [WallType.MoreMoss]: 43,
+        },
+        [Direction.Left]: {
+          [WallType.ThinA]: 15,
+          [WallType.ThinB]: 15,
+          [WallType.Thick]: 28,
+        },
       },
       floor: {
-        [FloorType.default]: [
-          { index: 0, weight: 20 },
-          { index: 1, weight: 4 },
-          { index: 13, weight: 2 },
-          { index: 14, weight: 8 },
-          { index: 26, weight: 0.5 },
-          { index: 27, weight: 0.5 },
-        ],
+        [FloorType.Clean]: { index: 0, weight: 20 },
+        [FloorType.SmallCracksA]: { index: 1, weight: 4 },
+        [FloorType.SmallCracksB]: { index: 13, weight: 2 },
+        [FloorType.Cracked]: { index: 14, weight: 8 },
+        [FloorType.Damaged]: { index: 26, weight: 0.5 },
+        [FloorType.Broken]: { index: 27, weight: 0.5 },
       },
     },
   },

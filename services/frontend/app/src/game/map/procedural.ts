@@ -12,8 +12,21 @@ export enum Direction {
   DownRight = Down | Right,
 }
 
+export enum WallType {
+	Moss,
+	MoreMoss,
+	ThinA,
+	ThinB,
+	Thick,
+}
+
 export enum FloorType {
-  default
+ 	Clean,
+	SmallCracksA,
+	SmallCracksB,
+	Cracked,
+	Damaged,
+	Broken,
 }
 
 type CornerDirection = Direction.TopLeft | Direction.TopRight | Direction.DownLeft | Direction.DownRight;
@@ -22,8 +35,8 @@ type WallDirection = Direction.Top | Direction.Right | Direction.Down | Directio
 interface TileMapping {
   corners: Record<CornerDirection, number>;
   innerCorners: Record<CornerDirection, number>;
-  walls: Record<WallDirection, number[]>;
-  floor: Record<FloorType, weight[]>;
+  walls: Record<WallDirection, Partial<Record<WallType, number>>>;
+  floor: Record<FloorType, weight>;
 }
 
 interface Door {
@@ -199,12 +212,13 @@ function getCornerTile(direction: CornerDirection, corner: Record<CornerDirectio
 }
 
 // Get the wall tile based on the wall direction
-function getWallTile(direction: WallDirection, wall: Record<WallDirection, number[]>): number {
-  return wall[direction][random(0, wall[direction].length)];
+function getWallTile(direction: WallDirection, wall: Record<WallDirection, Partial<Record<WallType, number>>>): number {
+  const walls = Object.values(wall[direction]);
+  return walls[random(0, walls.length)];
 }
 
-function getFloorTile(floor: Record<FloorType, weight[]>, floorType: FloorType = FloorType.default): number {
-  return weightedRandom(floor[floorType]).index;
+function getFloorTile(floor: Record<FloorType, weight>): number {
+  return weightedRandom(Object.values(floor)).index;
 }
 
 // Put the room tiles into the dungeon map
