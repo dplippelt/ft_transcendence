@@ -55,6 +55,7 @@ const dungeonConfig: DungeonConfig = {
   },
   roomCount: { min: 8, max: 32 },
 };
+import { Enemy } from "../gameobjects/Enemy";
 
 export default class GameScene extends Scene {
   constructor() {
@@ -66,6 +67,10 @@ export default class GameScene extends Scene {
   }
 
   create() {
+    const skeleton = new Enemy(this, 240, 240);
+    this.add.existing(skeleton);
+    this.physics.add.existing(skeleton);
+
     const player = new Player(this, 40, 40, playerOne);
     this.add.existing(player);
     this.physics.add.existing(player);

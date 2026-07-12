@@ -22,41 +22,42 @@ import { FiniteStateMachine } from "../components/FiniteStateMachine";
 import MovementComponent from "../components/MovementComponent";
 import { IdleState, WanderState, ChaseState, RecallState, type EnemyStates } from "./EnemyStates";
 import { EnemyInput } from "../components/EnemyInput";
+import { EnemySightSensor } from "../components/EnemySightSensor";
 
 interface Range {
-  minimum: number,
-  maximum: number
+  minimum: number;
+  maximum: number;
 }
 
 export interface EnemyData {
-  idleTime: Range,
-  chaseDistance: Range,
-  movementSpeed: Range, // min = walk, max = run
-  states: EnemyStates,
+  idleTime: Range;
+  chaseDistance: Range;
+  movementSpeed: Range; // min = walk, max = run
+  states: EnemyStates;
 }
-
-type PhysicBody = Physics.Arcade.Body;
 
 export class Enemy extends Physics.Arcade.Sprite {
   fsm: FiniteStateMachine;
   movement: MovementComponent;
+  sensor: EnemySightSensor;
+  directionInput: EnemyInput;
 
   constructor(scene: Scene, x: number, y: number) {
     super(scene, x, y, AssetsKey.Skeleton); // TODO: EnemyData for specifics
 
     const enemyData: EnemyData = {
-      idleTime: { minimum: 3, maximum: 5 },
-      chaseDistance: { minimum: 5, maximum: 9 },
-      movementSpeed: { minimum: 2, maximum: 4 },
+      idleTime: { minimum: 3000, maximum: 5000 },
+      chaseDistance: { minimum: 160, maximum: 288 },
+      movementSpeed: { minimum: 120, maximum: 190 },
       states: {
         idle: null,
         wander: null,
         chase: null,
-        recall: null
-      }
+        recall: null,
+      },
     };
 
-    const input = new EnemyInput();
+    this.sensor = new EnemySightSensor(this);
 
     // Setup up the FSM
     enemyData.states.idle = new IdleState(this, enemyData);
@@ -65,12 +66,7 @@ export class Enemy extends Physics.Arcade.Sprite {
     enemyData.states.recall = new RecallState(this, enemyData);
     this.fsm = new FiniteStateMachine(this, enemyData.states.idle);
 
-    this.movement = new MovementComponent(this, enemyData.movementSpeed.maximum, input);
+    this.directionInput = new EnemyInput();
+    this.movement = new MovementComponent(this, enemyData.movementSpeed.maximum, this.directionInput);
   }
-
-  findNearbyPlayer(searchRadius: number): PhysicBody | undefined {
-    const bodies = this.scene.physics.overlapCirc(this.x, this.y, searchRadius, true, false) as PhysicBody[];
-    return bodies.find(body => body.gameObject.name === "player");
-  }
-
 }
