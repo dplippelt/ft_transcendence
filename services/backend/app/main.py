@@ -3,10 +3,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
+from app.api.v1 import auth, cards, dungeons, leaderboard, puzzles, scores, users
 from app.db.database import Base, engine
-from app.api.v1 import auth, users, dungeons, cards, puzzles, scores, leaderboard
 
-import app.models
+# Import model modules so SQLAlchemy registers their tables in Base.metadata.
+import app.models  # noqa: F401
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
