@@ -58,7 +58,6 @@ interface Range {
 
 export interface Room {
   aabb: BoundingBox;
-  doorways: Vector2[];
 }
 
 export interface MapData {
@@ -76,14 +75,6 @@ export interface DungeonConfig {
   // amount of puzzles
   // amount of enemies
   // amount of chests
-}
-
-// Translate the room position into the map's local space
-function translateRoom(room: Room, offset: Vector2): void {
-  room.aabb.move(offset);
-  for (let i = 0; i < room.doorways.length; ++i) {
-    room.doorways[i] = Vector2.add(room.doorways[i], offset);
-  }
 }
 
 // Calculate the map bounds based on the bounding box of the rooms
@@ -117,7 +108,6 @@ function generateRooms(amount: number, roomConfig: RoomConfig): Room[] {
           random(roomConfig.height.min, roomConfig.height.max),
         ),
       ),
-      doorways: [],
     });
   }
 
@@ -126,8 +116,8 @@ function generateRooms(amount: number, roomConfig: RoomConfig): Room[] {
 
 // Randomly place the room in the direction of the current room. If it overlaps will return false
 function tryPlaceRoom(roomToPlace: Room, currentRoom: Room, direction: Direction, placedRooms: Room[]): boolean {
-  const roomSize = roomToPlace.aabb.halfSize;
-  const otherRoomSize = currentRoom.aabb.halfSize;
+  const roomSize: Vector2 = roomToPlace.aabb.halfSize;
+  const otherRoomSize: Vector2 = currentRoom.aabb.halfSize;
   const offset: Vector2 = new Vector2(0, 0);
   const shrink: number = 1;
 
@@ -144,29 +134,25 @@ function tryPlaceRoom(roomToPlace: Room, currentRoom: Room, direction: Direction
       offset.y = roomSize.y + otherRoomSize.y + 1;
       offset.x = random(-roomSize.x + shrink, otherRoomSize.x);
       break;
-    default:
+    case Direction.Left:
       offset.x = -(roomSize.x + otherRoomSize.x + 1);
       offset.y = random(-roomSize.y + shrink, otherRoomSize.y);
       break;
+    default:
+      throw new Error(`Invalid Direction value ${direction} for room placement`);
   }
 
   roomToPlace.aabb.place(Vector2.add(currentRoom.aabb.position, offset));
   console.assert(roomToPlace.aabb.isOverlap(currentRoom.aabb) === false, "roomToPlace is overlapping currentRoom");
 
-  const overlapBoxes: BoundingBox[] = [];
-  for (const room of placedRooms) {
-    if (roomToPlace.aabb.isOverlap(room.aabb)) {
-      overlapBoxes.push(room.aabb);
-    }
-  }
-  return overlapBoxes.length === 0;
+  return placedRooms.every(room => roomToPlace.aabb.isOverlap(room.aabb) === false);
 }
 
 // Randomly place a doorway between two rooms
 function placeDoorway(pivotRoom: Room, neighborRoom: Room, direction: Direction): Door {
-  const topLeft = Vector2.max(pivotRoom.aabb.min, neighborRoom.aabb.min);
-  const bottomRight = Vector2.min(pivotRoom.aabb.max, neighborRoom.aabb.max);
-  const shrink = 2;
+  const topLeft: Vector2 = Vector2.max(pivotRoom.aabb.min, neighborRoom.aabb.min);
+  const bottomRight: Vector2 = Vector2.min(pivotRoom.aabb.max, neighborRoom.aabb.max);
+  const shrink: number = 2;
 
   const door: Door = { position: new Vector2(0, 0), direction: direction };
   switch (direction) {
@@ -188,12 +174,14 @@ function placeDoorway(pivotRoom: Room, neighborRoom: Room, direction: Direction)
         pivotRoom.aabb.position.y + pivotRoom.aabb.halfSize.y,
       );
       break;
-    default:
+    case Direction.Left:
       door.position = new Vector2(
         pivotRoom.aabb.position.x - pivotRoom.aabb.halfSize.x - 1,
         random(topLeft.y + shrink, bottomRight.y - shrink),
       );
       break;
+    default:
+      throw new Error(`Invalid Direction value ${direction} for door placement`);
   }
   return door;
 }
@@ -276,7 +264,6 @@ function layoutPutDoor(map: number[][], door: Door, tileMapping: TileMapping): v
 // Procedurally generate a dungeon layout based on the dungeon config
 export function dungeonBuilder(config: DungeonConfig): MapData {
   console.assert(config.emptyRoomConfig.doorCount.min > 0);
-  console.assert(config.emptyRoomConfig.doorCount.max < 5); // BUG: More than 4 causes doorways to be incorrectly placed
   console.assert(config.emptyRoomConfig.doorCount.max > config.emptyRoomConfig.doorCount.min);
 
   // Generated the rooms
@@ -289,10 +276,11 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
   const directions: Direction[] = [Direction.Top, Direction.Right, Direction.Down, Direction.Left];
   for (let i = 0; i < placedRooms.length && rooms.length > 0; ++i) {
     shuffle(directions);
-    const doorCount = random(roomConfig.doorCount.min, Math.min(roomConfig.doorCount.max + 1, rooms.length));
+    const doorCount = Math.min(rooms.length, random(roomConfig.doorCount.min, roomConfig.doorCount.max + 1));
     for (let j = 0; j < doorCount; ++j) {
-      if (tryPlaceRoom(rooms[0], placedRooms[i], directions[j % directions.length], placedRooms)) {
-        placedDoors.push(placeDoorway(placedRooms[i], rooms[0], directions[j]));
+      const direction: Direction = directions[j % directions.length];
+      if (tryPlaceRoom(rooms[0], placedRooms[i], direction, placedRooms)) {
+        placedDoors.push(placeDoorway(placedRooms[i], rooms[0], direction));
         placedRooms.push(rooms.shift()!);
       }
     }
@@ -303,7 +291,7 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
   const map: number[][] = Array.from({ length: mapSize.y }, () => Array(mapSize.x).fill(-1));
 
   for (const room of placedRooms) {
-    translateRoom(room, mapOffset);
+    room.aabb.move(mapOffset);
     layoutPutRoom(map, room, config.emptyRoomConfig.tileMapping);
   }
 
