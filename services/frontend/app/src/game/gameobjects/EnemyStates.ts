@@ -59,6 +59,9 @@ export class WanderState implements EnemyState {
   }
 
   onEnter(): void {
+    // TODO: Wander on room tiles
+    // Enemies are bound by the rooms
+    // Enemies only wander inside the rooms
     this.target.x = Math.RND.between(0, 300);
     this.target.y = Math.RND.between(0, 300);
 
@@ -106,6 +109,8 @@ export class ChaseState implements EnemyState {
     console.log(`Enter Chase State towards ${this.player?.name}`);
   }
 
+  // Enemies can chase outside the rooms, but will wander back once the target is out of range
+  // Enemies have a maximum chase range
   onUpdate(): IFiniteState | null {
     if (this.player === null || this.player.isDestroyed || !this.player.active) {
       return this.enemyData.states.recall;
@@ -117,7 +122,7 @@ export class ChaseState implements EnemyState {
     }
 
     if (delta.lengthSq() < 16.0) {
-      // TODO: Invoke Combat
+      // TODO: Invoke Combat - Combat State => Death State V Recall State
       return this.enemyData.states.idle;
     }
 
@@ -151,6 +156,20 @@ export class RecallState implements EnemyState {
     // range check and move back towards room
     //
     // if inside room => back to idle or wander
-    return this.enemyData.states.idle;
+    //
+
+    const position = this.enemy.getWorldPoint();
+    const direction = this.enemyData.spawnPoint.clone().subtract(position);
+    if (direction.lengthSq() < 32.0) {
+      return this.enemyData.states.idle;
+    }
+
+    direction.normalize();
+    this.enemy.directionInput.setInputDirection(direction.x, direction.y);
+    return null;
+  }
+
+  onExit(): void {
+    this.enemy.directionInput.setInputDirection(0, 0);
   }
 }

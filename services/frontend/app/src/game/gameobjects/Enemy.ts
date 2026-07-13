@@ -1,22 +1,4 @@
-// Enemies are bound by the rooms
-// Enemies only wander inside the rooms
-// Enemies can chase outside the rooms, but will wander back once the target is out of range
-// Enemies have a maximum chase range
-//
-// Finite State Machine
-//
-// Idle -> Wander
-// Idle -> Chase
-// Wander -> Chase
-// Wander -> Idle
-// Chase -> Idle
-// Chase -> Wander
-// Chase -> Recall
-//
-// Recall -> Chase
-// Recall -> Idle
-
-import { Scene, Physics } from "phaser";
+import { Scene, Physics, Math } from "phaser";
 import { AssetsKey } from "../Assets";
 import { FiniteStateMachine } from "../components/FiniteStateMachine";
 import MovementComponent from "../components/MovementComponent";
@@ -30,6 +12,7 @@ interface Range {
 }
 
 export interface EnemyData {
+  spawnPoint: Math.Vector2;
   idleTime: Range;
   chaseDistance: Range;
   movementSpeed: Range; // min = walk, max = run
@@ -46,6 +29,7 @@ export class Enemy extends Physics.Arcade.Sprite {
     super(scene, x, y, AssetsKey.Skeleton); // TODO: EnemyData for specifics
 
     const enemyData: EnemyData = {
+      spawnPoint: new Math.Vector2(x, y),
       idleTime: { minimum: 3000, maximum: 5000 },
       chaseDistance: { minimum: 160, maximum: 288 },
       movementSpeed: { minimum: 120, maximum: 190 },
