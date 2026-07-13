@@ -13,12 +13,13 @@ interface IInvitePopup
 // This is just a placeholder popup component for now.
 export default function InviteFriendPopup( { setPopuptype } : IInvitePopup )
 {
-	const { friends, selectedFriendID } = useFriends();
+	const { friends, selectedFriendID, setSelectedFriendID } = useFriends();
 	const friendName = friends[selectedFriendID!].username;
 
 	function handleInvite()
 	{
 		// implement later
+		setSelectedFriendID(undefined);
 		setPopuptype(PopupType.none);
 	}
 
