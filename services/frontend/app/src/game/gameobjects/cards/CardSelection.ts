@@ -1,9 +1,7 @@
 import Phaser, { Actions, Scene } from "phaser";
 import CardBase from "./CardBase";
-import NumberCard from "./NumberCard";
-import OperatorCard from "./OperatorCard";
 import CardSlot, { cardSlotStyleConfig } from "./CardSlot";
-import { type CardStyleConfig } from "./CardStyle";
+import { type StyledBoxConfig } from "../utils/StyledBox";
 
 interface SelectedCardAlignConfig {
   firstSlotCenter: {
@@ -32,7 +30,7 @@ export default class CardSelection {
   // add number and operator cards into slots when there is an available slot
   // unset cards from the slots when they are selected again but remain the positions of the rest cards
 
-  private readonly cardSlotStyleConfig!: CardStyleConfig;
+  private readonly cardSlotStyleConfig!: StyledBoxConfig;
   private readonly selectedCardAlignConfig!: SelectedCardAlignConfig;
   private readonly slots!: Phaser.GameObjects.Container;
   private numSlots!: number;
@@ -83,24 +81,6 @@ export default class CardSelection {
     }
 
     return false;
-  }
-
-  isValidSelection(): boolean {
-    const selectedCards = this.getSelectedCards();
-
-    if (selectedCards.length % 2 === 0) return false;
-
-    for (let i = 0; i < selectedCards.length; ++i) {
-      const card = selectedCards[i];
-
-      if (i % 2 === 0) {
-        if (!(card instanceof NumberCard)) return false;
-      } else {
-        if (!(card instanceof OperatorCard)) return false;
-      }
-    }
-
-    return true;
   }
 
   getSelectedCards(): CardBase[] {

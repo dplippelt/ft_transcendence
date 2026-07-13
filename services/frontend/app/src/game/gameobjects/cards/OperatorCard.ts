@@ -10,10 +10,12 @@ export enum Operator {
 }
 
 export default class OperatorCard extends CardBase {
-  constructor(scene: Scene, operator: Operator) {
+  constructor(
+    scene: Scene,
+    private operator: Operator,
+  ) {
     super(scene, operator);
 
-    this.setDataEnabled();
-    this.setData("operator", operator);
+    this.setValue(operator);
   }
 }

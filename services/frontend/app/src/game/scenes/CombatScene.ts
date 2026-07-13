@@ -1,12 +1,13 @@
-import Phaser, { GameObjects } from "phaser";
+import Phaser from "phaser";
 import { EventBus } from "../EventBus";
 import CardHand from "../gameobjects/cards/CardHand";
 import NumberCard from "../gameobjects/cards/NumberCard";
 import OperatorCard, { Operator } from "../gameobjects/cards/OperatorCard";
+import BoxedText from "../gameobjects/utils/BoxedText";
+import { buttonContentConfig, buttonStyleConfig } from "../gameobjects/utils/buttonConfig";
 
 export default class CombatScene extends Phaser.Scene {
   private cardHand!: CardHand;
-  private executeButton!: GameObjects.Rectangle;
 
   constructor() {
     super("combat");
@@ -23,14 +24,7 @@ export default class CombatScene extends Phaser.Scene {
 
   create() {
     this.cardHand = new CardHand(this);
-
-    // Will make this button to be a class object
-    this.executeButton = this.add.rectangle(100, 50, 100, 50);
-    this.add.text(65, 45, "Execute!");
-    this.executeButton.setInteractive();
-    const bg = new Phaser.Display.Color(100, 100, 100);
-    this.executeButton.setFillStyle(bg.color);
-    this.executeButton.on("pointerdown", this.execute, this);
+    this.createExecuteButton("Execute!");
 
     // test for creation and alignment of hand of cards
     this.sampleInitCardHand();
@@ -38,7 +32,6 @@ export default class CombatScene extends Phaser.Scene {
     EventBus.emit("current-scene-ready", this);
 
     // TODOs
-    // const selectedCard = initSelectedCard;
     // const timer = initTimer();
     // const player = new PlayerCombat(this, 100, 100);
     // const enemy = new EnemyCombat(this, 900, 100);
@@ -50,10 +43,26 @@ export default class CombatScene extends Phaser.Scene {
 
   update() {}
 
-  execute() {
-    let hitPoint = this.cardHand.evaluateSelectedCards();
+  createExecuteButton(text: string) {
+    const button = new BoxedText(this, text, buttonContentConfig, buttonStyleConfig, 100, 50);
 
-    console.log(hitPoint);
+    button.setInteractive();
+    button.on("pointerdown", this.execute, this);
+
+    return button;
+  }
+
+  execute() {
+    const cards = this.cardHand.getSelectedCards();
+
+    if (!cards.length) {
+      console.log("no cards");
+      return;
+    }
+
+    const result = this.cardHand.evaluateSelectedCards(cards);
+
+    console.log(result);
     // Give the enemy damages or give the player penalty
     // Generate new card hands
     // Clear selected cards from slot

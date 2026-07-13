@@ -1,18 +1,9 @@
-import Phaser, { Scene } from "phaser";
-import CardStyle, { cardStyleConfig, type CardStyleConfig } from "./CardStyle";
-import CardContent, { cardContentConfig, type CardContentConfig } from "./CardContent";
+import { Scene } from "phaser";
+import type { Operator } from "./OperatorCard";
+import BoxedText from "../utils/BoxedText";
+import { cardConfig, type CardConfig } from "../utils/cardConfig";
 
-interface CardBaseConfig {
-  cardStyleConfig: CardStyleConfig;
-  cardContentConfig: CardContentConfig;
-  focusDiff: number;
-}
-
-const cardBaseConfig: CardBaseConfig = {
-  cardStyleConfig: cardStyleConfig,
-  cardContentConfig: cardContentConfig,
-  focusDiff: 30,
-};
+export type CardValue = number | Operator;
 
 export enum CardEvents {
   FOCUSON = "focusOn",
@@ -20,27 +11,16 @@ export enum CardEvents {
   SELECTION = "selection",
 }
 
-export default class CardBase extends Phaser.GameObjects.Container {
-  readonly cardBaseConfig!: CardBaseConfig;
-  readonly content!: CardContent;
-  readonly style!: CardStyle;
+export default class CardBase extends BoxedText {
+  readonly cardBaseConfig!: CardConfig;
   private isFocused!: boolean;
   private isSelected!: boolean;
+  private value: CardValue | undefined;
 
   constructor(scene: Scene, text: string) {
-    super(scene);
-    scene.add.existing(this);
+    super(scene, text, cardConfig.cardContentConfig, cardConfig.cardStyleConfig);
 
-    this.cardBaseConfig = cardBaseConfig;
-    this.content = new CardContent(scene, 0, 0, text, this.cardBaseConfig.cardContentConfig);
-    const { x, y } = this.content.getCenter();
-    this.content.setOrigin(x / this.content.width, y / this.content.height);
-
-    this.style = new CardStyle(scene, 0, 0, this.cardBaseConfig.cardStyleConfig);
-
-    this.add([this.style, this.content]);
-
-    this.setSize(this.style.width, this.style.height);
+    this.cardBaseConfig = cardConfig;
 
     this.isFocused = false;
     this.isSelected = false;
@@ -82,5 +62,13 @@ export default class CardBase extends Phaser.GameObjects.Container {
 
   selected() {
     this.emit(CardEvents.SELECTION, this);
+  }
+
+  setValue(value: CardValue) {
+    this.value = value;
+  }
+
+  getValue() {
+    return this.value;
   }
 }
