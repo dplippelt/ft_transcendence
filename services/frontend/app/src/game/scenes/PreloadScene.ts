@@ -16,6 +16,7 @@ export default class PreloadScene extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16,
     });
+    this.load.image(AssetsKey.TileSet, Assets[AssetsKey.TileSet]);
   }
 
   create() {
