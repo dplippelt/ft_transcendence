@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
 import testAvatar from "../assets/mesca_avatar_test.png";
 
-//Note: Do we want a separate ChatHistoryContext or FriendsContext later or keep it grouped with other user data like this?
+// TODO: Add Separate ChatHistoryContext and FriendsContext
 
 export interface IChatMsg
 {
@@ -18,8 +18,6 @@ export interface IFriendData
 	chatHistory: IChatMsg[];
 }
 
-// TODO: Use a stable UserID for the Record key instead of username and add username property to IFriendData
-// username field already added to IFriendData but userIDs are just equal to the usernames now for now.
 type userID = string;
 type Friends = Record<userID, IFriendData>;
 
