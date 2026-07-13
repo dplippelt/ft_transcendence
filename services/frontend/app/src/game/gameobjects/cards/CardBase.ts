@@ -1,26 +1,74 @@
-import Phaser, { Scene } from "phaser";
-import CardStyle from "./CardStyle";
-import CardContent from "./CardContent";
+import { Scene } from "phaser";
+import type { Operator } from "./OperatorCard";
+import BoxedText from "../utils/BoxedText";
+import { cardConfig, type CardConfig } from "../utils/cardConfig";
 
+export type CardValue = number | Operator;
 
-export default class CardBase extends Phaser.GameObjects.Container {
+export enum CardEvents {
+  FOCUSON = "focusOn",
+  FOCUSOFF = "focusOff",
+  SELECTION = "selection",
+}
 
-    readonly style!: CardStyle;
-    readonly content!: CardContent;
+export default class CardBase extends BoxedText {
+  readonly cardBaseConfig!: CardConfig;
+  private isFocused!: boolean;
+  private isSelected!: boolean;
+  private value: CardValue | undefined;
 
-    constructor(scene: Scene, text: string) {
+  constructor(scene: Scene, text: string) {
+    super(scene, text, cardConfig.cardContentConfig, cardConfig.cardStyleConfig);
 
-        super(scene);
-        scene.add.existing(this);
+    this.cardBaseConfig = cardConfig;
 
-        this.content = new CardContent(scene, 0, 0, text);
-        const {x, y} = this.content.getCenter();
+    this.isFocused = false;
+    this.isSelected = false;
 
-        this.style = new CardStyle(scene, x, y);
+    this.setInteractive();
 
-        this.add([ this.style, this.content ]);
-        this.setSize(this.style.width, this.style.height);
+    this.on("pointerover", this.focusOn, this);
+    this.on("pointerout", this.focusOff, this);
+    this.on("pointerdown", this.selected, this);
+  }
 
-    }
+  getIsSelected() {
+    return this.isSelected;
+  }
 
+  setIsSelected(value: boolean) {
+    this.isSelected = value;
+  }
+
+  getIsFocused() {
+    return this.isFocused;
+  }
+
+  setIsFocused(value: boolean) {
+    this.isFocused = value;
+  }
+
+  focusOn() {
+    if (this.isFocused) return;
+
+    this.emit(CardEvents.FOCUSON, this);
+  }
+
+  focusOff() {
+    if (!this.isFocused) return;
+
+    this.emit(CardEvents.FOCUSOFF, this);
+  }
+
+  selected() {
+    this.emit(CardEvents.SELECTION, this);
+  }
+
+  setValue(value: CardValue) {
+    this.value = value;
+  }
+
+  getValue() {
+    return this.value;
+  }
 }

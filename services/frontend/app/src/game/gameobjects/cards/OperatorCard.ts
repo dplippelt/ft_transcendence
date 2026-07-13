@@ -2,21 +2,20 @@ import { Scene } from "phaser";
 import CardBase from "./CardBase";
 
 export enum Operator {
-    Plus = "+",
-    Minus = "-",
-    Multiply = "×",
-    Divide = "/",
-    Modulo = "mod",
-};
+  Plus = "+",
+  Minus = "-",
+  Multiply = "×",
+  Divide = "/",
+  Modulo = "mod",
+}
 
 export default class OperatorCard extends CardBase {
+  constructor(
+    scene: Scene,
+    private operator: Operator,
+  ) {
+    super(scene, operator);
 
-    constructor(scene: Scene, operator: Operator) {
-
-        super(scene, operator);
-
-        this.setDataEnabled();
-        this.setData('operator', operator);
-
-    }
+    this.setValue(operator);
+  }
 }
