@@ -1,24 +1,24 @@
 import React from "react";
-import { useUser } from "../contexts/UserContext";
 import styles from "./FriendsList.module.scss";
+import { useFriends } from "../contexts/FriendsContext";
 
 interface IFriendsList
 {
-	children: (userUD: string, username: string, avatar: string) => React.ReactNode;
+	children: (friendID: string, username: string, avatar: string) => React.ReactNode;
 }
 
 export default function FriendsList( { children } : IFriendsList )
 {
-	const { user } = useUser();
+	const { friends } = useFriends();
 
-	// Convert Friends Record to an array of [username, data] pairs so it can be looped over (and sort alphabetically on username)
-	const friends = Object.entries(user.friends).sort(([username_a], [username_b]) => username_a.localeCompare(username_b));
+	// Convert Friends Record to an array of [friendID, friendData] pairs so it can be looped over (and sort alphabetically on username)
+	const friendsArr = Object.entries(friends).sort(([username_a], [username_b]) => username_a.localeCompare(username_b));
 
 	return (
 		<div className={styles.friendsList}>
-			{ friends.map(([userID, { username, avatar }]) =>
+			{ friendsArr.map(([friendID, { username, avatar }]) =>
 				<div className={styles.friend} key={username}>
-					{ children(userID, username, avatar) }
+					{ children(friendID, username, avatar) }
 				</div>
 			)}
 		</div>

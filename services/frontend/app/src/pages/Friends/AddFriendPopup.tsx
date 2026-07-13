@@ -7,6 +7,7 @@ import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
 import { PopupType } from "../../components/Chat/enums";
 import { getValidUsername, isErrorType } from "../../utils/usernameCheck";
+import { useFriends } from "../../contexts/FriendsContext";
 
 interface IAddFriendPopup
 {
@@ -17,7 +18,8 @@ export default function AddFriendPopup( { setPopuptype } : IAddFriendPopup )
 {
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [username, setUsername] = useState<string>("");
-	const { user, ...userFunc } = useUser();
+	const { user } = useUser();
+	const { friends, addFriend } = useFriends();
 
 	function usernameCheck()
 	{
@@ -33,10 +35,10 @@ export default function AddFriendPopup( { setPopuptype } : IAddFriendPopup )
 		// Mock username checks
 		if ( validUsername.length === 1 )
 			return setError(ErrorType.userDoesNotExist);
-		if ( Object.values(user.friends).some(friend => friend.username === validUsername) )
+		if ( Object.values(friends).some(friend => friend.username === validUsername) )
 			return setError(ErrorType.userAlreadyFriend);
 
-		userFunc.addFriend(username);
+		addFriend(username)
 		setPopuptype(PopupType.none);
 	}
 

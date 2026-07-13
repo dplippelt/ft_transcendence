@@ -1,36 +1,37 @@
 import React from "react";
-import type { IFriendData } from "../../contexts/UserContext";
 import useIsMobile from "../../hooks/useIsMobile";
 import Avatar, { AvatarSize } from "../Avatar";
 import { InviteToPlayButton, SideBarBackButton } from "../Buttons";
 import { PopupType } from "./enums";
 import styles from "./ChatTitle.module.scss";
+import type { IFriendData } from "../../contexts/FriendsContext";
 
 interface IChatTitleSideBar
 {
 	activeFriend: IFriendData;
-	setActiveChat: React.Dispatch<React.SetStateAction<string | undefined>>;
+	setActiveFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
 interface IChatTitle
 {
 	activeFriend: IFriendData | undefined;
+	activeFriendID: string | undefined;
 	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
-	setSelectedFriend: React.Dispatch<React.SetStateAction<string>>;
+	setSelectedFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
-export function ChatTitleSideBar( { activeFriend, setActiveChat } : IChatTitleSideBar )
+export function ChatTitleSideBar( { activeFriend, setActiveFriendID } : IChatTitleSideBar )
 {
 	return(
 		<div className={styles.chatTitle}>
-			<SideBarBackButton onClick={ () => setActiveChat(undefined) } />
+			<SideBarBackButton onClick={ () => setActiveFriendID(undefined) } />
 			<Avatar src={activeFriend.avatar} alt={`${activeFriend.username}'s avatar`}  size={AvatarSize.small} />
 			<div className={styles.chatTitleText}>{`${activeFriend.username}'s Chat`}</div>
 		</div>
 	);
 }
 
-export function ChatTitle( { activeFriend, setPopuptype, setSelectedFriend } : IChatTitle )
+export function ChatTitle( { activeFriend, activeFriendID, setPopuptype, setSelectedFriendID } : IChatTitle )
 {
 	const isMobile = useIsMobile();
 
@@ -41,17 +42,17 @@ export function ChatTitle( { activeFriend, setPopuptype, setSelectedFriend } : I
 		return "No chat selected";
 	}
 
-	function handleInviteToPlay( username: string )
+	function handleInviteToPlay()
 	{
 		setPopuptype(PopupType.inviteFriend);
-		setSelectedFriend(username);
+		setSelectedFriendID(activeFriendID);
 	}
 
 	return(
 		<div className={styles.chatTitle}>
 			{ activeFriend && <Avatar src={activeFriend.avatar} alt={`${activeFriend.username}'s avatar`}  size={AvatarSize.small} /> }
 			<div className={styles.chatTitleText}>{chatTitle()}</div>
-			{ isMobile && activeFriend && <InviteToPlayButton onClick={ () => handleInviteToPlay(activeFriend.username) } />}
+			{ isMobile && activeFriend && <InviteToPlayButton onClick={ () => handleInviteToPlay() } />}
 		</div>
 	);
 }

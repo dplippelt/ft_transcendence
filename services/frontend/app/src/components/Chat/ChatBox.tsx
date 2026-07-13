@@ -1,24 +1,26 @@
 import { useState } from "react";
-import { useUser, type IFriendData } from "../../contexts/UserContext";
 import { SendButton } from "../Buttons";
 import { ChatInput } from "../TextInput";
 import styles from "./ChatBox.module.scss";
+import { useChatHistory } from "../../contexts/ChatHistoryContext";
+import { useUser } from "../../contexts/UserContext";
 
 interface IChatBox
 {
-	activeFriend: IFriendData;
+	activeFriendID: string;
 }
 
-export default function ChatBox( { activeFriend } : IChatBox )
+export default function ChatBox( { activeFriendID } : IChatBox )
 {
-	const { addChatHistory } = useUser();
+	const { addChatHistory } = useChatHistory();
+	const { user } = useUser();
 	const [msg, setMsg] = useState<string>("");
 
 	function handleSend()
 	{
 		if ( msg.trim().length > 0 )
 		{
-			addChatHistory(activeFriend.username, msg);
+			addChatHistory(activeFriendID, user.username, msg);
 			setMsg("");
 		}
 	}

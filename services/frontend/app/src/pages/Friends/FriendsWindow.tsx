@@ -19,35 +19,35 @@ function FriendsListTitle()
 function FriendsList( { setPageState } : IFriendsWindow )
 {
 	const isMobile = useIsMobile();
-	const { setMobileView, setActiveChat, setPopuptype, setSelectedFriend } = setPageState;
+	const { setMobileView, setActiveFriendID, setPopuptype, setSelectedFriendID } = setPageState;
 
-	function handleOpenChat( userID: string )
+	function handleOpenChat( friendID: string )
 	{
-		setActiveChat(userID);
+		setActiveFriendID(friendID);
 
 		if ( isMobile )
 			setMobileView(MobileView.chat);
 	}
 
-	function handleInviteToPlay( username: string )
+	function handleInviteToPlay( friendID: string )
 	{
 		setPopuptype(PopupType.inviteFriend);
-		setSelectedFriend(username);
+		setSelectedFriendID(friendID);
 	}
 
-	function handleRemoveFriend( username: string )
+	function handleRemoveFriend( friendID: string )
 	{
 		setPopuptype(PopupType.removeFriend);
-		setSelectedFriend(username);
+		setSelectedFriendID(friendID);
 	}
 
 	return (
 		<TheFriendsList>
-			{ (userID, username, avatar) => (
+			{ (friendID, username, avatar) => (
 				<>
-					<FriendButton username={username} avatar={avatar} panel={false} onClick={ () => handleOpenChat(userID) } />
-					<InviteToPlayButton onClick={ () => handleInviteToPlay(username) } />
-					<RemoveFriendButton onClick={ () => handleRemoveFriend(username) } />
+					<FriendButton username={username} friendID={friendID} avatar={avatar} panel={false} onClick={ () => handleOpenChat(friendID) } />
+					<InviteToPlayButton onClick={ () => handleInviteToPlay(friendID) } />
+					<RemoveFriendButton onClick={ () => handleRemoveFriend(friendID) } />
 				</>
 			)}
 		</TheFriendsList>
