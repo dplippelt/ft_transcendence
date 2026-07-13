@@ -4,3 +4,6 @@ psycopg[binary]
 pydantic-settings
 PyJWT
 pwdlib[argon2]
+google-auth
+requests
+CacheControl
