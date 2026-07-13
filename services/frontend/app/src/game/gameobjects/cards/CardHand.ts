@@ -1,9 +1,9 @@
 import { Scenes, Scene, Actions, GameObjects, Geom } from "phaser";
 import CardBase, { CardEvents, Operator, type CardValue } from "./CardBase";
 import CardSelection from "./CardSelection";
-import CardDeck, { cardDeckConfig } from "./CardDeck";
 
 interface CardHandConfig {
+  numCards: number,
   firstCardCenterX: number;
   firstCardCenterY: number;
   handStartX: number;
@@ -17,6 +17,7 @@ interface CardHandConfig {
 }
 
 const cardHandConfig: CardHandConfig = {
+  numCards: 8, // limit for the hand cards to be implemented
   firstCardCenterX: 0,
   firstCardCenterY: 0,
   handStartX: 100,
@@ -34,7 +35,6 @@ export default class CardHand {
   private readonly cards!: GameObjects.Container;
   private readonly handLine!: Geom.Line;
   private readonly cardSelection!: CardSelection;
-  private readonly cardDeck!: CardDeck;
 
   constructor(scene: Scene) {
     this.cardHandConfig = cardHandConfig;
@@ -62,22 +62,6 @@ export default class CardHand {
       this.cardHandConfig.handEndY,
     );
 
-    this.cardDeck = new CardDeck(scene, cardDeckConfig);
-  }
-
-  drawNewCard() {
-    // get status of current hands
-    // create weights on number and operator based on the hand status
-    // along with the weight, generate the random number or operator
-    // operator needs its weight for generating
-    // construct Card with the value randomely selected
-    // this.cards.add(card);
-  }
-
-  initHand(amount: number) {
-    // while (amount--) {
-    //     this.drawNewCard();
-    // }
   }
 
   update() {

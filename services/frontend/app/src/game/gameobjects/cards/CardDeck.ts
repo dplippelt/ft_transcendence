@@ -17,7 +17,7 @@ interface CardDeckConfig {
 }
 
 export const cardDeckConfig: CardDeckConfig = {
-  amount: 50,
+  amount: 10,
   numberRange: {
     min: 1,
     max: 30,
@@ -40,32 +40,20 @@ interface WeightReduction {
   operator: number;
 }
 
-/// source: https://blog.bruce-hill.com/a-faster-weighted-random-choice
-export function weightedRandom(weights: CardWeight[]) {
-  let remaining: number = Math.random() * weights.reduce((sum: number, curr: CardWeight) => sum + curr.weight, 0);
-
-  for (const element of weights) {
-    remaining -= element.weight;
-    if (remaining < 0) {
-      return element;
-    }
-  }
-  throw new Error("Unreachable code reached");
-}
-
 export default class CardDeck {
   readonly scene!: Scene;
   readonly config!: CardDeckConfig;
   readonly baseWeights: CardWeight[];
   readonly weightReduction: WeightReduction;
   //   readonly generateStatus = new Map<CardValue, number>();
-  readonly deck!: CardBase[];
+  deck!: CardBase[];
+  numDealedCards: number = 0;
 
-  constructor(scene: Scene, config: CardDeckConfig) {
+  constructor(scene: Scene) {
     this.scene = scene;
-    this.config = config;
-    this.baseWeights = this.initBaseWeights(config);
-    this.weightReduction = this.setWeightReductionFromConfig(config);
+    this.config = cardDeckConfig;
+    this.baseWeights = this.initBaseWeights(this.config);
+    this.weightReduction = this.setWeightReductionFromConfig(this.config);
     this.deck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
 
     // for (const card of this.baseWeights) {
@@ -106,11 +94,13 @@ export default class CardDeck {
     const cards: CardBase[] = [];
     const weights = baseWeights.map((value) => value);
 
-    while (amount--) {
+    for (let i = 0; i < amount; ++i) {
       const card = this.generateCard(weights);
       this.adjustWeights(weights, card, weightReduction);
       cards.push(card);
     }
+
+    shuffle(cards);
 
     return cards;
   }
@@ -119,19 +109,19 @@ export default class CardDeck {
     if (!cardWeights.length) {
       throw Error("Card weights is not configured");
     }
-    // console.log("card weight before softmax ");
-    // for (const weight of cardWeights) {
-    //   console.log("value " + weight.value + " weight = " + weight.weight);
-    // }
+    console.log("card weight before softmax ");
+    for (const weight of cardWeights) {
+      console.log("value " + weight.value + " weight = " + weight.weight);
+    }
 
     const normalizedWeights = this.softmax(cardWeights);
-    // console.log("card weight after softmax ");
-    // for (const weight of normalizedWeights) {
-    //   console.log("value " + weight.value + " weight = " + weight.weight);
-    // }
+    console.log("card weight after softmax ");
+    for (const weight of normalizedWeights) {
+      console.log("value " + weight.value + " weight = " + weight.weight);
+    }
 
     const cardWeight = weightedRandom(normalizedWeights);
-    // console.log("selected card " + cardWeight.value + " weight " + cardWeight.weight);
+    console.log("selected card " + cardWeight.value + " weight " + cardWeight.weight);
 
     return new CardBase(this.scene, cardWeight.value);
   }
@@ -158,6 +148,46 @@ export default class CardDeck {
     }
     if (sum) normalizedWeights.forEach((value) => (value.weight /= sum));
     return normalizedWeights;
+  }
+
+  dealCard() {
+    const index = this.numDealedCards;
+
+    if (index >= this.deck.length) {
+      const newDeck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
+      if (!newDeck.length) throw Error("Could not create a new deck");
+
+      this.deck = this.deck.concat(newDeck);
+    }
+
+    this.numDealedCards++;
+    return this.deck[index];
+  }
+}
+
+// temporarily copied from services/frontend/app/src/game/map/math.ts
+/// source: https://blog.bruce-hill.com/a-faster-weighted-random-choice
+export function weightedRandom(weights: CardWeight[]) {
+  let remaining: number = Math.random() * weights.reduce((sum: number, curr: CardWeight) => sum + curr.weight, 0);
+
+  for (const element of weights) {
+    remaining -= element.weight;
+    if (remaining < 0) {
+      return element;
+    }
+  }
+  throw new Error("Unreachable code reached");
+}
+
+// min inclusive and max exclusive => [min, max)
+export function random(min: number, max: number): number {
+  return Math.floor(min + Math.random() * (max - min));
+}
+
+export function shuffle(arr: Array<any>): void {
+  for (let i = arr.length - 1; i > 0; --i) {
+    const pick = random(0, i + 1);
+    [arr[pick], arr[i]] = [arr[i], arr[pick]];
   }
 }
 

@@ -5,9 +5,11 @@ import NumberCard from "../gameobjects/cards/NumberCard";
 import OperatorCard, { Operator } from "../gameobjects/cards/OperatorCard";
 import BoxedText from "../gameobjects/utils/BoxedText";
 import { buttonContentConfig, buttonStyleConfig } from "../gameobjects/utils/buttonConfig";
+import CardDeck from "../gameobjects/cards/CardDeck";
 
 export default class CombatScene extends Phaser.Scene {
   private cardHand!: CardHand;
+  private cardDeck!: CardDeck;
 
   constructor() {
     super("combat");
@@ -24,10 +26,12 @@ export default class CombatScene extends Phaser.Scene {
 
   create() {
     this.cardHand = new CardHand(this);
+    this.cardDeck = new CardDeck(this);
     this.createExecuteButton("Execute!");
 
+    this.initCardHand(7);
     // test for creation and alignment of hand of cards
-    this.sampleInitCardHand();
+    // this.sampleInitCardHand();
 
     EventBus.emit("current-scene-ready", this);
 
@@ -68,6 +72,13 @@ export default class CombatScene extends Phaser.Scene {
     // Generate new card hands
     // Clear selected cards from slot
     // Reset timer
+  }
+
+  initCardHand(amount: number) {
+    for (let i = 0; i < amount; ++i) {
+        const card = this.cardDeck.dealCard();
+        this.cardHand.addCard(card);
+    }
   }
 
   sampleInitCardHand() {
