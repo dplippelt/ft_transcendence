@@ -63,8 +63,6 @@ export default class CardHand {
     );
 
     this.cardDeck = new CardDeck(scene, cardDeckConfig);
-    const card = this.cardDeck.generateCard(this.cardDeck.baseWeights);
-    this.cardDeck.addCardToDeck(card);
   }
 
   drawNewCard() {
