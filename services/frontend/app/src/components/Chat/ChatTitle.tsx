@@ -4,24 +4,23 @@ import Avatar, { AvatarSize } from "../Avatar";
 import { InviteToPlayButton, SideBarBackButton } from "../Buttons";
 import { PopupType } from "./enums";
 import styles from "./ChatTitle.module.scss";
-import type { IFriendData } from "../../contexts/FriendsContext";
+import { useFriends, type IFriendData } from "../../contexts/FriendsContext";
 
 interface IChatTitleSideBar
 {
 	activeFriend: IFriendData;
-	setActiveFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
 interface IChatTitle
 {
 	activeFriend: IFriendData | undefined;
-	activeFriendID: string | undefined;
 	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
-	setSelectedFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
-export function ChatTitleSideBar( { activeFriend, setActiveFriendID } : IChatTitleSideBar )
+export function ChatTitleSideBar( { activeFriend } : IChatTitleSideBar )
 {
+	const { setActiveFriendID } = useFriends();
+
 	return(
 		<div className={styles.chatTitle}>
 			<SideBarBackButton onClick={ () => setActiveFriendID(undefined) } />
@@ -31,8 +30,9 @@ export function ChatTitleSideBar( { activeFriend, setActiveFriendID } : IChatTit
 	);
 }
 
-export function ChatTitle( { activeFriend, activeFriendID, setPopuptype, setSelectedFriendID } : IChatTitle )
+export function ChatTitle( { activeFriend, setPopuptype } : IChatTitle )
 {
+	const { activeFriendID, setSelectedFriendID } = useFriends();
 	const isMobile = useIsMobile();
 
 	function chatTitle() : string

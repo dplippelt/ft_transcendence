@@ -16,12 +16,6 @@ interface ISidePanelToggle
 	setCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
-interface ISideBar
-{
-	activeFriendID: string | undefined;
-	setActiveFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
-}
-
 function FriendsListTitle()
 {
 	return <div className={styles.friendsListTitle}>My Friends</div>
@@ -45,9 +39,9 @@ function SidePanelToggle( { setCollapsed } : ISidePanelToggle )
 	return <OpenSideBarButton hasNewMsg={hasNewMsg()} onClick={handleClick} />;
 }
 
-function SidePanel( { activeFriendID, setActiveFriendID } : ISideBar )
+function SidePanel()
 {
-	const { friends } = useFriends();
+	const { friends, activeFriendID, setActiveFriendID } = useFriends();
 	const activeFriend = activeFriendID ? friends[activeFriendID] : undefined;
 
 	function handleOpenChat( userID: string )
@@ -59,9 +53,9 @@ function SidePanel( { activeFriendID, setActiveFriendID } : ISideBar )
 	{
 		return (
 			<div className={styles.friendsPanel}>
-				<ChatTitleSideBar activeFriend={activeFriend} setActiveFriendID={setActiveFriendID} />
-				<ChatHistory activeFriendID={activeFriendID!} />
-				<ChatBox activeFriendID={activeFriendID!} />
+				<ChatTitleSideBar activeFriend={activeFriend} />
+				<ChatHistory />
+				<ChatBox />
 			</div>
 		);
 	}
@@ -85,12 +79,11 @@ function SidePanel( { activeFriendID, setActiveFriendID } : ISideBar )
 export default function SideBar()
 {
 	const [collapsed, setCollapsed] = useState<boolean>(true);
-	const [activeFriendID, setActiveFriendID] = useState<string | undefined>(undefined);
 
 	return (
 		<div className={styles.sideBar}>
 			<SidePanelToggle setCollapsed={setCollapsed} />
-			{ !collapsed && <SidePanel activeFriendID={activeFriendID} setActiveFriendID={setActiveFriendID} /> }
+			{ !collapsed && <SidePanel /> }
 		</div>
 	);
 }

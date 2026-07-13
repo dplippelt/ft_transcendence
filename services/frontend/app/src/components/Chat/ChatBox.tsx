@@ -4,23 +4,20 @@ import { ChatInput } from "../TextInput";
 import styles from "./ChatBox.module.scss";
 import { useChatHistory } from "../../contexts/ChatHistoryContext";
 import { useUser } from "../../contexts/UserContext";
+import { useFriends } from "../../contexts/FriendsContext";
 
-interface IChatBox
-{
-	activeFriendID: string;
-}
-
-export default function ChatBox( { activeFriendID } : IChatBox )
+export default function ChatBox()
 {
 	const { addChatHistory } = useChatHistory();
 	const { user } = useUser();
+	const { activeFriendID } = useFriends();
 	const [msg, setMsg] = useState<string>("");
 
 	function handleSend()
 	{
 		if ( msg.trim().length > 0 )
 		{
-			addChatHistory(activeFriendID, user.username, msg);
+			addChatHistory(activeFriendID!, user.username, msg);
 			setMsg("");
 		}
 	}

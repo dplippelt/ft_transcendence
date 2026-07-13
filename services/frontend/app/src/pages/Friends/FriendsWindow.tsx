@@ -1,14 +1,15 @@
 import { FriendButton, InviteToPlayButton, RemoveFriendButton } from "../../components/Buttons";
 import { PopupType } from "../../components/Chat/enums";
 import TheFriendsList from "../../components/FriendsList";
+import { useFriends } from "../../contexts/FriendsContext";
 import useIsMobile from "../../hooks/useIsMobile";
 import { MobileView } from "./enums";
-import type { ISetFriendPageState } from "./Friends";
 import styles from "./FriendsWindow.module.scss";
 
 interface IFriendsWindow
 {
-	setPageState: ISetFriendPageState;
+	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
+	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 function FriendsListTitle()
@@ -16,10 +17,10 @@ function FriendsListTitle()
 	return <div className={styles.friendsListTitle}>My Friends</div>
 }
 
-function FriendsList( { setPageState } : IFriendsWindow )
+function FriendsList( { setMobileView, setPopuptype } : IFriendsWindow )
 {
 	const isMobile = useIsMobile();
-	const { setMobileView, setActiveFriendID, setPopuptype, setSelectedFriendID } = setPageState;
+	const { setSelectedFriendID, setActiveFriendID } = useFriends();
 
 	function handleOpenChat( friendID: string )
 	{
@@ -54,12 +55,12 @@ function FriendsList( { setPageState } : IFriendsWindow )
 	)
 }
 
-export default function FriendsWindow( { setPageState } : IFriendsWindow )
+export default function FriendsWindow( { setMobileView, setPopuptype } : IFriendsWindow )
 {
 	return (
 		<div className={styles.friendsWindow}>
 			<FriendsListTitle />
-			<FriendsList setPageState={setPageState} />
+			<FriendsList setMobileView={setMobileView} setPopuptype={setPopuptype} />
 		</div>
 	)
 }

@@ -17,6 +17,7 @@ import RemoveFriendPopup from "./RemoveFriendPopup";
 import InviteFriendPopup from "./InviteFriendPopup";
 import { PopupType } from "../../components/Chat/enums";
 import { useLocation } from "react-router-dom";
+import { useFriends } from "../../contexts/FriendsContext";
 
 interface IButtons
 {
@@ -25,19 +26,11 @@ interface IButtons
 	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-export interface ISetFriendPageState
-{
-	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
-	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
-	setSelectedFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
-	setActiveFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
-}
-
 interface IFriendsContainer
 {
 	mobileView: MobileView;
-	activeFriendID: string | undefined;
-	setPageState: ISetFriendPageState;
+	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
+	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 function Buttons( { mobileView, setMobileView, setPopuptype } : IButtons )
@@ -56,26 +49,26 @@ function Buttons( { mobileView, setMobileView, setPopuptype } : IButtons )
 	);
 }
 
-function FriendsContainer( { mobileView, activeFriendID, setPageState } : IFriendsContainer )
+function FriendsContainer( { mobileView, setMobileView, setPopuptype } : IFriendsContainer )
 {
+	const { activeFriendID } = useFriends()
 	const isMobile = useIsMobile();
-	const { setPopuptype, setSelectedFriendID } = setPageState;
 
 	if ( isMobile )
 	{
 		return (
 			<div className={styles.container}>
 				{ mobileView === MobileView.friends
-				? <FriendsWindow setPageState={setPageState} />
-				: <ChatWindow key={activeFriendID} activeFriendID={activeFriendID} setPopuptype={setPopuptype} setSelectedFriendID={setSelectedFriendID} /> }
+				? <FriendsWindow setMobileView={setMobileView} setPopuptype={setPopuptype} />
+				: <ChatWindow key={activeFriendID} setPopuptype={setPopuptype} /> }
 			</div>
 		);
 	}
 
 	return (
 		<div className={styles.container}>
-			<FriendsWindow setPageState={setPageState} />
-			<ChatWindow key={activeFriendID} activeFriendID={activeFriendID} setPopuptype={setPopuptype} setSelectedFriendID={setSelectedFriendID} />
+			<FriendsWindow setMobileView={setMobileView} setPopuptype={setPopuptype} />
+			<ChatWindow key={activeFriendID} setPopuptype={setPopuptype} />
 		</div>
 	);
 }
@@ -84,36 +77,17 @@ export default function Friends()
 {
 	const [mobileView, setMobileView] = useState<MobileView>(MobileView.friends);
 	const [popupType, setPopuptype] = useState<PopupType>(PopupType.none);
-	const [selectedFriendID, setSelectedFriendID] = useState<string | undefined>(undefined);
-	const [activeFriendID, setActiveFriendID] = useState<string | undefined>(undefined);
-	const setPageState: ISetFriendPageState = { setMobileView, setPopuptype, setSelectedFriendID, setActiveFriendID };
 
 	return (
 		<>
 			<Background />
 			<Page>
 				<MenuTitle title="Friends" />
-				<FriendsContainer mobileView={mobileView} activeFriendID={activeFriendID} setPageState={setPageState} />
+				<FriendsContainer mobileView={mobileView} setMobileView={setMobileView} setPopuptype={setPopuptype} />
 				<Buttons mobileView={mobileView} setMobileView={setMobileView} setPopuptype={setPopuptype} />
-				{ popupType === PopupType.addFriend &&
-					<Popup>
-						<AddFriendPopup setPopuptype={setPopuptype} />
-					</Popup> }
-				{ popupType === PopupType.removeFriend &&
-					<Popup>
-						<RemoveFriendPopup
-							selectedFriendID={selectedFriendID!}
-							activeFriendID={activeFriendID}
-							setSelectedFriendID={setSelectedFriendID}
-							setActiveFriendID={setActiveFriendID}
-							setPopuptype={setPopuptype} />
-					</Popup> }
-				{ popupType === PopupType.inviteFriend &&
-					<Popup>
-						<InviteFriendPopup
-							selectedFriendID={selectedFriendID!}
-							setPopuptype={setPopuptype} />
-					</Popup> }
+				{ popupType === PopupType.addFriend && <Popup> <AddFriendPopup setPopuptype={setPopuptype} /> </Popup> }
+				{ popupType === PopupType.removeFriend && <Popup> <RemoveFriendPopup setPopuptype={setPopuptype} /> </Popup> }
+				{ popupType === PopupType.inviteFriend && <Popup> <InviteFriendPopup setPopuptype={setPopuptype} /> </Popup> }
 			</Page>
 		</>
 	);

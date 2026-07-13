@@ -38,6 +38,10 @@ export const defaultFriends: Friends =
 interface IFriendsContext
 {
 	friends: Friends;
+	selectedFriendID: string | undefined;
+	activeFriendID: string | undefined;
+	setSelectedFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
+	setActiveFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
 	resetFriends: () => void;
 	addFriend: ( username: string ) => void;
 	removeFriend: ( friendID: string ) => void;
@@ -48,6 +52,8 @@ const FriendsContext = createContext<IFriendsContext | null>(null);
 export default function FriendsProvider( { children } : {children: ReactNode} )
 {
 	const [friends, setFriends] = useState<Friends>(defaultFriends);
+	const [selectedFriendID, setSelectedFriendID] = useState<string | undefined>(undefined);
+	const [activeFriendID, setActiveFriendID] = useState<string | undefined>(undefined);
 
 	function resetFriends()
 	{
@@ -100,7 +106,14 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 		<FriendsContext.Provider
 			value=
 			{{
-				friends, resetFriends, addFriend, removeFriend,
+				friends,
+				selectedFriendID,
+				activeFriendID,
+				setSelectedFriendID,
+				setActiveFriendID,
+				resetFriends,
+				addFriend,
+				removeFriend,
 			}}>
 			{children}
 		</FriendsContext.Provider>

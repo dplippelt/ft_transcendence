@@ -8,25 +8,19 @@ import { useFriends } from "../../contexts/FriendsContext";
 
 interface IChatWindow
 {
-	activeFriendID: string | undefined;
 	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
-	setSelectedFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
-export default function ChatWindow( { activeFriendID, setPopuptype, setSelectedFriendID } : IChatWindow )
+export default function ChatWindow( { setPopuptype } : IChatWindow )
 {
-	const { friends } = useFriends();
+	const { friends, activeFriendID } = useFriends();
 	const activeFriend = activeFriendID ? friends[activeFriendID] : undefined;
 
 	return (
 		<div className={styles.chatWindow}>
-			<ChatTitle
-				activeFriend={activeFriend}
-				activeFriendID={activeFriendID}
-				setPopuptype={setPopuptype}
-				setSelectedFriendID={setSelectedFriendID} />
-			{ activeFriend && <ChatHistory activeFriendID={activeFriendID!} /> }
-			{ activeFriend && <ChatBox activeFriendID={activeFriendID!} /> }
+			<ChatTitle activeFriend={activeFriend} setPopuptype={setPopuptype} />
+			{ activeFriend && <ChatHistory /> }
+			{ activeFriend && <ChatBox /> }
 		</div>
 	)
 }

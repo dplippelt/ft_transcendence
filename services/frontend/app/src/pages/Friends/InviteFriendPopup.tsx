@@ -7,15 +7,14 @@ import { useFriends } from "../../contexts/FriendsContext";
 
 interface IInvitePopup
 {
-	selectedFriendID: string;
 	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 // This is just a placeholder popup component for now.
-export default function InviteFriendPopup( { selectedFriendID, setPopuptype } : IInvitePopup )
+export default function InviteFriendPopup( { setPopuptype } : IInvitePopup )
 {
-	const { friends } = useFriends();
-	const friendName = friends[selectedFriendID].username;
+	const { friends, selectedFriendID } = useFriends();
+	const friendName = friends[selectedFriendID!].username;
 
 	function handleInvite()
 	{

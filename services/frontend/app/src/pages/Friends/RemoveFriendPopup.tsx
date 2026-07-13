@@ -7,21 +7,17 @@ import { useFriends } from "../../contexts/FriendsContext";
 
 interface IRemoveFriendPopup
 {
-	selectedFriendID: string;
-	activeFriendID: string | undefined;
-	setSelectedFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
-	setActiveFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
 	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-export default function RemoveFriendPopup( { selectedFriendID, activeFriendID, setSelectedFriendID, setActiveFriendID, setPopuptype } : IRemoveFriendPopup )
+export default function RemoveFriendPopup( { setPopuptype } : IRemoveFriendPopup )
 {
-	const { friends, removeFriend } = useFriends();
-	const friendName = friends[selectedFriendID].username;
+	const { friends, selectedFriendID, activeFriendID, setSelectedFriendID, setActiveFriendID, removeFriend } = useFriends();
+	const friendName = friends[selectedFriendID!].username;
 
 	function handleRemoveFriend()
 	{
-		removeFriend(selectedFriendID);
+		removeFriend(selectedFriendID!);
 		if ( selectedFriendID === activeFriendID )
 			setActiveFriendID(undefined);
 		setSelectedFriendID(undefined);
