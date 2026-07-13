@@ -1,0 +1,89 @@
+@use '../../mixins' as *;
+@use '../../variables' as *;
+
+.chatWindow
+{
+	@include window;
+	@include menuWindow;
+
+	max-height: min(800px, 60vh);
+	max-width: min(500px, 60%);
+	row-gap: 0.3rem;
+	padding: 1rem;
+	font-size: 0.7rem;
+	margin-left: 0rem;
+	grid-template-rows: auto 1fr auto ;
+
+	@media (max-width: 480px)
+	{
+		margin: 0 auto;
+		max-width: min(800px, 60vh);
+	}
+}
+
+.chatTitle
+{
+	display: flex;
+	flex-direction: row;
+	column-gap: 0.4rem;
+	font-size: 0.9rem;
+	justify-self: center;
+	align-items: center;
+	margin-bottom: 0.3rem;
+}
+
+.chatTitleText
+{
+	margin-top: 0.1rem;
+}
+
+.chatMsg
+{
+	display: flex;
+	flex-direction: row;
+	column-gap: 0.5rem;
+}
+
+.username
+{
+	font-weight: 800;
+}
+
+.message
+{
+	font-size: 0.65rem;
+	align-content: center;
+	margin-top: 0.05rem;
+	white-space: pre-wrap;
+	overflow-wrap: break-word;
+	overflow-wrap: anywhere;
+}
+
+.chatHistory
+{
+	@include scrollbar;
+
+	height: 100%;
+	padding: 0.5rem;
+
+	background-color: $input-bg-color;
+	border: 1px solid $input-border-color;
+	border-radius: 2px;
+
+	& > *
+	{
+		overflow: hidden;
+		margin-bottom: 0.3rem;
+	}
+
+	& > *:last-child
+	{
+		margin-bottom: 0rem;
+	}
+}
+
+.chatBox
+{
+	display: grid;
+	grid-template-columns: 1fr auto;
+}

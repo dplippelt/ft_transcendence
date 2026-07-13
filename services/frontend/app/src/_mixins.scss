@@ -48,3 +48,11 @@
 	font-size: 0.7rem;
 	align-items: center;
 }
+
+@mixin scrollbar
+{
+	overflow-y: auto;
+	min-height: 0;
+	scrollbar-width: thin;
+	color-scheme: dark;
+}

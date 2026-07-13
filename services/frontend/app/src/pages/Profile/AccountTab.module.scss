@@ -5,8 +5,8 @@
 	@include profileInfo;
 	grid-template-columns: max-content minmax(max-content, 1fr) 2fr;
 
-	@media (max-width: 370px)
+	@media (max-width: 720px)
 	{
-		grid-template-columns: max-content 50px 2fr;
+		grid-template-columns: max-content 10ch 2fr;
 	}
 }

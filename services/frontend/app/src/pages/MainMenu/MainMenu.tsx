@@ -16,7 +16,7 @@ function Buttons()
 	function logout()
 	{
 		auth.logout();
-		user.resetUsername();
+		user.resetUser();
 		navigate("/");
 	}
 
@@ -24,7 +24,7 @@ function Buttons()
 		<MenuButtons>
 			<MenuButton label="New game" onClick={ () => {} } />
 			<MenuButton label="Multiplayer" onClick={ () => {} } />
-			<MenuButton label="Friends" onClick={ () => {} } />
+			<MenuButton label="Friends" onClick={ () => navigate("/friends") } />
 			<MenuButton label="Profile" onClick={ () => navigate("/profile") } />
 			<MenuButton label="Leaderboard" onClick={ () => navigate("/leaderboard") } />
 			<MenuButton label="How to play" onClick={ () => {} } />
