@@ -22,7 +22,7 @@ export default class CombatScene extends Phaser.Scene {
 
   create() {
     this.cardManager = new CardManager(this);
-    this.cardManager.fillCardHand(7);
+    this.cardManager.fillCardHand(5);
 
     this.createExecuteButton("Execute!");
 
@@ -55,7 +55,7 @@ export default class CombatScene extends Phaser.Scene {
 
     console.log(result);
     this.cardManager.clearHandAndSelection();
-    this.cardManager.fillCardHand(7);
+    this.cardManager.fillCardHand(5);
     // Give the enemy damages or give the player penalty
     // Generate new card hands
     // Clear selected cards from slot

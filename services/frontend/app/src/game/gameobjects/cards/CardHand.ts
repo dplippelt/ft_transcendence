@@ -49,7 +49,7 @@ export default class CardHand {
   }
 
   addCard(card: CardBase) {
-    if (this.numCards >= this.cardHandConfig.maxNumCards) return;
+    // if (this.numCards >= this.cardHandConfig.maxNumCards) return;
 
     card.on(CardEvents.FOCUSON, this.focusOn, this);
     card.on(CardEvents.FOCUSOFF, this.focusOff, this);
