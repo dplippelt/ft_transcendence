@@ -16,4 +16,8 @@
 .chatTitleText
 {
 	margin-top: 0.1rem;
+	max-width: 14ch;
+	overflow-x: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }

@@ -25,7 +25,7 @@ export function ChatTitleSideBar( { activeFriend } : IChatTitleSideBar )
 		<div className={styles.chatTitle}>
 			<SideBarBackButton onClick={ () => setActiveFriendID(undefined) } />
 			<Avatar src={activeFriend.avatar} alt={`${activeFriend.username}'s avatar`}  size={AvatarSize.small} />
-			<div className={styles.chatTitleText}>{`${activeFriend.username}'s Chat`}</div>
+			<div className={styles.chatTitleText}>{activeFriend.username}</div>
 		</div>
 	);
 }
@@ -38,7 +38,7 @@ export function ChatTitle( { activeFriend, setPopuptype } : IChatTitle )
 	function chatTitle() : string
 	{
 		if (activeFriend)
-			return `${activeFriend.username}'s Chat`;
+			return activeFriend.username;
 		return "No chat selected";
 	}
 

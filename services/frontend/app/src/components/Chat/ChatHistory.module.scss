@@ -3,15 +3,27 @@
 
 .chatMsg
 {
+	display: grid;
+	grid-template-columns: auto 1fr;
+	column-gap: 0.5rem;
+}
+
+.nameRow
+{
 	display: flex;
 	flex-direction: row;
-	column-gap: 0.5rem;
+	column-gap: 0.15rem;
+	min-width: 0;
 }
 
 .username
 {
 	font-size: 0.7rem;
 	font-weight: 800;
+	max-width: 10ch;
+	overflow-x: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
 }
 
 .message

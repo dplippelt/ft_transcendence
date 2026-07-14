@@ -13,7 +13,10 @@ function ChatMessage( { username, message } : IChatMessage )
 {
 	return (
 		<div className={styles.chatMsg}>
-			<div className={styles.username}>{username}:</div>
+			<div className={styles.nameRow}>
+				<div className={styles.username}>{username}</div>
+				<div className={styles.username}>:</div>
+			</div>
 			<div className={styles.message}>{message}</div>
 		</div>
 	);
