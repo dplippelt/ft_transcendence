@@ -49,9 +49,9 @@ export default class CardDeck {
   deck!: CardBase[];
   numDealedCards: number = 0;
 
-  constructor(scene: Scene) {
+  constructor(scene: Scene, config: CardDeckConfig) {
     this.scene = scene;
-    this.config = cardDeckConfig;
+    this.config = config;
     this.baseWeights = this.initBaseWeights(this.config);
     this.weightReduction = this.setWeightReductionFromConfig(this.config);
     this.deck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
