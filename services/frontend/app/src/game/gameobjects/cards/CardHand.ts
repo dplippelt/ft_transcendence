@@ -3,7 +3,7 @@ import CardBase, { CardEvents, Operator, type CardValue } from "./CardBase";
 import CardSelection from "./CardSelection";
 
 interface CardHandConfig {
-  numCards: number,
+  maxNumCards: number,
   firstCardCenterX: number;
   firstCardCenterY: number;
   handStartX: number;
@@ -17,7 +17,7 @@ interface CardHandConfig {
 }
 
 const cardHandConfig: CardHandConfig = {
-  numCards: 8, // limit for the hand cards to be implemented
+  maxNumCards: 8, // limit for the hand cards to be implemented
   firstCardCenterX: 0,
   firstCardCenterY: 0,
   handStartX: 100,
@@ -35,6 +35,7 @@ export default class CardHand {
   private readonly cards!: GameObjects.Container;
   private readonly handLine!: Geom.Line;
   private readonly cardSelection!: CardSelection;
+  numCards: number;
 
   constructor(scene: Scene) {
     this.cardHandConfig = cardHandConfig;
@@ -62,6 +63,8 @@ export default class CardHand {
       this.cardHandConfig.handEndY,
     );
 
+    this.numCards = 0;
+
   }
 
   update() {
@@ -70,11 +73,30 @@ export default class CardHand {
   }
 
   addCard(card: CardBase) {
+
+    if (this.numCards >= this.cardHandConfig.maxNumCards)
+        return ;
+
     card.on(CardEvents.FOCUSON, this.focusOn, this);
     card.on(CardEvents.FOCUSOFF, this.focusOff, this);
     card.on(CardEvents.SELECTION, this.select, this);
 
     this.cards.add(card);
+    this.numCards++;
+  }
+
+  clearSelection() {
+    this.cardSelection.unsetAllCards();
+
+  }
+
+  clearHand() {
+    const cards = this.cards.getAll() as CardBase[];
+    for (const card of cards) {
+        card.setVisible(false);
+    }
+    this.cards.removeAll(false);
+    this.numCards = 0;
   }
 
   shuffle() {

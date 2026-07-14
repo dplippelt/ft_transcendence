@@ -25,11 +25,6 @@ const selectedCardAlignConfig: SelectedCardAlignConfig = {
 };
 
 export default class CardSelection {
-  // define and set slots for selected cards
-  // define the maximum number of number cards to set (the number of operator is minus 1)
-  // add number and operator cards into slots when there is an available slot
-  // unset cards from the slots when they are selected again but remain the positions of the rest cards
-
   private readonly cardSlotStyleConfig!: StyledBoxConfig;
   private readonly selectedCardAlignConfig!: SelectedCardAlignConfig;
   private readonly slots!: Phaser.GameObjects.Container;
@@ -98,6 +93,14 @@ export default class CardSelection {
     }
 
     return selectedCards;
+  }
+
+  unsetAllCards() {
+    const slots = this.slots.getAll() as CardSlot[];
+
+    for (const slot of slots) {
+        slot.unsetCard();
+    }
   }
 
   align(): void {
