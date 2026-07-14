@@ -43,6 +43,8 @@ interface IChatHistoryContext
 	setChatToRead: ( friendID: string ) => void;
 	hasNewMsg: () => boolean;
 	countUnreadMsg: ( friendID: string ) => number;
+	addChatHistoryEntry: ( friendID: string ) => void;
+	removeChatHistoryEntry: ( friendID: string ) => void;
 }
 
 const ChatHistoryContext = createContext<IChatHistoryContext | null>(null);
@@ -123,6 +125,23 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 		return friendChatHistory.filter(({ read }) => !read).length;
 	}
 
+	function addChatHistoryEntry( friendID: string )
+	{
+		setChatHistory(prev => ({
+			...prev,
+			[friendID]: [],
+		}));
+	}
+
+	function removeChatHistoryEntry( friendID: string )
+	{
+		setChatHistory(prev => {
+			const chatHistory = prev;
+			delete chatHistory[friendID];
+			return chatHistory;
+		})
+	}
+
 	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)
 	// at the moment when you hit F5 everything is rerendered and Chat History info will be set to default again.
 	// turn it into a custom hook because it also needs to be called in the login / signup button handler after a succesful login/sign-up
@@ -142,7 +161,15 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 		<ChatHistoryContext.Provider
 			value=
 			{{
-				chatHistory, resetChatHistory, updateUsername, addChatHistory, setChatToRead, hasNewMsg, countUnreadMsg,
+				chatHistory,
+				resetChatHistory,
+				updateUsername,
+				addChatHistory,
+				setChatToRead,
+				hasNewMsg,
+				countUnreadMsg,
+				addChatHistoryEntry,
+				removeChatHistoryEntry,
 			}}>
 			{children}
 		</ChatHistoryContext.Provider>

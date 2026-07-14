@@ -37,7 +37,7 @@ function Buttons( { mobileView, setMobileView, setPopuptype } : IButtons )
 {
 	const isMobile = useIsMobile();
 	const location = useLocation();
-	const path = location.state ? location.state.from : RoutePath.mainMenu;
+	const path = location.state?.from ?? RoutePath.mainMenu;
 
 	return (
 		<BottomButtons>

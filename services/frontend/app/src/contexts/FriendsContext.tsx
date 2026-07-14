@@ -2,6 +2,7 @@ import { createContext, useContext, /* useEffect, */ useState } from "react";
 import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
 import testAvatar from "../assets/mesca_avatar_test.png";
+import { useChatHistory } from "./ChatHistoryContext";
 
 export interface IFriendData
 {
@@ -51,6 +52,7 @@ const FriendsContext = createContext<IFriendsContext | null>(null);
 
 export default function FriendsProvider( { children } : {children: ReactNode} )
 {
+	const { addChatHistoryEntry, removeChatHistoryEntry } = useChatHistory();
 	const [friends, setFriends] = useState<Friends>(defaultFriends);
 	const [selectedFriendID, setSelectedFriendID] = useState<string | undefined>(undefined);
 	const [activeFriendID, setActiveFriendID] = useState<string | undefined>(undefined);
@@ -65,15 +67,17 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 		// Temp mock random avatar image
 		// TODO: fetch from DB later
 		const avatar = username.length % 2 ? testAvatar : guestAvatar;
+		const friendID = username + "_ID"; // TODO: fetch friend's userID from DB later
 
-		// TODO: remember to set key of Friends object below ( [username]: ) to the userID fetched from DB based on current username instead of just the username
 		setFriends(prev => ({
 			...prev,
-			[username + "_ID"]: {
+			[friendID]: {
 				username: username,
 				avatar: avatar,
 			}
 		}));
+
+		addChatHistoryEntry(friendID);
 	}
 
 	function removeFriend( friendID: string )
@@ -82,9 +86,10 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 		{
 			const newFriends = prev;
 			delete newFriends[friendID];
-
 			return newFriends;
 		})
+
+		removeChatHistoryEntry(friendID);
 	}
 
 	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)

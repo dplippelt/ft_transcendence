@@ -9,15 +9,15 @@ export default function AppProviders( { children } : { children: React.ReactNode
 {
 	return (
 		<AuthProvider>
-			<FriendsProvider>
-				<ChatHistoryProvider>
+			<ChatHistoryProvider>
+				<FriendsProvider>
 					<UserProvider>
 						<SettingsProvider>
 							{children}
 						</SettingsProvider>
 					</UserProvider>
-				</ChatHistoryProvider>
-			</FriendsProvider>
+				</FriendsProvider>
+			</ChatHistoryProvider>
 		</AuthProvider>
 	);
 }

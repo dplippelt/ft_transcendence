@@ -38,7 +38,7 @@ export default function AddFriendPopup( { setPopuptype } : IAddFriendPopup )
 		if ( Object.values(friends).some(friend => friend.username === validUsername) )
 			return setError(ErrorType.userAlreadyFriend);
 
-		addFriend(username)
+		addFriend(validUsername)
 		setPopuptype(PopupType.none);
 	}
 

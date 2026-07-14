@@ -200,7 +200,7 @@ function LeaderboardWindow( { stat, setStat } : ILeaderboardWindow )
 function Buttons()
 {
 	const location = useLocation();
-	const path = location.state ? location.state.from : RoutePath.mainMenu;
+	const path = location.state?.from ?? RoutePath.mainMenu;
 
 	return (
 		<BottomButtons>

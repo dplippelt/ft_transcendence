@@ -16,8 +16,10 @@
 
 .message
 {
+	min-width: 0;
 	font-size: 0.65rem;
 	align-content: center;
+	text-align: left;
 	margin-top: 0.05rem;
 	white-space: pre-wrap;
 	overflow-wrap: break-word;

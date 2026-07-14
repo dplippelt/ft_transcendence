@@ -12,7 +12,12 @@ export default function FriendsList( { children } : IFriendsList )
 	const { friends } = useFriends();
 
 	// Convert Friends Record to an array of [friendID, friendData] pairs so it can be looped over (and sort alphabetically on username)
-	const friendsArr = Object.entries(friends).sort(([username_a], [username_b]) => username_a.localeCompare(username_b));
+	const friendsArr = Object.entries(friends).sort(
+		(
+			[, { username: username_a }],
+			[, { username: username_b }]
+		) => username_a.localeCompare(username_b)
+	);
 
 	return (
 		<div className={styles.friendsList}>
