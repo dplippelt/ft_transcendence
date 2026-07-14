@@ -92,7 +92,7 @@ export default class CardDeck {
     if (amount < 0) throw Error("Amount for generating cards should be positive");
 
     const cards: CardBase[] = [];
-    const weights = baseWeights.map((value) => value);
+    const weights = structuredClone(baseWeights);
 
     for (let i = 0; i < amount; ++i) {
       const card = this.generateCard(weights);
