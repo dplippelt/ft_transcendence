@@ -94,6 +94,9 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 		setChatHistory(prev =>
 		{
 			const friendChatHistory = prev[friendID];
+			if ( !friendChatHistory )
+				return prev;
+			
 			const hasUnread = friendChatHistory.some(msg => !msg.read);
 			if ( !hasUnread )
 				return prev;

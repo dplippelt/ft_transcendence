@@ -35,7 +35,7 @@ export default function AddFriendPopup( { setPopuptype } : IAddFriendPopup )
 		// Mock username checks
 		if ( validUsername.length === 1 )
 			return setError(ErrorType.userDoesNotExist);
-		if ( Object.values(friends).some(friend => friend.username === validUsername) )
+		if ( Object.values(friends).some(friend => friend.username.toLowerCase() === validUsername.toLowerCase()) )
 			return setError(ErrorType.userAlreadyFriend);
 
 		addFriend(validUsername)
