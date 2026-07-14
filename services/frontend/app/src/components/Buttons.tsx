@@ -2,10 +2,9 @@ import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
 import { EditWindowType } from "../pages/Profile/enums";
-import { ChevronLeft, MessageCircle, MessageCircleWarning, SendHorizontal, Swords, UserMinus } from "lucide-react";
+import { ChevronLeft, Dot, MessageCircle, MessageCircleWarning, SendHorizontal, Swords, UserMinus } from "lucide-react";
 import Avatar, { AvatarSize } from "./Avatar";
 import { MobilePosition } from "../utils/utils";
-import { Dot } from "lucide-react";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
 
 interface IMenuButton
