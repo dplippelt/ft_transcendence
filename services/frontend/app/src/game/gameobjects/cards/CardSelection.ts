@@ -24,22 +24,32 @@ const selectedCardAlignConfig: SelectedCardAlignConfig = {
   },
 };
 
+interface CardSelectionConfig {
+    selectionLimit: number,
+}
+
+export const cardSelectionConfig: CardSelectionConfig = {
+    selectionLimit: 7,
+}
+
 export default class CardSelection {
   private readonly cardSlotStyleConfig!: StyledBoxConfig;
   private readonly selectedCardAlignConfig!: SelectedCardAlignConfig;
+  private readonly cardSelectionConfig: CardSelectionConfig;
   private readonly slots!: Phaser.GameObjects.Container;
   private numSlots!: number;
 
-  constructor(scene: Scene, numSlots: number) {
+  constructor(scene: Scene, config: CardSelectionConfig) {
     this.cardSlotStyleConfig = cardSlotStyleConfig;
     this.selectedCardAlignConfig = selectedCardAlignConfig;
+    this.cardSelectionConfig = config;
 
     this.slots = scene.add.container(
       this.selectedCardAlignConfig.firstSlotCenter.x,
       this.selectedCardAlignConfig.firstSlotCenter.y,
     );
 
-    this.numSlots = numSlots;
+    this.numSlots = this.cardSelectionConfig.selectionLimit;
 
     for (let i = 0; i < this.numSlots; ++i) {
       this.slots.add(new CardSlot(scene, this.cardSlotStyleConfig));
