@@ -68,6 +68,9 @@ export default class CombatScene extends Phaser.Scene {
     const result = this.cardHand.evaluateSelectedCards(cards);
 
     console.log(result);
+    this.cardHand.clearSelection();
+    this.cardHand.clearHand();
+    this.initCardHand(7);
     // Give the enemy damages or give the player penalty
     // Generate new card hands
     // Clear selected cards from slot
