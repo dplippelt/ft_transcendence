@@ -3,20 +3,31 @@ import CardDeck, { cardDeckConfig } from "./CardDeck";
 import CardHand, { cardHandConfig } from "./CardHand";
 import CardSelection, { cardSelectionConfig } from "./CardSelection";
 import CardBase, { CardEvents } from "./CardBase";
+import Button, { type ButtonConfig } from "../utils/Button";
+import { buttonContentConfig, buttonStyleConfig } from "../utils/buttonConfig";
+
+const drawButtonCOnfig: ButtonConfig = {
+    styleConfig: buttonStyleConfig,
+    textConfig: buttonContentConfig,
+}
 
 export default class CardManager {
   readonly scene: Scene;
   readonly cardDeck: CardDeck;
   readonly cardHand: CardHand;
   readonly cardSelection: CardSelection;
+  readonly drawButton: Button;
 
   constructor(scene: Scene) {
     this.scene = scene;
     this.cardDeck = new CardDeck(this.scene, cardDeckConfig);
     this.cardHand = new CardHand(this.scene, cardHandConfig);
     this.cardSelection = new CardSelection(this.scene, cardSelectionConfig);
+    this.drawButton = new Button(scene, "draw", drawButtonCOnfig);
+    this.drawButton.setPosition(100, 100);
 
     scene.input.setTopOnly(true);
+    this.drawButton.on("pointerdown", this.drawCard, this);
   }
 
   clearHandAndSelection() {
