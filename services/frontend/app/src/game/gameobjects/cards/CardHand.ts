@@ -1,9 +1,8 @@
-import { Scenes, Scene, Actions, GameObjects, Geom } from "phaser";
+import { Scene, Actions, GameObjects, Geom } from "phaser";
 import CardBase, { CardEvents, Operator, type CardValue } from "./CardBase";
-import CardSelection from "./CardSelection";
 
 interface CardHandConfig {
-  maxNumCards: number,
+  maxNumCards: number;
   firstCardCenterX: number;
   firstCardCenterY: number;
   handStartX: number;
@@ -16,7 +15,7 @@ interface CardHandConfig {
   };
 }
 
-const cardHandConfig: CardHandConfig = {
+export const cardHandConfig: CardHandConfig = {
   maxNumCards: 8, // limit for the hand cards to be implemented
   firstCardCenterX: 0,
   firstCardCenterY: 0,
@@ -34,27 +33,12 @@ export default class CardHand {
   private readonly cardHandConfig!: CardHandConfig;
   private readonly cards!: GameObjects.Container;
   private readonly handLine!: Geom.Line;
-  private readonly cardSelection!: CardSelection;
   numCards: number;
 
-  constructor(scene: Scene) {
-    this.cardHandConfig = cardHandConfig;
-
-    this.cardSelection = new CardSelection(scene, 7);
-
+  constructor(scene: Scene, config: CardHandConfig) {
+    this.cardHandConfig = config;
     this.cards = scene.add.container(this.cardHandConfig.firstCardCenterX, this.cardHandConfig.firstCardCenterY);
-
-    this.cards.addToUpdateList();
-    scene.events.on(Scenes.Events.UPDATE, this.update, this);
-    this.cards.once(
-      GameObjects.Events.DESTROY,
-      () => {
-        scene.events.off(Scenes.Events.UPDATE, this.update, this);
-      },
-      this,
-    );
-
-    scene.input.setTopOnly(true);
+    this.numCards = 0;
 
     this.handLine = new Geom.Line(
       this.cardHandConfig.handStartX,
@@ -62,45 +46,25 @@ export default class CardHand {
       this.cardHandConfig.handEndX,
       this.cardHandConfig.handEndY,
     );
-
-    this.numCards = 0;
-
-  }
-
-  update() {
-    this.cardSelection.align();
-    this.align();
   }
 
   addCard(card: CardBase) {
-
-    if (this.numCards >= this.cardHandConfig.maxNumCards)
-        return ;
+    if (this.numCards >= this.cardHandConfig.maxNumCards) return;
 
     card.on(CardEvents.FOCUSON, this.focusOn, this);
     card.on(CardEvents.FOCUSOFF, this.focusOff, this);
-    card.on(CardEvents.SELECTION, this.select, this);
 
     this.cards.add(card);
     this.numCards++;
   }
 
-  clearSelection() {
-    this.cardSelection.unsetAllCards();
-
-  }
-
   clearHand() {
     const cards = this.cards.getAll() as CardBase[];
     for (const card of cards) {
-        card.setVisible(false);
+      card.setVisible(false);
     }
     this.cards.removeAll(false);
     this.numCards = 0;
-  }
-
-  shuffle() {
-    this.cards.shuffle();
   }
 
   align() {
@@ -112,10 +76,6 @@ export default class CardHand {
       focusedCard.x -= focus.diffX;
       focusedCard.y -= focus.diffY;
     }
-
-    // Actions.AlignTo(this.cardHand.getChildren(), Display.Align.RIGHT_CENTER, 10, 30);
-    // const ellipse = new Geom.Ellipse(400, 300, 400, 200);
-    // Actions.PlaceOnEllipse(this.cardHand.getChildren(), ellipse, Math.PI, 0);
   }
 
   focusOn(card: CardBase) {
@@ -138,28 +98,6 @@ export default class CardHand {
       card.input.hitArea.right -= focus.diffX;
       card.input.hitArea.bottom -= focus.diffY;
     }
-  }
-
-  select(card: CardBase) {
-    if (card.getIsFocused()) {
-      this.focusOff(card);
-    }
-
-    if (card.getIsSelected()) {
-      this.cardSelection.unsetCardFromSlot(card);
-
-      card.setIsSelected(false);
-      return;
-    }
-
-    if (this.cardSelection.setCardToSlot(card)) {
-      card.setIsSelected(true);
-      return;
-    }
-  }
-
-  getSelectedCards() {
-    return this.cardSelection.getSelectedCards();
   }
 
   evaluateSelectedCards(selectedCards: CardBase[]) {
