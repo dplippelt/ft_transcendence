@@ -7,7 +7,7 @@
 	@include menuWindow;
 
 	max-height: min(800px, 60vh);
-	max-width: min(300px, 40%);
+	max-width: min(350px, 40%);
 	row-gap: 0.2rem;
 	padding: 1rem;
 	font-size: 0.7rem;
@@ -26,22 +26,4 @@
 	justify-self: center;
 	border-bottom: 1px solid $primary-text-color;
 	margin-bottom: 0.5rem;
-}
-
-.friendsList
-{
-	@include scrollbar;
-
-	height: 100%;
-	align-content: center;
-}
-
-.friend
-{
-	display: grid;
-	grid-template-columns: 1fr auto auto;
-	width: 100%;
-	max-width: 90%;
-	column-gap: 0.4rem;
-	margin-bottom: 0.4rem;
 }

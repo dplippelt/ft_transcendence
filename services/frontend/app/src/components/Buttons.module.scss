@@ -159,14 +159,26 @@
 	align-items: center;
 	font-family: $text-font;
 	cursor: pointer;
+	min-width: 0;
+
+	img
+	{
+		flex-shrink: 0;
+	}
 }
 
 .friendUsername
 {
+	min-width: 0;
 	text-wrap: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
 	font-size: 0.7rem;
+}
+
+.friendUnread
+{
+	font-weight: 800;
 }
 
 .actionButton
@@ -189,4 +201,34 @@
 			opacity: 100%;
 		}
 	}
+}
+
+.sideBarButton
+{
+	background: none;
+	border: none;
+	align-self: self-start;
+	cursor: pointer;
+
+	margin-top: 1.5rem;
+	margin-right: 1rem;
+
+	opacity: 75%;
+}
+
+@keyframes newMsgGlowAnim
+{
+	0%, 100%
+	{
+		filter: none;
+	}
+	50%
+	{
+		filter: drop-shadow(0 0 6px $orange) drop-shadow(0 0 12px $orange);
+	}
+}
+
+.newMsgGlow
+{
+	animation: newMsgGlowAnim 1.8s ease-in-out 10;
 }

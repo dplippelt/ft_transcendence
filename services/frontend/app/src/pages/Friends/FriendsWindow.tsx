@@ -1,7 +1,8 @@
 import { FriendButton, InviteToPlayButton, RemoveFriendButton } from "../../components/Buttons";
-import { useUser } from "../../contexts/UserContext";
+import { PopupType } from "../../components/Chat/enums";
+import TheFriendsList from "../../components/FriendsList";
 import useIsMobile from "../../hooks/useIsMobile";
-import { MobileView, PopupType } from "./enums";
+import { MobileView } from "./enums";
 import type { ISetFriendPageState } from "./Friends";
 import styles from "./FriendsWindow.module.scss";
 
@@ -18,7 +19,6 @@ function FriendsListTitle()
 function FriendsList( { setPageState } : IFriendsWindow )
 {
 	const isMobile = useIsMobile();
-	const { user } = useUser();
 	const { setMobileView, setActiveChat, setPopuptype, setSelectedFriend } = setPageState;
 
 	function handleOpenChat( userID: string )
@@ -41,19 +41,16 @@ function FriendsList( { setPageState } : IFriendsWindow )
 		setSelectedFriend(username);
 	}
 
-	// Convert Friends Record to an array of [userID, friend] pairs so it can be looped over (and sort alphabetically on username)
-	const friends = Object.entries(user.friends).sort(([_userIDA, friendA], [_userIDB, friendB]) => friendA.username.localeCompare(friendB.username));
-
 	return (
-		<div className={styles.friendsList}>
-			{ friends.map(([userID, {avatar, username}]) =>
-				<div className={styles.friend} key={username}>
-					<FriendButton username={username} avatar={avatar} onClick={ () => handleOpenChat(userID) } />
+		<TheFriendsList>
+			{ (userID, username, avatar) => (
+				<>
+					<FriendButton username={username} avatar={avatar} panel={false} onClick={ () => handleOpenChat(userID) } />
 					<InviteToPlayButton onClick={ () => handleInviteToPlay(username) } />
 					<RemoveFriendButton onClick={ () => handleRemoveFriend(username) } />
-				</div>
+				</>
 			)}
-		</div>
+		</TheFriendsList>
 	)
 }
 
@@ -66,5 +63,3 @@ export default function FriendsWindow( { setPageState } : IFriendsWindow )
 		</div>
 	)
 }
-
-

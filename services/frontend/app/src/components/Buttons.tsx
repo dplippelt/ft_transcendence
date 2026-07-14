@@ -2,9 +2,11 @@ import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
 import { EditWindowType } from "../pages/Profile/enums";
-import { SendHorizontal, Swords, UserMinus } from "lucide-react";
+import { ChevronLeft, MessageCircle, MessageCircleWarning, SendHorizontal, Swords, UserMinus } from "lucide-react";
 import Avatar, { AvatarSize } from "./Avatar";
 import { MobilePosition } from "../utils/utils";
+import { useUser } from "../contexts/UserContext";
+import { Dot } from "lucide-react";
 
 interface IMenuButton
 {
@@ -25,6 +27,11 @@ interface IBottomButton
 	label: string;
 	onClick: () => void;
 	mobilePosition?: string;
+}
+
+interface IBackButton
+{
+	path: string;
 }
 
 interface IEditButton
@@ -51,6 +58,7 @@ interface IFriendButton
 {
 	username: string;
 	avatar: string;
+	panel: boolean;
 	onClick: () => void;
 }
 
@@ -60,6 +68,17 @@ interface ISendButton
 }
 
 interface IActionButton
+{
+	onClick: () => void;
+}
+
+interface IOpenSideBarButton
+{
+	hasNewMsg: boolean;
+	onClick: () => void;
+}
+
+interface ISideBarBackButton
 {
 	onClick: () => void;
 }
@@ -79,11 +98,11 @@ export function BottomButton( { label, onClick, mobilePosition="" } : IBottomBut
 	return <button className={`${styles.bottomButton} type="button" ${mobilePosition}`} onClick={onClick}>{label}</button>;
 }
 
-export function BackButton()
+export function BackButton( { path } : IBackButton )
 {
 	const navigate = useNavigate();
 
-	return <BottomButton label="Back" onClick={ () => navigate(-1) } mobilePosition={MobilePosition.bottom} />;
+	return <BottomButton label="Back" onClick={ () => navigate(path) } mobilePosition={MobilePosition.bottom} />;
 }
 
 export function EditButton( { editType, setEditWindowType } : IEditButton )
@@ -110,12 +129,27 @@ export function SendButton( { onClick } : ISendButton )
 	);
 }
 
-export function FriendButton( { username, avatar, onClick } : IFriendButton )
+export function FriendButton( { username, avatar, panel, onClick } : IFriendButton )
 {
+	const userFunc = useUser();
+	const numUnreadMsg = userFunc.numUnreadMsg(username);
+
+	function usernameStyle() : string
+	{
+		let usernameStyle = styles.friendUsername;
+
+		if ( numUnreadMsg )
+			usernameStyle += " " + styles.friendUnread;
+
+		return usernameStyle;
+	}
+
 	return (
 		<button className={styles.friendButton} type="button" onClick={onClick}>
 			<Avatar src={avatar} alt={`${username}'s avatar`} size={AvatarSize.smaller} />
-			<div className={styles.friendUsername}>{username}</div>
+			<div className={usernameStyle()}>{username}</div>
+			{ !panel && numUnreadMsg !== 0 && <div className={usernameStyle()}>{"(" + (numUnreadMsg > 99 ? "99+" : numUnreadMsg) + ")"}</div> }
+			{ panel && numUnreadMsg !== 0 && <Dot size={24} /> }
 		</button>
 	)
 }
@@ -134,6 +168,31 @@ export function RemoveFriendButton( { onClick } : IActionButton )
 	return (
 		<button className={styles.actionButton} type="button" aria-label="Remove user from friends list" title="Remove friend" onClick={onClick}>
 			<UserMinus size={20} />
+		</button>
+	);
+}
+
+export function OpenSideBarButton( { hasNewMsg, onClick } : IOpenSideBarButton )
+{
+	if ( hasNewMsg )
+		return (
+			<button className={styles.sideBarButton} onClick={onClick}>
+				<MessageCircleWarning size={30} className={styles.newMsgGlow} />
+			</button>
+		);
+
+	return (
+		<button className={styles.sideBarButton} onClick={onClick}>
+			<MessageCircle size={30} />
+		</button>
+	);
+}
+
+export function SideBarBackButton( { onClick } : ISideBarBackButton )
+{
+	return (
+		<button className={styles.actionButton} onClick={onClick}>
+			<ChevronLeft />
 		</button>
 	);
 }

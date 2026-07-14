@@ -1,0 +1,19 @@
+@use '../mixins' as *;
+
+.friendsList
+{
+	@include scrollbar;
+
+	height: 100%;
+}
+
+.friend
+{
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	width: 100%;
+	max-width: 90%;
+	column-gap: 0.4rem;
+	margin-bottom: 0.4rem;
+	overflow-x: hidden;
+}

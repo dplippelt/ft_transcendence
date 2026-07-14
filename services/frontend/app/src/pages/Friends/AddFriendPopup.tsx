@@ -5,7 +5,7 @@ import { ErrorType } from "../../utils/utils";
 import { TextInput } from "../../components/TextInput";
 import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
-import { PopupType } from "./enums";
+import { PopupType } from "../../components/Chat/enums";
 import { getValidUsername, isErrorType } from "../../utils/usernameCheck";
 
 interface IAddFriendPopup

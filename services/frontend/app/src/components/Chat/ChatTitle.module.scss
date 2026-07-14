@@ -1,0 +1,19 @@
+@use '../../variables' as *;
+
+.chatTitle
+{
+	display: flex;
+	flex-direction: row;
+	column-gap: 0.4rem;
+	font-size: 0.9rem;
+	font-family: $text-font;
+	justify-self: center;
+	align-self: center;
+	align-items: center;
+	margin-bottom: 0.3rem;
+}
+
+.chatTitleText
+{
+	margin-top: 0.1rem;
+}
