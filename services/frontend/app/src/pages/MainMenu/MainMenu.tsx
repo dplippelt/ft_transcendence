@@ -27,7 +27,7 @@ function Buttons()
 	return (
 		<MenuButtons>
 			<MenuButton label="New game" onClick={ () => {} } />
-			<MenuButton label="Multiplayer" onClick={ () => {} } />
+			<MenuButton label="Multiplayer" onClick={ () => navigate(RoutePath.multiplayer) } />
 			<MenuButton label="Friends" onClick={ () => navigate(RoutePath.friends) } />
 			<MenuButton label="Profile" onClick={ () => navigate(RoutePath.profile) } />
 			<MenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname } }) } />

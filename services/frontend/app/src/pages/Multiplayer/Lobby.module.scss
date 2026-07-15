@@ -1,0 +1,61 @@
+@use '../../mixins' as *;
+@use '../../variables' as *;
+
+.lobbyWindow
+{
+	@include window;
+	@include menuWindow;
+
+	height: min(800px, 60vh);
+	grid-template-rows: auto 1fr;
+	padding-bottom: 1rem;
+}
+
+.players
+{
+	display: grid;
+	grid-template-columns: 13ch 13ch;
+	column-gap: 5rem;
+	justify-self: center;
+	justify-content: center;
+
+	@media (max-width: "720px")
+	{
+		grid-template-columns: 10ch 10ch;
+		column-gap: 1rem;
+	}
+
+	@media (max-width: "480px")
+	{
+		grid-template-columns: 10ch 10ch;
+		column-gap: 0rem;
+	}
+}
+
+.player
+{
+	display: grid;
+	grid-template-rows: auto auto;
+	row-gap: 0.4rem;
+	justify-items: center;
+}
+
+.username
+{
+	font-size: 1rem;
+	max-width: 13ch;
+	overflow-x: hidden;
+	white-space: nowrap;
+	text-overflow: ellipsis;
+
+	@media (max-width: "720px")
+	{
+		max-width: 10ch;
+	}
+}
+
+.chat
+{
+	display: flex;
+	flex-direction: column;
+}

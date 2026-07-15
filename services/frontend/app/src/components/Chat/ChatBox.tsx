@@ -5,6 +5,7 @@ import styles from "./ChatBox.module.scss";
 import { useChatHistory } from "../../contexts/ChatHistoryContext";
 import { useUser } from "../../contexts/UserContext";
 import { useFriends } from "../../contexts/FriendsContext";
+import { useLobbies } from "../../contexts/LobbiesContext";
 
 export const DRAFT_STORAGE_PREFIX = "draft:";
 
@@ -38,6 +39,29 @@ export default function ChatBox()
 		if ( msg.trim().length > 0 )
 		{
 			addChatHistory(activeFriendID!, user.username, msg);
+			setMsg("");
+		}
+	}
+
+	return (
+		<div className={styles.chatBox}>
+			<ChatInput placeholder="Type here..." onSend={handleSend} msg={msg} setMsg={setMsg} />
+			<SendButton onClick={handleSend} />
+		</div>
+	);
+}
+
+export function LobbyChatBox()
+{
+	const { addChatHistory } = useLobbies();
+	const { user } = useUser();
+	const [msg, setMsg] = useState<string>("");
+
+	function handleSend()
+	{
+		if ( msg.trim().length > 0 )
+		{
+			addChatHistory(user.userID, user.username, msg);
 			setMsg("");
 		}
 	}

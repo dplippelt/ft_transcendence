@@ -1,7 +1,9 @@
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import styles from "./ChatHistory.module.scss";
-import { useChatHistory } from "../../contexts/ChatHistoryContext";
+import { useChatHistory, type IChatMsg } from "../../contexts/ChatHistoryContext";
 import { useFriends } from "../../contexts/FriendsContext";
+import { useLobbies } from "../../contexts/LobbiesContext";
+import { useUser } from "../../contexts/UserContext";
 
 interface IChatMessage
 {
@@ -51,4 +53,26 @@ export default function ChatHistory()
 			)}
 		</div>
 	);
+}
+
+export function LobbyChatHistory()
+{
+	const scrollRef = useRef<HTMLDivElement>(null);
+	const { user } = useUser();
+	const { getChatHistory } = useLobbies();
+	const chatHistory = getChatHistory(user.userID);
+
+	useLayoutEffect(() =>
+	{
+		if (scrollRef.current)
+			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+	}, [chatHistory]);
+
+	return (
+		<div className={styles.chatHistory} ref={scrollRef}>
+			{ chatHistory?.map((chatMsg, idx) =>
+				<ChatMessage key={idx} username={chatMsg.username} message={chatMsg.message} />
+			)}
+		</div>
+	)
 }

@@ -9,6 +9,8 @@ import Profile from "./pages/Profile/Profile"
 import Auth from "./pages/Auth/Auth"
 import Friends from "./pages/Friends/Friends"
 import { RoutePath } from "./utils/utils"
+import Multiplayer from "./pages/Multiplayer/Multiplayer"
+import Lobby from "./pages/Multiplayer/Lobby"
 
 export default function App()
 {
@@ -26,6 +28,8 @@ export default function App()
 				<Route path={RoutePath.landingPage} element={ <LandingPage/> } />
 				<Route path={RoutePath.auth} element={ <Auth/> } />
 				<Route path={RoutePath.mainMenu} element={ <MainMenu/> } />
+				<Route path={RoutePath.multiplayer} element={ <Multiplayer/> } />
+				<Route path={RoutePath.mpLobby} element={ <Lobby/> } />
 				<Route path={RoutePath.friends} element={ <Friends/> } />
 				<Route path={RoutePath.profile} element={ <Profile/> } />
 				<Route path={RoutePath.leaderboard} element={ <Leaderboard/> } />
