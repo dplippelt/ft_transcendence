@@ -1,6 +1,6 @@
-import { useLayoutEffect, useRef, useState } from "react";
+import { useLayoutEffect, useRef } from "react";
 import styles from "./ChatHistory.module.scss";
-import { useChatHistory, type IChatMsg } from "../../contexts/ChatHistoryContext";
+import { useChatHistory } from "../../contexts/ChatHistoryContext";
 import { useFriends } from "../../contexts/FriendsContext";
 import { useLobbies } from "../../contexts/LobbiesContext";
 import { useUser } from "../../contexts/UserContext";
