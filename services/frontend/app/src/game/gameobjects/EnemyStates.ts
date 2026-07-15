@@ -15,6 +15,7 @@ export interface EnemyStates {
   recall: IFiniteState | null;
 }
 
+// TODO: What if the player forced the enemy outside the room?
 export class IdleState implements EnemyState {
   enemy: Enemy;
   enemyData: EnemyData;
@@ -34,11 +35,10 @@ export class IdleState implements EnemyState {
   }
 
   onUpdate(time: number, delta: number): IFiniteState | null {
-    if (this.enemy.sensor.isPlayerInSight()) {
+    if (this.enemy.IsPlayerInSight()) {
       return this.enemyData.states.chase;
     }
 
-    // console.log(`${this.waitFor} - ${delta}; ${time}`);
     this.waitFor -= delta;
     if (this.waitFor > 0) {
       return null;
@@ -59,28 +59,27 @@ export class WanderState implements EnemyState {
   }
 
   onEnter(): void {
-    // TODO: Wander on room tiles
-    // Enemies are bound by the rooms
-    // Enemies only wander inside the rooms
-    this.target.x = Math.RND.between(0, 300);
-    this.target.y = Math.RND.between(0, 300);
+    const point = this.enemy.dungeonLocation.getRandomPositionInRoom();
+    this.target = new Math.Vector2(point.x, point.y);
 
     console.log(`Enter Wander State towards ${this.target}`);
   }
 
   onUpdate(): IFiniteState | null {
-    if (this.enemy.sensor.isPlayerInSight()) {
+    if (this.enemy.IsPlayerInSight()) {
       return this.enemyData.states.chase;
     }
 
+    // call IsTargetReached(target)
+    // call MoveTowards(target) ? keep the logic more abstract and the state more decision like
     const position = this.enemy.getWorldPoint();
-    const direction = this.target.clone().subtract(position);
-    if (direction.lengthSq() < 32.0) {
+    const delta = this.target.clone().subtract(position);
+    if (delta.lengthSq() < 32.0) { // TODO: MAGIC VALUE
       return this.enemyData.states.idle;
     }
 
-    direction.normalize();
-    this.enemy.directionInput.setInputDirection(direction.x, direction.y);
+    delta.normalize();
+    this.enemy.directionInput.setInputDirection(delta.x, delta.y);
     return null;
   }
 
@@ -117,8 +116,9 @@ export class ChaseState implements EnemyState {
     }
 
     const delta = this.player.getWorldPoint().subtract(this.enemy.getWorldPoint());
-    if (delta.lengthSq() > this.maxChaseDistanceSq) {
-      return this.enemyData.states.recall;
+    if (delta.lengthSq() > this.maxChaseDistanceSq
+      || this.enemy.dungeonLocation.isTargetWithinRoom(this.player.dungeonLocation)) {
+      return this.enemyData.states.idle; // TODO: Possible recall required?
     }
 
     if (delta.lengthSq() < 16.0) {

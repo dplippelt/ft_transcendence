@@ -5,6 +5,9 @@ import MovementComponent from "../components/MovementComponent";
 import { IdleState, WanderState, ChaseState, RecallState, type EnemyStates } from "./EnemyStates";
 import { EnemyInput } from "../components/EnemyInput";
 import { EnemySightSensor } from "../components/EnemySightSensor";
+import type { Dungeon } from "./Dungeon";
+import { DungeonLocation } from "../components/DungeonLocation";
+import type { Room } from "../map/procedural";
 
 interface Range {
   minimum: number;
@@ -24,8 +27,9 @@ export class Enemy extends Physics.Arcade.Sprite {
   movement: MovementComponent;
   sensor: EnemySightSensor;
   directionInput: EnemyInput;
+  dungeonLocation: DungeonLocation;
 
-  constructor(scene: Scene, x: number, y: number) {
+  constructor(scene: Scene, x: number, y: number, room: Room, dungeon: Dungeon) {
     super(scene, x, y, AssetsKey.Skeleton); // TODO: EnemyData for specifics
 
     const enemyData: EnemyData = {
@@ -42,15 +46,24 @@ export class Enemy extends Physics.Arcade.Sprite {
     };
 
     this.sensor = new EnemySightSensor(this);
+    this.dungeonLocation = new DungeonLocation(this, room, dungeon);
 
     // Setup up the FSM
     enemyData.states.idle = new IdleState(this, enemyData);
     enemyData.states.wander = new WanderState(this, enemyData);
     enemyData.states.chase = new ChaseState(this, enemyData);
     enemyData.states.recall = new RecallState(this, enemyData);
-    this.fsm = new FiniteStateMachine(this, enemyData.states.idle);
+    // this.fsm = new FiniteStateMachine(this, enemyData.states.idle);
 
     this.directionInput = new EnemyInput();
     this.movement = new MovementComponent(this, enemyData.movementSpeed.maximum, this.directionInput);
+
+    this.scene.add.existing(this);
+    this.scene.physics.add.existing(this);
+  }
+
+  IsPlayerInSight(): boolean {
+    const player = this.sensor.getPlayer();
+    return player !== null && this.dungeonLocation.isTargetWithinRoom(player.dungeonLocation);
   }
 }
