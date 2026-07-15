@@ -77,6 +77,24 @@ export class Vector2 {
     return this;
   }
 
+  mul(other: Vector2): Vector2 {
+    this.x *= other.x;
+    this.y *= other.y;
+
+    return this;
+  }
+
+  mulXY(x: number, y: number): Vector2 {
+    this.x *= x;
+    this.y *= y
+
+    return this;
+  }
+
+  equals(other: Vector2) {
+    return this.x === other.x && this.y === other.y;
+  }
+
   unpack(): [number, number] {
     return [this.x, this.y];
   }
@@ -95,6 +113,10 @@ export class Vector2 {
 
   static sub(a: Vector2, b: Vector2): Vector2 {
     return new Vector2(a.x - b.x, a.y - b.y);
+  }
+
+  static mul(a: Vector2, b: Vector2): Vector2 {
+    return new Vector2(a.x * b.x, a.y * b.y);
   }
 }
 
@@ -122,6 +144,15 @@ export class BoundingBox {
     );
   }
 
+  isPointWithin(point: Vector2) {
+    return !(
+      point.x < this.min.x ||
+      point.x > this.max.x ||
+      point.y < this.min.y ||
+      point.y > this.max.y
+    );
+  }
+
   place(position: Vector2): BoundingBox {
     this.position = position.clone();
     this.min = Vector2.sub(this.position, this.halfSize);
@@ -137,13 +168,24 @@ export class BoundingBox {
 
     return this;
   }
+
+  floor(): BoundingBox {
+    this.min.floor();
+    this.max.floor();
+    this.position = Vector2.add(this.min, this.max).scale(0.5);
+    this.size = Vector2.sub(this.max, this.min);
+    this.halfSize = this.size.clone().scale(0.5);
+
+    return this;
+  }
 }
 
-// min inclusive and max exclusive => [min, max)
+// min inclusive and max exclusive integer => [min, max)
 export function random(min: number, max: number): number {
   return Math.floor(min + Math.random() * (max - min));
 }
 
+// random integer point between two values => [min, max)
 export function randomPoint(min: Vector2, max: Vector2): Vector2 {
   return new Vector2(random(min.x, max.x), random(min.y, max.y));
 }
@@ -155,9 +197,7 @@ export interface weight {
 
 /// source: https://blog.bruce-hill.com/a-faster-weighted-random-choice
 export function weightedRandom(weights: weight[]): weight {
-  let remaining: number =
-    Math.random() *
-    weights.reduce((sum: number, curr: weight) => sum + curr.weight, 0);
+  let remaining: number = Math.random() * weights.reduce((sum: number, curr: weight) => sum + curr.weight, 0);
 
   for (const element of weights) {
     remaining -= element.weight;
