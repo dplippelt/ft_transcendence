@@ -19,7 +19,7 @@ function FriendsListTitle()
 
 function FriendsList( { setMobileView, setPopuptype } : IFriendsWindow )
 {
-	const isMobile = useIsMobile();
+	const isMobile = useIsMobile(720);
 	const { setSelectedFriendID, setActiveFriendID } = useFriends();
 
 	function handleOpenChat( friendID: string )

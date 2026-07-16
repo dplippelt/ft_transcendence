@@ -29,11 +29,11 @@ export default function AddFriendPopup( { setPopuptype } : IAddFriendPopup )
 
 		const validUsername = result;
 
-		if ( validUsername === user.username )
+		if ( validUsername.toLowerCase() === user.username.toLowerCase() )
 			return setError(ErrorType.cannotAddSelf);
 
 		// Mock username checks
-		if ( validUsername.length === 1 )
+		if ( validUsername.toLowerCase().length === 1 )
 			return setError(ErrorType.userDoesNotExist);
 		if ( Object.values(friends).some(friend => friend.username.toLowerCase() === validUsername.toLowerCase()) )
 			return setError(ErrorType.userAlreadyFriend);

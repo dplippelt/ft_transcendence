@@ -59,6 +59,8 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 
 	function resetFriends()
 	{
+		setSelectedFriendID(undefined);
+		setActiveFriendID(undefined);
 		setFriends(defaultFriends);
 	}
 
@@ -69,25 +71,37 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 		const avatar = username.length % 2 ? testAvatar : guestAvatar;
 		const friendID = username + "_ID"; // TODO: fetch friend's userID from DB later
 
-		setFriends(prev => ({
-			...prev,
-			[friendID]: {
-				username: username,
-				avatar: avatar,
+		setFriends(prev => {
+			if ( prev[friendID] !== undefined )
+				return prev;
+
+			return {
+				...prev,
+				[friendID]: {
+					username: username,
+					avatar: avatar,
+				}
 			}
-		}));
+		});
 
 		addChatHistoryEntry(friendID);
 	}
 
 	function removeFriend( friendID: string )
 	{
-		setFriends(prev =>
-		{
-			const newFriends = prev;
+		setFriends(prev => {
+			if ( prev[friendID] === undefined )
+				return prev;
+
+			const newFriends = { ...prev };
 			delete newFriends[friendID];
 			return newFriends;
 		})
+
+		if ( friendID === activeFriendID )
+			setActiveFriendID(undefined);
+		if ( friendID === selectedFriendID )
+			setSelectedFriendID(undefined);
 
 		removeChatHistoryEntry(friendID);
 	}

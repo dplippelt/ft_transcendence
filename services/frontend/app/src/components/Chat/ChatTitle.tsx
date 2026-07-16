@@ -33,7 +33,15 @@ export function ChatTitleSideBar( { activeFriend } : IChatTitleSideBar )
 export function ChatTitle( { activeFriend, setPopuptype } : IChatTitle )
 {
 	const { activeFriendID, setSelectedFriendID } = useFriends();
-	const isMobile = useIsMobile();
+	const isMobile = useIsMobile(720);
+	const extraStyling = setExtraStyling();
+
+	function setExtraStyling() : string
+	{
+		if (activeFriend)
+			return "";
+		return styles.noChatSelected;
+	}
 
 	function chatTitle() : string
 	{
@@ -51,7 +59,7 @@ export function ChatTitle( { activeFriend, setPopuptype } : IChatTitle )
 	return(
 		<div className={styles.chatTitle}>
 			{ activeFriend && <Avatar src={activeFriend.avatar} alt={`${activeFriend.username}'s avatar`}  size={AvatarSize.small} /> }
-			<div className={styles.chatTitleText}>{chatTitle()}</div>
+			<div className={`${styles.chatTitleText} ${extraStyling}`}>{chatTitle()}</div>
 			{ isMobile && activeFriend && <InviteToPlayButton onClick={ () => handleInviteToPlay() } />}
 		</div>
 	);

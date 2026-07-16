@@ -20,4 +20,11 @@
 	overflow-x: hidden;
 	white-space: nowrap;
 	text-overflow: ellipsis;
+	text-align: center;
+}
+
+.noChatSelected
+{
+	max-width: none;
+	white-space: normal;
 }

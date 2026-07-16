@@ -6,7 +6,7 @@ import { MenuTitle } from "../../components/PageTitle";
 import FriendsWindow from "./FriendsWindow";
 import styles from "./Friends.module.scss";
 import ChatWindow from "./ChatWindow";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useIsMobile from "../../hooks/useIsMobile";
 import React from "react";
 import { MobilePosition, RoutePath } from "../../utils/utils";
@@ -35,7 +35,7 @@ interface IFriendsContainer
 
 function Buttons( { mobileView, setMobileView, setPopuptype } : IButtons )
 {
-	const isMobile = useIsMobile();
+	const isMobile = useIsMobile(720);
 	const location = useLocation();
 	const path = location.state?.from ?? RoutePath.mainMenu;
 
@@ -52,7 +52,13 @@ function Buttons( { mobileView, setMobileView, setPopuptype } : IButtons )
 function FriendsContainer( { mobileView, setMobileView, setPopuptype } : IFriendsContainer )
 {
 	const { activeFriendID } = useFriends()
-	const isMobile = useIsMobile();
+	const isMobile = useIsMobile(720);
+
+	useEffect(() =>
+	{
+		if ( isMobile && !activeFriendID && mobileView === MobileView.chat )
+			setMobileView(MobileView.friends);
+	}, [isMobile, activeFriendID]);
 
 	if ( isMobile )
 	{
@@ -60,7 +66,7 @@ function FriendsContainer( { mobileView, setMobileView, setPopuptype } : IFriend
 			<div className={styles.container}>
 				{ mobileView === MobileView.friends
 				? <FriendsWindow setMobileView={setMobileView} setPopuptype={setPopuptype} />
-				: <ChatWindow key={activeFriendID} setPopuptype={setPopuptype} /> }
+				: <ChatWindow setPopuptype={setPopuptype} /> }
 			</div>
 		);
 	}
@@ -68,7 +74,7 @@ function FriendsContainer( { mobileView, setMobileView, setPopuptype } : IFriend
 	return (
 		<div className={styles.container}>
 			<FriendsWindow setMobileView={setMobileView} setPopuptype={setPopuptype} />
-			<ChatWindow key={activeFriendID} setPopuptype={setPopuptype} />
+			<ChatWindow setPopuptype={setPopuptype} />
 		</div>
 	);
 }

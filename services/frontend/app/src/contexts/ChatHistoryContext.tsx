@@ -85,7 +85,7 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 
 		setChatHistory(prev => ({
 			...prev,
-			[friendID]: [ ...prev[friendID], newMsg ]
+			[friendID]: [ ...(prev[friendID] ?? []), newMsg ]
 		}));
 	}
 
@@ -96,7 +96,7 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 			const friendChatHistory = prev[friendID];
 			if ( !friendChatHistory )
 				return prev;
-			
+
 			const hasUnread = friendChatHistory.some(msg => !msg.read);
 			if ( !hasUnread )
 				return prev;
@@ -130,19 +130,27 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 
 	function addChatHistoryEntry( friendID: string )
 	{
-		setChatHistory(prev => ({
-			...prev,
-			[friendID]: [],
-		}));
+		setChatHistory(prev => {
+			if ( prev[friendID] !== undefined )
+				return prev;
+
+			return {
+				...prev,
+				[friendID]: [],
+			}
+		});
 	}
 
 	function removeChatHistoryEntry( friendID: string )
 	{
 		setChatHistory(prev => {
-			const chatHistory = prev;
+			if ( prev[friendID] === undefined )
+				return prev;
+
+			const chatHistory = { ...prev };
 			delete chatHistory[friendID];
 			return chatHistory;
-		})
+		});
 	}
 
 	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)

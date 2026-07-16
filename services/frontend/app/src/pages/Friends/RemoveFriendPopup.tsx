@@ -1,9 +1,9 @@
 import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
 import { PopupType } from "../../components/Chat/enums";
-import React from "react";
+import React, { useEffect } from "react";
 import styles from "./FriendPopup.module.scss";
-import { useFriends } from "../../contexts/FriendsContext";
+import { useFriends, type IFriendData } from "../../contexts/FriendsContext";
 
 interface IRemoveFriendPopup
 {
@@ -12,24 +12,46 @@ interface IRemoveFriendPopup
 
 export default function RemoveFriendPopup( { setPopuptype } : IRemoveFriendPopup )
 {
-	const { friends, selectedFriendID, activeFriendID, setSelectedFriendID, setActiveFriendID, removeFriend } = useFriends();
-	const friendName = friends[selectedFriendID!].username;
+	const { friends, selectedFriendID, setSelectedFriendID, removeFriend } = useFriends();
+	const friend = getSelectedFriend();
 
-	function handleRemoveFriend()
+	useEffect(() =>
 	{
-		removeFriend(selectedFriendID!);
-		if ( selectedFriendID === activeFriendID )
-			setActiveFriendID(undefined);
+		if ( !friend )
+			closePopup();
+	}, [friend]);
+
+	function closePopup()
+	{
 		setSelectedFriendID(undefined);
 		setPopuptype(PopupType.none);
 	}
 
+	function getSelectedFriend() : IFriendData | undefined
+	{
+		if ( !selectedFriendID )
+			return undefined;
+		return friends[selectedFriendID];
+	}
+
+	// TODO: for backend integration:
+	// The popup should remain open while the request is pending and show an error if it fails. We can use async to achieve this.
+	// The button should also be disable while submitting so double-clicking doesn't send two requests.
+	function handleRemoveFriend()
+	{
+		removeFriend(selectedFriendID!);
+		closePopup();
+	}
+
+	if ( !friend )
+		return null;
+
 	return (
 			<>
-				<label className={styles.query}>{`Are you sure you want to remove ${friendName} from your friends list?`}</label>
+				<label className={styles.query}>{`Are you sure you want to remove ${friend.username} from your friends list?`}</label>
 				<PopupButtons>
 					<MossButton label="Remove" onClick={handleRemoveFriend} />
-					<MossButton label="Cancel" onClick={ () => setPopuptype(PopupType.none) } />
+					<MossButton label="Cancel" onClick={closePopup} />
 				</PopupButtons>
 			</>
 		)

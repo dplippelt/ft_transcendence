@@ -24,7 +24,7 @@ function FriendsListTitle()
 function SidePanelToggle( { setCollapsed } : ISidePanelToggle )
 {
 	const { hasNewMsg } = useChatHistory();
-	const isMobile = useIsMobile();
+	const isMobile = useIsMobile(480);
 	const navigate = useNavigate();
 	const location = useLocation();
 

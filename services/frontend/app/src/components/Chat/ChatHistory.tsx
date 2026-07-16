@@ -27,12 +27,13 @@ export default function ChatHistory()
 	const { activeFriendID } = useFriends();
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const { chatHistory, setChatToRead } = useChatHistory();
+	const activeChatHistory = activeFriendID ? chatHistory[activeFriendID] : undefined;
 
 	useLayoutEffect(() =>
 	{
 		if (scrollRef.current)
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-	}, [chatHistory]);
+	}, [activeChatHistory, activeFriendID]);
 
 	useLayoutEffect(() =>
 	{
@@ -40,9 +41,12 @@ export default function ChatHistory()
 			setChatToRead(activeFriendID);
 	}, [activeFriendID]);
 
+	if ( !activeChatHistory )
+		return null; // or a loading message;
+
 	return (
 		<div className={styles.chatHistory} ref={scrollRef}>
-			{ chatHistory[activeFriendID!].map((chatMsg, idx) =>
+			{ activeChatHistory.map((chatMsg, idx) =>
 				<ChatMessage key={idx} username={chatMsg.username} message={chatMsg.message} />
 			)}
 		</div>
