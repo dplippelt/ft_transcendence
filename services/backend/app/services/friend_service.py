@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.models.friend_request import FriendRequest
+from app.models.friendship import Friendship
 from app.models.user import User
 
 
@@ -40,11 +41,47 @@ def get_existing_friend_request(db: Session, user_a_id: int, user_b_id: int,) ->
     )
 
 
+def get_friendship(db: Session, user_a_id: int, user_b_id: int) -> Friendship | None:
+    normalized_a_id, normalized_b_id = normalize_friend_pair(user_a_id, user_b_id)
+    return (
+        db.query(Friendship)
+        .filter(
+            Friendship.user_a_id == normalized_a_id,
+            Friendship.user_b_id == normalized_b_id,
+        )
+        .first()
+    )
+
+
+def create_friendship(db: Session, user_a_id: int, user_b_id: int) -> Friendship:
+    normalized_a_id, normalized_b_id = normalize_friend_pair(user_a_id, user_b_id)
+    friendship = Friendship(
+        user_a_id=normalized_a_id,
+        user_b_id=normalized_b_id,
+    )
+    db.add(friendship)
+    return friendship
+
+
 def send_friend_request(db: Session, current_user: User, recipient: User,) -> FriendRequest:
     if recipient.id == current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="You cannot send a friend request to yourself.",
+        )
+
+    existing_friendship = get_friendship(db, current_user.id, recipient.id)
+
+    if existing_friendship:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Users are already friends.",
+        )
+
+    existing_request = get_existing_friend_request(
+        db,
+        current_user.id,
+        recipient.id,
         )
 
     if existing_request:
@@ -55,14 +92,14 @@ def send_friend_request(db: Session, current_user: User, recipient: User,) -> Fr
             )
 
     if existing_request.status == PENDING:
-        if existing_request.requester_id == current_user.id:
+        if existing_request.recipient_id == current_user.id:
             # Reverse pending request exists:
             # A sent request to B, and now B sends request to A.
             # Treat this as auto-accept.
             existing_request.status = ACCEPTED
             existing_request.responded_at = datetime.now(timezone.utc)
 
-            # Todo: Add logic to create a friendship record in the database
+            create_friendship(db, existing_request.requester_id, existing_request.recipient_id)
 
             try:
                 db.commit()
@@ -76,6 +113,7 @@ def send_friend_request(db: Session, current_user: User, recipient: User,) -> Fr
             db.refresh(existing_request)
 
             return existing_request
+
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A pending friend request already exists.",
@@ -83,8 +121,8 @@ def send_friend_request(db: Session, current_user: User, recipient: User,) -> Fr
 
     if existing_request.status == REJECTED:
         # Allow sending again after rejection.
-        requester_id = current_user.id
-        recipient_id = recipient.id
+        existing_request.requester_id = current_user.id
+        existing_request.recipient_id = recipient.id
         existing_request.status = PENDING
         existing_request.responded_at = None
 
