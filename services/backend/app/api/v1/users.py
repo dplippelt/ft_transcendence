@@ -1,20 +1,19 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from sqlalchemy.orm import Session
+
 
 from app.core.security import decode_access_token
-from app.db.database import get_db
 from app.models.user import User
 from app.schemas.user import UserResponse
+from app.api.dependencies import DbSession
 
 
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
-DbSession = Annotated[Session, Depends(get_db)]
 BearerToken = Annotated[str, Depends(oauth2_scheme)]
 
 
@@ -59,10 +58,6 @@ def get_current_user(token: BearerToken, db: DbSession) -> User:
         )
 
     return user
-
-
-CurrentUser = Annotated[User, Depends(get_current_user)]
-
 
 @router.get("/me", response_model=UserResponse)
 def get_me(current_user: CurrentUser):
