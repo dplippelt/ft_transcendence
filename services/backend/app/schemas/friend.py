@@ -10,6 +10,7 @@ class FriendRequestStatus(str, Enum):
     rejected = "rejected"
 
 
+# It is a small public user object for friend related responses, so that we don't expose sensitive user information
 class FriendUserResponse(BaseModel):
     id: int
     username: str | None = None
@@ -21,10 +22,12 @@ class FriendUserResponse(BaseModel):
     }
 
 
+# schemas for sending a friend request
 class FriendRequestCreate(BaseModel):
     username: str = Field(min_length=3, max_length=50)
 
 
+# schemas respresents a pending or handled friend request
 class FriendRequestResponse(BaseModel):
     id: int
     requester: FriendUserResponse
@@ -38,6 +41,7 @@ class FriendRequestResponse(BaseModel):
     }
 
 
+# schemas respresents an actual confirmed friend in the user's friend list
 class FriendResponse(BaseModel):
     id: int
     friend: FriendUserResponse
@@ -48,5 +52,6 @@ class FriendResponse(BaseModel):
     }
 
 
+# schemas for returns a list of friends in the user's friend list
 class FriendListResponse(BaseModel):
     friends: list[FriendResponse]
