@@ -1,9 +1,9 @@
 from datetime import datetime, timezone
 
-from fastapi import HTTPException, status
 from sqlalchemy import and_, or_
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from app.core.exceptions import bad_request, forbidden, not_found
 
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
@@ -15,11 +15,20 @@ ACCEPTED = "accepted"
 REJECTED = "rejected"
 
 
-def normalize_friend_pair(user_a_id:int, user_b_id:int) -> tuple[int, int]:
-    return (
-        min(user_a_id, user_b_id),
-        max(user_a_id, user_b_id),
-    )
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def commit_or_bad_request(db: Session, detail: str,) -> None:
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise bad_request(detail)
+
+
+def normalize_friend_pair(user_a_id: int, user_b_id: int,) -> tuple[int, int]:
+    return (min(user_a_id, user_b_id), max(user_a_id, user_b_id),)
 
 
 def get_existing_friend_request(db: Session, user_a_id: int, user_b_id: int,) -> FriendRequest | None:
@@ -41,8 +50,9 @@ def get_existing_friend_request(db: Session, user_a_id: int, user_b_id: int,) ->
     )
 
 
-def get_friendship(db: Session, user_a_id: int, user_b_id: int) -> Friendship | None:
-    normalized_a_id, normalized_b_id = normalize_friend_pair(user_a_id, user_b_id)
+def get_friendship(db: Session, user_a_id: int, user_b_id: int,) -> Friendship | None:
+    normalized_a_id, normalized_b_id = normalize_friend_pair(user_a_id, user_b_id,)
+
     return (
         db.query(Friendship)
         .filter(
@@ -53,89 +63,104 @@ def get_friendship(db: Session, user_a_id: int, user_b_id: int) -> Friendship | 
     )
 
 
-def create_friendship(db: Session, user_a_id: int, user_b_id: int) -> Friendship:
-    normalized_a_id, normalized_b_id = normalize_friend_pair(user_a_id, user_b_id)
-    friendship = Friendship(
-        user_a_id=normalized_a_id,
-        user_b_id=normalized_b_id,
-    )
+def create_friendship(db: Session, user_a_id: int, user_b_id: int,) -> Friendship:
+    normalized_a_id, normalized_b_id = normalize_friend_pair(user_a_id, user_b_id,)
+
+    friendship = Friendship(user_a_id=normalized_a_id, user_b_id=normalized_b_id,)
+
     db.add(friendship)
+
     return friendship
+
+
+def get_or_create_friendship(db: Session, user_a_id: int, user_b_id: int,) -> Friendship:
+    existing_friendship = get_friendship(db, user_a_id, user_b_id,)
+
+    if existing_friendship:
+        return existing_friendship
+
+    return create_friendship(db, user_a_id, user_b_id,)
+
+
+def require_pending_received_request(db: Session, request_id: int, current_user_id: int, action: str,) -> FriendRequest:
+    friend_request = (
+        db.query(FriendRequest)
+        .filter(FriendRequest.id == request_id)
+        .first()
+    )
+
+    if friend_request is None:
+        raise not_found("Friend request not found.")
+
+    if friend_request.recipient_id != current_user_id:
+        raise forbidden(f"You cannot {action} this friend request.")
+
+    if friend_request.status != PENDING:
+        raise bad_request("Friend request is not pending.")
+
+    return friend_request
+
+
+def accept_pending_friend_request(db: Session, friend_request: FriendRequest,) -> FriendRequest:
+    friend_request.status = ACCEPTED
+    friend_request.responded_at = utc_now()
+
+    get_or_create_friendship(
+        db,
+        friend_request.requester_id,
+        friend_request.recipient_id,
+    )
+
+    commit_or_bad_request(
+        db,
+        "Friend request could not be accepted.",
+    )
+
+    db.refresh(friend_request)
+
+    return friend_request
 
 
 def send_friend_request(db: Session, current_user: User, recipient: User,) -> FriendRequest:
     if recipient.id == current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="You cannot send a friend request to yourself.",
-        )
+        raise bad_request("You cannot send a friend request to yourself.")
 
-    existing_friendship = get_friendship(db, current_user.id, recipient.id)
-
-    if existing_friendship:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Users are already friends.",
-        )
+    if get_friendship(db, current_user.id, recipient.id):
+        raise bad_request("Users are already friends.")
 
     existing_request = get_existing_friend_request(
         db,
         current_user.id,
         recipient.id,
-        )
+    )
 
     if existing_request:
         if existing_request.status == ACCEPTED:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Users are already friends",
-            )
+            raise bad_request("Users are already friends.")
 
-    if existing_request.status == PENDING:
-        if existing_request.recipient_id == current_user.id:
-            # Reverse pending request exists:
-            # A sent request to B, and now B sends request to A.
-            # Treat this as auto-accept.
-            existing_request.status = ACCEPTED
-            existing_request.responded_at = datetime.now(timezone.utc)
-
-            create_friendship(db, existing_request.requester_id, existing_request.recipient_id)
-
-            try:
-                db.commit()
-            except IntegrityError:
-                db.rollback()
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Friend request could not be accepted",
+        if existing_request.status == PENDING:
+            if existing_request.recipient_id == current_user.id:
+                return accept_pending_friend_request(
+                    db,
+                    existing_request,
                 )
+
+            raise bad_request("Friend request already sent.")
+
+        if existing_request.status == REJECTED:
+            existing_request.requester_id = current_user.id
+            existing_request.recipient_id = recipient.id
+            existing_request.status = PENDING
+            existing_request.responded_at = None
+
+            commit_or_bad_request(
+                db,
+                "Friend request could not be sent.",
+            )
 
             db.refresh(existing_request)
 
             return existing_request
-
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="A pending friend request already exists.",
-        )
-
-    if existing_request.status == REJECTED:
-        # Allow sending again after rejection.
-        existing_request.requester_id = current_user.id
-        existing_request.recipient_id = recipient.id
-        existing_request.status = PENDING
-        existing_request.responded_at = None
-
-        try:
-            db.commit()
-        except IntegrityError:
-            db.rollback()
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Friend request could not be sent",
-            )
-        db.refresh(existing_request)
-        return existing_request
 
     friend_request = FriendRequest(
         requester_id=current_user.id,
@@ -145,14 +170,59 @@ def send_friend_request(db: Session, current_user: User, recipient: User,) -> Fr
 
     db.add(friend_request)
 
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Friend request already exists",
-        )
+    commit_or_bad_request(
+        db,
+        "Friend request already exists.",
+    )
 
     db.refresh(friend_request)
+
     return friend_request
+
+
+def accept_friend_request(db: Session, request_id: int,current_user: User,) -> FriendRequest:
+    friend_request = require_pending_received_request(
+        db,
+        request_id,
+        current_user.id,
+        "accept",
+    )
+
+    return accept_pending_friend_request(
+        db,
+        friend_request,
+    )
+
+
+def reject_friend_request(db: Session, request_id: int, current_user: User,) -> FriendRequest:
+    friend_request = require_pending_received_request(
+        db,
+        request_id,
+        current_user.id,
+        "reject",
+    )
+
+    friend_request.status = REJECTED
+    friend_request.responded_at = utc_now()
+
+    db.commit()
+    db.refresh(friend_request)
+
+    return friend_request
+
+
+def remove_friend(db: Session, current_user: User, friend_id: int,) -> None:
+    if friend_id == current_user.id:
+        raise bad_request("You cannot remove yourself as a friend.")
+
+    friendship = get_friendship(
+        db,
+        current_user.id,
+        friend_id,
+    )
+
+    if friendship is None:
+        raise not_found("Friendship not found.")
+
+    db.delete(friendship)
+    db.commit()

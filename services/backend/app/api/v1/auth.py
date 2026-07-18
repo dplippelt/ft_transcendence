@@ -2,11 +2,13 @@ from typing import Annotated
 
 import cachecontrol
 import requests
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from google.auth import exceptions as google_auth_exceptions
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
+from app.core.exceptions import bad_request, unauthorized, forbidden, service_unavailable
+
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -88,10 +90,7 @@ def ensure_username_is_available(db: Session, username: str | None) -> None:
     )
 
     if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username already exists",
-        )
+        raise bad_request("Username already exists")
 
 
 def authenticate_password_user(db: Session, email: str, password: str) -> User:
@@ -108,19 +107,12 @@ def authenticate_password_user(db: Session, email: str, password: str) -> User:
     is_valid_password = verify_password(password, password_hash)
 
     if not auth_account or not is_valid_password:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise unauthorized("Invalid email or password",)
 
     user = auth_account.user
 
     if not user or not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="User account is inactive",
-        )
+        raise forbidden("User account is inactive")
 
     return user
 
@@ -132,10 +124,7 @@ def register_user(user_data: UserRegister, db: DbSession):
     existing_auth_account = get_auth_account_by_email(db, email)
 
     if existing_auth_account:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already exists",
-        )
+        raise bad_request("Email already exists")
 
     ensure_username_is_available(db, user_data.username)
 
@@ -161,10 +150,7 @@ def register_user(user_data: UserRegister, db: DbSession):
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User could not be registered",
-        )
+        raise bad_request("User could not be registered")
 
     db.refresh(user)
 
@@ -196,10 +182,7 @@ def login_for_access_token(form_data: OAuth2Form, db: DbSession):
 @router.post("/google", response_model=Token)
 def google_login(user_data: GoogleLogin, db: DbSession):
     if not settings.google_client_id:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Google login is not configured",
-        )
+        raise service_unavailable("Google login is not configured")
 
     try:
         # Verifies the token signature, audience, expiry, and Google issuer.
@@ -209,10 +192,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
             settings.google_client_id,
         )
     except (ValueError, google_auth_exceptions.GoogleAuthError):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid Google credentials",
-        )
+        raise unauthorized("Invalid Google credentials")
 
     google_sub = google_user.get("sub")
     email = google_user.get("email")
@@ -221,22 +201,13 @@ def google_login(user_data: GoogleLogin, db: DbSession):
     avatar_url = google_user.get("picture")
 
     if not google_sub:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Google account has no subject identifier",
-        )
+        raise unauthorized("Google account has no subject identifier",)
 
     if not email:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Google account has no email",
-        )
+        raise unauthorized("Google account has no email",)
 
     if not email_verified:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Google email is not verified",
-        )
+        raise unauthorized("Google email is not verified",)
 
     email = normalize_email(email)
 
@@ -246,10 +217,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
         user = google_auth_account.user
 
         if not user or not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User account is inactive",
-            )
+            raise forbidden("User account is inactive",)
 
         return create_token_for_user(user)
 
@@ -259,10 +227,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
         user = password_auth_account.user
 
         if not user or not user.is_active:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="User account is inactive",
-            )
+            raise forbidden("User account is inactive",)
 
         google_auth_account = AuthAccount(
             user=user,
@@ -295,10 +260,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
             ):
                 return create_token_for_user(existing_google_auth_account.user)
 
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Google account could not be linked",
-            )
+            raise bad_request("Google account could not be linked",)
 
         db.refresh(user)
 
@@ -337,10 +299,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
         ):
             return create_token_for_user(existing_google_auth_account.user)
 
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Google account could not be registered",
-        )
+        raise bad_request("Google account could not be registered",)
 
     db.refresh(user)
 
