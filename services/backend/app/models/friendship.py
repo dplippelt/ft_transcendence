@@ -2,6 +2,7 @@ from datetime import datetime
 
 from sqlalchemy import DateTime, ForeignKey, Integer, UniqueConstraint, CheckConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
 
@@ -25,6 +26,16 @@ class Friendship(Base):
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
+    )
+
+    user_a: Mapped["User"] = relationship(
+        back_populates="friendships_a",
+        foreign_keys=[user_a_id],
+    )
+
+    user_b: Mapped["User"] = relationship(
+        back_populates="friendships_b",
+        foreign_keys=[user_b_id],
     )
 
     created_at: Mapped[datetime] = mapped_column(
