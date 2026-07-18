@@ -29,7 +29,7 @@ app.include_router(cards.router,       prefix="/cards",        tags=["cards"])
 app.include_router(puzzles.router,     prefix="/puzzles",      tags=["puzzles"])
 app.include_router(scores.router,      prefix="/scores",       tags=["scores"])
 app.include_router(leaderboard.router, prefix="/leaderboard",  tags=["leaderboard"])
-# app.include_router(friends.router,     prefix="/friends",     tags=["friends"])
+app.include_router(friends.router,     prefix="/friends",     tags=["friends"])
 
 @app.get("/")
 def root():
