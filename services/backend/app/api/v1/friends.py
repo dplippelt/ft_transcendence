@@ -1,23 +1,9 @@
-# implement these endpoints
-
-# GET    /friends
-# POST   /friends/requests
-# GET    /friends/requests
-# POST   /friends/requests/{request_id}/accept
-# POST   /friends/requests/{request_id}/reject
-# DELETE /friends/{friend_id}
-
-# GET    /friends/{friend_id}/messages
-# POST   /friends/{friend_id}/messages
-
-
-from typing import Annotated
-from datetime import datetime, timezone
-
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from sqlalchemy import or_
+from sqlalchemy.orm import Session
 
 from app.api.dependencies import CurrentUser, DbSession
+from app.core.exceptions import bad_request, not_found
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
 from app.models.user import User
@@ -29,10 +15,10 @@ from app.schemas.friend import (
     FriendUserResponse,
 )
 from app.services.friend_service import (
-    ACCEPTED,
     PENDING,
-    REJECTED,
-    normalize_friend_pair,
+    accept_friend_request as accept_friend_request_service,
+    reject_friend_request as reject_friend_request_service,
+    remove_friend as remove_friend_service,
     send_friend_request,
 )
 
@@ -40,7 +26,7 @@ from app.services.friend_service import (
 router = APIRouter()
 
 
-def get_user_by_username(db: DbSession, username: str) -> User | None:
+def get_user_by_username(db: Session, username: str) -> User | None:
     return (
         db.query(User)
         .filter(User.username == username)
@@ -48,7 +34,7 @@ def get_user_by_username(db: DbSession, username: str) -> User | None:
     )
 
 
-def build_friend_response(friendship: Friendship, current_user: User, friend: User) -> FriendResponse:
+def build_friend_response(friendship: Friendship, friend: User) -> FriendResponse:
     return FriendResponse(
         id=friendship.id,
         friend=FriendUserResponse.model_validate(friend),
@@ -90,33 +76,23 @@ def get_friends(current_user: CurrentUser, db: DbSession):
         friends.append(
             build_friend_response(
                 friendship,
-                current_user,
-                friend
+                friend,
             )
         )
+
     return FriendListResponse(friends=friends)
 
 
 @router.post("/requests", response_model=FriendRequestResponse)
-def create_friend_request(
-    request_data: FriendRequestCreate,
-    current_user: CurrentUser,
-    db: DbSession,
-)
+def create_friend_request(request_data: FriendRequestCreate, current_user: CurrentUser, db: DbSession,):
 
     recipient = get_user_by_username(db, request_data.username)
 
     if recipient is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found.",
-        )
+        raise not_found("User not found.",)
 
     if not recipient.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User account is inactive.",
-        )
+        raise bad_request("User account is inactive.",)
 
     return send_friend_request(
         db=db,
@@ -149,58 +125,31 @@ def get_outgoing_friend_requests(current_user: CurrentUser, db: DbSession):
     )
 
 
-@router.post("requests/{request_id}/accept", response_model=FriendRequestResponse)
+@router.post("/requests/{request_id}/accept", response_model=FriendRequestResponse)
 def accept_friend_request(request_id: int, current_user: CurrentUser, db: DbSession):
-    friend_request = (
-        db.query(FriendRequest)
-        .filter(FriendRequest.id == request_id,)
-        .first()
+
+    return accept_friend_request_service(
+        db=db,
+        request_id=request_id,
+        current_user=current_user,
     )
 
-    if friend_request is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Friend request not found.",
-        )
+@router.post("/requests/{request_id}/reject", response_model=FriendRequestResponse)
+def reject_friend_request(request_id: int, current_user: CurrentUser, db: DbSession,):
 
-    if friend_request.recipient_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You cannot accept this friend request.",
-        )
-
-    if friend_request.status != PENDING:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Friend request is not pending.",
-        )
-
-    user_a_id, user_b_id = normalize_friend_pair(
-        friend_request.requester_id,
-        friend_request.recipient_id,
+    return reject_friend_request_service(
+        db=db,
+        request_id=request_id,
+        current_user=current_user,
     )
 
-    existing_friendship = (
-        db.query(Friendship)
-        .filter(
-            Friendship.user_a_id == user_a_id,
-            Friendship.user_b_id == user_b_id,
-        )
-        .first()
+@router.delete("/{friend_id}", status_code=status.HTTP_204_NO_CONTENT)
+def remove_friend(friend_id: int, current_user: CurrentUser, db: DbSession):
+
+    remove_friend_service(
+        db=db,
+        current_user=current_user,
+        friend_id=friend_id,
     )
 
-    if existing_friendship is None:
-        friendship = Friendship(
-            user_a_id=user_a_id,
-            user_b_id=user_b_id,
-        )
-        db.add(friendship)
-
-    friend_request.status = ACCEPTED
-    friend_request.responded_at = datetime.now(timezone.utc)
-
-    db.commit()
-    db.refresh(friend_request)
-
-    return friend_request
-
+    return None
