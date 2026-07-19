@@ -2,7 +2,6 @@ import Phaser from "phaser";
 import BootScene from "./scenes/BootScene";
 import PreloadScene from "./scenes/PreloadScene";
 import GameScene from "./scenes/GameScene";
-import CombatScene from "./scenes/CombatScene";
 
 const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -15,7 +14,7 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
   loader: {
     path: "./assets",
   },
-  scene: [BootScene, PreloadScene, GameScene, CombatScene],
+  scene: [BootScene, PreloadScene, GameScene],
   physics: {
     default: "arcade",
     arcade: {

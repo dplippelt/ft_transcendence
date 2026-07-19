@@ -84,6 +84,7 @@ export class DungeonLocation extends Component {
   }
 
   destroy(): void {
+    super.destroy();
     this.debug?.destroy();
   }
 

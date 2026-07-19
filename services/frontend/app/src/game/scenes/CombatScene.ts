@@ -1,16 +1,33 @@
-import Phaser from "phaser";
+import Phaser, { Scenes } from "phaser";
 import { EventBus } from "../EventBus";
 import CardHand from "../gameobjects/cards/CardHand";
 import NumberCard from "../gameobjects/cards/NumberCard";
 import OperatorCard, { Operator } from "../gameobjects/cards/OperatorCard";
 import BoxedText from "../gameobjects/utils/BoxedText";
 import { buttonContentConfig, buttonStyleConfig } from "../gameobjects/utils/buttonConfig";
+import type { ICombatEventData } from "../events/ICombatEventData";
+import { eventsCenter } from "../events/eventCenter";
 
 export default class CombatScene extends Phaser.Scene {
   private cardHand!: CardHand;
+  private eventData: ICombatEventData | undefined;
 
-  constructor() {
-    super("combat");
+  constructor(handle: string) {
+    super(handle);
+
+    console.log("Combat scene constructed!");
+  }
+
+  init(eventData: ICombatEventData) {
+    // TODO: initialize the combat scene
+    this.eventData = eventData;
+    this.events.on(Scenes.Events.WAKE, this.awake, this);
+    console.log(`Initialize Combat Scene ${this.scene.key} called with ${this.eventData.enemy.name}`);
+  }
+
+  awake(_sys: Scenes.Systems, eventData: ICombatEventData) {
+    this.eventData = eventData;
+    console.log(`Awake Combat Scene ${this.scene.key} called with ${this.eventData.enemy.name}`);
   }
 
   preload() {
@@ -36,12 +53,24 @@ export default class CombatScene extends Phaser.Scene {
     // const player = new PlayerCombat(this, 100, 100);
     // const enemy = new EnemyCombat(this, 900, 100);
 
-    // this.input.once('pointerdown', () => {
-    //     this.scene.stop().wake('game');
-    // })
+    this.input.on("pointerdown", () => {
+      if (this.input.activePointer.rightButtonDown()) {
+        console.assert(this.eventData !== undefined, "this.eventData is undefined");
+        this.endCombat(this.eventData!);
+      }
+    });
   }
 
   update() {}
+
+  endCombat(eventData: ICombatEventData) {
+    // TODO: proper usage for eventData
+    eventData.isPlayerDefeated = false;
+    eventData.sceneInvoker = this;
+    console.log(`Combat is over for ${eventData.enemy.name}!`);
+
+    eventsCenter.emit("on-combat-over", eventData);
+  }
 
   createExecuteButton(text: string) {
     const button = new BoxedText(this, text, buttonContentConfig, buttonStyleConfig, 100, 50);

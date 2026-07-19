@@ -75,7 +75,7 @@ export class Dungeon extends Tilemaps.Tilemap {
 
     this.generate(dungeonConfig);
     this.spawnPlayers(1); // TODO: Hard-coded...
-    this.spawnEnemies(this.mapData.rooms.length - 2); // TODO: RE-ENABLE
+    this.spawnEnemies(this.mapData.rooms.length - 2);
   }
 
   generate(dungeonConfig: DungeonConfig) {

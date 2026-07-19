@@ -11,12 +11,14 @@ import type { Room } from "../map/procedural";
 export default class Player extends Physics.Arcade.Sprite {
   playerInput: KeyboardComponent;
   movement: MovementComponent;
-  dungeonLocation: DungeonLocation; // TODO: Initialize this...
+  dungeonLocation: DungeonLocation;
+  isInCombat: boolean;
 
   constructor(scene: Scene, x: number, y: number, keySchema: IKeySchema, room: Room, dungeon: Dungeon) {
     super(scene, x, y, AssetsKey.Player);
 
     this.name = "player";
+    this.isInCombat = false;
     this.playerInput = new KeyboardComponent(this, keySchema);
     this.movement = new MovementComponent(this, 200, this.playerInput);
     this.dungeonLocation = new DungeonLocation(this, room, dungeon);
