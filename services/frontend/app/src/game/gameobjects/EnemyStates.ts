@@ -1,8 +1,8 @@
 import { Math } from "phaser";
-import { Enemy, type EnemyData } from "./Enemy";
+import { Enemy, EnemyEvent, type EnemyData } from "./Enemy";
 import { type IFiniteState } from "../components/FiniteStateMachine";
 import type Player from "./Player";
-import { eventsCenter } from "../events/eventCenter";
+import { eventsCenter, GameEvents } from "../scenes/GameManagerScene";
 
 // TODO: Make this into an abstract class
 interface EnemyState extends IFiniteState {
@@ -191,12 +191,12 @@ export class CombatState implements EnemyState {
 
   onEnter(): void {
     this.combatOver = false;
-    this.enemy.once("combat-over", (isPlayerDefeated: boolean) => {
+    this.enemy.once(EnemyEvent.CombatOver, (isPlayerDefeated: boolean) => {
       this.combatOver = true;
       this.isPlayerDefeated = isPlayerDefeated;
     });
 
-    eventsCenter.emit("on-combat-initiated", {
+    eventsCenter.emit(GameEvents.CombatInitiated, {
       player: this.enemy.sensor.getPlayer(),
       enemy: this.enemy,
       isPlayerDefeated: false,

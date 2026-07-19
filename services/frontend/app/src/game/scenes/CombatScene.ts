@@ -6,7 +6,7 @@ import OperatorCard, { Operator } from "../gameobjects/cards/OperatorCard";
 import BoxedText from "../gameobjects/utils/BoxedText";
 import { buttonContentConfig, buttonStyleConfig } from "../gameobjects/utils/buttonConfig";
 import type { ICombatEventData } from "../events/ICombatEventData";
-import { eventsCenter } from "../events/eventCenter";
+import { eventsCenter, GameEvents } from "./GameManagerScene";
 
 export default class CombatScene extends Phaser.Scene {
   private cardHand!: CardHand;
@@ -19,13 +19,13 @@ export default class CombatScene extends Phaser.Scene {
   }
 
   init(eventData: ICombatEventData) {
-    // TODO: initialize the combat scene
-    this.eventData = eventData;
-    this.events.on(Scenes.Events.WAKE, this.awake, this);
-    console.log(`Initialize Combat Scene ${this.scene.key} called with ${this.eventData.enemy.name}`);
+    this.start(this.sys, eventData);
+    this.events.on(Scenes.Events.START, this.start, this);
+    console.log(`Initialize Combat Scene ${this.scene.key} called with ${this.eventData!.enemy.name}`);
   }
 
-  awake(_sys: Scenes.Systems, eventData: ICombatEventData) {
+  // TODO: Proper initialize logic
+  start(_sys: Scenes.Systems, eventData: ICombatEventData) {
     this.eventData = eventData;
     console.log(`Awake Combat Scene ${this.scene.key} called with ${this.eventData.enemy.name}`);
   }
@@ -69,7 +69,7 @@ export default class CombatScene extends Phaser.Scene {
     eventData.sceneInvoker = this;
     console.log(`Combat is over for ${eventData.enemy.name}!`);
 
-    eventsCenter.emit("on-combat-over", eventData);
+    eventsCenter.emit(GameEvents.CombatOver, eventData);
   }
 
   createExecuteButton(text: string) {

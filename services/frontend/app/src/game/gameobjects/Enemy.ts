@@ -30,6 +30,10 @@ export interface EnemyData {
   states: EnemyStates;
 }
 
+export enum EnemyEvent {
+  CombatOver = "combat-over",
+}
+
 export class Enemy extends Physics.Arcade.Sprite {
   fsm: FiniteStateMachine;
   movement: MovementComponent;

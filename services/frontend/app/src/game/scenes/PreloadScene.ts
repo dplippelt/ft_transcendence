@@ -20,6 +20,6 @@ export default class PreloadScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start("game");
+    this.scene.start("game-manager");
   }
 }
