@@ -1,13 +1,18 @@
 import { Math } from "phaser";
 import { Enemy, EnemyEvent, type EnemyData } from "./Enemy";
 import { type IFiniteState } from "../components/FiniteStateMachine";
-import type Player from "./Player";
 import { eventsCenter, GameEvents } from "../scenes/GameManagerScene";
 
-// TODO: Make this into an abstract class
-interface EnemyState extends IFiniteState {
+abstract class EnemyState implements IFiniteState {
   enemy: Enemy;
   enemyData: EnemyData;
+
+  constructor(enemy: Enemy, enemyData: EnemyData) {
+    this.enemy = enemy;
+    this.enemyData = enemyData;
+  }
+
+  abstract onUpdate(time: number, delta: number): IFiniteState | null;
 }
 
 export interface EnemyStates {
@@ -19,6 +24,8 @@ export interface EnemyStates {
   die: IFiniteState | null;
 }
 
+// constructer (stateA, stateB, componentA, componentB, componentC...)
+
 // state design pattern
 // TODO: State behavior should be simple
 //        actions() and decision()
@@ -26,165 +33,107 @@ export interface EnemyStates {
 // TODO: Sensor works for a single player, what if two were in range? enemy should switch targets and chase the other one
 
 // TODO: What if the player forced the enemy outside the room?
-export class IdleState implements EnemyState {
-  enemy: Enemy;
-  enemyData: EnemyData;
-  waitFor: number;
-
-  constructor(enemy: Enemy, enemyData: EnemyData) {
-    this.enemy = enemy;
-    this.enemyData = enemyData;
-    this.waitFor = 0.0;
-  }
-
+export class IdleState extends EnemyState {
   onEnter(): void {
     this.enemy.sensor.range = this.enemyData.chaseDistance.minimum;
-    this.waitFor = Math.RND.between(this.enemyData.idleTime.minimum, this.enemyData.idleTime.maximum);
-
-    // console.log(`Enter Idle State for ${this.waitFor}`);
+    this.enemy.waitFor.setWaitTime(Math.RND.between(this.enemyData.idleTime.minimum, this.enemyData.idleTime.maximum));
+    // console.log(`Enter Idle State`);
   }
 
-  onUpdate(_time: number, delta: number): IFiniteState | null {
-    if (this.enemy.IsPlayerInSight()) {
+  onUpdate(time: number): IFiniteState | null {
+    if (this.enemy.sensor.searchForPlayer()) {
       return this.enemyData.states.chase;
     }
 
-    this.waitFor -= delta;
-    if (this.waitFor > 0) {
-      return null;
+    if (this.enemy.waitFor.isWaitOver(time)) {
+      return this.enemyData.states.wander;
     }
-    return this.enemyData.states.wander;
+    return null;
   }
 }
 
-export class WanderState implements EnemyState {
-  enemy: Enemy;
-  enemyData: EnemyData;
-  target: Math.Vector2;
-
-  constructor(enemy: Enemy, enemyData: EnemyData) {
-    this.enemy = enemy;
-    this.enemyData = enemyData;
-    this.target = Math.Vector2.ZERO.clone();
-  }
-
+export class WanderState extends EnemyState {
   onEnter(): void {
     const point = this.enemy.dungeonLocation.getRandomPositionInRoom();
-    this.target = new Math.Vector2(point.x, point.y);
-
+    this.enemy.movement.setTarget(new Math.Vector2(point.x, point.y));
+    this.enemy.sensor.range = this.enemyData.chaseDistance.minimum; // TODO: Move it into the sightSensor
     // console.log(`Enter Wander State towards ${this.target}`);
   }
 
-  onUpdate(): IFiniteState | null {
-    if (this.enemy.IsPlayerInSight()) {
+  onUpdate(_time: number, delta: number): IFiniteState | null {
+    if (this.enemy.sensor.searchForPlayer()) {
       return this.enemyData.states.chase;
     }
 
-    // call IsTargetReached(target)
-    // call MoveTowards(target) ? keep the logic more abstract and the state more decision like
-    const position = this.enemy.getWorldPoint();
-    const delta = this.target.clone().subtract(position);
-    if (delta.lengthSq() < 32.0) {
-      // TODO: MAGIC VALUE
+    if (this.enemy.movement.isTargetReached()) {
       return this.enemyData.states.idle;
     }
 
-    delta.normalize();
-    this.enemy.directionInput.setInputDirection(delta.x, delta.y);
+    this.enemy.movement.move(delta);
     return null;
   }
 
   onExit(): void {
-    this.enemy.directionInput.setInputDirection(0, 0);
+    this.enemy.movement.setTarget(null);
   }
 }
 
-export class ChaseState implements EnemyState {
-  enemy: Enemy;
-  enemyData: EnemyData;
-  player: Player | null;
-  maxChaseDistanceSq: number;
-
+export class ChaseState extends EnemyState {
   constructor(enemy: Enemy, enemyData: EnemyData) {
-    this.enemy = enemy;
-    this.enemyData = enemyData;
-    this.player = null;
-    this.maxChaseDistanceSq = 0.0;
+    super(enemy, enemyData);
   }
 
   onEnter(): void {
-    this.player = this.enemy.sensor.getPlayer();
-    this.maxChaseDistanceSq = this.enemyData.chaseDistance.maximum * this.enemyData.chaseDistance.maximum;
-
+    this.enemy.movement.setTarget(this.enemy.sensor.getPlayer());
+    this.enemy.sensor.range = this.enemyData.chaseDistance.maximum;
     // console.log(`Enter Chase State towards ${this.player?.name}`);
   }
 
-  // Enemies can chase outside the rooms, but will wander back once the target is out of range
-  // Enemies have a maximum chase range
-  onUpdate(): IFiniteState | null {
-    if (this.player === null || this.player.isDestroyed || !this.player.active) {
+  onUpdate(_time: number, delta: number): IFiniteState | null {
+    if (!this.enemy.sensor.isPlayerInSight()) {
       return this.enemyData.states.recall;
     }
 
-    const delta = this.player.getWorldPoint().subtract(this.enemy.getWorldPoint());
-    if (!this.enemy.IsPlayerInSight() || delta.lengthSq() > this.maxChaseDistanceSq) {
-      return this.enemyData.states.idle;
-    }
-
-    if (delta.lengthSq() < 16.0) {
+    if (this.enemy.movement.isTargetReached()) {
       return this.enemyData.states.combat;
     }
 
-    delta.normalize();
-    this.enemy.directionInput.setInputDirection(delta.x, delta.y);
+    this.enemy.movement.move(delta);
     return null;
   }
 
   onExit(): void {
-    this.player = null;
-    this.enemy.directionInput.setInputDirection(0, 0);
+    this.enemy.movement.setTarget(null);
+    this.enemy.sensor.range = this.enemyData.chaseDistance.minimum;
   }
 }
 
-export class RecallState implements EnemyState {
-  enemy: Enemy;
-  enemyData: EnemyData;
-
-  constructor(enemy: Enemy, enemyData: EnemyData) {
-    this.enemy = enemy;
-    this.enemyData = enemyData;
-  }
-
+export class RecallState extends EnemyState {
   onEnter() {
+    this.enemy.movement.setTarget(this.enemyData.spawnPoint);
     // console.log(`Enter Recall State ...`);
   }
 
-  onUpdate(): IFiniteState | null {
-    const position = this.enemy.getWorldPoint();
-    const direction = this.enemyData.spawnPoint.clone().subtract(position);
-    if (direction.lengthSq() < 32.0) {
+  onUpdate(_time: number, delta: number): IFiniteState | null {
+    if (this.enemy.movement.isTargetReached()) {
       return this.enemyData.states.idle;
     }
 
-    direction.normalize();
-    this.enemy.directionInput.setInputDirection(direction.x, direction.y);
+    this.enemy.movement.move(delta);
     return null;
   }
 
   onExit(): void {
-    this.enemy.directionInput.setInputDirection(0, 0);
+    this.enemy.movement.setTarget(null);
   }
 }
 
-export class CombatState implements EnemyState {
-  enemy: Enemy;
-  enemyData: EnemyData;
+export class CombatState extends EnemyState {
   combatOver: boolean; // TODO: Move to enemy...
   isPlayerDefeated: boolean;
 
   constructor(enemy: Enemy, enemyData: EnemyData) {
-    this.enemy = enemy;
-    this.enemyData = enemyData;
+    super(enemy, enemyData);
     this.combatOver = false;
     this.isPlayerDefeated = false;
   }
@@ -218,22 +167,13 @@ export class CombatState implements EnemyState {
   }
 }
 
-export class DieState implements EnemyState {
-  enemy: Enemy;
-  enemyData: EnemyData;
-
-  constructor(enemy: Enemy, enemyData: EnemyData) {
-    this.enemy = enemy;
-    this.enemyData = enemyData;
-  }
-
+export class DieState extends EnemyState {
   onEnter(): void {
-    this.enemy.destroy(false); // TODO: Better to de-activate and re-use the enemies
+    this.enemy.destroy(false); // TODO: Better to de-activate and re-use the enemy
     // console.log(`Enter Die State ...`);
   }
 
   onUpdate(): IFiniteState | null {
-    // console.log("waiting...");
     return null;
   }
 }

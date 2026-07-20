@@ -1,7 +1,6 @@
 import { Scene, Physics, Math } from "phaser";
 import { AssetsKey } from "../Assets";
 import { FiniteStateMachine } from "../components/FiniteStateMachine";
-import MovementComponent from "../components/MovementComponent";
 import {
   IdleState,
   WanderState,
@@ -11,11 +10,12 @@ import {
   CombatState,
   DieState,
 } from "./EnemyStates";
-import { EnemyInput } from "../components/EnemyInput";
 import { EnemySightSensor } from "../components/EnemySightSensor";
 import type { Dungeon } from "./Dungeon";
 import { DungeonLocation } from "../components/DungeonLocation";
 import type { Room } from "../map/procedural";
+import { WaitFor } from "../components/WaitFor";
+import { MoveTowardsTarget } from "../components/MoveTowardsTarget";
 
 interface Range {
   minimum: number;
@@ -36,9 +36,9 @@ export enum EnemyEvent {
 
 export class Enemy extends Physics.Arcade.Sprite {
   fsm: FiniteStateMachine;
-  movement: MovementComponent;
+  waitFor: WaitFor;
+  movement: MoveTowardsTarget;
   sensor: EnemySightSensor;
-  directionInput: EnemyInput;
   dungeonLocation: DungeonLocation;
 
   private static counter: number = 0;
@@ -61,8 +61,10 @@ export class Enemy extends Physics.Arcade.Sprite {
       },
     };
 
-    this.sensor = new EnemySightSensor(this);
+    this.waitFor = new WaitFor(this);
+    this.movement = new MoveTowardsTarget(this, enemyData.movementSpeed.maximum, 8);
     this.dungeonLocation = new DungeonLocation(this, room, dungeon);
+    this.sensor = new EnemySightSensor(this, this.dungeonLocation);
 
     // Setup up the FSM
     enemyData.states.idle = new IdleState(this, enemyData);
@@ -72,9 +74,6 @@ export class Enemy extends Physics.Arcade.Sprite {
     enemyData.states.combat = new CombatState(this, enemyData);
     enemyData.states.die = new DieState(this, enemyData);
     this.fsm = new FiniteStateMachine(this, enemyData.states.idle);
-
-    this.directionInput = new EnemyInput();
-    this.movement = new MovementComponent(this, enemyData.movementSpeed.maximum, this.directionInput);
 
     this.scene.add.existing(this);
     this.scene.physics.add.existing(this);
