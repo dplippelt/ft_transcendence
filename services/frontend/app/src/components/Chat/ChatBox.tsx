@@ -8,6 +8,7 @@ import { useFriends } from "../../contexts/FriendsContext";
 import { useLobbies } from "../../contexts/LobbiesContext";
 
 export const DRAFT_STORAGE_PREFIX = "draft:";
+export const LOBBY_DRAFT = "lobby";
 
 export default function ChatBox()
 {
@@ -56,6 +57,18 @@ export function LobbyChatBox()
 	const { addChatHistory } = useLobbies();
 	const { user } = useUser();
 	const [msg, setMsg] = useState<string>("");
+
+	useEffect(() =>
+	{
+		const draft = localStorage.getItem(DRAFT_STORAGE_PREFIX + LOBBY_DRAFT) ?? "";
+		setMsg(draft);
+	}, [])
+
+	useEffect(() =>
+	{
+		const timeOutID = setTimeout(() => localStorage.setItem(DRAFT_STORAGE_PREFIX + LOBBY_DRAFT, msg), 400);
+		return () => clearTimeout(timeOutID);
+	}, [msg])
 
 	function handleSend()
 	{

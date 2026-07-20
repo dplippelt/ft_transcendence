@@ -1,19 +1,28 @@
-import { useLocation } from "react-router-dom";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
 import SideBar from "../../components/SideBar";
 import { RoutePath } from "../../utils/utils";
 import { BottomButtons } from "../../components/ButtonContainers";
-import { BackButton } from "../../components/Buttons";
+import { BottomButton } from "../../components/Buttons";
 import styles from "./Lobby.module.scss";
 import Avatar, { AvatarSize } from "../../components/Avatar";
 import { useUser } from "../../contexts/UserContext";
 import { useLobbies } from "../../contexts/LobbiesContext";
 import noAvatar from "../../assets/no_avatar.png";
 import { LobbyChatHistory } from "../../components/Chat/ChatHistory";
-import { LobbyChatBox } from "../../components/Chat/ChatBox";
+import { DRAFT_STORAGE_PREFIX, LOBBY_DRAFT, LobbyChatBox } from "../../components/Chat/ChatBox";
 import useIsMobile from "../../hooks/useIsMobile";
+import { PopupType } from "../../components/Chat/enums";
+import InviteFriendPopup from "./LobbyInviteFriendPopup";
+import Popup from "../../components/Popup";
+
+interface IButtons
+{
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
+}
 
 interface IPlayer
 {
@@ -71,28 +80,39 @@ function LobbyWindow()
 	);
 }
 
-function Buttons()
+function Buttons( { setPopupType } : IButtons )
 {
+	const navigate = useNavigate();
 	const location = useLocation();
 	const path = location.state?.from ?? RoutePath.multiplayer;
 
+	function onCloseLobby()
+	{
+		localStorage.removeItem(DRAFT_STORAGE_PREFIX + LOBBY_DRAFT);
+		navigate(path);
+	}
+
 	return (
 		<BottomButtons>
-			<BackButton path={path} />
+			<BottomButton label="Close lobby" onClick={onCloseLobby} />
+			<BottomButton label="Invite friend" onClick={ () => setPopupType(PopupType.inviteFriend) } />
 		</BottomButtons>
 	);
 }
 
 export default function Lobby()
 {
+	const [popupType, setPopupType] = useState<PopupType>(PopupType.none);
+
 	return (
 		<>
 			<Background />
 			<Page>
 				<MenuTitle title="Lobby" />
 				<LobbyWindow />
-				<Buttons />
+				<Buttons setPopupType={setPopupType} />
 				<SideBar />
+				{ popupType === PopupType.inviteFriend && <Popup> <InviteFriendPopup setPopupType={setPopupType} /> </Popup> }
 			</Page>
 		</>
 	);

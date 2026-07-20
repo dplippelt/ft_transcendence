@@ -56,13 +56,18 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
 	{
 		const newMsg: IChatMsg = { username: username, message: message, read: true };
 
-		setLobbies(prev => ({
-			...prev,
-			[hostID]: {
-				...prev[hostID],
-				chatHistory: [ ...prev[hostID].chatHistory, newMsg ]
-			},
-		}));
+		setLobbies(prev => {
+			if ( prev[hostID] === undefined )
+				return prev;
+
+			return {
+				...prev,
+				[hostID]: {
+					...prev[hostID],
+					chatHistory: [ ...(prev[hostID].chatHistory ?? []), newMsg ]
+				}
+			};
+		});
 	}
 
 	// mock template for later when loading info from database (e.g. when user hits F5 to reload page)

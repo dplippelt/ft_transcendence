@@ -20,6 +20,7 @@ export enum ErrorType
 	cannotAddSelf,
 	userDoesNotExist,
 	userAlreadyFriend,
+	noFriendSelected,
 }
 
 export function errorMsg( error: ErrorType ): string
@@ -48,6 +49,8 @@ export function errorMsg( error: ErrorType ): string
 			return "User does not exist!";
 		case ErrorType.userAlreadyFriend:
 			return "User already in friends list!";
+		case ErrorType.noFriendSelected:
+			return "Select a friend to invite";
 		default:
 			return "";
 	}
