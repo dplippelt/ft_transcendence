@@ -105,7 +105,7 @@ interface ILeaderboardWindow
 
 function StatsPicker( { stat, setStat } : IStatsPicker )
 {
-	const isMobile = useIsMobile();
+	const isMobile = useIsMobile(730);
 
 	function handleChange( e: React.ChangeEvent<HTMLSelectElement, Element> )
 	{
@@ -200,7 +200,7 @@ function LeaderboardWindow( { stat, setStat } : ILeaderboardWindow )
 function Buttons()
 {
 	const location = useLocation();
-	const path = location.state ? location.state.from : RoutePath.mainMenu;
+	const path = location.state?.from ?? RoutePath.mainMenu;
 
 	return (
 		<BottomButtons>

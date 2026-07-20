@@ -2,11 +2,10 @@ import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
 import { EditWindowType } from "../pages/Profile/enums";
-import { ChevronLeft, MessageCircle, MessageCircleWarning, SendHorizontal, Swords, UserMinus } from "lucide-react";
+import { ChevronLeft, Dot, MessageCircle, MessageCircleWarning, SendHorizontal, Swords, UserMinus } from "lucide-react";
 import Avatar, { AvatarSize } from "./Avatar";
 import { MobilePosition } from "../utils/utils";
-import { useUser } from "../contexts/UserContext";
-import { Dot } from "lucide-react";
+import { useChatHistory } from "../contexts/ChatHistoryContext";
 
 interface IMenuButton
 {
@@ -57,6 +56,7 @@ interface ITabButton
 interface IFriendButton
 {
 	username: string;
+	friendID: string;
 	avatar: string;
 	panel: boolean;
 	onClick: () => void;
@@ -129,10 +129,10 @@ export function SendButton( { onClick } : ISendButton )
 	);
 }
 
-export function FriendButton( { username, avatar, panel, onClick } : IFriendButton )
+export function FriendButton( { username, friendID, avatar, panel, onClick } : IFriendButton )
 {
-	const userFunc = useUser();
-	const numUnreadMsg = userFunc.numUnreadMsg(username);
+	const { countUnreadMsg } = useChatHistory();
+	const numUnreadMsg = countUnreadMsg(friendID);
 
 	function usernameStyle() : string
 	{
@@ -176,13 +176,13 @@ export function OpenSideBarButton( { hasNewMsg, onClick } : IOpenSideBarButton )
 {
 	if ( hasNewMsg )
 		return (
-			<button className={styles.sideBarButton} onClick={onClick}>
+			<button className={styles.sideBarButton} type="button" aria-label="Toggle chat side bar" title="Toggle chat" onClick={onClick}>
 				<MessageCircleWarning size={30} className={styles.newMsgGlow} />
 			</button>
 		);
 
 	return (
-		<button className={styles.sideBarButton} onClick={onClick}>
+		<button className={styles.sideBarButton} type="button" aria-label="Toggle chat side bar" title="Toggle chat" onClick={onClick}>
 			<MessageCircle size={30} />
 		</button>
 	);
@@ -191,7 +191,7 @@ export function OpenSideBarButton( { hasNewMsg, onClick } : IOpenSideBarButton )
 export function SideBarBackButton( { onClick } : ISideBarBackButton )
 {
 	return (
-		<button className={styles.actionButton} onClick={onClick}>
+		<button className={styles.actionButton} type="button" aria-label="Return to side bar friends list" title="Back" onClick={onClick}>
 			<ChevronLeft />
 		</button>
 	);

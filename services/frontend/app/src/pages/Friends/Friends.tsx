@@ -6,7 +6,7 @@ import { MenuTitle } from "../../components/PageTitle";
 import FriendsWindow from "./FriendsWindow";
 import styles from "./Friends.module.scss";
 import ChatWindow from "./ChatWindow";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import useIsMobile from "../../hooks/useIsMobile";
 import React from "react";
 import { MobilePosition, RoutePath } from "../../utils/utils";
@@ -17,65 +17,64 @@ import RemoveFriendPopup from "./RemoveFriendPopup";
 import InviteFriendPopup from "./InviteFriendPopup";
 import { PopupType } from "../../components/Chat/enums";
 import { useLocation } from "react-router-dom";
+import { useFriends } from "../../contexts/FriendsContext";
 
 interface IButtons
 {
 	mobileView: MobileView;
 	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
-	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
-}
-
-export interface ISetFriendPageState
-{
-	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
-	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
-	setSelectedFriend: React.Dispatch<React.SetStateAction<string>>;
-	setActiveChat: React.Dispatch<React.SetStateAction<string | undefined>>;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 interface IFriendsContainer
 {
 	mobileView: MobileView;
-	activeChat: string | undefined;
-	setPageState: ISetFriendPageState;
+	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-function Buttons( { mobileView, setMobileView, setPopuptype } : IButtons )
+function Buttons( { mobileView, setMobileView, setPopupType } : IButtons )
 {
-	const isMobile = useIsMobile();
+	const isMobile = useIsMobile(720);
 	const location = useLocation();
-	const path = location.state ? location.state.from : RoutePath.mainMenu;
+	const path = location.state?.from ?? RoutePath.mainMenu;
 
 	return (
 		<BottomButtons>
 			{ isMobile && mobileView === MobileView.chat
 			? <BottomButton label="Back" onClick={ () => setMobileView(MobileView.friends) } mobilePosition={MobilePosition.bottom} />
 			: <BackButton path={path} />}
-			{ ( !isMobile || ( isMobile && mobileView === MobileView.friends )) && <BottomButton label="Add Friend" onClick={ () => setPopuptype(PopupType.addFriend) } /> }
+			{ ( !isMobile || ( isMobile && mobileView === MobileView.friends )) && <BottomButton label="Add Friend" onClick={ () => setPopupType(PopupType.addFriend) } /> }
 		</BottomButtons>
 	);
 }
 
-function FriendsContainer( { mobileView, activeChat, setPageState } : IFriendsContainer )
+function FriendsContainer( { mobileView, setMobileView, setPopupType } : IFriendsContainer )
 {
-	const isMobile = useIsMobile();
-	const { setPopuptype, setSelectedFriend } = setPageState;
+	const { activeFriendID } = useFriends()
+	const isMobile = useIsMobile(720);
+
+	useEffect(() =>
+	{
+		if ( isMobile && !activeFriendID )
+			setMobileView(MobileView.friends);
+	}, [isMobile, activeFriendID]);
 
 	if ( isMobile )
 	{
 		return (
 			<div className={styles.container}>
 				{ mobileView === MobileView.friends
-				? <FriendsWindow setPageState={setPageState} />
-				: <ChatWindow key={activeChat} activeChat={activeChat} setPopuptype={setPopuptype} setSelectedFriend={setSelectedFriend} /> }
+				? <FriendsWindow setMobileView={setMobileView} setPopupType={setPopupType} />
+				: <ChatWindow setPopupType={setPopupType} /> }
 			</div>
 		);
 	}
 
 	return (
 		<div className={styles.container}>
-			<FriendsWindow setPageState={setPageState} />
-			<ChatWindow key={activeChat} activeChat={activeChat} setPopuptype={setPopuptype} setSelectedFriend={setSelectedFriend} />
+			<FriendsWindow setMobileView={setMobileView} setPopupType={setPopupType} />
+			<ChatWindow setPopupType={setPopupType} />
 		</div>
 	);
 }
@@ -83,21 +82,18 @@ function FriendsContainer( { mobileView, activeChat, setPageState } : IFriendsCo
 export default function Friends()
 {
 	const [mobileView, setMobileView] = useState<MobileView>(MobileView.friends);
-	const [popupType, setPopuptype] = useState<PopupType>(PopupType.none);
-	const [selectedFriend, setSelectedFriend] = useState<string>("");
-	const [activeChat, setActiveChat] = useState<string | undefined>(undefined);
-	const setPageState: ISetFriendPageState = { setMobileView, setPopuptype, setSelectedFriend, setActiveChat };
+	const [popupType, setPopupType] = useState<PopupType>(PopupType.none);
 
 	return (
 		<>
 			<Background />
 			<Page>
 				<MenuTitle title="Friends" />
-				<FriendsContainer mobileView={mobileView} activeChat={activeChat} setPageState={setPageState} />
-				<Buttons mobileView={mobileView} setMobileView={setMobileView} setPopuptype={setPopuptype} />
-				{ popupType === PopupType.addFriend && <Popup> <AddFriendPopup setPopuptype={setPopuptype} /> </Popup>}
-				{ popupType === PopupType.removeFriend && <Popup> <RemoveFriendPopup username={selectedFriend} setPopuptype={setPopuptype} /> </Popup>}
-				{ popupType === PopupType.inviteFriend && <Popup> <InviteFriendPopup username={selectedFriend} setPopuptype={setPopuptype} /> </Popup>}
+				<FriendsContainer mobileView={mobileView} setMobileView={setMobileView} setPopupType={setPopupType} />
+				<Buttons mobileView={mobileView} setMobileView={setMobileView} setPopupType={setPopupType} />
+				{ popupType === PopupType.addFriend && <Popup> <AddFriendPopup setPopupType={setPopupType} /> </Popup> }
+				{ popupType === PopupType.removeFriend && <Popup> <RemoveFriendPopup setPopupType={setPopupType} /> </Popup> }
+				{ popupType === PopupType.inviteFriend && <Popup> <InviteFriendPopup setPopupType={setPopupType} /> </Popup> }
 			</Page>
 		</>
 	);
