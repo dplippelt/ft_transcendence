@@ -1,13 +1,6 @@
 import type { JSX } from "react";
 import styles from "./Avatar.module.scss";
-
-export enum AvatarSize
-{
-	smaller,
-	small,
-	medium,
-	large,
-}
+import { AvatarSize } from "../utils/utils";
 
 const sizes: Record<AvatarSize, string> =
 {

@@ -1,4 +1,4 @@
-import { ErrorType } from "./utils";
+import { ErrorType } from "./errors";
 
 function hasValidCharacters( str: string ) : boolean
 {

@@ -1,10 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
-import { EditWindowType } from "../pages/Profile/enums";
+import { PopupType, AvatarSize, MobilePosition } from "../utils/utils";
 import { ChevronLeft, Dot, MessageCircle, MessageCircleWarning, SendHorizontal, Swords, UserMinus } from "lucide-react";
-import Avatar, { AvatarSize } from "./Avatar";
-import { MobilePosition } from "../utils/utils";
+import Avatar from "./Avatar";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
 
 interface IMenuButton
@@ -35,8 +34,8 @@ interface IBackButton
 
 interface IEditButton
 {
-	editType: EditWindowType;
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>;
+	popupType: PopupType;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 interface ITextButton
@@ -105,9 +104,9 @@ export function BackButton( { path } : IBackButton )
 	return <BottomButton label="Back" onClick={ () => navigate(path) } mobilePosition={MobilePosition.bottom} />;
 }
 
-export function EditButton( { editType, setEditWindowType } : IEditButton )
+export function EditButton( { popupType, setPopupType } : IEditButton )
 {
-	return <MossButton label="Edit" onClick={ () => setEditWindowType(editType) } extraStyling={styles.editButton}/>;
+	return <MossButton label="Edit" onClick={ () => setPopupType(popupType) } extraStyling={styles.editButton}/>;
 }
 
 export function TextButton( { label, onClick, extraStyling="" } : ITextButton )

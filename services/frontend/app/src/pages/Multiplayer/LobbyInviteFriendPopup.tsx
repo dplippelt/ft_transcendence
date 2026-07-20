@@ -1,11 +1,11 @@
 import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
-import { PopupType } from "../../components/Chat/enums";
+import { PopupType } from "../../utils/utils";
 import React, { useState } from "react";
 import { useFriends  } from "../../contexts/FriendsContext";
 import Dropdown from "../../components/Dropdown";
 import styles from "./LobbyInviteFriendPopup.module.scss";
-import { ErrorType } from "../../utils/utils";
+import { ErrorType } from "../../utils/errors";
 import ErrorText from "../../components/ErrorText";
 
 const DEFAULT_VALUE = "None selected";

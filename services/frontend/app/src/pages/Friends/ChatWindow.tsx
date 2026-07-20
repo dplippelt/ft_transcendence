@@ -3,7 +3,7 @@ import styles from "./ChatWindow.module.scss";
 import ChatBox from  "../../components/Chat/ChatBox";
 import ChatHistory from "../../components/Chat/ChatHistory";
 import { ChatTitle } from "../../components/Chat/ChatTitle";
-import { PopupType } from "../../components/Chat/enums";
+import { PopupType } from "../../utils/utils";
 import { useFriends } from "../../contexts/FriendsContext";
 
 interface IChatWindow

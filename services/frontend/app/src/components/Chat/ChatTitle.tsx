@@ -1,8 +1,8 @@
 import React from "react";
 import useIsMobile from "../../hooks/useIsMobile";
-import Avatar, { AvatarSize } from "../Avatar";
+import Avatar from "../Avatar";
+import { PopupType, AvatarSize } from "../../utils/utils";
 import { InviteToPlayButton, SideBarBackButton } from "../Buttons";
-import { PopupType } from "./enums";
 import styles from "./ChatTitle.module.scss";
 import { useFriends, type IFriendData } from "../../contexts/FriendsContext";
 
