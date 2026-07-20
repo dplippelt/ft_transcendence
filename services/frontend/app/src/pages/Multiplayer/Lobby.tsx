@@ -24,7 +24,7 @@ interface IPlayer
 
 function Player( { username, avatar, alt } : IPlayer )
 {
-	const isMobile = useIsMobile();
+	const isMobile = useIsMobile(480);
 	const avatarSize = isMobile ? AvatarSize.medium : AvatarSize.large;
 
 	return (
@@ -40,7 +40,7 @@ function Players()
 	const { user } = useUser();
 	const { getGuestID } = useLobbies();
 	const guestID = getGuestID(user.userID);
-	const guestAvatar = guestID ? user.avatar : noAvatar; // if guestID is defined replace with guest's avatar (fetch from database)
+	const guestAvatar = guestID ? user.avatar : noAvatar; // TODO: if guestID is defined replace with guest's avatar (fetch from database)
 	const guestUsername = guestID ? user.username : "Waiting...";
 
 	return (
