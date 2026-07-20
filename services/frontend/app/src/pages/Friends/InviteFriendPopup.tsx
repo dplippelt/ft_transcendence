@@ -7,11 +7,11 @@ import { useFriends, type IFriendData } from "../../contexts/FriendsContext";
 
 interface IInvitePopup
 {
-	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 // This is just a placeholder popup component for now.
-export default function InviteFriendPopup( { setPopuptype } : IInvitePopup )
+export default function InviteFriendPopup( { setPopupType } : IInvitePopup )
 {
 	const { friends, selectedFriendID, setSelectedFriendID } = useFriends();
 	const friend = getSelectedFriend();
@@ -25,7 +25,7 @@ export default function InviteFriendPopup( { setPopuptype } : IInvitePopup )
 	function closePopup()
 	{
 		setSelectedFriendID(undefined);
-		setPopuptype(PopupType.none);
+		setPopupType(PopupType.none);
 	}
 
 	function getSelectedFriend() : IFriendData | undefined
@@ -40,7 +40,7 @@ export default function InviteFriendPopup( { setPopuptype } : IInvitePopup )
 		// implement later
 		closePopup();
 	}
-	
+
 	if ( !friend )
 		return null;
 

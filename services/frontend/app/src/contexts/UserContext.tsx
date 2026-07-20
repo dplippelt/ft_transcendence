@@ -4,8 +4,6 @@ import guestAvatar from "../assets/guest_avatar_test.jpg";
 import { useFriends } from "./FriendsContext";
 import { useChatHistory } from "./ChatHistoryContext";
 
-// TODO: Add Separate ChatHistoryContext and FriendsContext
-
 interface IUserContext
 {
 	user: IUser;
@@ -35,8 +33,8 @@ export const defaultUser: IUser =
 
 export default function UserProvider( { children } : {children: ReactNode} )
 {
-	const friends = useFriends();
-	const chatHistory = useChatHistory();
+	const { resetFriends } = useFriends();
+	const { updateUsername: updateUsernameInChatHistory, resetChatHistory } = useChatHistory();
 	const [user, setUser] = useState<IUser>(defaultUser);
 
 	function setUserID( newUserID: string )
@@ -47,15 +45,15 @@ export default function UserProvider( { children } : {children: ReactNode} )
 	function updateUsername( newUsername: string )
 	{
 		const oldUsername = user.username;
-		chatHistory.updateUsername(oldUsername, newUsername);
+		updateUsernameInChatHistory(oldUsername, newUsername);
 		setUser(prev => ({ ...prev, username: newUsername }));
 	}
 
 	function resetUser()
 	{
 		setUser(defaultUser);
-		friends.resetFriends();
-		chatHistory.resetChatHistory();
+		resetFriends();
+		resetChatHistory();
 	}
 
 	function updateAvatar( newAvatar: string )

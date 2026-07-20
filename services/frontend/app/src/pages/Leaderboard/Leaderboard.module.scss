@@ -28,11 +28,13 @@
 
 .dropDownStatsPicker
 {
+	display: flex;
+	flex-direction: column;
+
 	label
 	{
 		justify-self: center;
 		font-size: 0.9rem;
-		margin-bottom: -0.25rem;
 	}
 
 	select
@@ -40,9 +42,10 @@
 		width: 60vw;
 	}
 
-	@media (max-width: 480px)
+	@media (max-width: 730px)
 	{
-		margin: 0 auto;
+		align-items: center;
+		row-gap: 0.25rem;
 	}
 }
 

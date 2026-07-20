@@ -7,10 +7,10 @@ import { useFriends, type IFriendData } from "../../contexts/FriendsContext";
 
 interface IRemoveFriendPopup
 {
-	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-export default function RemoveFriendPopup( { setPopuptype } : IRemoveFriendPopup )
+export default function RemoveFriendPopup( { setPopupType } : IRemoveFriendPopup )
 {
 	const { friends, selectedFriendID, setSelectedFriendID, removeFriend } = useFriends();
 	const friend = getSelectedFriend();
@@ -24,7 +24,7 @@ export default function RemoveFriendPopup( { setPopuptype } : IRemoveFriendPopup
 	function closePopup()
 	{
 		setSelectedFriendID(undefined);
-		setPopuptype(PopupType.none);
+		setPopupType(PopupType.none);
 	}
 
 	function getSelectedFriend() : IFriendData | undefined

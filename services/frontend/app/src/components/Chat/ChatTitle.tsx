@@ -14,7 +14,7 @@ interface IChatTitleSideBar
 interface IChatTitle
 {
 	activeFriend: IFriendData | undefined;
-	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 export function ChatTitleSideBar( { activeFriend } : IChatTitleSideBar )
@@ -30,7 +30,7 @@ export function ChatTitleSideBar( { activeFriend } : IChatTitleSideBar )
 	);
 }
 
-export function ChatTitle( { activeFriend, setPopuptype } : IChatTitle )
+export function ChatTitle( { activeFriend, setPopupType } : IChatTitle )
 {
 	const { activeFriendID, setSelectedFriendID } = useFriends();
 	const isMobile = useIsMobile(720);
@@ -52,7 +52,7 @@ export function ChatTitle( { activeFriend, setPopuptype } : IChatTitle )
 
 	function handleInviteToPlay()
 	{
-		setPopuptype(PopupType.inviteFriend);
+		setPopupType(PopupType.inviteFriend);
 		setSelectedFriendID(activeFriendID);
 	}
 

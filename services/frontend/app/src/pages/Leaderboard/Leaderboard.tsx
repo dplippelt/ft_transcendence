@@ -105,7 +105,7 @@ interface ILeaderboardWindow
 
 function StatsPicker( { stat, setStat } : IStatsPicker )
 {
-	const isMobile = useIsMobile(480);
+	const isMobile = useIsMobile(730);
 
 	function handleChange( e: React.ChangeEvent<HTMLSelectElement, Element> )
 	{

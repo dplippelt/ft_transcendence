@@ -11,10 +11,10 @@ import { useFriends } from "../../contexts/FriendsContext";
 
 interface IAddFriendPopup
 {
-	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-export default function AddFriendPopup( { setPopuptype } : IAddFriendPopup )
+export default function AddFriendPopup( { setPopupType } : IAddFriendPopup )
 {
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [username, setUsername] = useState<string>("");
@@ -39,7 +39,7 @@ export default function AddFriendPopup( { setPopuptype } : IAddFriendPopup )
 			return setError(ErrorType.userAlreadyFriend);
 
 		addFriend(validUsername)
-		setPopuptype(PopupType.none);
+		setPopupType(PopupType.none);
 	}
 
 	return (
@@ -48,7 +48,7 @@ export default function AddFriendPopup( { setPopuptype } : IAddFriendPopup )
 			<TextInput label="Add new friend:" placeholder="Friend's username" setter={setUsername} id="newUsername" />
 			<PopupButtons>
 				<MossButton label="Add" onClick={ usernameCheck } />
-				<MossButton label="Cancel" onClick={ () => setPopuptype(PopupType.none) } />
+				<MossButton label="Cancel" onClick={ () => setPopupType(PopupType.none) } />
 			</PopupButtons>
 		</>
 	)

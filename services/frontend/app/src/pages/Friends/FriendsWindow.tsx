@@ -9,7 +9,7 @@ import styles from "./FriendsWindow.module.scss";
 interface IFriendsWindow
 {
 	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
-	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 function FriendsListTitle()
@@ -17,7 +17,7 @@ function FriendsListTitle()
 	return <div className={styles.friendsListTitle}>My Friends</div>
 }
 
-function FriendsList( { setMobileView, setPopuptype } : IFriendsWindow )
+function FriendsList( { setMobileView, setPopupType } : IFriendsWindow )
 {
 	const isMobile = useIsMobile(720);
 	const { setSelectedFriendID, setActiveFriendID } = useFriends();
@@ -32,13 +32,13 @@ function FriendsList( { setMobileView, setPopuptype } : IFriendsWindow )
 
 	function handleInviteToPlay( friendID: string )
 	{
-		setPopuptype(PopupType.inviteFriend);
+		setPopupType(PopupType.inviteFriend);
 		setSelectedFriendID(friendID);
 	}
 
 	function handleRemoveFriend( friendID: string )
 	{
-		setPopuptype(PopupType.removeFriend);
+		setPopupType(PopupType.removeFriend);
 		setSelectedFriendID(friendID);
 	}
 
@@ -55,12 +55,12 @@ function FriendsList( { setMobileView, setPopuptype } : IFriendsWindow )
 	)
 }
 
-export default function FriendsWindow( { setMobileView, setPopuptype } : IFriendsWindow )
+export default function FriendsWindow( { setMobileView, setPopupType } : IFriendsWindow )
 {
 	return (
 		<div className={styles.friendsWindow}>
 			<FriendsListTitle />
-			<FriendsList setMobileView={setMobileView} setPopuptype={setPopuptype} />
+			<FriendsList setMobileView={setMobileView} setPopupType={setPopupType} />
 		</div>
 	)
 }
