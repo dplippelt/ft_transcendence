@@ -6,7 +6,7 @@ import CardBase, { CardEvents } from "./CardBase";
 import Button, { type ButtonConfig } from "../utils/Button";
 import { buttonContentConfig, buttonStyleConfig } from "../utils/buttonConfig";
 
-const drawButtonCOnfig: ButtonConfig = {
+const drawButtonConfig: ButtonConfig = {
     styleConfig: buttonStyleConfig,
     textConfig: buttonContentConfig,
 }
@@ -23,7 +23,7 @@ export default class CardManager {
     this.cardDeck = new CardDeck(this.scene, cardDeckConfig);
     this.cardHand = new CardHand(this.scene, cardHandConfig);
     this.cardSelection = new CardSelection(this.scene, cardSelectionConfig);
-    this.drawButton = new Button(scene, "draw", drawButtonCOnfig);
+    this.drawButton = new Button(scene, "draw", drawButtonConfig);
     this.drawButton.setPosition(100, 100);
 
     scene.input.setTopOnly(true);
