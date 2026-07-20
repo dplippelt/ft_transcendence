@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef } from "react";
-import { useUser, type IFriendData } from "../../contexts/UserContext";
 import styles from "./ChatHistory.module.scss";
+import { useChatHistory } from "../../contexts/ChatHistoryContext";
+import { useFriends } from "../../contexts/FriendsContext";
 
 interface IChatMessage
 {
@@ -8,40 +9,44 @@ interface IChatMessage
 	message: string;
 }
 
-interface IChatHistory
-{
-	activeFriend: IFriendData;
-}
-
 function ChatMessage( { username, message } : IChatMessage )
 {
 	return (
 		<div className={styles.chatMsg}>
-			<div className={styles.username}>{username}:</div>
+			<div className={styles.nameRow}>
+				<div className={styles.username}>{username}</div>
+				<div className={styles.username}>:</div>
+			</div>
 			<div className={styles.message}>{message}</div>
 		</div>
 	);
 }
 
-export default function ChatHistory( { activeFriend } : IChatHistory )
+export default function ChatHistory()
 {
+	const { activeFriendID } = useFriends();
 	const scrollRef = useRef<HTMLDivElement>(null);
-	const userFunc = useUser();
+	const { chatHistory, setChatToRead } = useChatHistory();
+	const activeChatHistory = activeFriendID ? chatHistory[activeFriendID] : undefined;
 
 	useLayoutEffect(() =>
 	{
 		if (scrollRef.current)
 			scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-	}, [activeFriend.chatHistory]);
+	}, [activeChatHistory, activeFriendID]);
 
 	useLayoutEffect(() =>
 	{
-		userFunc.setChatToRead(activeFriend);
-	}, [activeFriend.username]);
+		if ( activeFriendID )
+			setChatToRead(activeFriendID);
+	}, [activeFriendID]);
+
+	if ( !activeChatHistory )
+		return null; // or a loading message;
 
 	return (
 		<div className={styles.chatHistory} ref={scrollRef}>
-			{ activeFriend.chatHistory.map((chatMsg, idx) =>
+			{ activeChatHistory.map((chatMsg, idx) =>
 				<ChatMessage key={idx} username={chatMsg.username} message={chatMsg.message} />
 			)}
 		</div>

@@ -20,6 +20,7 @@ function Buttons()
 	{
 		auth.logout();
 		user.resetUser();
+		localStorage.clear();
 		navigate(RoutePath.landingPage);
 	}
 

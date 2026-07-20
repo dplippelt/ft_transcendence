@@ -1,14 +1,15 @@
 import { FriendButton, InviteToPlayButton, RemoveFriendButton } from "../../components/Buttons";
 import { PopupType } from "../../components/Chat/enums";
 import TheFriendsList from "../../components/FriendsList";
+import { useFriends } from "../../contexts/FriendsContext";
 import useIsMobile from "../../hooks/useIsMobile";
 import { MobileView } from "./enums";
-import type { ISetFriendPageState } from "./Friends";
 import styles from "./FriendsWindow.module.scss";
 
 interface IFriendsWindow
 {
-	setPageState: ISetFriendPageState;
+	setMobileView: React.Dispatch<React.SetStateAction<MobileView>>;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 function FriendsListTitle()
@@ -16,50 +17,50 @@ function FriendsListTitle()
 	return <div className={styles.friendsListTitle}>My Friends</div>
 }
 
-function FriendsList( { setPageState } : IFriendsWindow )
+function FriendsList( { setMobileView, setPopupType } : IFriendsWindow )
 {
-	const isMobile = useIsMobile();
-	const { setMobileView, setActiveChat, setPopuptype, setSelectedFriend } = setPageState;
+	const isMobile = useIsMobile(720);
+	const { setSelectedFriendID, setActiveFriendID } = useFriends();
 
-	function handleOpenChat( userID: string )
+	function handleOpenChat( friendID: string )
 	{
-		setActiveChat(userID);
+		setActiveFriendID(friendID);
 
 		if ( isMobile )
 			setMobileView(MobileView.chat);
 	}
 
-	function handleInviteToPlay( username: string )
+	function handleInviteToPlay( friendID: string )
 	{
-		setPopuptype(PopupType.inviteFriend);
-		setSelectedFriend(username);
+		setPopupType(PopupType.inviteFriend);
+		setSelectedFriendID(friendID);
 	}
 
-	function handleRemoveFriend( username: string )
+	function handleRemoveFriend( friendID: string )
 	{
-		setPopuptype(PopupType.removeFriend);
-		setSelectedFriend(username);
+		setPopupType(PopupType.removeFriend);
+		setSelectedFriendID(friendID);
 	}
 
 	return (
 		<TheFriendsList>
-			{ (userID, username, avatar) => (
+			{ (friendID, username, avatar) => (
 				<>
-					<FriendButton username={username} avatar={avatar} panel={false} onClick={ () => handleOpenChat(userID) } />
-					<InviteToPlayButton onClick={ () => handleInviteToPlay(username) } />
-					<RemoveFriendButton onClick={ () => handleRemoveFriend(username) } />
+					<FriendButton username={username} friendID={friendID} avatar={avatar} panel={false} onClick={ () => handleOpenChat(friendID) } />
+					<InviteToPlayButton onClick={ () => handleInviteToPlay(friendID) } />
+					<RemoveFriendButton onClick={ () => handleRemoveFriend(friendID) } />
 				</>
 			)}
 		</TheFriendsList>
 	)
 }
 
-export default function FriendsWindow( { setPageState } : IFriendsWindow )
+export default function FriendsWindow( { setMobileView, setPopupType } : IFriendsWindow )
 {
 	return (
 		<div className={styles.friendsWindow}>
 			<FriendsListTitle />
-			<FriendsList setPageState={setPageState} />
+			<FriendsList setMobileView={setMobileView} setPopupType={setPopupType} />
 		</div>
 	)
 }

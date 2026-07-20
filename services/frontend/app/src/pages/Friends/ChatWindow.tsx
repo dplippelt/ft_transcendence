@@ -4,25 +4,23 @@ import ChatBox from  "../../components/Chat/ChatBox";
 import ChatHistory from "../../components/Chat/ChatHistory";
 import { ChatTitle } from "../../components/Chat/ChatTitle";
 import { PopupType } from "../../components/Chat/enums";
-import { useUser } from "../../contexts/UserContext";
+import { useFriends } from "../../contexts/FriendsContext";
 
 interface IChatWindow
 {
-	activeChat: string | undefined;
-	setPopuptype: React.Dispatch<React.SetStateAction<PopupType>>;
-	setSelectedFriend: React.Dispatch<React.SetStateAction<string>>;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-export default function ChatWindow( { activeChat, setPopuptype, setSelectedFriend } : IChatWindow )
+export default function ChatWindow( { setPopupType } : IChatWindow )
 {
-	const { user } = useUser();
-	const activeFriend = activeChat ? user.friends[activeChat] : undefined;
+	const { friends, activeFriendID } = useFriends();
+	const activeFriend = activeFriendID ? friends[activeFriendID] : undefined;
 
 	return (
 		<div className={styles.chatWindow}>
-			<ChatTitle activeFriend={activeFriend} setPopuptype={setPopuptype} setSelectedFriend={setSelectedFriend} />
-			{ activeFriend && <ChatHistory activeFriend={activeFriend} /> }
-			{ activeFriend && <ChatBox activeFriend={activeFriend} /> }
+			<ChatTitle activeFriend={activeFriend} setPopupType={setPopupType} />
+			{ activeFriend && <ChatHistory /> }
+			{ activeFriend && <ChatBox /> }
 		</div>
 	)
 }

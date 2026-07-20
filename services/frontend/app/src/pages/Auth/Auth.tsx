@@ -1,6 +1,5 @@
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { MenuTitle } from "../../components/PageTitle";
 import styles from "./Auth.module.scss";
 import Background from "../../components/Background";
@@ -140,6 +139,6 @@ export default function Auth()
 		case "signup":
 			return <Signup/>
 		default:
-			return <Navigate to="/auth?mode=login" replace />;
+			return <Navigate to={RoutePath.auth + RouteParam.login} replace />;
 	}
 }

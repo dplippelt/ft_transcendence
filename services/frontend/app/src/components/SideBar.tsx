@@ -5,20 +5,15 @@ import FriendsList from "./FriendsList";
 import ChatHistory from "./Chat/ChatHistory";
 import ChatBox from "./Chat/ChatBox";
 import { ChatTitleSideBar } from "./Chat/ChatTitle";
-import { useUser } from "../contexts/UserContext";
 import useIsMobile from "../hooks/useIsMobile";
 import { useLocation, useNavigate } from "react-router-dom";
 import { RoutePath } from "../utils/utils";
+import { useChatHistory } from "../contexts/ChatHistoryContext";
+import { useFriends } from "../contexts/FriendsContext";
 
 interface ISidePanelToggle
 {
 	setCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
-}
-
-interface ISideBar
-{
-	activeChat: string | undefined;
-	setActiveChat: React.Dispatch<React.SetStateAction<string | undefined>>;
 }
 
 function FriendsListTitle()
@@ -28,8 +23,8 @@ function FriendsListTitle()
 
 function SidePanelToggle( { setCollapsed } : ISidePanelToggle )
 {
-	const userFunc = useUser();
-	const isMobile = useIsMobile();
+	const { hasNewMsg } = useChatHistory();
+	const isMobile = useIsMobile(480);
 	const navigate = useNavigate();
 	const location = useLocation();
 
@@ -41,26 +36,26 @@ function SidePanelToggle( { setCollapsed } : ISidePanelToggle )
 			setCollapsed(prev => !prev);
 	}
 
-	return <OpenSideBarButton hasNewMsg={userFunc.hasNewMsg()} onClick={handleClick} />;
+	return <OpenSideBarButton hasNewMsg={hasNewMsg()} onClick={handleClick} />;
 }
 
-function SidePanel( { activeChat, setActiveChat } : ISideBar )
+function SidePanel()
 {
-	const { user } = useUser();
-	const activeFriend = activeChat ? user.friends[activeChat] : undefined;
+	const { friends, activeFriendID, setActiveFriendID } = useFriends();
+	const activeFriend = activeFriendID ? friends[activeFriendID] : undefined;
 
 	function handleOpenChat( userID: string )
 	{
-		setActiveChat(userID);
+		setActiveFriendID(userID);
 	}
 
 	if ( activeFriend )
 	{
 		return (
 			<div className={styles.friendsPanel}>
-				<ChatTitleSideBar activeFriend={activeFriend} setActiveChat={setActiveChat} />
-				<ChatHistory activeFriend={activeFriend} />
-				<ChatBox activeFriend={activeFriend} />
+				<ChatTitleSideBar activeFriend={activeFriend} />
+				<ChatHistory />
+				<ChatBox />
 			</div>
 		);
 	}
@@ -69,7 +64,13 @@ function SidePanel( { activeChat, setActiveChat } : ISideBar )
 		<div className={styles.friendsPanel}>
 			<FriendsListTitle />
 			<FriendsList>
-				{ (userID, username, avatar) => <FriendButton username={username} avatar={avatar} panel={true} onClick={ () => handleOpenChat(userID) } /> }
+				{ (friendID, username, avatar) =>
+					<FriendButton
+						username={username}
+						friendID={friendID}
+						avatar={avatar}
+						panel={true}
+						onClick={ () => handleOpenChat(friendID) } /> }
 			</FriendsList>
 		</div>
 	);
@@ -78,12 +79,11 @@ function SidePanel( { activeChat, setActiveChat } : ISideBar )
 export default function SideBar()
 {
 	const [collapsed, setCollapsed] = useState<boolean>(true);
-	const [activeChat, setActiveChat] = useState<string | undefined>(undefined);
 
 	return (
 		<div className={styles.sideBar}>
 			<SidePanelToggle setCollapsed={setCollapsed} />
-			{ !collapsed && <SidePanel activeChat={activeChat} setActiveChat={setActiveChat} /> }
+			{ !collapsed && <SidePanel /> }
 		</div>
 	);
 }
