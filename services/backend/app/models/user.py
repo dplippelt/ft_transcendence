@@ -66,3 +66,15 @@ class User(Base):
         foreign_keys="FriendRequest.recipient_id",
         cascade="all, delete-orphan",
     )
+
+    friendships_a: Mapped[list["Friendship"]] = relationship(
+        back_populates="user_a",
+        foreign_keys="Friendship.user_a_id",
+        cascade="all, delete-orphan",
+    )
+
+    friendships_b: Mapped[list["Friendship"]] = relationship(
+        back_populates="user_b",
+        foreign_keys="Friendship.user_b_id",
+        cascade="all, delete-orphan",
+    )
