@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint, func
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, UniqueConstraint, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -22,6 +22,18 @@ class FriendRequest(Base):
     )
 
     recipient_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    pair_user_a_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+
+    pair_user_b_id: Mapped[int] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
@@ -56,8 +68,12 @@ class FriendRequest(Base):
 
     __table_args__ = (
         UniqueConstraint(
-            "requester_id",
-            "recipient_id",
-            name="uq_friend_request",
+            "pair_user_a_id",
+            "pair_user_b_id",
+            name="uq_friend_request_pair",
+        ),
+        CheckConstraint(
+            "pair_user_a_id < pair_user_b_id",
+            name="ck_friend_request_pair_order",
         ),
     )
