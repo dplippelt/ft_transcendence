@@ -24,20 +24,9 @@ export interface EnemyStates {
   die: IFiniteState | null;
 }
 
-// constructer (stateA, stateB, componentA, componentB, componentC...)
-
-// state design pattern
-// TODO: State behavior should be simple
-//        actions() and decision()
-//
-// TODO: Sensor works for a single player, what if two were in range? enemy should switch targets and chase the other one
-
-// TODO: What if the player forced the enemy outside the room?
 export class IdleState extends EnemyState {
   onEnter(): void {
-    this.enemy.sensor.range = this.enemyData.chaseDistance.minimum;
     this.enemy.waitFor.setWaitTime(Math.RND.between(this.enemyData.idleTime.minimum, this.enemyData.idleTime.maximum));
-    // console.log(`Enter Idle State`);
   }
 
   onUpdate(time: number): IFiniteState | null {
@@ -56,8 +45,6 @@ export class WanderState extends EnemyState {
   onEnter(): void {
     const point = this.enemy.dungeonLocation.getRandomPositionInRoom();
     this.enemy.movement.setTarget(new Math.Vector2(point.x, point.y));
-    this.enemy.sensor.range = this.enemyData.chaseDistance.minimum; // TODO: Move it into the sightSensor
-    // console.log(`Enter Wander State towards ${this.target}`);
   }
 
   onUpdate(_time: number, delta: number): IFiniteState | null {
@@ -85,8 +72,6 @@ export class ChaseState extends EnemyState {
 
   onEnter(): void {
     this.enemy.movement.setTarget(this.enemy.sensor.getPlayer());
-    this.enemy.sensor.range = this.enemyData.chaseDistance.maximum;
-    // console.log(`Enter Chase State towards ${this.player?.name}`);
   }
 
   onUpdate(_time: number, delta: number): IFiniteState | null {
@@ -104,14 +89,12 @@ export class ChaseState extends EnemyState {
 
   onExit(): void {
     this.enemy.movement.setTarget(null);
-    this.enemy.sensor.range = this.enemyData.chaseDistance.minimum;
   }
 }
 
 export class RecallState extends EnemyState {
   onEnter() {
     this.enemy.movement.setTarget(this.enemyData.spawnPoint);
-    // console.log(`Enter Recall State ...`);
   }
 
   onUpdate(_time: number, delta: number): IFiniteState | null {
@@ -151,8 +134,6 @@ export class CombatState extends EnemyState {
       isPlayerDefeated: false,
       sceneInvoker: this.enemy.scene,
     });
-
-    // console.log(`Enter ${this.enemy.name} Combat State...`);
   }
 
   onUpdate(): IFiniteState | null {
@@ -161,7 +142,7 @@ export class CombatState extends EnemyState {
     }
 
     if (this.isPlayerDefeated) {
-      return this.enemyData.states.idle; // TODO: Or DED :SADGE:
+      return this.enemyData.states.idle;
     }
     return this.enemyData.states.die;
   }
@@ -169,8 +150,7 @@ export class CombatState extends EnemyState {
 
 export class DieState extends EnemyState {
   onEnter(): void {
-    this.enemy.destroy(false); // TODO: Better to de-activate and re-use the enemy
-    // console.log(`Enter Die State ...`);
+    this.enemy.destroy(false);
   }
 
   onUpdate(): IFiniteState | null {

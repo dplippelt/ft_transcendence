@@ -14,11 +14,11 @@ class CircleVisualizer extends Component {
   body: Physics.Arcade.Sprite;
   circle: GameObjects.Arc;
 
-  constructor(gameObject: GameObjects.GameObject, radius: number) {
+  constructor(gameObject: GameObjects.GameObject, radius: number, color: number) {
     super(gameObject);
 
     this.body = gameObject as Physics.Arcade.Sprite;
-    this.circle = gameObject.scene.add.circle(this.body.x, this.body.y, radius, 0xff0000, 200);
+    this.circle = gameObject.scene.add.circle(this.body.x, this.body.y, radius, color, 200);
   }
 
   update(): void {
@@ -35,33 +35,35 @@ class CircleVisualizer extends Component {
 export class EnemySightSensor extends Component {
   private _physics: Physics.Arcade.ArcadePhysics;
   private _dungeonLocation: DungeonLocation;
-  private _range: number;
+  private _searchRadius: number;
+  private _sightRadius: number;
   private _targetPlayer: Player | null;
-  private _rangeVisualizer;
 
-  public set range(newRange: number) {
-    if (newRange < 0) {
-      throw new Error("Invalid range value");
-    }
-    this._range = newRange;
-    this._rangeVisualizer.circle.setRadius(newRange);
-  }
+  private _searchVisualizer: CircleVisualizer;
+  private _sightVisualizer: CircleVisualizer;
 
-  constructor(gameobject: GameObjects.GameObject, dungeonLocation: DungeonLocation) {
+  constructor(
+    gameobject: GameObjects.GameObject,
+    dungeonLocation: DungeonLocation,
+    searchRadius: number,
+    sightRadius: number,
+  ) {
     super(gameobject);
 
     this._physics = gameobject.scene.physics;
     this._dungeonLocation = dungeonLocation;
     this._targetPlayer = null;
-    this._range = 1.0;
+    this._searchRadius = searchRadius;
+    this._sightRadius = sightRadius;
 
-    this._rangeVisualizer = new CircleVisualizer(gameobject, this._range);
+    this._searchVisualizer = new CircleVisualizer(gameobject, this._searchRadius, 0x0000aa);
+    this._sightVisualizer = new CircleVisualizer(gameobject, this._sightRadius, 0xaa0000);
   }
 
-  private playerIsWithinRange(): boolean {
+  private playerIsWithinSightRange(): boolean {
     const position: Vector2Like = this.gameObject as unknown as { x: number; y: number };
     const targetPosition: Math.Vector2 = new Math.Vector2(this._targetPlayer as unknown as { x: number; y: number });
-    return targetPosition.subtract(position).length() <= this.range;
+    return targetPosition.subtract(position).length() <= this._sightRadius;
   }
 
   private isValidTarget(): boolean {
@@ -73,7 +75,7 @@ export class EnemySightSensor extends Component {
     const bodies: PhysicsBody[] = this._physics.overlapCirc(
       enemyBody.x,
       enemyBody.y,
-      this._range,
+      this._searchRadius,
       INC_DYNAMIC_BODIES,
       EXC_STATIC_BODIES,
     ) as PhysicsBody[];
@@ -100,7 +102,8 @@ export class EnemySightSensor extends Component {
       return false;
     }
 
-    if (!this._dungeonLocation.isTargetWithinRoom(this._targetPlayer!.dungeonLocation) || this.playerIsWithinRange()) {
+    if (!this._dungeonLocation.isTargetWithinRoom(this._targetPlayer!.dungeonLocation)
+      || !this.playerIsWithinSightRange()) {
       return false;
     }
     return true;

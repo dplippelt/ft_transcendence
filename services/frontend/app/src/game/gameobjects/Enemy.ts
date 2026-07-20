@@ -64,7 +64,7 @@ export class Enemy extends Physics.Arcade.Sprite {
     this.waitFor = new WaitFor(this);
     this.movement = new MoveTowardsTarget(this, enemyData.movementSpeed.maximum, 8);
     this.dungeonLocation = new DungeonLocation(this, room, dungeon);
-    this.sensor = new EnemySightSensor(this, this.dungeonLocation);
+    this.sensor = new EnemySightSensor(this, this.dungeonLocation, 64, 128);
 
     // Setup up the FSM
     enemyData.states.idle = new IdleState(this, enemyData);
