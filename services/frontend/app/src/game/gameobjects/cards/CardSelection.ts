@@ -19,7 +19,7 @@ const selectedCardAlignConfig: SelectedCardAlignConfig = {
   gridOptions: {
     width: -1,
     cellWidth: 100,
-    x: 100,
+    x: 200,
     y: 100,
   },
 };
