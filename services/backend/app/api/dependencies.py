@@ -3,8 +3,8 @@ from typing import Annotated
 from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
-from app.core.exceptions import unauthorized, forbidden
 
+from app.core.exceptions import forbidden, unauthorized
 from app.core.security import decode_access_token
 from app.db.database import get_db
 from app.models.user import User
