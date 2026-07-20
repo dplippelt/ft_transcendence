@@ -45,7 +45,6 @@ export default class CardDeck {
   readonly config!: CardDeckConfig;
   readonly baseWeights: CardWeight[];
   readonly weightReduction: WeightReduction;
-  //   readonly generateStatus = new Map<CardValue, number>();
   deck!: CardBase[];
   numDealedCards: number = 0;
 
@@ -56,9 +55,6 @@ export default class CardDeck {
     this.weightReduction = this.setWeightReductionFromConfig(this.config);
     this.deck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
 
-    // for (const card of this.baseWeights) {
-    //   this.generateStatus.set(card.value, 0);
-    // }
   }
 
   initBaseWeights(config: CardDeckConfig) {
@@ -84,7 +80,8 @@ export default class CardDeck {
     const operatorWeight = config.weight.operators / OPERATORS.length;
     const factor = config.reductionFactor;
 
-    console.log("reduction weight number " + numberWeight * factor + " operator " + operatorWeight * factor);
+    // Debug
+    // console.log("reduction weight number " + numberWeight * factor + " operator " + operatorWeight * factor);
     return { number: numberWeight * factor, operator: operatorWeight * factor } as WeightReduction;
   }
 
@@ -109,19 +106,22 @@ export default class CardDeck {
     if (!cardWeights.length) {
       throw Error("Card weights is not configured");
     }
-    console.log("card weight before softmax ");
-    for (const weight of cardWeights) {
-      console.log("value " + weight.value + " weight = " + weight.weight);
-    }
+    // Debug
+    // console.log("card weight before softmax ");
+    // for (const weight of cardWeights) {
+    //   console.log("value " + weight.value + " weight = " + weight.weight);
+    // }
 
     const normalizedWeights = this.softmax(cardWeights);
-    console.log("card weight after softmax ");
-    for (const weight of normalizedWeights) {
-      console.log("value " + weight.value + " weight = " + weight.weight);
-    }
+    // Degub
+    // console.log("card weight after softmax ");
+    // for (const weight of normalizedWeights) {
+    //   console.log("value " + weight.value + " weight = " + weight.weight);
+    // }
 
     const cardWeight = weightedRandom(normalizedWeights);
-    console.log("selected card " + cardWeight.value + " weight " + cardWeight.weight);
+    // Debug
+    // console.log("selected card " + cardWeight.value + " weight " + cardWeight.weight);
 
     return new CardBase(this.scene, cardWeight.value);
   }
@@ -191,20 +191,3 @@ export function shuffle(arr: Array<any>): void {
   }
 }
 
-//   updateGenerateStatus(cardValue: CardValue) {
-//     let count = this.generateStatus.get(cardValue) || 0;
-//     this.generateStatus.set(cardValue, count + 1);
-//     for (const card of this.deck) {
-//       console.log(card.getValue());
-//     }
-//   }
-
-//   addCardToDeck(card: CardBase) {
-//     this.deck.push(card);
-//     const cardValue = card.getValue()!;
-//     let count = this.generateStatus.get(cardValue) || 0;
-//     this.generateStatus.set(cardValue, count + 1);
-//     for (const card of this.deck) {
-//       console.log(card.getValue());
-//     }
-//   }
