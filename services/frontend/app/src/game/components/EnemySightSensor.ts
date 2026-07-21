@@ -10,37 +10,12 @@ type Vector2Like = Types.Math.Vector2Like;
 const INC_DYNAMIC_BODIES = true;
 const EXC_STATIC_BODIES = false;
 
-class CircleVisualizer extends Component {
-  body: Physics.Arcade.Sprite;
-  circle: GameObjects.Arc;
-
-  constructor(gameObject: GameObjects.GameObject, radius: number, color: number) {
-    super(gameObject);
-
-    this.body = gameObject as Physics.Arcade.Sprite;
-    this.circle = gameObject.scene.add.circle(this.body.x, this.body.y, radius, color, 200);
-  }
-
-  update(): void {
-    this.circle.setX(this.body.x);
-    this.circle.setY(this.body.y);
-  }
-
-  destroy(): void {
-    super.destroy();
-    this.circle.destroy();
-  }
-}
-
 export class EnemySightSensor extends Component {
   private _physics: Physics.Arcade.ArcadePhysics;
   private _dungeonLocation: DungeonLocation;
   private _searchRadius: number;
   private _sightRadius: number;
   private _targetPlayer: Player | null;
-
-  private _searchVisualizer: CircleVisualizer;
-  private _sightVisualizer: CircleVisualizer;
 
   constructor(
     gameobject: GameObjects.GameObject,
@@ -55,9 +30,6 @@ export class EnemySightSensor extends Component {
     this._targetPlayer = null;
     this._searchRadius = searchRadius;
     this._sightRadius = sightRadius;
-
-    this._searchVisualizer = new CircleVisualizer(gameobject, this._searchRadius, 0x0000aa);
-    this._sightVisualizer = new CircleVisualizer(gameobject, this._sightRadius, 0xaa0000);
   }
 
   private playerIsWithinSightRange(): boolean {

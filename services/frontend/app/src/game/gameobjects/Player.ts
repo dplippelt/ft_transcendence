@@ -22,10 +22,5 @@ export default class Player extends Physics.Arcade.Sprite {
 
     scene.add.existing(this);
     scene.physics.add.existing(this);
-
-    // DEBUG
-    this.setCircle(8);
-    this.setDebug(true, true, 0x00ff00);
-    this.setDepth(50);
   }
 }
