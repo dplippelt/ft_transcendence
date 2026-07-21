@@ -162,6 +162,7 @@ def accept_friend_request(request_id: int, current_user: CurrentUser, db: DbSess
         current_user=current_user,
     )
 
+
 @router.post("/requests/{request_id}/reject", response_model=FriendRequestResponse)
 def reject_friend_request(request_id: int, current_user: CurrentUser, db: DbSession,):
 
@@ -171,33 +172,17 @@ def reject_friend_request(request_id: int, current_user: CurrentUser, db: DbSess
         current_user=current_user,
     )
 
+
 @router.delete("/{friend_id}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_friend(friend_id: int, current_user: CurrentUser, db: DbSession):
-
-    if friend_id == current_user.id:
-        raise bad_request("You cannot remove yourself as a friend.")
-
-    friendship = get_friendship(
-        db,
-        current_user.id,
-        friend_id,
+def remove_friend(friend_id: int, current_user: CurrentUser, db: DbSession,):
+    remove_friend_service(
+        db=db,
+        current_user=current_user,
+        friend_id=friend_id,
     )
 
-    if friendship is None:
-        raise not_found("Friendship not found.")
+    return None
 
-    existing_request = get_existing_friend_request(
-        db,
-        current_user.id,
-        friend_id,
-    )
-
-    db.delete(friendship)
-
-    if existing_request:
-        db.delete(existing_request)
-
-    db.commit()
 
 @router.delete("/requests/{request_id}", status_code=status.HTTP_204_NO_CONTENT)
 def cancel_friend_request(request_id: int, current_user: CurrentUser, db: DbSession,):
