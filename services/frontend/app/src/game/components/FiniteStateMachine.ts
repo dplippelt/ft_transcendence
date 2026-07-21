@@ -1,11 +1,14 @@
 import Component from "./Component";
 import { GameObjects } from "phaser";
 
+export type NextState<T> = IFiniteState<T> | null;
+
 export interface IFiniteState<T> {
   onEnter?(enity: T): void;
-  onUpdate(enity: T, time: number, delta: number): IFiniteState<T> | null;
+  onUpdate(enity: T, time: number, delta: number): NextState<T>;
   onExit?(enity: T): void;
 }
+
 
 export class FiniteStateMachine<T> extends Component {
   currentState: IFiniteState<T>;
@@ -20,7 +23,7 @@ export class FiniteStateMachine<T> extends Component {
   }
 
   update(time: number, delta: number) {
-    const nextState: IFiniteState<T> | null = this.currentState.onUpdate(this.enity, time, delta);
+    const nextState: NextState<T> = this.currentState.onUpdate(this.enity, time, delta);
     if (nextState !== null) {
       this.currentState.onExit?.(this.enity);
       this.currentState = nextState;

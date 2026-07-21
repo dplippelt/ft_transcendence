@@ -1,6 +1,6 @@
 import { Math } from "phaser";
 import { Enemy, EnemyEvent } from "./Enemy";
-import { type IFiniteState } from "../components/FiniteStateMachine";
+import { type IFiniteState, type NextState } from "../components/FiniteStateMachine";
 import { eventsCenter, GameEvents } from "../scenes/GameManagerScene";
 
 export interface EnemyStates {
@@ -21,7 +21,7 @@ export class IdleState implements IFiniteState<Enemy> {
     enemy.waitFor.setWaitTime(this.randomIdleTime(enemy));
   }
 
-  onUpdate(enemy: Enemy, time: number): IFiniteState<Enemy> | null {
+  onUpdate(enemy: Enemy, time: number): NextState<Enemy> {
     if (enemy.sensor.searchForPlayer()) {
       return enemy.enemyData.states.chase;
     }
@@ -39,7 +39,7 @@ export class WanderState implements IFiniteState<Enemy> {
     enemy.movement.setTarget(new Math.Vector2(point.x, point.y));
   }
 
-  onUpdate(enemy: Enemy, _time: number, delta: number): IFiniteState<Enemy> | null {
+  onUpdate(enemy: Enemy, _time: number, delta: number): NextState<Enemy> {
     if (enemy.sensor.searchForPlayer()) {
       return enemy.enemyData.states.chase;
     }
@@ -62,7 +62,7 @@ export class ChaseState implements IFiniteState<Enemy> {
     enemy.movement.setTarget(enemy.sensor.getPlayer());
   }
 
-  onUpdate(enemy: Enemy, _time: number, delta: number): IFiniteState<Enemy> | null {
+  onUpdate(enemy: Enemy, _time: number, delta: number): NextState<Enemy> {
     if (!enemy.sensor.isPlayerInSight()) {
       return enemy.enemyData.states.recall;
     }
@@ -85,7 +85,7 @@ export class RecallState implements IFiniteState<Enemy> {
     enemy.movement.setTarget(enemy.spawn.spawnPoint);
   }
 
-  onUpdate(enemy: Enemy, _time: number, delta: number): IFiniteState<Enemy> | null {
+  onUpdate(enemy: Enemy, _time: number, delta: number): NextState<Enemy> {
     if (enemy.movement.isTargetReached()) {
       return enemy.enemyData.states.idle;
     }
@@ -122,7 +122,7 @@ export class CombatState implements IFiniteState<Enemy> {
     });
   }
 
-  onUpdate(enemy: Enemy): IFiniteState<Enemy> | null {
+  onUpdate(enemy: Enemy): NextState<Enemy> {
     if (enemy.inCombat) {
       return null;
     }
@@ -139,7 +139,7 @@ export class DieState implements IFiniteState<Enemy> {
     enemy.destroy(false);
   }
 
-  onUpdate(): IFiniteState<Enemy> | null {
+  onUpdate(): NextState<Enemy> {
     return null;
   }
 }
