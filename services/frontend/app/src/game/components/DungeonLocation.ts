@@ -96,7 +96,6 @@ export class DungeonLocation extends Component {
     return this._currentRoom === target._currentRoom;
   }
 
-  // TODO: Possible shell required of the entity | floor the point
   getRandomPositionInRoom(): Vector2 {
     if (this._currentRoom === undefined) {
       throw new Error("_currentRoom is undefined");
@@ -104,6 +103,4 @@ export class DungeonLocation extends Component {
     const point = randomPoint(this._currentRoom.aabb.min.clone().addXY(1, 1), this._currentRoom.aabb.max.clone().subXY(2, 2));
     return this._dungeon.transformPointToWorld(point.addXY(.5, .5));
   }
-
-  // path find towards goal?
 }

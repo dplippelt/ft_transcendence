@@ -71,10 +71,6 @@ export interface MapData {
 export interface DungeonConfig {
   roomCount: Range;
   emptyRoomConfig: RoomConfig;
-
-  // amount of puzzles
-  // amount of enemies
-  // amount of chests
 }
 
 // Calculate the map bounds based on the bounding box of the rooms

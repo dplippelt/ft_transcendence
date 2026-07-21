@@ -54,13 +54,8 @@ const dungeonConfig: DungeonConfig = {
   roomCount: { min: 8, max: 32 },
 };
 
-// TODO: Clear Enemy components that have single responsibility
-// TODO: Clean up states to ensure clear Actions and Decisions (abstract class of EnemyState)
-// IDEA:
-// IDEA: Player Scene? Separate camera that can more easily be devided
-// IDEA: GameScene -> Player Scenes -> Combat Scenes
-// IDEA: GameSession -> thruth sayer; player hp, position etc, syncs up with the game itself
 
+// TODO: GameSession (local / network) -> thruth sayer; player hp, position etc, syncs up with the game itself
 export default class GameScene extends Scene {
   constructor() {
     super("game");

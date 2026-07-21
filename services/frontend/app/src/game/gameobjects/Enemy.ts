@@ -25,7 +25,7 @@ export interface EnemyData {
   assetKey: AssetsKey;
   idleTime: Range;
   chaseDistance: Range;
-  movementSpeed: Range; // min = walk, max = run
+  movementSpeed: Range;
   states: EnemyStates;
 }
 

@@ -24,7 +24,7 @@ export default class CombatScene extends Phaser.Scene {
     console.log(`Initialize Combat Scene ${this.scene.key} called with ${this.eventData!.enemy.name}`);
   }
 
-  // TODO: Proper initialize logic
+  // TODO: Proper initialize logic needed
   start(_sys: Scenes.Systems, eventData: ICombatEventData) {
     this.eventData = eventData;
     console.log(`Awake Combat Scene ${this.scene.key} called with ${this.eventData.enemy.name}`);
