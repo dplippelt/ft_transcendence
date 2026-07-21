@@ -1,10 +1,17 @@
 import Phaser from "phaser";
 import { EventBus } from "../EventBus";
-import CardManager from "../gameobjects/cards/CardManager";
 import CombatManager from "../gameobjects/CombatManager";
+import { EnemyLevel, enemyTypes, type EnemyData } from "../gameobjects/CombatEnemy";
+
+export interface PlayerStatus {
+  hitPoint: number;
+  mana: number;
+}
+
 
 export default class CombatScene extends Phaser.Scene {
-  private cardManager!: CardManager;
+  private playerStatus!: PlayerStatus;
+  private enemyData!: EnemyData;
   private combatManager!: CombatManager;
 
   constructor() {
@@ -21,14 +28,19 @@ export default class CombatScene extends Phaser.Scene {
   }
 
   create() {
-    this.cardManager = new CardManager(this);
-    this.combatManager = new CombatManager(this, this.cardManager);
-    this.cardManager.fillCardHand(5);
+    this.playerStatus = {
+      hitPoint: 100,
+      mana: 5,
+    };
+
+    this.enemyData = enemyTypes[EnemyLevel.NORMAL];
+
+    this.combatManager = new CombatManager(this, this.playerStatus, this.enemyData);
 
     EventBus.emit("current-scene-ready", this);
   }
 
   update() {
-    this.cardManager.alignAllCards();
+    this.combatManager.update();
   }
 }
