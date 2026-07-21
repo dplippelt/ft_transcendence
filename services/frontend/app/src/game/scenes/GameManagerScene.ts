@@ -61,8 +61,6 @@ export class GameManagerScene extends Scene {
     if (this._gameType === GameType.SinglePlayer) {
       this.scene.sleep(this._gameScene);
     }
-
-    console.log("On Combat Initialized called");
   }
 
   private onCombatOver(combatEventData: ICombatEventData) {
@@ -74,7 +72,5 @@ export class GameManagerScene extends Scene {
     if (this._gameType === GameType.SinglePlayer) {
       this.scene.wake(this._gameScene);
     }
-
-    console.log("On Combat Over called");
   }
 }

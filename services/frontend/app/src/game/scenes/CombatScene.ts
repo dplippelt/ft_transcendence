@@ -14,20 +14,16 @@ export default class CombatScene extends Phaser.Scene {
 
   constructor(handle: string) {
     super(handle);
-
-    console.log("Combat scene constructed!");
   }
 
   init(eventData: ICombatEventData) {
     this.start(this.sys, eventData);
     this.events.on(Scenes.Events.START, this.start, this);
-    console.log(`Initialize Combat Scene ${this.scene.key} called with ${this.eventData!.enemy.name}`);
   }
 
   // TODO: Proper initialize logic needed
   start(_sys: Scenes.Systems, eventData: ICombatEventData) {
     this.eventData = eventData;
-    console.log(`Awake Combat Scene ${this.scene.key} called with ${this.eventData.enemy.name}`);
   }
 
   preload() {
@@ -67,7 +63,6 @@ export default class CombatScene extends Phaser.Scene {
     // TODO: proper usage for eventData
     eventData.isPlayerDefeated = false;
     eventData.sceneInvoker = this;
-    console.log(`Combat is over for ${eventData.enemy.name}!`);
 
     eventsCenter.emit(GameEvents.CombatOver, eventData);
   }
