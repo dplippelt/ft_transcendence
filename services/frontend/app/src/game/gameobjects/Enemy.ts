@@ -1,4 +1,4 @@
-import { Scene, Physics, Math } from "phaser";
+import { Scene, Physics } from "phaser";
 import { AssetsKey } from "../Assets";
 import { FiniteStateMachine } from "../components/FiniteStateMachine";
 import {
@@ -11,9 +11,8 @@ import {
   DieState,
 } from "./EnemyStates";
 import { EnemySightSensor } from "../components/EnemySightSensor";
-import type { Dungeon } from "./Dungeon";
+import { type SpawnLocation } from "./Dungeon";
 import { DungeonLocation } from "../components/DungeonLocation";
-import type { Room } from "../map/procedural";
 import { WaitFor } from "../components/WaitFor";
 import { MoveTowardsTarget } from "../components/MoveTowardsTarget";
 
@@ -23,7 +22,7 @@ interface Range {
 }
 
 export interface EnemyData {
-  spawnPoint: Math.Vector2;
+  assetKey: AssetsKey;
   idleTime: Range;
   chaseDistance: Range;
   movementSpeed: Range; // min = walk, max = run
@@ -35,55 +34,49 @@ export enum EnemyEvent {
 }
 
 export class Enemy extends Physics.Arcade.Sprite {
-  fsm: FiniteStateMachine;
+  fsm: FiniteStateMachine<Enemy>;
   waitFor: WaitFor;
   movement: MoveTowardsTarget;
   sensor: EnemySightSensor;
   dungeonLocation: DungeonLocation;
+  inCombat: boolean;
+  isAlive: boolean;
+  readonly enemyData: EnemyData;
+  readonly spawn: SpawnLocation;
 
-  private static counter: number = 0;
+  constructor(scene: Scene, spawnLocation: SpawnLocation, enemyData: EnemyData) {
+    super(scene, spawnLocation.spawnPoint.x, spawnLocation.spawnPoint.y, enemyData.assetKey);
 
-  constructor(scene: Scene, x: number, y: number, room: Room, dungeon: Dungeon) {
-    super(scene, x, y, AssetsKey.Skeleton); // TODO: EnemyData for specifics
-
-    const enemyData: EnemyData = {
-      spawnPoint: new Math.Vector2(x, y),
-      idleTime: { minimum: 3000, maximum: 5000 },
-      chaseDistance: { minimum: 64, maximum: 128 },
-      movementSpeed: { minimum: 120, maximum: 190 },
-      states: {
-        idle: null,
-        wander: null,
-        chase: null,
-        recall: null,
-        combat: null,
-        die: null,
-      },
-    };
-
+    this.enemyData = enemyData;
+    this.spawn = spawnLocation;
+    this.inCombat = false;
+    this.isAlive = true;
     this.waitFor = new WaitFor(this);
     this.movement = new MoveTowardsTarget(this, enemyData.movementSpeed.maximum, 8);
-    this.dungeonLocation = new DungeonLocation(this, room, dungeon);
+    this.dungeonLocation = new DungeonLocation(this, spawnLocation.startingRoom, spawnLocation.dungeon);
     this.sensor = new EnemySightSensor(this, this.dungeonLocation, 64, 128);
-
-    // Setup up the FSM
-    enemyData.states.idle = new IdleState(this, enemyData);
-    enemyData.states.wander = new WanderState(this, enemyData);
-    enemyData.states.chase = new ChaseState(this, enemyData);
-    enemyData.states.recall = new RecallState(this, enemyData);
-    enemyData.states.combat = new CombatState(this, enemyData);
-    enemyData.states.die = new DieState(this, enemyData);
     this.fsm = new FiniteStateMachine(this, enemyData.states.idle);
 
     this.scene.add.existing(this);
     this.scene.physics.add.existing(this);
-
-    this.name = String(Enemy.counter++);
-    console.log(`Constructed ${this.name}`);
   }
+}
 
-  IsPlayerInSight(): boolean {
-    const player = this.sensor.getPlayer();
-    return player !== null && !player.isInCombat && this.dungeonLocation.isTargetWithinRoom(player.dungeonLocation);
-  }
+const skeletonData: EnemyData = {
+  assetKey: AssetsKey.Skeleton,
+  idleTime: { minimum: 3000, maximum: 5000 },
+  chaseDistance: { minimum: 64, maximum: 128 },
+  movementSpeed: { minimum: 120, maximum: 190 },
+  states: {
+    idle: new IdleState(),
+    wander: new WanderState(),
+    chase: new ChaseState(),
+    recall: new RecallState(),
+    combat: new CombatState(),
+    die: new DieState(),
+  },
+};
+
+export function createSkeletonEnemy(scene: Scene, spawnLocation: SpawnLocation): Enemy {
+  return new Enemy(scene, spawnLocation, skeletonData);
 }

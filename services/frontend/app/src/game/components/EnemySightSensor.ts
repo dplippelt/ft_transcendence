@@ -67,7 +67,7 @@ export class EnemySightSensor extends Component {
   }
 
   private isValidTarget(): boolean {
-    return this._targetPlayer !== null && !this._targetPlayer.isDestroyed && this._targetPlayer.active;
+    return this._targetPlayer !== null && !this._targetPlayer.inCombat && !this._targetPlayer.isDestroyed && this._targetPlayer.active;
   }
 
   searchForPlayer(): boolean {

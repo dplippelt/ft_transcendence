@@ -1,159 +1,145 @@
 import { Math } from "phaser";
-import { Enemy, EnemyEvent, type EnemyData } from "./Enemy";
+import { Enemy, EnemyEvent } from "./Enemy";
 import { type IFiniteState } from "../components/FiniteStateMachine";
 import { eventsCenter, GameEvents } from "../scenes/GameManagerScene";
 
-abstract class EnemyState implements IFiniteState {
-  enemy: Enemy;
-  enemyData: EnemyData;
-
-  constructor(enemy: Enemy, enemyData: EnemyData) {
-    this.enemy = enemy;
-    this.enemyData = enemyData;
-  }
-
-  abstract onUpdate(time: number, delta: number): IFiniteState | null;
-}
-
 export interface EnemyStates {
-  idle: IFiniteState | null;
-  wander: IFiniteState | null;
-  chase: IFiniteState | null;
-  recall: IFiniteState | null;
-  combat: IFiniteState | null;
-  die: IFiniteState | null;
+  idle: IFiniteState<Enemy>;
+  wander: IFiniteState<Enemy>;
+  chase: IFiniteState<Enemy>;
+  recall: IFiniteState<Enemy>;
+  combat: IFiniteState<Enemy>;
+  die: IFiniteState<Enemy>;
 }
 
-export class IdleState extends EnemyState {
-  onEnter(): void {
-    this.enemy.waitFor.setWaitTime(Math.RND.between(this.enemyData.idleTime.minimum, this.enemyData.idleTime.maximum));
+export class IdleState implements IFiniteState<Enemy> {
+  private randomIdleTime(enemy: Enemy): number {
+    return Math.RND.between(enemy.enemyData.idleTime.minimum, enemy.enemyData.idleTime.maximum);
   }
 
-  onUpdate(time: number): IFiniteState | null {
-    if (this.enemy.sensor.searchForPlayer()) {
-      return this.enemyData.states.chase;
+  onEnter(enemy: Enemy): void {
+    enemy.waitFor.setWaitTime(this.randomIdleTime(enemy));
+  }
+
+  onUpdate(enemy: Enemy, time: number): IFiniteState<Enemy> | null {
+    if (enemy.sensor.searchForPlayer()) {
+      return enemy.enemyData.states.chase;
     }
 
-    if (this.enemy.waitFor.isWaitOver(time)) {
-      return this.enemyData.states.wander;
+    if (enemy.waitFor.isWaitOver(time)) {
+      return enemy.enemyData.states.wander;
     }
     return null;
   }
 }
 
-export class WanderState extends EnemyState {
-  onEnter(): void {
-    const point = this.enemy.dungeonLocation.getRandomPositionInRoom();
-    this.enemy.movement.setTarget(new Math.Vector2(point.x, point.y));
+export class WanderState implements IFiniteState<Enemy> {
+  onEnter(enemy: Enemy): void {
+    const point = enemy.dungeonLocation.getRandomPositionInRoom();
+    enemy.movement.setTarget(new Math.Vector2(point.x, point.y));
   }
 
-  onUpdate(_time: number, delta: number): IFiniteState | null {
-    if (this.enemy.sensor.searchForPlayer()) {
-      return this.enemyData.states.chase;
+  onUpdate(enemy: Enemy, _time: number, delta: number): IFiniteState<Enemy> | null {
+    if (enemy.sensor.searchForPlayer()) {
+      return enemy.enemyData.states.chase;
     }
 
-    if (this.enemy.movement.isTargetReached()) {
-      return this.enemyData.states.idle;
+    if (enemy.movement.isTargetReached()) {
+      return enemy.enemyData.states.idle;
     }
 
-    this.enemy.movement.move(delta);
+    enemy.movement.move(delta);
     return null;
   }
 
-  onExit(): void {
-    this.enemy.movement.setTarget(null);
+  onExit(enemy: Enemy): void {
+    enemy.movement.setTarget(null);
   }
 }
 
-export class ChaseState extends EnemyState {
-  constructor(enemy: Enemy, enemyData: EnemyData) {
-    super(enemy, enemyData);
+export class ChaseState implements IFiniteState<Enemy> {
+  onEnter(enemy: Enemy): void {
+    enemy.movement.setTarget(enemy.sensor.getPlayer());
   }
 
-  onEnter(): void {
-    this.enemy.movement.setTarget(this.enemy.sensor.getPlayer());
-  }
-
-  onUpdate(_time: number, delta: number): IFiniteState | null {
-    if (!this.enemy.sensor.isPlayerInSight()) {
-      return this.enemyData.states.recall;
+  onUpdate(enemy: Enemy, _time: number, delta: number): IFiniteState<Enemy> | null {
+    if (!enemy.sensor.isPlayerInSight()) {
+      return enemy.enemyData.states.recall;
     }
 
-    if (this.enemy.movement.isTargetReached()) {
-      return this.enemyData.states.combat;
+    if (enemy.movement.isTargetReached()) {
+      return enemy.enemyData.states.combat;
     }
 
-    this.enemy.movement.move(delta);
+    enemy.movement.move(delta);
     return null;
   }
 
-  onExit(): void {
-    this.enemy.movement.setTarget(null);
+  onExit(enemy: Enemy): void {
+    enemy.movement.setTarget(null);
   }
 }
 
-export class RecallState extends EnemyState {
-  onEnter() {
-    this.enemy.movement.setTarget(this.enemyData.spawnPoint);
+export class RecallState implements IFiniteState<Enemy> {
+  onEnter(enemy: Enemy) {
+    enemy.movement.setTarget(enemy.spawn.spawnPoint);
   }
 
-  onUpdate(_time: number, delta: number): IFiniteState | null {
-    if (this.enemy.movement.isTargetReached()) {
-      return this.enemyData.states.idle;
+  onUpdate(enemy: Enemy, _time: number, delta: number): IFiniteState<Enemy> | null {
+    if (enemy.movement.isTargetReached()) {
+      return enemy.enemyData.states.idle;
     }
 
-    this.enemy.movement.move(delta);
+    enemy.movement.move(delta);
     return null;
   }
 
-  onExit(): void {
-    this.enemy.movement.setTarget(null);
+  onExit(enemy: Enemy): void {
+    enemy.movement.setTarget(null);
   }
 }
 
-export class CombatState extends EnemyState {
-  combatOver: boolean; // TODO: Move to enemy...
-  isPlayerDefeated: boolean;
+export class CombatState implements IFiniteState<Enemy> {
+  onEnter(enemy: Enemy): void {
+    const player = enemy.sensor.getPlayer();
+    if (player === null) {
+      throw new Error('Player cannot null when entering the combat state');
+    }
 
-  constructor(enemy: Enemy, enemyData: EnemyData) {
-    super(enemy, enemyData);
-    this.combatOver = false;
-    this.isPlayerDefeated = false;
-  }
-
-  onEnter(): void {
-    this.combatOver = false;
-    this.enemy.once(EnemyEvent.CombatOver, (isPlayerDefeated: boolean) => {
-      this.combatOver = true;
-      this.isPlayerDefeated = isPlayerDefeated;
+    enemy.inCombat = true;
+    player.inCombat = true;
+    enemy.once(EnemyEvent.CombatOver, (isPlayerDefeated: boolean) => {
+      player.inCombat = false;
+      enemy.inCombat = false;
+      enemy.isAlive = isPlayerDefeated;
     });
 
     eventsCenter.emit(GameEvents.CombatInitiated, {
-      player: this.enemy.sensor.getPlayer(),
-      enemy: this.enemy,
+      player: player,
+      enemy: enemy,
       isPlayerDefeated: false,
-      sceneInvoker: this.enemy.scene,
+      sceneInvoker: enemy.scene,
     });
   }
 
-  onUpdate(): IFiniteState | null {
-    if (!this.combatOver) {
+  onUpdate(enemy: Enemy): IFiniteState<Enemy> | null {
+    if (enemy.inCombat) {
       return null;
     }
 
-    if (this.isPlayerDefeated) {
-      return this.enemyData.states.idle;
+    if (enemy.isAlive) {
+      return enemy.enemyData.states.idle;
     }
-    return this.enemyData.states.die;
+    return enemy.enemyData.states.die;
   }
 }
 
-export class DieState extends EnemyState {
-  onEnter(): void {
-    this.enemy.destroy(false);
+export class DieState implements IFiniteState<Enemy> {
+  onEnter(enemy: Enemy): void {
+    enemy.destroy(false);
   }
 
-  onUpdate(): IFiniteState | null {
+  onUpdate(): IFiniteState<Enemy> | null {
     return null;
   }
 }

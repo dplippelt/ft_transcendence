@@ -1,14 +1,15 @@
-import { Physics, Scene, Tilemaps, Math as pMath } from "phaser";
+import { Physics, Scene, Tilemaps, Math as pMath, type Types } from "phaser";
 import { AssetsKey } from "../Assets";
 import { dungeonBuilder, type DungeonConfig, type MapData, type Room } from "../map/procedural";
-import { Enemy } from "./Enemy";
+import { createSkeletonEnemy, Enemy } from "./Enemy";
 import { randomPoint, Vector2 } from "../map/math";
 import Player from "./Player";
 import { playerOne } from "../components/KeyboardComponent";
 
-interface ITileLocation {
-  position: Vector2;
-  room: Room;
+export interface SpawnLocation {
+  spawnPoint: Types.Math.Vector2Like;
+  startingRoom: Room;
+  dungeon: Dungeon;
 }
 
 interface TileSize {
@@ -104,13 +105,14 @@ export class Dungeon extends Tilemaps.Tilemap {
     this.setCollisionBetween(41, 44);
   }
 
-  getRandomWalkableTile(): ITileLocation {
+  getRandomWalkableTile(): SpawnLocation {
     const room: Room = pMath.RND.pick(this.mapData.rooms);
     const point = randomPoint(room.aabb.min.clone().addXY(1, 1), room.aabb.max.clone().subXY(2, 2));
 
     return {
-      position: this.transformPointToWorld(point.addXY(0.5, 0.5)),
-      room: room,
+      spawnPoint: this.transformPointToWorld(point.addXY(0.5, 0.5)),
+      startingRoom: room,
+      dungeon: this,
     };
   }
 
@@ -131,20 +133,21 @@ export class Dungeon extends Tilemaps.Tilemap {
     this.mapColliders.push(this.scene.physics.add.collider(object, layer));
   }
 
-  spawnPlayers(count: number) { // TODO: Only spawn within the entrance room
+  spawnPlayers(count: number) {
+    // TODO: Only spawn within the entrance room
     for (let i: number = 0; i < count; ++i) {
-      const spawn: ITileLocation = this.getRandomWalkableTile();
-      const player = new Player(this.scene, spawn.position.x, spawn.position.y, playerOne, spawn.room, this);
+      const spawn: SpawnLocation = this.getRandomWalkableTile();
+      const player = new Player(this.scene, playerOne, spawn);
       this.addColliderWithMap(player, 5);
       this.players.push(player);
     }
   }
 
-  spawnEnemies(count: number): void { // TODO: exclude entrance and exit
-    // TODO: enemies should not spawn on the same tile...
+  spawnEnemies(count: number): void {
+    // TODO: exclude entrance and exit
     for (let i: number = 0; i < count; ++i) {
-      const spawn: ITileLocation = this.getRandomWalkableTile();
-      this.enemies.push(new Enemy(this.scene, spawn.position.x, spawn.position.y, spawn.room, this));
+      const spawn: SpawnLocation = this.getRandomWalkableTile();
+      this.enemies.push(createSkeletonEnemy(this.scene, spawn));
     }
   }
 
