@@ -50,19 +50,6 @@ export class Dungeon extends Tilemaps.Tilemap {
     if (this.mapData.rooms.length < 3) {
       throw new Error("Invalid Dungeon layout. Not Enough rooms");
     }
-
-    // DEBUG
-    const rect = scene.add.rectangle(
-      0,
-      0,
-      this.mapData.width * this.tileWidth * this.scale,
-      this.mapData.height * this.tileHeight * this.scale,
-      0x55111111,
-    );
-    rect.setDepth(-10);
-    const circ = scene.add.circle(0, 0, 8, 0x00ff00);
-    circ.setDepth(50);
-    // END DEBUG
   }
 
   build(dungeonConfig: DungeonConfig) {

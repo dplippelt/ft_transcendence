@@ -54,8 +54,7 @@ const dungeonConfig: DungeonConfig = {
   roomCount: { min: 8, max: 32 },
 };
 
-
-// TODO: GameSession (local / network) -> thruth sayer; player hp, position etc, syncs up with the game itself
+// TODO: GameSession structure (local / network) -> thruth sayer; player hp, position etc, syncs up with the game itself
 export default class GameScene extends Scene {
   constructor() {
     super("game");
@@ -68,14 +67,8 @@ export default class GameScene extends Scene {
   create() {
     const map = new Dungeon(this, dungeonConfig, 1.5);
 
-    // Temporarily added to launch the combat scene by clicking the screen
+    // Temporarily mouse event for map generation
     this.input.on("pointerdown", () => {
-      //   this.initiateCombatScene({
-      //     player: undefined,
-      //     enemy: undefined,
-      //     isPlayerDefeated: false,
-      //     sceneInvoker: this,
-      //   });
       this.cameras.main.stopFollow();
       map.build(dungeonConfig);
       this.cameras.main.startFollow(map.players[0]);
