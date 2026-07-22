@@ -54,7 +54,7 @@ export class Enemy extends Physics.Arcade.Sprite {
     this.waitFor = new WaitFor(this);
     this.movement = new MoveTowardsTarget(this, enemyData.movementSpeed.maximum, 8);
     this.dungeonLocation = new DungeonLocation(this, spawnLocation.startingRoom, spawnLocation.dungeon);
-    this.sensor = new EnemySightSensor(this, this.dungeonLocation, 64, 128);
+    this.sensor = new EnemySightSensor(this, this.dungeonLocation, enemyData.chaseDistance.minimum, enemyData.chaseDistance.maximum);
     this.fsm = new FiniteStateMachine(this, enemyData.states.idle);
 
     this.scene.add.existing(this);
