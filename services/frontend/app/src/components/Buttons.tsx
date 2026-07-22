@@ -16,7 +16,7 @@ interface IMossButton
 {
 	label: string;
 	onClick: () => void;
-	extraStyling?: string,
+	extraStyling?: string;
 	mobilePosition?: string;
 }
 
@@ -24,6 +24,7 @@ interface IBottomButton
 {
 	label: string;
 	onClick: () => void;
+	disabled?: boolean;
 	mobilePosition?: string;
 }
 
@@ -42,7 +43,7 @@ interface ITextButton
 {
 	label: string;
 	onClick: () => void;
-	extraStyling?: string,
+	extraStyling?: string;
 }
 
 interface ITabButton
@@ -89,12 +90,19 @@ export function MenuButton( { label, onClick } : IMenuButton )
 
 export function MossButton( { label, onClick, extraStyling="", mobilePosition="" } : IMossButton )
 {
-	return <button className={`${styles.mossButton} type="button" ${extraStyling} ${mobilePosition}`} onClick={onClick}>{label}</button>;
+	return <button className={`${styles.mossButton} ${extraStyling} ${mobilePosition}`} type="button" onClick={onClick}>{label}</button>;
 }
 
-export function BottomButton( { label, onClick, mobilePosition="" } : IBottomButton )
+export function BottomButton( { label, onClick, disabled=false, mobilePosition="" } : IBottomButton )
 {
-	return <button className={`${styles.bottomButton} type="button" ${mobilePosition}`} onClick={onClick}>{label}</button>;
+	function extraStyling()
+	{
+		if ( disabled )
+			return styles.disabledButton;
+		return "";
+	}
+
+	return <button className={`${styles.bottomButton} ${extraStyling()} ${mobilePosition}`} type="button" onClick={onClick}>{label}</button>;
 }
 
 export function BackButton( { path } : IBackButton )

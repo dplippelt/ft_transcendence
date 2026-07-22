@@ -55,5 +55,6 @@ export enum RouteParam
 {
 	login = "?mode=login",
 	signup = "?mode=signup",
+	lobbyID = "/:lobbyID",
 }
 

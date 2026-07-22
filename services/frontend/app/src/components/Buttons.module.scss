@@ -29,11 +29,16 @@
 		width: 100%;
 	}
 
-	&:hover
+	&:hover:not(.disabledButton)
 	{
 		background-color: $button-hover-bg-color;
 		color: $button-hover-color;
 	}
+}
+
+.disabledButton
+{
+	opacity: 50%;
 }
 
 @mixin mossButton

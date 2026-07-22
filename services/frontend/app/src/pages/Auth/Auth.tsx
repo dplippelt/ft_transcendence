@@ -38,6 +38,7 @@ function LoginQuery()
 
 		auth.login();
 		user.updateUsername(validUsername);
+		user.setUserID(validUsername + "_ID"); // TODO: fetch userID from backend!
 		navigate(RoutePath.mainMenu);
 	}
 

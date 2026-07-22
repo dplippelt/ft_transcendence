@@ -19,7 +19,7 @@ function Buttons()
 	function onCreateGame()
 	{
 		createLobby(user.userID);
-		navigate(RoutePath.mpLobby, { state: { from: RoutePath.multiplayer } });
+		navigate(RoutePath.mpLobby + `/${user.userID.toLowerCase()}`);
 	}
 
 	return (

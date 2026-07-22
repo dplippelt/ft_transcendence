@@ -1,10 +1,10 @@
-import { useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import React, { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
 import SideBar from "../../components/SideBar";
-import { PopupType, AvatarSize, RoutePath } from "../../utils/utils";
+import { PopupType, AvatarSize, RoutePath, MobilePosition } from "../../utils/utils";
 import { BottomButtons } from "../../components/ButtonContainers";
 import { BottomButton } from "../../components/Buttons";
 import styles from "./Lobby.module.scss";
@@ -18,9 +18,15 @@ import useIsMobile from "../../hooks/useIsMobile";
 import InviteFriendPopup from "./LobbyInviteFriendPopup";
 import Popup from "../../components/Popup";
 
-interface IButtons
+interface IHostButtons
 {
+	numPlayers: number;
 	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
+}
+
+interface IGuestButtons
+{
+	setNumPlayers: React.Dispatch<React.SetStateAction<number>>;
 }
 
 interface IPlayer
@@ -79,29 +85,65 @@ function LobbyWindow()
 	);
 }
 
-function Buttons( { setPopupType } : IButtons )
+function HostButtons( { numPlayers, setPopupType } : IHostButtons )
 {
 	const navigate = useNavigate();
-	const location = useLocation();
-	const path = location.state?.from ?? RoutePath.multiplayer;
 
 	function onCloseLobby()
 	{
 		localStorage.removeItem(DRAFT_STORAGE_PREFIX + LOBBY_DRAFT);
-		navigate(path);
+		navigate(RoutePath.mainMenu); // intentional back to main menu instead of multiplayer page
+	}
+
+	function onStartGame()
+	{
+		if ( numPlayers !== 2 )
+			return;
+
+		// implement later
+	}
+
+	function isDisabled() : boolean
+	{
+		if ( numPlayers !== 2 )
+			return true;
+		return false;
 	}
 
 	return (
 		<BottomButtons>
-			<BottomButton label="Close lobby" onClick={onCloseLobby} />
+			<BottomButton label="Close lobby" onClick={onCloseLobby} mobilePosition={MobilePosition.bottom} />
 			<BottomButton label="Invite friend" onClick={ () => setPopupType(PopupType.inviteFriend) } />
+			<BottomButton label="Start game" onClick={onStartGame} disabled={isDisabled()} mobilePosition={MobilePosition.top} />
+		</BottomButtons>
+	);
+}
+
+function GuestButtons( { setNumPlayers } : IGuestButtons )
+{
+	const navigate = useNavigate();
+
+	function onLeaveLobby()
+	{
+		setNumPlayers(prev => prev - 1);
+		localStorage.removeItem(DRAFT_STORAGE_PREFIX + LOBBY_DRAFT);
+		navigate(RoutePath.mainMenu); // intentional back to main menu instead of multiplayer page
+	}
+
+	return (
+		<BottomButtons>
+			<BottomButton label="Leave lobby" onClick={onLeaveLobby} mobilePosition={MobilePosition.bottom} />
 		</BottomButtons>
 	);
 }
 
 export default function Lobby()
 {
-	const [popupType, setPopupType] = useState<PopupType>(PopupType.none);
+	const { user } = useUser();
+	const { lobbyID } = useParams();
+	const isHost = user.userID.toLowerCase() === lobbyID ? true : false;
+	const [ popupType, setPopupType ] = useState<PopupType>(PopupType.none);
+	const [ numPlayers, setNumPlayers ] = useState<number>(isHost ? 1 : 2); // mock implementation, needs backend integration
 
 	return (
 		<>
@@ -109,7 +151,8 @@ export default function Lobby()
 			<Page>
 				<MenuTitle title="Lobby" />
 				<LobbyWindow />
-				<Buttons setPopupType={setPopupType} />
+				{ isHost && <HostButtons numPlayers={numPlayers} setPopupType={setPopupType} /> }
+				{ !isHost && <GuestButtons setNumPlayers={setNumPlayers} /> }
 				<SideBar />
 				{ popupType === PopupType.inviteFriend && <Popup> <InviteFriendPopup setPopupType={setPopupType} /> </Popup> }
 			</Page>
