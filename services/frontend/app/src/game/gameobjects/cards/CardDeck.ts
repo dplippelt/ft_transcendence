@@ -80,8 +80,6 @@ export default class CardDeck {
     const operatorWeight = config.weight.operators / OPERATORS.length;
     const factor = config.reductionFactor;
 
-    // Debug
-    // console.log("reduction weight number " + numberWeight * factor + " operator " + operatorWeight * factor);
     return { number: numberWeight * factor, operator: operatorWeight * factor } as WeightReduction;
   }
 
@@ -106,22 +104,10 @@ export default class CardDeck {
     if (!cardWeights.length) {
       throw Error("Card weights is not configured");
     }
-    // Debug
-    // console.log("card weight before softmax ");
-    // for (const weight of cardWeights) {
-    //   console.log("value " + weight.value + " weight = " + weight.weight);
-    // }
 
     const normalizedWeights = this.softmax(cardWeights);
-    // Degub
-    // console.log("card weight after softmax ");
-    // for (const weight of normalizedWeights) {
-    //   console.log("value " + weight.value + " weight = " + weight.weight);
-    // }
 
     const cardWeight = weightedRandom(normalizedWeights);
-    // Debug
-    // console.log("selected card " + cardWeight.value + " weight " + cardWeight.weight);
 
     return new CardBase(this.scene, cardWeight.value);
   }
