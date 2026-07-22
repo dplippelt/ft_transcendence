@@ -128,7 +128,7 @@ export class CombatState implements IFiniteState<Enemy> {
     }
 
     if (enemy.isAlive) {
-      return enemy.enemyData.states.idle;
+      return enemy.enemyData.states.recall;
     }
     return enemy.enemyData.states.die;
   }
