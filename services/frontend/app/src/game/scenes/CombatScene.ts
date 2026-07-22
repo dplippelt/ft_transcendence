@@ -23,6 +23,7 @@ export default class CombatScene extends Phaser.Scene {
   create() {
     this.cardManager = new CardManager(this);
     this.combatManager = new CombatManager(this, this.cardManager);
+    void this.combatManager;
     this.cardManager.fillCardHand(5);
 
     EventBus.emit("current-scene-ready", this);
