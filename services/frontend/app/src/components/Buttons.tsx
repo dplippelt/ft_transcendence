@@ -243,5 +243,5 @@ export function JoinButton( { lobbyID } : IJoinButton )
 
 export default function ColumnButton( { label, onClick, extraStyling="" } : IColumnButton )
 {
-	return <div className={`${styles.columnButton} ${extraStyling}`} onClick={onClick}>{label}</div>
+	return <button className={`${styles.columnButton} ${extraStyling}`} type="button" onClick={onClick}>{label}</button>
 }
