@@ -7,11 +7,11 @@ import Page from "../../components/Page";
 import { useAuth } from "../../contexts/AuthContext";
 import ErrorText from "../../components/ErrorText";
 import { RouteParam, RoutePath } from "../../utils/utils";
-import { ErrorType } from "../../utils/errors";
+import { ErrorType, isErrorType } from "../../utils/errors";
 import { MossButton, TextButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
 import { PasswordInput, TextInput } from "../../components/TextInput";
-import { getValidUsername, isErrorType } from "../../utils/usernameCheck";
+import { getValidUsername } from "../../utils/usernameCheck";
 
 function LoginQuery()
 {
@@ -85,7 +85,7 @@ function SignupQuery()
 			return setError(ErrorType.passwordsDontMatch);
 
 		auth.login();
-		user.setUserID(validUsername + "_ID"); // TODO: Replace with stable userID instead of using username
+		user.setUserID(validUsername + "_ID"); // TODO: instead of using username replace with stable userID fetched from backend after user is created
 		user.updateUsername(validUsername);
 		navigate(RoutePath.mainMenu);
 	}

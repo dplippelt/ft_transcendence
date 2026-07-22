@@ -1,12 +1,12 @@
 import React, { useState } from "react";
 import { useUser } from "../../contexts/UserContext";
 import ErrorText from "../../components/ErrorText";
-import { ErrorType } from "../../utils/errors";
+import { ErrorType, isErrorType } from "../../utils/errors";
 import { TextInput } from "../../components/TextInput";
 import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
 import { PopupType } from "../../utils/utils";
-import { getValidUsername, isErrorType } from "../../utils/usernameCheck";
+import { getValidUsername } from "../../utils/usernameCheck";
 import { useFriends } from "../../contexts/FriendsContext";
 
 interface IAddFriendPopup

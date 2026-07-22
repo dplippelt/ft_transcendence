@@ -2,30 +2,33 @@ import { createContext, useContext, /* useEffect, */ useState } from "react";
 import type { ReactNode } from "react";
 import type { IChatMsg } from "./ChatHistoryContext";
 
-interface LobbieData
+export interface LobbieData
 {
+	lobbyName: string;
+	hostID: string;
 	guestID: guestID;
 	chatHistory: IChatMsg[];
 }
 
-type hostID = string;
+type lobbyID = string;
 type guestID = string | undefined;
-type Lobbies = Record<hostID, LobbieData>;
+type Lobbies = Record<lobbyID, LobbieData>;
 
 const defaultLobbies: Lobbies =
 {
-	"hostID_1": { guestID: "guestID_1", chatHistory: [] },
-	"hostID_2": { guestID: undefined, chatHistory: [] },
-	"hostID_3": { guestID: undefined, chatHistory: [] },
+	"lobbyID_1": { lobbyName: "Lobby 1", hostID: "hostID_1", guestID: "guestID_1", chatHistory: [] },
+	"lobbyID_2": { lobbyName: "Lobby 2", hostID: "hostID_2", guestID: undefined, chatHistory: [] },
+	"lobbyID_3": { lobbyName: "Lobby 3", hostID: "hostID_3", guestID: undefined, chatHistory: [] },
 }
 
 interface ILobbiesContext
 {
 	lobbies: Lobbies;
-	createLobby: ( hostID: hostID ) => void;
-	getGuestID: ( hostID: hostID ) => string | undefined;
-	getChatHistory: ( hostID: hostID ) => IChatMsg[] | undefined;
-	addChatHistory: ( hostID: hostID, username: string, message: string ) => void;
+	createLobby: ( lobbyID: lobbyID, hostID: string, lobbyName: string ) => void;
+	closeLobby: ( lobbyID: lobbyID ) => void;
+	getGuestID: ( lobbyID: lobbyID ) => string | undefined;
+	getChatHistory: ( lobbyID: lobbyID ) => IChatMsg[] | undefined;
+	addChatHistory: ( lobbyID: lobbyID, username: string, message: string ) => void;
 }
 
 const LobbiesContext = createContext<ILobbiesContext | null>(null);
@@ -34,37 +37,49 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
 {
 	const [lobbies, setLobbies] = useState<Lobbies>(defaultLobbies);
 
-	function createLobby( hostID: hostID )
+	function createLobby( lobbyID: lobbyID, hostID: string, lobbyName: string )
 	{
 		setLobbies(prev => ({
 			...prev,
-			[hostID]: { guestID: undefined, chatHistory: [] },
+			[lobbyID]: { lobbyName: lobbyName, hostID: hostID, guestID: undefined, chatHistory: [] },
 		}));
 	}
 
-	function getGuestID( hostID: hostID ) : guestID
+	function closeLobby( lobbyID: lobbyID )
 	{
-		return lobbies[hostID]?.guestID;
+		setLobbies(prev => {
+			if ( !prev[lobbyID] )
+				return prev;
+
+			const newLobbies = { ...prev };
+			delete newLobbies[lobbyID];
+			return newLobbies;
+		});
 	}
 
-	function getChatHistory( hostID: hostID ) : IChatMsg[] | undefined
+	function getGuestID( lobbyID: lobbyID ) : guestID
 	{
-		return lobbies[hostID]?.chatHistory;
+		return lobbies[lobbyID]?.guestID;
 	}
 
-	function addChatHistory( hostID: hostID, username: string, message: string )
+	function getChatHistory( lobbyID: lobbyID ) : IChatMsg[] | undefined
+	{
+		return lobbies[lobbyID]?.chatHistory;
+	}
+
+	function addChatHistory( lobbyID: lobbyID, username: string, message: string )
 	{
 		const newMsg: IChatMsg = { username: username, message: message, read: true };
 
 		setLobbies(prev => {
-			if ( prev[hostID] === undefined )
+			if ( prev[lobbyID] === undefined )
 				return prev;
 
 			return {
 				...prev,
-				[hostID]: {
-					...prev[hostID],
-					chatHistory: [ ...(prev[hostID].chatHistory ?? []), newMsg ]
+				[lobbyID]: {
+					...prev[lobbyID],
+					chatHistory: [ ...(prev[lobbyID].chatHistory ?? []), newMsg ]
 				}
 			};
 		});
@@ -91,6 +106,7 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
 			{{
 				lobbies,
 				createLobby,
+				closeLobby,
 				getGuestID,
 				getChatHistory,
 				addChatHistory,

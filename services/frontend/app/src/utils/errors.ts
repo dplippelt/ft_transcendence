@@ -1,3 +1,4 @@
+import { maxLobbyNameLength, minLobbyNameLength } from "./lobbyNameCheck";
 import { maxUsernameLength, minUserNameLength } from "./usernameCheck";
 
 export enum ErrorType
@@ -15,6 +16,14 @@ export enum ErrorType
 	userDoesNotExist,
 	userAlreadyFriend,
 	noFriendSelected,
+	lobbyNameCannotBeEmpty,
+	badLobbyNameLength,
+	lobbyNameContainsInvalChars,
+}
+
+export function isErrorType( value: string | ErrorType ) : value is ErrorType
+{
+	return typeof value === "number";
 }
 
 export function errorMsg( error: ErrorType ): string
@@ -45,6 +54,12 @@ export function errorMsg( error: ErrorType ): string
 			return "User already in friends list!";
 		case ErrorType.noFriendSelected:
 			return "Select a friend to invite";
+		case ErrorType.lobbyNameCannotBeEmpty:
+			return "Lobby name cannot be empty!";
+		case ErrorType.badUserNameLength:
+			return "Lobby name must be between " + minLobbyNameLength + " and " + maxLobbyNameLength + " characters long!";
+		case ErrorType.usernameContainsInvalChars:
+			return "Lobby name may only contain letters, numbers, spaces and the symbols _ . -";
 		default:
 			return "";
 	}

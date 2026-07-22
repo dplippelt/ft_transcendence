@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
@@ -10,16 +10,25 @@ import { BottomButton } from "../../components/Buttons";
 import styles from "./Lobby.module.scss";
 import Avatar from "../../components/Avatar";
 import { useUser } from "../../contexts/UserContext";
-import { useLobbies } from "../../contexts/LobbiesContext";
 import noAvatar from "../../assets/no_avatar.png";
 import { LobbyChatHistory } from "../../components/Chat/ChatHistory";
 import { DRAFT_STORAGE_PREFIX, LOBBY_DRAFT, LobbyChatBox } from "../../components/Chat/ChatBox";
 import useIsMobile from "../../hooks/useIsMobile";
 import InviteFriendPopup from "./LobbyInviteFriendPopup";
 import Popup from "../../components/Popup";
+import { useLobbies } from "../../contexts/LobbiesContext";
+
+interface PlayersData
+{
+	hostUsername: string;
+	hostAvatar: string;
+	guestUsername: string;
+	guestAvatar: string;
+}
 
 interface IHostButtons
 {
+	lobbyID: string;
 	numPlayers: number;
 	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
@@ -36,6 +45,16 @@ interface IPlayer
 	alt: string;
 }
 
+interface IPlayers
+{
+	players: PlayersData;
+}
+
+interface ILobbyWindow
+{
+	players: PlayersData;
+}
+
 function Player( { username, avatar, alt } : IPlayer )
 {
 	const isMobile = useIsMobile(480);
@@ -49,18 +68,12 @@ function Player( { username, avatar, alt } : IPlayer )
 	)
 }
 
-function Players()
+function Players( { players } : IPlayers )
 {
-	const { user } = useUser();
-	const { getGuestID } = useLobbies();
-	const guestID = getGuestID(user.userID);
-	const guestAvatar = guestID ? user.avatar : noAvatar; // TODO: if guestID is defined replace with guest's avatar (fetch from database)
-	const guestUsername = guestID ? user.username : "Waiting...";
-
 	return (
 		<div className={styles.players}>
-			<Player username={user.username} avatar={user.avatar} alt="Host avatar" />
-			<Player username={guestUsername} avatar={guestAvatar} alt="Guest avatar" />
+			<Player username={players.hostUsername} avatar={players.hostAvatar} alt="Host avatar" />
+			<Player username={players.guestUsername} avatar={players.guestAvatar} alt="Guest avatar" />
 		</div>
 	);
 }
@@ -75,24 +88,26 @@ function Chat()
 	)
 }
 
-function LobbyWindow()
+function LobbyWindow( { players } : ILobbyWindow )
 {
 	return (
 		<div className={styles.lobbyWindow}>
-			<Players />
+			<Players players={players} />
 			<Chat />
 		</div>
 	);
 }
 
-function HostButtons( { numPlayers, setPopupType } : IHostButtons )
+function HostButtons( { lobbyID, numPlayers, setPopupType } : IHostButtons )
 {
 	const navigate = useNavigate();
+	const { closeLobby } = useLobbies();
 
 	function onCloseLobby()
 	{
 		localStorage.removeItem(DRAFT_STORAGE_PREFIX + LOBBY_DRAFT);
 		navigate(RoutePath.mainMenu); // intentional back to main menu instead of multiplayer page
+		setTimeout(() => closeLobby(lobbyID), 0); // using a timeout so Lobby has time to unmount before lobbies state updates. Otherwise the early return for a non-existent lobby causes a brief screen flash.
 	}
 
 	function onStartGame()
@@ -139,19 +154,46 @@ function GuestButtons( { setNumPlayers } : IGuestButtons )
 
 export default function Lobby()
 {
-	const { user } = useUser();
+	const { lobbies } = useLobbies();
 	const { lobbyID } = useParams();
-	const isHost = user.userID.toLowerCase() === lobbyID ? true : false;
+	const { user } = useUser();
+
+	const hostID = lobbyID ? lobbies[lobbyID]?.hostID : undefined;
+	const isHost = user.userID === hostID;
+
+	const [ players, _setPlayers ] = useState<PlayersData>(initPlayers); // TODO: needs to update when a second player joins (WebSockets)
+	const [ numPlayers, setNumPlayers ] = useState<number>( isHost ? 1 : 2 ); // TODO: needs to update when a second player joins (WebSockets)
 	const [ popupType, setPopupType ] = useState<PopupType>(PopupType.none);
-	const [ numPlayers, setNumPlayers ] = useState<number>(isHost ? 1 : 2); // mock implementation, needs backend integration
+
+	if ( !lobbyID || !lobbies[lobbyID] )
+		return <Navigate to={RoutePath.mainMenu} />;
+
+	function initPlayers() : PlayersData
+	{
+		if ( isHost )
+		{
+			return {
+				hostUsername: user.username,
+				hostAvatar: user.avatar,
+				guestUsername: "Waiting...", // TODO: needs to update and fetch from database when a second player joins (WebSockets)
+				guestAvatar: noAvatar, // TODO: needs to update and fetch from database when a second player joins (WebSockets)
+			}
+		}
+		return {
+			hostUsername: "Host", // TODO: fetch from database instead
+			hostAvatar: noAvatar, // TODO: fetch from database instead
+			guestUsername: user.username,
+			guestAvatar: user.avatar,
+		}
+	}
 
 	return (
 		<>
 			<Background />
 			<Page>
 				<MenuTitle title="Lobby" />
-				<LobbyWindow />
-				{ isHost && <HostButtons numPlayers={numPlayers} setPopupType={setPopupType} /> }
+				<LobbyWindow players={players} />
+				{ isHost && <HostButtons lobbyID={lobbyID} numPlayers={numPlayers} setPopupType={setPopupType} /> }
 				{ !isHost && <GuestButtons setNumPlayers={setNumPlayers} /> }
 				<SideBar />
 				{ popupType === PopupType.inviteFriend && <Popup> <InviteFriendPopup setPopupType={setPopupType} /> </Popup> }

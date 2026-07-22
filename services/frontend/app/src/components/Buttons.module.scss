@@ -54,7 +54,7 @@
 		width: 100%;
 	}
 
-	&:hover
+	&:hover:not(.disabledButton)
 	{
 		background-color: $button-v1-hover-bg-color;
 		color: $button-v1-hover-color;
@@ -236,4 +236,30 @@
 .newMsgGlow
 {
 	animation: newMsgGlowAnim 1.8s ease-in-out 10;
+}
+
+.joinButton
+{
+	margin: 0;
+	width: 35%;
+	min-width: fit-content;
+	justify-self: center;
+
+	@media (max-width: 960px)
+	{
+		width: 80%;
+	}
+
+	@media (max-width: 420px)
+	{
+		width: fit-content;
+		padding-left: 0.5rem;
+		padding-right: 0.5rem;
+	}
+}
+
+.columnButton
+{
+	@include textButton;
+	width: fit-content;
 }

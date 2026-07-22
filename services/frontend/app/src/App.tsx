@@ -11,6 +11,7 @@ import Friends from "./pages/Friends/Friends"
 import { RouteParam, RoutePath } from "./utils/utils"
 import Multiplayer from "./pages/Multiplayer/Multiplayer"
 import Lobby from "./pages/Multiplayer/Lobby"
+import LobbiesBrowser from "./pages/Multiplayer/LobbiesBrowser"
 
 export default function App()
 {
@@ -30,6 +31,7 @@ export default function App()
 				<Route path={RoutePath.mainMenu} element={ <MainMenu/> } />
 				<Route path={RoutePath.multiplayer} element={ <Multiplayer/> } />
 				<Route path={RoutePath.mpLobby + RouteParam.lobbyID} element={ <Lobby/> } />
+				<Route path={RoutePath.mpBrowser} element={ <LobbiesBrowser/> } />
 				<Route path={RoutePath.friends} element={ <Friends/> } />
 				<Route path={RoutePath.profile} element={ <Profile/> } />
 				<Route path={RoutePath.leaderboard} element={ <Leaderboard/> } />

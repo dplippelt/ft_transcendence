@@ -1,7 +1,7 @@
 import { useRef, useState } from "react";
 import type React from "react";
 import { MobilePosition, PopupType, AvatarSize } from "../../utils/utils";
-import { ErrorType } from "../../utils/errors";
+import { ErrorType, isErrorType } from "../../utils/errors";
 import styles from "./EditPopup.module.scss";
 import { PopupButtons } from "../../components/ButtonContainers";
 import ErrorText from "../../components/ErrorText";
@@ -11,7 +11,7 @@ import guestAvatar from  "../../assets/guest_avatar_test.jpg";
 import testAvatar from "../../assets/mesca_avatar_test.png";
 import { PasswordInput, TextInput } from "../../components/TextInput";
 import Avatar from "../../components/Avatar";
-import { getValidUsername, isErrorType } from "../../utils/usernameCheck";
+import { getValidUsername } from "../../utils/usernameCheck";
 
 interface IEditPopup
 {

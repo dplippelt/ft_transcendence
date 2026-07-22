@@ -27,6 +27,7 @@ export enum PopupType
 	editAvatar,
 	editUsername,
 	editPassword,
+	createLobby,
 }
 
 export enum Tab

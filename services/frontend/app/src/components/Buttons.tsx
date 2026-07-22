@@ -1,10 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
-import { PopupType, AvatarSize, MobilePosition } from "../utils/utils";
+import { PopupType, AvatarSize, MobilePosition, RoutePath } from "../utils/utils";
 import { ChevronLeft, Dot, MessageCircle, MessageCircleWarning, SendHorizontal, Swords, UserMinus } from "lucide-react";
 import Avatar from "./Avatar";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
+import { useLobbies } from "../contexts/LobbiesContext";
 
 interface IMenuButton
 {
@@ -80,6 +81,18 @@ interface IOpenSideBarButton
 
 interface ISideBarBackButton
 {
+	onClick: () => void;
+}
+
+interface IJoinButton
+{
+	lobbyID: string;
+}
+
+interface IColumnButton
+{
+	label: string;
+	extraStyling?: string;
 	onClick: () => void;
 }
 
@@ -202,4 +215,33 @@ export function SideBarBackButton( { onClick } : ISideBarBackButton )
 			<ChevronLeft />
 		</button>
 	);
+}
+
+export function JoinButton( { lobbyID } : IJoinButton )
+{
+	const navigate = useNavigate();
+	const { lobbies } = useLobbies();
+	const lobby = lobbies[lobbyID];
+	const disabled: boolean = !lobby || lobby.guestID !== undefined ? true : false;
+
+	function extraStyling() : string
+	{
+		if ( disabled )
+			return styles.disabledButton;
+		return "";
+	}
+
+	function onClick()
+	{
+		if ( disabled )
+			return;
+		navigate(RoutePath.mpLobby + `/${lobbyID}`);
+	}
+
+	return <MossButton label="Join" onClick={onClick} extraStyling={ `${styles.joinButton} ${extraStyling()}` }/>;
+}
+
+export default function ColumnButton( { label, onClick, extraStyling="" } : IColumnButton )
+{
+	return <div className={`${styles.columnButton} ${extraStyling}`} onClick={onClick}>{label}</div>
 }
