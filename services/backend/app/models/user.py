@@ -78,3 +78,15 @@ class User(Base):
         foreign_keys="Friendship.user_b_id",
         passive_deletes=True,
     )
+
+    sent_messages: Mapped[list["ChatMessage"]] = relationship(
+        back_populates="sender",
+        foreign_keys="ChatMessage.sender_id",
+        cascade="all, delete-orphan",
+    )
+
+    received_messages: Mapped[list["ChatMessage"]] = relationship(
+        back_populates="receiver",
+        foreign_keys="ChatMessage.receiver_id",
+        cascade="all, delete-orphan",
+    )
