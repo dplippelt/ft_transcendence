@@ -103,7 +103,7 @@ function BrowserWindow()
 {
 	const { lobbies } = useLobbies();
 	const [ lobbiesArr, setLobbiesArr ] = useState<Lobby[]>([]);
-	const [ sortBy, setSortBy ] = useState<SortBy>(SortBy.name);
+	const [ sortBy, setSortBy ] = useState<SortBy>(SortBy.noSort);
 
 	function sortByLobbyName(
 		[, { lobbyName: lobbyName_a }]: Lobby,
