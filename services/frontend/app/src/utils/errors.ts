@@ -56,9 +56,9 @@ export function errorMsg( error: ErrorType ): string
 			return "Select a friend to invite";
 		case ErrorType.lobbyNameCannotBeEmpty:
 			return "Lobby name cannot be empty!";
-		case ErrorType.badUserNameLength:
+		case ErrorType.badLobbyNameLength:
 			return "Lobby name must be between " + minLobbyNameLength + " and " + maxLobbyNameLength + " characters long!";
-		case ErrorType.usernameContainsInvalChars:
+		case ErrorType.lobbyNameContainsInvalChars:
 			return "Lobby name may only contain letters, numbers, spaces and the symbols _ . -";
 		default:
 			return "";

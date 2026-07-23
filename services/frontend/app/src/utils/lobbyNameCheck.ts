@@ -13,11 +13,11 @@ export function getValidLobbyName( lobbyName: string ) : string | ErrorType
 	const lbbyName = lobbyName.trim();
 
 	if ( lbbyName.length === 0 )
-		return ErrorType.usernameCannotBeEmpty;
+		return ErrorType.lobbyNameCannotBeEmpty;
 	if ( lbbyName.length < minLobbyNameLength || lbbyName.length > maxLobbyNameLength )
-		return ErrorType.badUserNameLength;
+		return ErrorType.badLobbyNameLength;
 	if ( !hasValidCharacters(lbbyName) )
-		return ErrorType.usernameContainsInvalChars
+		return ErrorType.lobbyNameContainsInvalChars;
 
 	return lbbyName;
 }

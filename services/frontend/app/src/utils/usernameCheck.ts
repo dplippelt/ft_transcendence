@@ -17,7 +17,7 @@ export function getValidUsername( username: string ) : string | ErrorType
 	if ( usrname.length < minUserNameLength || usrname.length > maxUsernameLength )
 		return ErrorType.badUserNameLength;
 	if ( !hasValidCharacters(usrname) )
-		return ErrorType.usernameContainsInvalChars
+		return ErrorType.usernameContainsInvalChars;
 
 	return usrname;
 }

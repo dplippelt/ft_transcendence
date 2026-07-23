@@ -36,6 +36,15 @@ export enum Tab
 	stats,
 }
 
+export enum SortBy
+{
+	name,
+	nameRev,
+	players,
+	playersRev,
+	noSort,
+}
+
 export enum RoutePath
 {
 	landingPage = "/",

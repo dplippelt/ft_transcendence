@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
-import { PopupType, AvatarSize, MobilePosition, RoutePath } from "../utils/utils";
-import { ChevronLeft, Dot, MessageCircle, MessageCircleWarning, SendHorizontal, Swords, UserMinus } from "lucide-react";
+import { PopupType, AvatarSize, MobilePosition, RoutePath, SortBy } from "../utils/utils";
+import { ArrowDown01, ArrowDown10, ArrowDownAZ, ArrowDownZA, ChevronLeft, Dot, MessageCircle, MessageCircleWarning, RefreshCcw, SendHorizontal, Swords, UserMinus } from "lucide-react";
 import Avatar from "./Avatar";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
 import { useLobbies } from "../contexts/LobbiesContext";
@@ -92,7 +92,13 @@ interface IJoinButton
 interface IColumnButton
 {
 	label: string;
+	onClick: () => void;
+	sortBy?: SortBy;
 	extraStyling?: string;
+}
+
+interface IRefreshButton
+{
 	onClick: () => void;
 }
 
@@ -241,7 +247,65 @@ export function JoinButton( { lobbyID } : IJoinButton )
 	return <MossButton label="Join" onClick={onClick} extraStyling={ `${styles.joinButton} ${extraStyling()}` }/>;
 }
 
-export default function ColumnButton( { label, onClick, extraStyling="" } : IColumnButton )
+export default function ColumnButton( { label, onClick, sortBy, extraStyling="" } : IColumnButton )
 {
-	return <button className={`${styles.columnButton} ${extraStyling}`} type="button" onClick={onClick}>{label}</button>
+	function SortIcon()
+	{
+		switch ( sortBy )
+		{
+			case SortBy.name:
+				return <ArrowDownAZ className={styles.sortIcon} />;
+			case SortBy.nameRev:
+				return <ArrowDownZA className={styles.sortIcon} />;
+			case SortBy.players:
+				return <ArrowDown01 className={styles.sortIcon} />;
+			case SortBy.playersRev:
+				return <ArrowDown10 className={styles.sortIcon} />;
+			default:
+				return null;
+		}
+	}
+
+	function getSortDescription() : string | null
+	{
+		switch ( sortBy )
+		{
+			case SortBy.name:
+				return "sorted name ascending";
+			case SortBy.nameRev:
+				return "sorted name descending";
+			case SortBy.players:
+				return "sorted player count ascending";
+			case SortBy.playersRev:
+				return "sorted player count descending";
+			case SortBy.noSort:
+				return "not sorted";
+			default:
+				return null;
+		}
+	}
+
+	const sortDescription = getSortDescription();
+	const ariaLabel = sortDescription ? `${label}, ${sortDescription}` : label;
+
+	return (
+		<button
+			className={`${styles.columnButton} ${extraStyling}`}
+			type="button"
+			onClick={onClick}
+			aria-label={ariaLabel}
+		>
+			<div>{label}</div>
+			{ SortIcon() }
+		</button>
+	);
+}
+
+export function RefreshButton( { onClick } : IRefreshButton )
+{
+	return (
+		<button className={styles.refreshButton} type="button" aria-label="Refresh lobbies list" title="Refresh" onClick={onClick} >
+			<RefreshCcw />
+		</button>
+	);
 }

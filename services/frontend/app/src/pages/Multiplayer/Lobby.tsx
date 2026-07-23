@@ -107,7 +107,7 @@ function HostButtons( { lobbyID, numPlayers, setPopupType } : IHostButtons )
 	{
 		localStorage.removeItem(DRAFT_STORAGE_PREFIX + LOBBY_DRAFT);
 		navigate(RoutePath.mainMenu); // intentional back to main menu instead of multiplayer page
-		setTimeout(() => closeLobby(lobbyID), 0); // using a timeout so Lobby has time to unmount before lobbies state updates. Otherwise the early return for a non-existent lobby causes a brief screen flash.
+		setTimeout(() => closeLobby(lobbyID), 50); // using a timeout so Lobby has time to unmount before lobbies state updates. Otherwise the early return for a non-existent lobby causes a brief screen flash.
 	}
 
 	function onStartGame()

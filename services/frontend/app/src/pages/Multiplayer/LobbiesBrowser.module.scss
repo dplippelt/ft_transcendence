@@ -14,7 +14,7 @@
 .columnTitles
 {
 	display: grid;
-	grid-template-columns: 35% 1fr 1fr;
+	grid-template-columns: 1fr 1fr 1fr;
 	border-bottom: 1px solid $primary-text-color;
 	border-radius: 0px;
 }
@@ -24,14 +24,22 @@
 	display: flex;
 	flex-direction: column;
 	row-gap: 0.3rem;
+	@include scrollbar;
 }
 
 .lobby
 {
 	display: grid;
-	grid-template-columns: 35% 1fr 1fr;
+	grid-template-columns: 1fr 1fr 1fr;
 	align-items: center;
 	font-size: 0.8rem;
+}
+
+.lobbyName
+{
+	text-wrap: nowrap;
+	overflow-x: hidden;
+	text-overflow: ellipsis;
 }
 
 .players
