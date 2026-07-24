@@ -16,7 +16,24 @@ export default class PreloadScene extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16,
     });
-    this.load.image(AssetsKey.TileSet, Assets[AssetsKey.TileSet]);
+    this.load.spritesheet(AssetsKey.TileSet, Assets[AssetsKey.TileSet], {
+      frameWidth: 16,
+      frameHeight: 16
+    });
+
+    // this.load.atlas(AssetsKey.TileSet, Assets[AssetsKey.TileSet], {
+    //   "frames": [
+    //     {
+    //       "filename": "tile_0",
+    //       "frame": {
+    //         "w": 16,
+    //         "h": 16,
+    //         "x": 0,
+    //         "y": 0
+    //       }
+    //     }
+    //   ]
+    // });
   }
 
   create() {

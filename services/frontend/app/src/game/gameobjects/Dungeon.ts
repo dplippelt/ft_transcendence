@@ -1,10 +1,12 @@
 import { Physics, Scene, Tilemaps, Math as pMath, type Types } from "phaser";
 import { AssetsKey } from "../Assets";
-import { dungeonBuilder, type DungeonConfig, type MapData, type Room } from "../map/procedural";
+import { Direction, dungeonBuilder, type DungeonConfig, type MapData, type Room } from "../map/procedural";
 import { Enemy } from "./Enemy";
-import { randomPoint, Vector2 } from "../map/math";
+import { randomPoint, randomPointOnEdge, Vector2 } from "../map/math";
 import Player from "./Player";
 import { playerOne } from "../components/KeyboardComponent";
+import { FloorType, PassageType, type TileSetMap } from "../map/TileSetMap";
+import { Passage } from "./Passage";
 
 export interface SpawnLocation {
   spawnPoint: Types.Math.Vector2Like;
@@ -17,15 +19,19 @@ interface TileSize {
   invSize: Vector2;
 }
 
+// TODO: Create/insert the doorway to the exit of the level
 export class Dungeon extends Tilemaps.Tilemap {
   origin: Vector2;
   scale: number;
   mapData!: MapData;
+  tileSetMap: TileSetMap;
   tileSet: Tilemaps.Tileset;
   tileSize: TileSize;
   mapColliders: Physics.Arcade.Collider[];
   enemies: Enemy[];
   players: Player[];
+  dynamics: Physics.Arcade.Group;
+  passage!: Passage;
 
   constructor(scene: Scene, dungeonConfig: DungeonConfig, scale: number = 1.0, tileSize: number = 16) {
     super(scene, new Tilemaps.MapData({ tileWidth: tileSize, tileHeight: tileSize }));
@@ -38,6 +44,7 @@ export class Dungeon extends Tilemaps.Tilemap {
     this.origin = new Vector2(0, 0);
     this.scale = scale;
     this.tileSet = tileSet;
+    this.tileSetMap = dungeonConfig.emptyRoomConfig.tileSetMap;
     this.mapColliders = [];
     this.enemies = [];
     this.players = [];
@@ -45,6 +52,7 @@ export class Dungeon extends Tilemaps.Tilemap {
       size: new Vector2(this.tileWidth * this.scale, this.tileHeight * this.scale),
       invSize: new Vector2(1.0 / (this.tileWidth * this.scale), 1.0 / (this.tileHeight * this.scale)),
     };
+    this.dynamics = scene.physics.add.group();
 
     this.build(dungeonConfig);
   }
@@ -140,5 +148,37 @@ export class Dungeon extends Tilemaps.Tilemap {
 
   findRoom(localPoint: Vector2): Room | undefined {
     return this.mapData.rooms.find((room) => room.aabb.isPointWithin(localPoint));
+  }
+
+  insertPassage() {
+    // const type = random(0, 2);
+    const room = this.mapData.rooms[random(0, this.mapData.rooms.length)];
+
+    // TODO: reject if corner or not wall piece
+    const point = randomPointOnEdge(room.aabb);
+    const tile = this.getTileAt(point.x, point.y);
+    if (tile === null) {
+      throw new Error(`No tile found at <${point.x}, ${point.y}>`);
+    }
+
+    // open up the tile
+    tile.index = this.tileSetMap.floor[FloorType.Clean].index;
+    const worldPoint = this.tileToWorldXY(tile.x, tile.y);
+    if (worldPoint === null) {
+      throw new Error(`Unable to translate tile to world point`);
+    }
+
+    console.log(`Opened tile at <${point.x}, ${point.y}>`)
+
+    // this.passage = new Passage(
+    //   this.scene,
+    //   worldPoint.x, worldPoint.y,
+    //   {
+    //     spriteKey: AssetsKey.TileSet,
+    //     direction: Direction.Top,
+    //     scale: this.scale,
+    //     frameIndex: this.tileSetMap.passages[PassageType.DoorFrontOpen]
+    //   }, this.dynamics);
+    // this.passage.setDepth(5); // TODO need correct depth
   }
 }

@@ -1,14 +1,15 @@
 import { Scene } from "phaser";
 import { EventBus } from "../EventBus";
 import { Dungeon } from "../gameobjects/Dungeon";
-import { FloorType, Direction, type DungeonConfig, WallType } from "../map/procedural";
+import { Direction, type DungeonConfig } from "../map/procedural";
+import { WallType, FloorType, PassageType } from "../map/TileSetMap.ts";
 
 const dungeonConfig: DungeonConfig = {
   emptyRoomConfig: {
     doorCount: { min: 2, max: 4 },
     width: { min: 5, max: 9 },
     height: { min: 5, max: 9 },
-    tileMapping: {
+    tileSetMap: {
       corners: {
         [Direction.TopLeft]: 2,
         [Direction.TopRight]: 5,
@@ -48,6 +49,16 @@ const dungeonConfig: DungeonConfig = {
         [FloorType.Cracked]: { index: 14, weight: 8 },
         [FloorType.Damaged]: { index: 26, weight: 0.5 },
         [FloorType.Broken]: { index: 27, weight: 0.5 },
+      },
+      passages: {
+        [PassageType.StairwayUp]: 55,
+        [PassageType.StairwayDown]: 56,
+        [PassageType.DoorFrontOpen]: 58,
+        [PassageType.DoorFrontClosed]: 59,
+        [PassageType.DoorSidewayClosed]: 60,
+        [PassageType.DoorSidewayOpen]: 61,
+        [PassageType.FramedDoorOpen]: 62,
+        [PassageType.FramedDoorClosed]: 63,
       },
     },
   },
