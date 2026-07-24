@@ -1,7 +1,16 @@
 import { Scene } from "phaser";
-import type { Operator } from "./OperatorCard";
 import BoxedText from "../utils/BoxedText";
 import { cardConfig, type CardConfig } from "../utils/cardConfig";
+
+export enum Operator {
+  Plus = "+",
+  Minus = "-",
+  Multiply = "×",
+  Divide = "/",
+  Modulo = "mod",
+}
+
+export const OPERATORS = Object.values(Operator);
 
 export type CardValue = number | Operator;
 
@@ -15,15 +24,17 @@ export default class CardBase extends BoxedText {
   readonly cardBaseConfig!: CardConfig;
   private isFocused!: boolean;
   private isSelected!: boolean;
-  private value: CardValue | undefined;
+  private value!: CardValue;
 
-  constructor(scene: Scene, text: string) {
+  constructor(scene: Scene, value: CardValue) {
+    const text: string = typeof value === "number" ? value.toString() : value;
     super(scene, text, cardConfig.cardContentConfig, cardConfig.cardStyleConfig);
 
     this.cardBaseConfig = cardConfig;
 
     this.isFocused = false;
     this.isSelected = false;
+    this.value = value;
 
     this.setInteractive();
 
@@ -70,5 +81,13 @@ export default class CardBase extends BoxedText {
 
   getValue() {
     return this.value;
+  }
+
+  isValueNumber() {
+    return typeof this.value === "number";
+  }
+
+  isValueOperator() {
+    return OPERATORS.includes(this.value as Operator);
   }
 }
