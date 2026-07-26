@@ -4,6 +4,7 @@ import { useChatHistory } from "../../contexts/ChatHistoryContext";
 import { useFriends } from "../../contexts/FriendsContext";
 import { useLobbies } from "../../contexts/LobbiesContext";
 import { useUser } from "../../contexts/UserContext";
+import { useParams } from "react-router-dom";
 
 interface IChatMessage
 {
@@ -57,10 +58,10 @@ export default function ChatHistory()
 
 export function LobbyChatHistory()
 {
+	const { lobbyID } = useParams();
 	const scrollRef = useRef<HTMLDivElement>(null);
-	const { user } = useUser();
 	const { getChatHistory } = useLobbies();
-	const chatHistory = getChatHistory(user.userID);
+	const chatHistory = getChatHistory(lobbyID!);
 
 	useLayoutEffect(() =>
 	{

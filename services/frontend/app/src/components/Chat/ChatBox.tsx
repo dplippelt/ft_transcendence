@@ -6,6 +6,8 @@ import { useChatHistory } from "../../contexts/ChatHistoryContext";
 import { useUser } from "../../contexts/UserContext";
 import { useFriends } from "../../contexts/FriendsContext";
 import { useLobbies } from "../../contexts/LobbiesContext";
+import { Navigate, useParams } from "react-router-dom";
+import { RoutePath } from "../../utils/utils";
 
 export const DRAFT_STORAGE_PREFIX = "draft:";
 export const LOBBY_DRAFT = "lobby";
@@ -54,6 +56,7 @@ export default function ChatBox()
 
 export function LobbyChatBox()
 {
+	const { lobbyID } = useParams();
 	const { addChatHistory } = useLobbies();
 	const { user } = useUser();
 	const [msg, setMsg] = useState<string>("");
@@ -74,7 +77,7 @@ export function LobbyChatBox()
 	{
 		if ( msg.trim().length > 0 )
 		{
-			addChatHistory(user.userID, user.username, msg);
+			addChatHistory(lobbyID!, user.username, msg);
 			setMsg("");
 		}
 	}
