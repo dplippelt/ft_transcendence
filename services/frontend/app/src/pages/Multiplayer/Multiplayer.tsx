@@ -10,6 +10,7 @@ import styles from "./Multiplayer.module.scss";
 import { useState } from "react";
 import Popup from "../../components/Popup";
 import CreateLobbyPopup from "./CreateLobbyPopup";
+import LocalCoopPopup from "./LocalCoopPopup";
 
 interface IButtons
 {
@@ -24,7 +25,7 @@ function Buttons( { setPopupType } : IButtons )
 		<MenuButtons extraStyling={styles.buttonsOffset}>
 			<MenuButton label="Create game" onClick={() => setPopupType(PopupType.createLobby) } />
 			<MenuButton label="Browse games" onClick={ () => navigate(RoutePath.mpBrowser) } />
-			<MenuButton label="Local co-op" onClick={ () => {} } />
+			<MenuButton label="Local co-op" onClick={ () => setPopupType(PopupType.localCoop) } />
 			<MenuButton label="Back" onClick={ () => navigate(RoutePath.mainMenu) } />
 		</MenuButtons>
 	);
@@ -42,6 +43,7 @@ export default function Multiplayer()
 				<Buttons setPopupType={setPopupType} />
 				<SideBar />
 				{ popupType === PopupType.createLobby && <Popup> <CreateLobbyPopup setPopupType={setPopupType} /> </Popup> }
+				{ popupType === PopupType.localCoop && <Popup> <LocalCoopPopup setPopupType={setPopupType} /> </Popup> }
 			</Page>
 		</>
 	);

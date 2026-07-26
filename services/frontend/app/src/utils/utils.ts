@@ -28,6 +28,7 @@ export enum PopupType
 	editUsername,
 	editPassword,
 	createLobby,
+	localCoop,
 }
 
 export enum Tab

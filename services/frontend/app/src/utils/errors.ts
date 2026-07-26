@@ -19,6 +19,7 @@ export enum ErrorType
 	lobbyNameCannotBeEmpty,
 	badLobbyNameLength,
 	lobbyNameContainsInvalChars,
+	usernameCannotBeTheSame,
 }
 
 export function isErrorType( value: string | ErrorType ) : value is ErrorType
@@ -60,6 +61,8 @@ export function errorMsg( error: ErrorType ): string
 			return "Lobby name must be between " + minLobbyNameLength + " and " + maxLobbyNameLength + " characters long!";
 		case ErrorType.lobbyNameContainsInvalChars:
 			return "Lobby name may only contain letters, numbers, spaces and the symbols _ . -";
+		case ErrorType.usernameCannotBeTheSame:
+			return "Username must be different from Player 1's username";
 		default:
 			return "";
 	}
