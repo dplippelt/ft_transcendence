@@ -38,6 +38,12 @@ class ConnectionManager:
                 await websocket.send_json(payload)
             except Exception:
                 logger.warning("Failed to push message to user %s over websocket", user_id, exc_info=True)
+
+                try:
+                    await websocket.close()
+                except Exception:
+                    pass
+
                 self.disconnect(user_id, websocket)
 
 

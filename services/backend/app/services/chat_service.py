@@ -48,7 +48,7 @@ def get_conversation(db: Session, current_user: User, other_user_id: int) -> lis
                 ),
             )
         )
-        .order_by(ChatMessage.created_at)
+        .order_by(ChatMessage.created_at, ChatMessage.id)
         .all()
     )
 
