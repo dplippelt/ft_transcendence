@@ -1,10 +1,8 @@
-import { Scenes, Scene, Actions, GameObjects, Geom } from "phaser";
-import CardBase, { CardEvents, type CardValue } from "./CardBase";
-import CardSelection from "./CardSelection";
-import NumberCard from "./NumberCard";
-import OperatorCard, { Operator } from "./OperatorCard";
+import { Scene, Actions, GameObjects, Geom } from "phaser";
+import CardBase, { CardEvents } from "./CardBase";
 
 interface CardHandConfig {
+  maxNumCards: number;
   firstCardCenterX: number;
   firstCardCenterY: number;
   handStartX: number;
@@ -17,7 +15,8 @@ interface CardHandConfig {
   };
 }
 
-const cardHandConfig: CardHandConfig = {
+export const cardHandConfig: CardHandConfig = {
+  maxNumCards: 8, // limit for the hand cards to be implemented
   firstCardCenterX: 0,
   firstCardCenterY: 0,
   handStartX: 100,
@@ -34,26 +33,12 @@ export default class CardHand {
   private readonly cardHandConfig!: CardHandConfig;
   private readonly cards!: GameObjects.Container;
   private readonly handLine!: Geom.Line;
-  private readonly cardSelection!: CardSelection;
+  numCards: number;
 
-  constructor(scene: Scene) {
-    this.cardHandConfig = cardHandConfig;
-
-    this.cardSelection = new CardSelection(scene, 7);
-
+  constructor(scene: Scene, config: CardHandConfig) {
+    this.cardHandConfig = config;
     this.cards = scene.add.container(this.cardHandConfig.firstCardCenterX, this.cardHandConfig.firstCardCenterY);
-
-    this.cards.addToUpdateList();
-    scene.events.on(Scenes.Events.UPDATE, this.update, this);
-    this.cards.once(
-      GameObjects.Events.DESTROY,
-      () => {
-        scene.events.off(Scenes.Events.UPDATE, this.update, this);
-      },
-      this,
-    );
-
-    scene.input.setTopOnly(true);
+    this.numCards = 0;
 
     this.handLine = new Geom.Line(
       this.cardHandConfig.handStartX,
@@ -63,21 +48,23 @@ export default class CardHand {
     );
   }
 
-  update() {
-    this.cardSelection.align();
-    this.align();
-  }
-
   addCard(card: CardBase) {
+    // if (this.numCards >= this.cardHandConfig.maxNumCards) return;
+
     card.on(CardEvents.FOCUSON, this.focusOn, this);
     card.on(CardEvents.FOCUSOFF, this.focusOff, this);
-    card.on(CardEvents.SELECTION, this.select, this);
 
     this.cards.add(card);
+    this.numCards++;
   }
 
-  shuffle() {
-    this.cards.shuffle();
+  clearHand() {
+    const cards = this.cards.getAll() as CardBase[];
+    for (const card of cards) {
+      card.setVisible(false);
+    }
+    this.cards.removeAll(false);
+    this.numCards = 0;
   }
 
   align() {
@@ -89,10 +76,6 @@ export default class CardHand {
       focusedCard.x -= focus.diffX;
       focusedCard.y -= focus.diffY;
     }
-
-    // Actions.AlignTo(this.cardHand.getChildren(), Display.Align.RIGHT_CENTER, 10, 30);
-    // const ellipse = new Geom.Ellipse(400, 300, 400, 200);
-    // Actions.PlaceOnEllipse(this.cardHand.getChildren(), ellipse, Math.PI, 0);
   }
 
   focusOn(card: CardBase) {
@@ -115,123 +98,5 @@ export default class CardHand {
       card.input.hitArea.right -= focus.diffX;
       card.input.hitArea.bottom -= focus.diffY;
     }
-  }
-
-  select(card: CardBase) {
-    if (card.getIsFocused()) {
-      this.focusOff(card);
-    }
-
-    if (card.getIsSelected()) {
-      this.cardSelection.unsetCardFromSlot(card);
-
-      card.setIsSelected(false);
-      return;
-    }
-
-    if (this.cardSelection.setCardToSlot(card)) {
-      card.setIsSelected(true);
-      return;
-    }
-  }
-
-  getSelectedCards() {
-    return this.cardSelection.getSelectedCards();
-  }
-
-  evaluateSelectedCards(selectedCards: CardBase[]) {
-    if (!this.isValidSelection(selectedCards)) return null;
-
-    const values = this.evaluateHighPrecedenceOperations(selectedCards);
-    if (!values) return null;
-
-    const result = this.evaluateLowPrecedenceOperations(values);
-    return result;
-  }
-
-  evaluateHighPrecedenceOperations(selectedCards: CardBase[]) {
-    const values: CardValue[] = [];
-
-    for (let i = 0; i < selectedCards.length; ++i) {
-      const card = selectedCards[i];
-
-      if (i % 2 === 0) {
-        const currNum = card.getValue() as number;
-
-        if (!values.length) {
-          values.push(currNum);
-          continue;
-        }
-
-        const operator = values.pop() as Operator;
-        const preNum = values.pop() as number;
-
-        switch (operator) {
-          case Operator.Multiply:
-            values.push(preNum * currNum);
-            break;
-
-          case Operator.Divide:
-            if (currNum === 0) return null;
-            values.push(preNum / currNum);
-            break;
-
-          case Operator.Modulo:
-            if (currNum === 0) return null;
-            values.push(preNum % currNum);
-            break;
-
-          default:
-            values.push(preNum);
-            values.push(operator);
-            values.push(currNum);
-            break;
-        }
-      } else {
-        const operator = card.getValue() as Operator;
-        values.push(operator);
-      }
-    }
-
-    return values;
-  }
-
-  evaluateLowPrecedenceOperations(values: CardValue[]) {
-    let num = values[0] as number;
-
-    for (let i = 2; i < values.length; i += 2) {
-      const currNum = values[i] as number;
-      const operator = values[i - 1] as Operator;
-
-      switch (operator) {
-        case Operator.Plus:
-          num += currNum;
-          break;
-
-        case Operator.Minus:
-          num -= currNum;
-          break;
-
-        default:
-          break;
-      }
-    }
-
-    return num;
-  }
-  // TODO: If the classes derived from CardBase are used only for classification, they can be replaced with the CardValue type and removed
-  isValidSelection(selectedCard: CardBase[]) {
-    if (selectedCard.length % 2 === 0) return false;
-
-    for (let i = 0; i < selectedCard.length; ++i) {
-      const card = selectedCard[i];
-
-      if (i % 2 === 0) {
-        if (!(card instanceof NumberCard)) return false;
-      } else {
-        if (!(card instanceof OperatorCard)) return false;
-      }
-    }
-    return true;
   }
 }
