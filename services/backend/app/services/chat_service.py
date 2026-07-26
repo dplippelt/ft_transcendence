@@ -60,6 +60,8 @@ def get_conversation(db: Session, current_user: User, other_user_id: int) -> lis
 
 
 def mark_conversation_as_read(db: Session, current_user: User, other_user_id: int) -> None:
+    require_friendship(db, current_user.id, other_user_id)
+
     (
         db.query(ChatMessage)
         .filter(

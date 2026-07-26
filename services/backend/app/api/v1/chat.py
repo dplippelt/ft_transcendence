@@ -1,3 +1,4 @@
+import anyio.from_thread
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 from sqlalchemy.orm import Session
 
@@ -33,7 +34,7 @@ def get_messages(friend_id: int, current_user: CurrentUser, db: DbSession):
 
 
 @router.post("/{friend_id}/messages", response_model=ChatMessageResponse)
-async def create_message(friend_id: int, message_data: ChatMessageCreate, current_user: CurrentUser, db: DbSession):
+def create_message(friend_id: int, message_data: ChatMessageCreate, current_user: CurrentUser, db: DbSession):
     receiver = get_user_by_id(db, friend_id)
 
     if receiver is None:
@@ -49,7 +50,10 @@ async def create_message(friend_id: int, message_data: ChatMessageCreate, curren
         content=message_data.content,
     )
 
-    await connection_manager.send_to_user(
+    # FastAPI runs sync path operations in a worker thread, so bridge back to
+    # the event loop instead of awaiting the coroutine directly.
+    anyio.from_thread.run(
+        connection_manager.send_to_user,
         receiver.id,
         ChatMessageResponse.model_validate(message).model_dump(mode="json"),
     )

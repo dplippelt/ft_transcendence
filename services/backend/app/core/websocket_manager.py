@@ -2,6 +2,11 @@ from fastapi import WebSocket, WebSocketDisconnect
 
 
 class ConnectionManager:
+    # In-process only: connections live in this worker's memory, so a user
+    # connected to a different worker/instance won't receive a push sent
+    # from here. Fine for a single-process deployment; a multi-worker or
+    # multi-instance setup would need a shared pub/sub layer (e.g. Redis)
+    # instead.
     def __init__(self) -> None:
         self.active_connections: dict[int, list[WebSocket]] = {}
 

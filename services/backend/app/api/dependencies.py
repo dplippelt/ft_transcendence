@@ -57,6 +57,11 @@ CurrentUser = Annotated[User, Depends(get_current_user)]
 def get_current_user_ws(
     websocket: WebSocket,
     db: DbSession,
+    # Browsers can't set custom headers on the WS handshake, so the token
+    # travels in the query string instead. That risks exposure via
+    # reverse-proxy/access logs that record full request URLs -- deployments
+    # should keep this behind WSS and avoid logging query strings for this
+    # path, and access tokens should stay short-lived.
     token: str | None = Query(default=None),
 ) -> User:
     user = get_user_from_token(token, db)
