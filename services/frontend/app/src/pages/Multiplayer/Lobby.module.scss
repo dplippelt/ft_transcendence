@@ -6,7 +6,6 @@
 	@include window;
 	@include menuWindow;
 
-	height: min(800px, 60vh);
 	grid-template-rows: auto 1fr;
 	padding-bottom: 1rem;
 }
