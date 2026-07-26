@@ -24,6 +24,20 @@ def get_user_by_id(db: Session, user_id: int) -> User | None:
     )
 
 
+def notify_receiver(receiver_id: int, message: object) -> None:
+    # Best-effort: the message is already persisted, so a delivery failure
+    # here (e.g. a dead connection anyio couldn't clean up in time) must not
+    # turn a successful send into a 500.
+    try:
+        anyio.from_thread.run(
+            connection_manager.send_to_user,
+            receiver_id,
+            ChatMessageResponse.model_validate(message).model_dump(mode="json"),
+        )
+    except Exception:
+        pass
+
+
 @router.get("/{friend_id}/messages", response_model=list[ChatMessageResponse])
 def get_messages(friend_id: int, current_user: CurrentUser, db: DbSession):
     return get_conversation(
@@ -50,13 +64,7 @@ def create_message(friend_id: int, message_data: ChatMessageCreate, current_user
         content=message_data.content,
     )
 
-    # FastAPI runs sync path operations in a worker thread, so bridge back to
-    # the event loop instead of awaiting the coroutine directly.
-    anyio.from_thread.run(
-        connection_manager.send_to_user,
-        receiver.id,
-        ChatMessageResponse.model_validate(message).model_dump(mode="json"),
-    )
+    notify_receiver(receiver.id, message)
 
     return message
 
