@@ -58,23 +58,23 @@ class User(Base):
     sent_friend_requests: Mapped[list["FriendRequest"]] = relationship(
         back_populates="requester",
         foreign_keys="FriendRequest.requester_id",
-        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     received_friend_requests: Mapped[list["FriendRequest"]] = relationship(
         back_populates="recipient",
         foreign_keys="FriendRequest.recipient_id",
-        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     friendships_a: Mapped[list["Friendship"]] = relationship(
         back_populates="user_a",
         foreign_keys="Friendship.user_a_id",
-        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
 
     friendships_b: Mapped[list["Friendship"]] = relationship(
         back_populates="user_b",
         foreign_keys="Friendship.user_b_id",
-        cascade="all, delete-orphan",
+        passive_deletes=True,
     )
