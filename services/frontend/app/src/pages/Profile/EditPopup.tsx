@@ -1,6 +1,6 @@
 import { useRef, useState } from "react";
 import type React from "react";
-import { MobilePosition, PopupType, AvatarSize } from "../../utils/utils";
+import { PopupType, AvatarSize } from "../../utils/utils";
 import { ErrorType, isErrorType } from "../../utils/errors";
 import styles from "./EditPopup.module.scss";
 import { PopupButtons } from "../../components/ButtonContainers";
@@ -65,8 +65,8 @@ function EditAvatarContent( { setPopupType } : IEditContent )
 				))}
 			</div>
 			<PopupButtons>
-				<MossButton label="Back" onClick={ () => setPopupType(PopupType.none) } mobilePosition={MobilePosition.bottom} />
-				<MossButton label="Upload" onClick={ () => fileInputRef.current?.click() } mobilePosition={MobilePosition.top} />
+				<MossButton label="Upload" onClick={ () => fileInputRef.current?.click() } />
+				<MossButton label="Back" onClick={ () => setPopupType(PopupType.none) } />
 				<input type="file" ref={fileInputRef} style={{ display: "none" }} onChange={ handleUpload } />
 			</PopupButtons>
 		</>
@@ -100,8 +100,8 @@ function EditUsernameContent( { setPopupType } : IEditContent )
 			{ error !== ErrorType.none && <ErrorText error={error}/> }
 			<TextInput label="Edit username:" placeholder="Enter new username" setter={setUsername} id="newUsername" />
 			<PopupButtons>
-				<MossButton label="Back" onClick={ () => setPopupType(PopupType.none) } />
 				<MossButton label="Ok" onClick={ usernameCheck } />
+				<MossButton label="Back" onClick={ () => setPopupType(PopupType.none) } />
 			</PopupButtons>
 		</>
 	)
@@ -131,8 +131,8 @@ function EditPasswordContent( { setPopupType } : IEditContent )
 			<PasswordInput label="Edit password:" placeholder="Enter new password" isNewPassword={true} setter={setPassword} id="newPassword" />
 			<PasswordInput label="Confirm password:" placeholder="Confirm new password" isNewPassword={true} setter={setConfirmPassword} id="confirmPassword" />
 			<PopupButtons>
-				<MossButton label="Back" onClick={ () => setPopupType(PopupType.none) } />
 				<MossButton label="Ok" onClick={ passwordCheck } />
+				<MossButton label="Back" onClick={ () => setPopupType(PopupType.none) } />
 			</PopupButtons>
 		</>
 	)
