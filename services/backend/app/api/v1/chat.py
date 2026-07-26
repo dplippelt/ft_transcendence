@@ -1,7 +1,7 @@
 import logging
 
 import anyio.from_thread
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
+from fastapi import APIRouter, WebSocket, status
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import CurrentUser, CurrentUserWS, DbSession
@@ -88,8 +88,15 @@ def mark_as_read(friend_id: int, current_user: CurrentUser, db: DbSession):
 async def chat_websocket(websocket: WebSocket, current_user: CurrentUserWS):
     await connection_manager.connect(current_user.id, websocket)
 
+    # receive() (not receive_text()) accepts any frame type without raising,
+    # and cleanup runs in `finally` so it happens regardless of *how* the
+    # loop exits (clean disconnect, unexpected frame, cancellation, etc.) --
+    # not just on WebSocketDisconnect.
     try:
         while True:
-            await websocket.receive_text()
-    except WebSocketDisconnect:
+            message = await websocket.receive()
+
+            if message["type"] == "websocket.disconnect":
+                break
+    finally:
         connection_manager.disconnect(current_user.id, websocket)
