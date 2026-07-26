@@ -6,8 +6,7 @@ import { useChatHistory } from "../../contexts/ChatHistoryContext";
 import { useUser } from "../../contexts/UserContext";
 import { useFriends } from "../../contexts/FriendsContext";
 import { useLobbies } from "../../contexts/LobbiesContext";
-import { Navigate, useParams } from "react-router-dom";
-import { RoutePath } from "../../utils/utils";
+import { useParams } from "react-router-dom";
 
 export const DRAFT_STORAGE_PREFIX = "draft:";
 export const LOBBY_DRAFT = "lobby";

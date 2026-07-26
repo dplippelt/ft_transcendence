@@ -3,7 +3,6 @@ import styles from "./ChatHistory.module.scss";
 import { useChatHistory } from "../../contexts/ChatHistoryContext";
 import { useFriends } from "../../contexts/FriendsContext";
 import { useLobbies } from "../../contexts/LobbiesContext";
-import { useUser } from "../../contexts/UserContext";
 import { useParams } from "react-router-dom";
 
 interface IChatMessage
