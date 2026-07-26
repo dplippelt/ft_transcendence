@@ -1,8 +1,11 @@
+import asyncio
 import logging
 
 from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
+
+SEND_TIMEOUT_SECONDS = 5
 
 
 class ConnectionManager:
@@ -32,19 +35,26 @@ class ConnectionManager:
 
     async def send_to_user(self, user_id: int, payload: dict) -> None:
         # Catch broadly per-socket: one dead/broken connection must not stop
-        # delivery to this user's other open tabs/devices.
+        # delivery to this user's other open tabs/devices. A timeout guards
+        # against a socket that accepts the connection but stalls on reading
+        # (never raises, just hangs) -- sends are sequential here, so one
+        # stuck socket would otherwise delay every send after it, including
+        # the REST response that triggered this call.
         for websocket in list(self.active_connections.get(user_id, [])):
             try:
-                await websocket.send_json(payload)
+                await asyncio.wait_for(websocket.send_json(payload), timeout=SEND_TIMEOUT_SECONDS)
             except Exception:
                 logger.warning("Failed to push message to user %s over websocket", user_id, exc_info=True)
+
+                # Unregister before closing: a concurrent send_to_user call
+                # for this user must not be able to pick this socket while
+                # we're still in the middle of tearing it down.
+                self.disconnect(user_id, websocket)
 
                 try:
                     await websocket.close()
                 except Exception:
                     pass
-
-                self.disconnect(user_id, websocket)
 
 
 connection_manager = ConnectionManager()
