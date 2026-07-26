@@ -22,7 +22,7 @@ export default function CreateLobbyPopup( { setPopupType } : ICreateLobbyPopup )
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [lobbyname, setLobbyName] = useState<string>("");
 	const { user } = useUser();
-	const { createLobby } = useLobbies();
+	const { lobbies, createLobby } = useLobbies();
 
 	function lobbyNameCheck()
 	{
@@ -31,6 +31,9 @@ export default function CreateLobbyPopup( { setPopupType } : ICreateLobbyPopup )
 			return setError(result);
 
 		const validLobbyName = result;
+		if ( Object.values(lobbies).some(lobbies => lobbies.lobbyName.toLowerCase() === validLobbyName.toLowerCase()) )
+			return setError(ErrorType.lobbyNameAlreadyExists);
+
 		const lobbyID = nanoid(8);
 
 		createLobby(lobbyID, user.userID, validLobbyName);
