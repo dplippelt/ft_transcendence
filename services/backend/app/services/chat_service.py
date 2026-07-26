@@ -1,16 +1,10 @@
-from datetime import datetime, timezone
-
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import bad_request, forbidden
 from app.models.chat_message import ChatMessage
 from app.models.user import User
-from app.services.friend_service import get_friendship
-
-
-def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+from app.services.friend_service import get_friendship, utc_now
 
 
 def require_friendship(db: Session, user_a_id: int, user_b_id: int) -> None:

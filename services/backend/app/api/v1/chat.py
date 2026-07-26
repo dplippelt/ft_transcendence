@@ -1,3 +1,5 @@
+import logging
+
 import anyio.from_thread
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 from sqlalchemy.orm import Session
@@ -12,6 +14,8 @@ from app.services.chat_service import (
     mark_conversation_as_read,
     send_message,
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -35,7 +39,7 @@ def notify_receiver(receiver_id: int, message: object) -> None:
             ChatMessageResponse.model_validate(message).model_dump(mode="json"),
         )
     except Exception:
-        pass
+        logger.warning("Failed to notify user %s of new message", receiver_id, exc_info=True)
 
 
 @router.get("/{friend_id}/messages", response_model=list[ChatMessageResponse])

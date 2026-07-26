@@ -1,4 +1,8 @@
-from fastapi import WebSocket, WebSocketDisconnect
+import logging
+
+from fastapi import WebSocket
+
+logger = logging.getLogger(__name__)
 
 
 class ConnectionManager:
@@ -27,10 +31,13 @@ class ConnectionManager:
             self.active_connections.pop(user_id, None)
 
     async def send_to_user(self, user_id: int, payload: dict) -> None:
+        # Catch broadly per-socket: one dead/broken connection must not stop
+        # delivery to this user's other open tabs/devices.
         for websocket in list(self.active_connections.get(user_id, [])):
             try:
                 await websocket.send_json(payload)
-            except (WebSocketDisconnect, RuntimeError):
+            except Exception:
+                logger.warning("Failed to push message to user %s over websocket", user_id, exc_info=True)
                 self.disconnect(user_id, websocket)
 
 
