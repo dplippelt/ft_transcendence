@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import Depends
+from fastapi import Depends, Query, WebSocket, WebSocketException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
@@ -16,24 +16,31 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 BearerToken = Annotated[str, Depends(oauth2_scheme)]
 
 
-def get_current_user(token: BearerToken, db: DbSession) -> User:
+def get_user_from_token(token: str | None, db: Session) -> User | None:
+    if token is None:
+        return None
+
     payload = decode_access_token(token)
 
     if payload is None:
-        raise unauthorized("Invalid authentication credentials",)
+        return None
 
     user_id = payload.get("sub")
 
     try:
         user_id_int = int(user_id)
     except (TypeError, ValueError):
-        raise unauthorized("Invalid authentication credentials",)
+        return None
 
-    user = (
+    return (
         db.query(User)
         .filter(User.id == user_id_int)
         .first()
     )
+
+
+def get_current_user(token: BearerToken, db: DbSession) -> User:
+    user = get_user_from_token(token, db)
 
     if user is None:
         raise unauthorized("Invalid authentication credentials",)
@@ -45,3 +52,19 @@ def get_current_user(token: BearerToken, db: DbSession) -> User:
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+def get_current_user_ws(
+    websocket: WebSocket,
+    db: DbSession,
+    token: str | None = Query(default=None),
+) -> User:
+    user = get_user_from_token(token, db)
+
+    if user is None or not user.is_active:
+        raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+
+    return user
+
+
+CurrentUserWS = Annotated[User, Depends(get_current_user_ws)]

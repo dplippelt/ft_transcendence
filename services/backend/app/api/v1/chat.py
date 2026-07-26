@@ -1,8 +1,9 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import CurrentUser, DbSession
+from app.api.dependencies import CurrentUser, CurrentUserWS, DbSession
 from app.core.exceptions import bad_request, not_found
+from app.core.websocket_manager import connection_manager
 from app.models.user import User
 from app.schemas.chat import ChatMessageCreate, ChatMessageResponse
 from app.services.chat_service import (
@@ -32,7 +33,7 @@ def get_messages(friend_id: int, current_user: CurrentUser, db: DbSession):
 
 
 @router.post("/{friend_id}/messages", response_model=ChatMessageResponse)
-def create_message(friend_id: int, message_data: ChatMessageCreate, current_user: CurrentUser, db: DbSession):
+async def create_message(friend_id: int, message_data: ChatMessageCreate, current_user: CurrentUser, db: DbSession):
     receiver = get_user_by_id(db, friend_id)
 
     if receiver is None:
@@ -41,12 +42,19 @@ def create_message(friend_id: int, message_data: ChatMessageCreate, current_user
     if not receiver.is_active:
         raise bad_request("User account is inactive.")
 
-    return send_message(
+    message = send_message(
         db=db,
         current_user=current_user,
         receiver=receiver,
         content=message_data.content,
     )
+
+    await connection_manager.send_to_user(
+        receiver.id,
+        ChatMessageResponse.model_validate(message).model_dump(mode="json"),
+    )
+
+    return message
 
 
 @router.post("/{friend_id}/read", status_code=status.HTTP_204_NO_CONTENT)
@@ -58,3 +66,14 @@ def mark_as_read(friend_id: int, current_user: CurrentUser, db: DbSession):
     )
 
     return None
+
+
+@router.websocket("/ws")
+async def chat_websocket(websocket: WebSocket, current_user: CurrentUserWS):
+    await connection_manager.connect(current_user.id, websocket)
+
+    try:
+        while True:
+            await websocket.receive_text()
+    except WebSocketDisconnect:
+        connection_manager.disconnect(current_user.id, websocket)
