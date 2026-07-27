@@ -1,7 +1,7 @@
 import { Physics, Scene, Tilemaps, Math as pMath, type Types } from "phaser";
 import { AssetsKey } from "../Assets";
 import { dungeonBuilder, type DungeonConfig, type MapData, type Room } from "../map/procedural";
-import { createSkeletonEnemy, Enemy } from "./Enemy";
+import { Enemy } from "./Enemy";
 import { randomPoint, Vector2 } from "../map/math";
 import Player from "./Player";
 import { playerOne } from "../components/KeyboardComponent";
@@ -43,13 +43,10 @@ export class Dungeon extends Tilemaps.Tilemap {
     this.players = [];
     this.tileSize = {
       size: new Vector2(this.tileWidth * this.scale, this.tileHeight * this.scale),
-      invSize: new Vector2(1.0 / (this.tileWidth * this.scale), 1.0 / (this.tileWidth * this.scale)),
+      invSize: new Vector2(1.0 / (this.tileWidth * this.scale), 1.0 / (this.tileHeight * this.scale)),
     };
 
     this.build(dungeonConfig);
-    if (this.mapData.rooms.length < 3) {
-      throw new Error("Invalid Dungeon layout. Not Enough rooms");
-    }
   }
 
   build(dungeonConfig: DungeonConfig) {
@@ -63,11 +60,14 @@ export class Dungeon extends Tilemaps.Tilemap {
 
     this.generate(dungeonConfig);
     this.spawnPlayers(1); // TODO: Hard-coded...
-    this.spawnEnemies(this.mapData.rooms.length - 2);
+    this.spawnEnemies(this.mapData.rooms.length - 2); // excluding the entrance and exit room
   }
 
   generate(dungeonConfig: DungeonConfig) {
     this.mapData = dungeonBuilder(dungeonConfig);
+    if (this.mapData.rooms.length < 3) {
+      throw new Error("Invalid Dungeon layout. Not Enough rooms");
+    }
     this.origin.x = this.mapData.width * this.tileWidth * this.scale * 0.5;
     this.origin.y = this.mapData.height * this.tileHeight * this.scale * 0.5;
 
@@ -134,7 +134,7 @@ export class Dungeon extends Tilemaps.Tilemap {
     // TODO: exclude entrance and exit
     for (let i: number = 0; i < count; ++i) {
       const spawn: SpawnLocation = this.getRandomWalkableTile();
-      this.enemies.push(createSkeletonEnemy(this.scene, spawn));
+      this.enemies.push(Enemy.createSkeletonEnemy(this.scene, spawn));
     }
   }
 

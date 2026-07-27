@@ -1,8 +1,7 @@
 import { GameObjects, Math, Physics, type Types } from "phaser";
-import Component from "./Component";
 import type Player from "../gameobjects/Player";
-import type { Enemy } from "../gameobjects/Enemy";
 import type { DungeonLocation } from "./DungeonLocation";
+import Component from "./Component";
 
 type PhysicsBody = Physics.Arcade.Body;
 type Vector2Like = Types.Math.Vector2Like;
@@ -18,14 +17,14 @@ export class EnemySightSensor extends Component {
   private _targetPlayer: Player | null;
 
   constructor(
-    gameobject: GameObjects.GameObject,
+    gameObject: GameObjects.GameObject,
     dungeonLocation: DungeonLocation,
     searchRadius: number,
     sightRadius: number,
   ) {
-    super(gameobject);
+    super(gameObject);
 
-    this._physics = gameobject.scene.physics;
+    this._physics = gameObject.scene.physics;
     this._dungeonLocation = dungeonLocation;
     this._targetPlayer = null;
     this._searchRadius = searchRadius;
@@ -39,14 +38,19 @@ export class EnemySightSensor extends Component {
   }
 
   private isValidTarget(): boolean {
-    return this._targetPlayer !== null && !this._targetPlayer.inCombat && !this._targetPlayer.isDestroyed && this._targetPlayer.active;
+    return (
+      this._targetPlayer !== null &&
+      !this._targetPlayer.inCombat &&
+      !this._targetPlayer.isDestroyed &&
+      this._targetPlayer.active
+    );
   }
 
   searchForPlayer(): boolean {
-    const enemyBody = this.gameObject as Enemy;
+    const origin = this.gameObject as unknown as { x: number; y: number };
     const bodies: PhysicsBody[] = this._physics.overlapCirc(
-      enemyBody.x,
-      enemyBody.y,
+      origin.x,
+      origin.y,
       this._searchRadius,
       INC_DYNAMIC_BODIES,
       EXC_STATIC_BODIES,
@@ -70,15 +74,20 @@ export class EnemySightSensor extends Component {
   }
 
   isPlayerInSight(): boolean {
-    if (!this.isValidTarget()) {
-      return false;
+    if (
+      this.isValidTarget() &&
+      this._dungeonLocation.isTargetWithinRoom(this._targetPlayer!.dungeonLocation) &&
+      this.playerIsWithinSightRange()
+    ) {
+      return true;
     }
 
-    if (!this._dungeonLocation.isTargetWithinRoom(this._targetPlayer!.dungeonLocation)
-      || !this.playerIsWithinSightRange()) {
-      return false;
-    }
-    return true;
+    this.clearTarget();
+    return false;
+  }
+
+  clearTarget() {
+    this._targetPlayer = null;
   }
 
   getPlayer(): Player | null {

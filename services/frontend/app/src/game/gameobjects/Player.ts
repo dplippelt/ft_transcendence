@@ -10,12 +10,14 @@ export default class Player extends Physics.Arcade.Sprite {
   movement: MovementComponent;
   dungeonLocation: DungeonLocation;
   inCombat: boolean;
+  isAlive: boolean;
 
   constructor(scene: Scene, keySchema: IKeySchema, spawnLocation: SpawnLocation) {
     super(scene, spawnLocation.spawnPoint.x, spawnLocation.spawnPoint.y, AssetsKey.Player);
 
     this.name = "player";
     this.inCombat = false;
+    this.isAlive = true;
     this.playerInput = new KeyboardComponent(this, keySchema);
     this.movement = new MovementComponent(this, 200, this.playerInput);
     this.dungeonLocation = new DungeonLocation(this, spawnLocation.startingRoom, spawnLocation.dungeon);

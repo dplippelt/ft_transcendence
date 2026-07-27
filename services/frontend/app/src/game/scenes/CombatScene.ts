@@ -5,24 +5,20 @@ import NumberCard from "../gameobjects/cards/NumberCard";
 import OperatorCard, { Operator } from "../gameobjects/cards/OperatorCard";
 import BoxedText from "../gameobjects/utils/BoxedText";
 import { buttonContentConfig, buttonStyleConfig } from "../gameobjects/utils/buttonConfig";
-import type { ICombatEventData } from "../events/ICombatEventData";
-import { eventsCenter, GameEvents } from "./GameManagerScene";
+import type { CombatEventData } from "../events/CombatEventData";
+import { GameEvents, GameManagerScene } from "./GameManagerScene";
 
 export default class CombatScene extends Phaser.Scene {
   private cardHand!: CardHand;
-  private eventData: ICombatEventData | undefined;
+  private eventData: CombatEventData | undefined;
 
   constructor(handle: string) {
     super(handle);
   }
 
-  init(eventData: ICombatEventData) {
-    this.start(this.sys, eventData);
-    this.events.on(Scenes.Events.START, this.start, this);
-  }
-
-  // TODO: Proper initialize logic needed
-  start(_sys: Scenes.Systems, eventData: ICombatEventData) {
+  init(eventData: CombatEventData) {
+    eventData.player.inCombat = true;
+    eventData.enemy.inCombat = true;
     this.eventData = eventData;
   }
 
@@ -52,19 +48,22 @@ export default class CombatScene extends Phaser.Scene {
     this.input.on("pointerdown", () => {
       if (this.input.activePointer.rightButtonDown()) {
         console.assert(this.eventData !== undefined, "this.eventData is undefined");
-        this.endCombat(this.eventData!);
+        this.endCombat(this.eventData);
       }
     });
   }
 
   update() {}
 
-  endCombat(eventData: ICombatEventData) {
-    // TODO: proper usage for eventData
-    eventData.isPlayerDefeated = false;
+  endCombat(eventData: CombatEventData) {
+    eventData.player.inCombat = false;
+    eventData.player.isAlive = true;
+    eventData.enemy.inCombat = false;
+    eventData.enemy.isAlive = false;
     eventData.sceneInvoker = this;
 
-    eventsCenter.emit(GameEvents.CombatOver, eventData);
+    GameManagerScene.EventsCenter.emit(GameEvents.CombatOver, eventData);
+    this.eventData = undefined;
   }
 
   createExecuteButton(text: string) {

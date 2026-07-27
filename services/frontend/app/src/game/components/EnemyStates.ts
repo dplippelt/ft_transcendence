@@ -1,7 +1,7 @@
 import { Math } from "phaser";
-import { Enemy, EnemyEvent } from "./Enemy";
+import { Enemy } from "../gameobjects/Enemy";
 import { type IFiniteState, type NextState } from "../components/FiniteStateMachine";
-import { eventsCenter, GameEvents } from "../scenes/GameManagerScene";
+import { GameEvents, GameManagerScene } from "../scenes/GameManagerScene";
 
 export interface EnemyStates {
   idle: IFiniteState<Enemy>;
@@ -106,18 +106,9 @@ export class CombatState implements IFiniteState<Enemy> {
       throw new Error('Player cannot null when entering the combat state');
     }
 
-    enemy.inCombat = true;
-    player.inCombat = true;
-    enemy.once(EnemyEvent.CombatOver, (isPlayerDefeated: boolean) => {
-      player.inCombat = false;
-      enemy.inCombat = false;
-      enemy.isAlive = isPlayerDefeated;
-    });
-
-    eventsCenter.emit(GameEvents.CombatInitiated, {
+    GameManagerScene.EventsCenter.emit(GameEvents.CombatInitiated, {
       player: player,
       enemy: enemy,
-      isPlayerDefeated: false,
       sceneInvoker: enemy.scene,
     });
   }
@@ -131,6 +122,11 @@ export class CombatState implements IFiniteState<Enemy> {
       return enemy.enemyData.states.recall;
     }
     return enemy.enemyData.states.die;
+  }
+
+  onExit(enemy: Enemy): void {
+    enemy.movement.setTarget(null);
+    enemy.sensor.clearTarget();
   }
 }
 

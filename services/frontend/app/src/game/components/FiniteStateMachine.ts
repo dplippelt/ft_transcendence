@@ -9,25 +9,24 @@ export interface IFiniteState<T> {
   onExit?(enity: T): void;
 }
 
-
 export class FiniteStateMachine<T> extends Component {
   currentState: IFiniteState<T>;
-  enity: T;
+  entity: T;
 
   constructor(gameObject: GameObjects.GameObject, startState: IFiniteState<T>) {
     super(gameObject);
 
-    this.enity = gameObject as T;
+    this.entity = gameObject as T;
     this.currentState = startState;
-    this.currentState.onEnter?.(this.enity);
+    this.currentState.onEnter?.(this.entity);
   }
 
   update(time: number, delta: number) {
-    const nextState: NextState<T> = this.currentState.onUpdate(this.enity, time, delta);
+    const nextState: NextState<T> = this.currentState.onUpdate(this.entity, time, delta);
     if (nextState !== null) {
-      this.currentState.onExit?.(this.enity);
+      this.currentState.onExit?.(this.entity);
       this.currentState = nextState;
-      this.currentState.onEnter?.(this.enity);
+      this.currentState.onEnter?.(this.entity);
     }
   }
 }
