@@ -2,13 +2,10 @@ import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
 import { PopupType, AvatarSize, MobilePosition, RoutePath, SortBy } from "../utils/utils";
-import { ArrowDown01, ArrowDown10, ArrowDownAZ, ArrowDownZA, ChevronLeft, Dot, MessageCircle, MessageCircleWarning, RefreshCcw, SendHorizontal, Swords, User, UserMinus } from "lucide-react";
+import { ArrowDown01, ArrowDown10, ArrowDownAZ, ArrowDownZA, ChevronLeft, Dot, MessageCircle, MessageCircleWarning, RefreshCcw, SendHorizontal, Swords, UserMinus } from "lucide-react";
 import Avatar from "./Avatar";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
 import { useLobbies } from "../contexts/LobbiesContext";
-import { useUser } from "../contexts/UserContext";
-import { ErrorType, isErrorType } from "../utils/errors";
-import { useError } from "../contexts/ErrorContext";
 
 interface IMenuButton
 {
