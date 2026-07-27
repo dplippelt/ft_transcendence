@@ -1,14 +1,19 @@
 import { createContext, useContext, /* useEffect, */ useState } from "react";
 import type { ReactNode } from "react";
-import type { IChatMsg } from "./ChatHistoryContext";
 import { ErrorType } from "../utils/errors";
+
+interface ILobbyChatMsg
+{
+	username: string;
+	message: string;
+}
 
 export interface LobbyData
 {
 	lobbyName: string;
 	hostID: string;
 	guestID: guestID;
-	chatHistory: IChatMsg[];
+	chatHistory: ILobbyChatMsg[];
 }
 
 type lobbyID = string;
@@ -44,7 +49,7 @@ interface ILobbiesContext
 	closeLobby: ( lobbyID: lobbyID ) => void;
 	joinLobby: ( lobbyID: lobbyID, guestID: string ) => ErrorType;
 	leaveLobby: ( lobbyID: lobbyID ) => void;
-	getChatHistory: ( lobbyID: lobbyID ) => IChatMsg[] | undefined;
+	getChatHistory: ( lobbyID: lobbyID ) => ILobbyChatMsg[] | undefined;
 	addChatHistory: ( lobbyID: lobbyID, username: string, message: string ) => void;
 }
 
@@ -116,14 +121,14 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
 		});
 	}
 
-	function getChatHistory( lobbyID: lobbyID ) : IChatMsg[] | undefined
+	function getChatHistory( lobbyID: lobbyID ) : ILobbyChatMsg[] | undefined
 	{
 		return lobbies[lobbyID]?.chatHistory;
 	}
 
 	function addChatHistory( lobbyID: lobbyID, username: string, message: string )
 	{
-		const newMsg: IChatMsg = { username: username, message: message, read: true };
+		const newMsg: ILobbyChatMsg = { username: username, message: message };
 
 		setLobbies(prev => {
 			if ( prev[lobbyID] === undefined )
