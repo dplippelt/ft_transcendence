@@ -5,7 +5,7 @@ import { Operator, type CardValue } from "./cards/CardBase";
 import Button from "./utils/Button";
 import type { ButtonConfig } from "./utils/Button";
 import { buttonContentConfig, buttonStyleConfig } from "./utils/buttonConfig";
-import Timer from "./utils/Timer";
+import CombatTimeManager from "./CombatTimeManager";
 import type { PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 
@@ -14,18 +14,13 @@ const executeButtonConfig: ButtonConfig = {
   textConfig: buttonContentConfig,
 };
 
-const timerConfig: Phaser.Types.Time.TimerEventConfig = {
-  delay: 10000,
-  loop: true,
-};
-
 export default class CombatManager {
   readonly scene: Scene;
   readonly playerStatus: PlayerStatus;
   readonly enemy: CombatEnemy;
   readonly cardManager: CardManager;
   readonly executeButton: Button;
-  readonly timer: Timer;
+  readonly timeManager: CombatTimeManager;
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
@@ -36,38 +31,26 @@ export default class CombatManager {
     this.executeButton = new Button(scene, "Execute", executeButtonConfig);
     this.executeButton.setPosition(100, 50);
     this.executeButton.on("pointerdown", this.execute, this);
-    this.timer = new Timer(scene, timerConfig, this.executeEnemyTurn, this);
-    // turn indicator -> when it is the enemy's turn, no events can be caused
+    this.timeManager = new CombatTimeManager(this);
   }
 
   update() {
     this.cardManager.alignAllCards();
-    // show timer
-    console.log("text = " + this.timer.timerEvent.getElapsed());
+
+    // show a timer
+    this.timeManager.displayTimer();
+
     // show player's hit point and enemy's hitpoint
     console.log("player hitPoint = " + this.playerStatus.hitPoint);
     console.log("enemy hitPoint = " + this.enemy.hitPoint);
-    // 
+    //
   }
 
-  executeEnemyTurn() {
-    this.timer.waitAndReset(5000);
-    // this.scene.input.enabled = false;
-    // this.timer.timerEvent.paused = true;
-    // this.scene.time.addEvent({
-    //     delay: 3000,
-    //     callback: () => {
-    //         this.scene.input.enabled = true
-    //         this.timer.timerEvent.paused = false;
-    //         this.timer.reset();
-    //     },
-    //     callbackScope: this,
-    // });
-
+  executeEnemyEffect() {
     this.enemy.attack(this.playerStatus);
     if (this.playerStatus.hitPoint <= 0) {
-        // TODO: implement the ending condition
-        console.log("Game over");
+      // TODO: implement the ending condition
+      this.endGame();
     }
   }
 
@@ -80,19 +63,30 @@ export default class CombatManager {
     }
 
     const result = this.evaluateSelectedCards(cards);
-
     console.log(result);
     if (!result) {
-        // dealPenalty(this.playerStatus);
-        // TODO
+      // dealPenalty(this.playerStatus);
+      // TODO
     } else {
-        this.enemy.takeDamage(result);
+      this.enemy.takeDamage(result);
     }
-    // when the player's hit point is below zero -> game over
-    // when the enemy's hit point is below zero -> next round or win the game
+    if (this.playerStatus.hitPoint <= 0) {
+      this.endGame();
+    }
+    if (this.enemy.hitPoint <= 0) {
+      this.endCombat();
+    }
     this.cardManager.clearHandAndSelection();
     this.cardManager.fillCardHand(5);
-    this.executeEnemyTurn();
+    this.timeManager.switchTurn();
+  }
+
+  endGame() {
+    console.log("Game over");
+  }
+
+  endCombat() {
+    console.log("You win");
   }
 
   evaluateSelectedCards(selectedCards: CardBase[]) {
