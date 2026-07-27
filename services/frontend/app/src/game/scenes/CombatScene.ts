@@ -31,7 +31,7 @@ export default class CombatScene extends Phaser.Scene {
     this.input.on("pointerdown", () => {
       if (this.input.activePointer.rightButtonDown()) {
         console.assert(this.eventData !== undefined, "this.eventData is undefined");
-        this.endCombat(this.eventData);
+        this.endCombat(this.eventData!);
       }
     });
   }
