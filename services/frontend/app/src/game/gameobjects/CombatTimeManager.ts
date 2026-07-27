@@ -11,11 +11,6 @@ const turnCOnfig: TurnConfig = {
   enemyDelayMs: 5000,
 };
 
-const timeConfig: Phaser.Types.Time.TimerEventConfig = {
-  delay: 10000,
-  loop: true,
-};
-
 enum TurnEvents {
   SWITCH = "switch",
 }
@@ -49,7 +44,9 @@ export default class CombatTimeManager {
     this.isPlayerTurn = !this.isPlayerTurn;
     if (this.isPlayerTurn) {
       this.scene.input.enabled = true;
-      this.playerTimer?.remove();
+      if (this.playerTimer) {
+        this.playerTimer.remove();
+      }
       this.playerTimer = this.playNextTurnFor(this.turnConfig.playerDelayMs);
     } else {
       this.scene.input.enabled = false;
@@ -74,6 +71,7 @@ export default class CombatTimeManager {
   }
 
   displayTimer() {
+    // TODO: align with other objects
     const output: string[] = [];
     if (this.playerTimer) {
       output.push("Player time: " + this.playerTimer.getRemaining().toString());
