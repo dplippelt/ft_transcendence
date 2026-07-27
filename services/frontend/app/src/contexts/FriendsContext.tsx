@@ -3,7 +3,6 @@ import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
 import testAvatar from "../assets/mesca_avatar_test.png";
 import { useChatHistory } from "./ChatHistoryContext";
-import { DRAFT_STORAGE_PREFIX } from "../components/Chat/ChatBox";
 
 export interface IFriendData
 {
@@ -105,7 +104,6 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 			setSelectedFriendID(undefined);
 
 		removeChatHistoryEntry(friendID);
-		localStorage.removeItem(DRAFT_STORAGE_PREFIX + friendID);
 	}
 
 	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)

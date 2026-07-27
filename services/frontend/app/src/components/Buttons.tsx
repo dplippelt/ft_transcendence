@@ -2,10 +2,13 @@ import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
 import { PopupType, AvatarSize, MobilePosition, RoutePath, SortBy } from "../utils/utils";
-import { ArrowDown01, ArrowDown10, ArrowDownAZ, ArrowDownZA, ChevronLeft, Dot, MessageCircle, MessageCircleWarning, RefreshCcw, SendHorizontal, Swords, UserMinus } from "lucide-react";
+import { ArrowDown01, ArrowDown10, ArrowDownAZ, ArrowDownZA, ChevronLeft, Dot, MessageCircle, MessageCircleWarning, RefreshCcw, SendHorizontal, Swords, User, UserMinus } from "lucide-react";
 import Avatar from "./Avatar";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
 import { useLobbies } from "../contexts/LobbiesContext";
+import { useUser } from "../contexts/UserContext";
+import { ErrorType, isErrorType } from "../utils/errors";
+import { useError } from "../contexts/ErrorContext";
 
 interface IMenuButton
 {
@@ -18,6 +21,7 @@ interface IMossButton
 	label: string;
 	onClick: () => void;
 	extraStyling?: string;
+	disabled?: boolean;
 	mobilePosition?: string;
 }
 
@@ -107,21 +111,14 @@ export function MenuButton( { label, onClick } : IMenuButton )
 	return <button className={styles.menuButton} type="button" onClick={onClick}>{label}</button>
 }
 
-export function MossButton( { label, onClick, extraStyling="", mobilePosition="" } : IMossButton )
+export function MossButton( { label, onClick, extraStyling="", disabled=false, mobilePosition="" } : IMossButton )
 {
-	return <button className={`${styles.mossButton} ${extraStyling} ${mobilePosition}`} type="button" onClick={onClick}>{label}</button>;
+	return <button className={`${styles.mossButton} ${extraStyling} ${mobilePosition}`} type="button" disabled={disabled} onClick={onClick}>{label}</button>;
 }
 
 export function BottomButton( { label, onClick, disabled=false, mobilePosition="" } : IBottomButton )
 {
-	function extraStyling()
-	{
-		if ( disabled )
-			return styles.disabledButton;
-		return "";
-	}
-
-	return <button className={`${styles.bottomButton} ${extraStyling()} ${mobilePosition}`} type="button" onClick={onClick}>{label}</button>;
+	return <button className={`${styles.bottomButton} ${mobilePosition}`} type="button" disabled={disabled} onClick={onClick}>{label}</button>;
 }
 
 export function BackButton( { path } : IBackButton )
@@ -228,23 +225,14 @@ export function JoinButton( { lobbyID } : IJoinButton )
 	const navigate = useNavigate();
 	const { lobbies } = useLobbies();
 	const lobby = lobbies[lobbyID];
-	const disabled: boolean = !lobby || lobby.guestID !== undefined ? true : false;
-
-	function extraStyling() : string
-	{
-		if ( disabled )
-			return styles.disabledButton;
-		return "";
-	}
+	const disabled: boolean = !lobby || lobby.guestID !== null ? true : false;
 
 	function onClick()
 	{
-		if ( disabled )
-			return;
-		navigate(RoutePath.mpLobby + `/${lobbyID}`);
+		navigate(RoutePath.mpLobby + `/${lobbyID}`, { state: { from: RoutePath.mpBrowser } });
 	}
 
-	return <MossButton label="Join" onClick={onClick} extraStyling={ `${styles.joinButton} ${extraStyling()}` }/>;
+	return <MossButton label="Join" onClick={onClick} extraStyling={styles.joinButton} disabled={disabled} />;
 }
 
 export default function ColumnButton( { label, onClick, sortBy, extraStyling="" } : IColumnButton )

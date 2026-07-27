@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo, useState } from "react";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
@@ -7,10 +7,13 @@ import { BottomButtons } from "../../components/ButtonContainers";
 import ColumnButton, { BackButton, JoinButton, RefreshButton } from "../../components/Buttons";
 import { RoutePath, SortBy } from "../../utils/utils";
 import styles from "./LobbiesBrowser.module.scss";
-import { useLobbies, type LobbieData } from "../../contexts/LobbiesContext";
-import { useEffect, useState } from "react";
+import { useLobbies, type LobbyData } from "../../contexts/LobbiesContext";
+import { ErrorType } from "../../utils/errors";
+import Popup from "../../components/Popup";
+import ErrorPopup from "../../components/ErrorPopup";
+import { useError } from "../../contexts/ErrorContext";
 
-type Lobby = [string, LobbieData];
+type Lobby = [string, LobbyData];
 
 interface ILobbies
 {
@@ -21,11 +24,12 @@ interface IColumnTitles
 {
 	sortBy: SortBy;
 	setSortBy: React.Dispatch<React.SetStateAction<SortBy>>;
-	sortLobbies: () => void;
 }
 
-function ColumnTitles( { sortBy, setSortBy, sortLobbies } : IColumnTitles )
+function ColumnTitles( { sortBy, setSortBy } : IColumnTitles )
 {
+	const { refreshLobbies } = useLobbies();
+
 	function onSortByName()
 	{
 		setSortBy(prev => {
@@ -74,12 +78,11 @@ function ColumnTitles( { sortBy, setSortBy, sortLobbies } : IColumnTitles )
 		return SortBy.noSort;
 	}
 
-	// TODO: change sortLobbies to refreshLobbies once added to context (backend integration)
 	return (
 		<div className={styles.columnTitles}>
 			<ColumnButton label="Name" onClick={onSortByName} sortBy={getNameSortBy()} />
 			<ColumnButton label="Players" onClick={onSortByPlayers} sortBy={getPlayersSortBy()} extraStyling={styles.players} />
-			<RefreshButton onClick={sortLobbies} />
+			<RefreshButton onClick={refreshLobbies} />
 		</div>
 	);
 }
@@ -88,11 +91,11 @@ function Lobbies( { lobbiesArr } : ILobbies )
 {
 	return (
 		<div className={styles.lobbies}>
-			{ lobbiesArr.map(([hostID, { lobbyName, guestID }]) =>
-				<div className={styles.lobby} key={hostID}>
+			{ lobbiesArr.map(([lobbyID, { lobbyName, guestID }]) =>
+				<div className={styles.lobby} key={lobbyID}>
 					<div className={styles.lobbyName}>{lobbyName}</div>
 					<div className={styles.players}>{guestID ? "2/2" : "1/2"}</div>
-					<JoinButton lobbyID={hostID} />
+					<JoinButton lobbyID={lobbyID} />
 				</div>
 			)}
 		</div>
@@ -102,8 +105,8 @@ function Lobbies( { lobbiesArr } : ILobbies )
 function BrowserWindow()
 {
 	const { lobbies } = useLobbies();
-	const [ lobbiesArr, setLobbiesArr ] = useState<Lobby[]>([]);
 	const [ sortBy, setSortBy ] = useState<SortBy>(SortBy.noSort);
+	const lobbiesArr = useMemo(sortLobbies, [sortBy, lobbies]);
 
 	function sortByLobbyName(
 		[, { lobbyName: lobbyName_a }]: Lobby,
@@ -119,8 +122,8 @@ function BrowserWindow()
 		[, { guestID: a }]: Lobby,
 		[, { guestID: b }]: Lobby )
 	{
-		if (a === undefined && b !== undefined) return -1;
-		if (a !== undefined && b === undefined) return 1;
+		if (a === null && b !== null) return -1;
+		if (a !== null && b === null) return 1;
 		return 0;
 	}
 
@@ -128,39 +131,32 @@ function BrowserWindow()
 		[, { guestID: a }]: Lobby,
 		[, { guestID: b }]: Lobby )
 	{
-		if (a === undefined && b !== undefined) return 1;
-		if (a !== undefined && b === undefined) return -1;
+		if (a === null && b !== null) return 1;
+		if (a !== null && b === null) return -1;
 		return 0;
 	}
 
-	// TODO: needs to fetch lobbies from database (backend integration) - add refreshLobbies method to LobbiesContext
 	function sortLobbies()
 	{
 		switch ( sortBy )
 		{
 			case SortBy.name:
-				setLobbiesArr(Object.entries(lobbies).sort(sortByLobbyName));
-				break;
+				return Object.entries(lobbies).sort(sortByLobbyName);
 			case SortBy.nameRev:
-				setLobbiesArr(Object.entries(lobbies).sort(sortByLobbyNameRev));
-				break;
+				return Object.entries(lobbies).sort(sortByLobbyNameRev);
 			case SortBy.players:
-				setLobbiesArr(Object.entries(lobbies).sort(sortByPlayers));
-				break;
+				return Object.entries(lobbies).sort(sortByPlayers);
 			case SortBy.playersRev:
-				setLobbiesArr(Object.entries(lobbies).sort(sortByPlayersRev));
-				break;
+				return Object.entries(lobbies).sort(sortByPlayersRev);
 			default:
-				setLobbiesArr(Object.entries(lobbies));
+				return Object.entries(lobbies);
 		}
 	}
 
-	useEffect(sortLobbies, [sortBy, lobbies]);
-
 	return (
 		<div className={styles.browserWindow}>
-			<ColumnTitles sortBy={sortBy} setSortBy={setSortBy} sortLobbies={sortLobbies} />
-			<Lobbies lobbiesArr={lobbiesArr}  />
+			<ColumnTitles sortBy={sortBy} setSortBy={setSortBy} />
+			<Lobbies lobbiesArr={lobbiesArr} />
 		</div>
 	)
 }
@@ -176,6 +172,8 @@ function Buttons()
 
 export default function LobbiesBrowser()
 {
+	const { error } = useError();
+
 	return (
 		<>
 			<Background />
@@ -184,6 +182,7 @@ export default function LobbiesBrowser()
 				<BrowserWindow />
 				<Buttons />
 				<SideBar />
+				{ error !== ErrorType.none && <Popup> <ErrorPopup /> </Popup> }
 			</Page>
 		</>
 	);

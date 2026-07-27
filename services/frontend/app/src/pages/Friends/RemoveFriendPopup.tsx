@@ -1,9 +1,10 @@
 import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
-import { PopupType } from "../../utils/utils";
+import { getFriendDraftKey, PopupType } from "../../utils/utils";
 import React, { useEffect } from "react";
 import styles from "./FriendPopup.module.scss";
 import { useFriends, type IFriendData } from "../../contexts/FriendsContext";
+import { useUser } from "../../contexts/UserContext";
 
 interface IRemoveFriendPopup
 {
@@ -14,6 +15,7 @@ export default function RemoveFriendPopup( { setPopupType } : IRemoveFriendPopup
 {
 	const { friends, selectedFriendID, setSelectedFriendID, removeFriend } = useFriends();
 	const friend = getSelectedFriend();
+	const { user } = useUser();
 
 	useEffect(() =>
 	{
@@ -39,6 +41,7 @@ export default function RemoveFriendPopup( { setPopupType } : IRemoveFriendPopup
 	// The button should also be disable while submitting so double-clicking doesn't send two requests.
 	function handleRemoveFriend()
 	{
+		localStorage.removeItem(getFriendDraftKey(user.userID, selectedFriendID!));
 		removeFriend(selectedFriendID!);
 		closePopup();
 	}

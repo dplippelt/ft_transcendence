@@ -18,7 +18,7 @@ export default function ChatWindow( { setPopupType } : IChatWindow )
 
 	return (
 		<div className={styles.chatWindow}>
-			<ChatTitle activeFriend={activeFriend} setPopupType={setPopupType} />
+			<ChatTitle activeFriendID={activeFriendID} activeFriend={activeFriend} setPopupType={setPopupType} />
 			{ activeFriend && <ChatHistory /> }
 			{ activeFriend && <ChatBox /> }
 		</div>

@@ -10,14 +10,14 @@ export const maxUsernameLength = 20;
 
 export function getValidUsername( username: string ) : string | ErrorType
 {
-	const usrname = username.trim();
+	const trimmedUsername = username.trim();
 
-	if ( usrname.length === 0 )
+	if ( trimmedUsername.length === 0 )
 		return ErrorType.usernameCannotBeEmpty;
-	if ( usrname.length < minUserNameLength || usrname.length > maxUsernameLength )
+	if ( trimmedUsername.length < minUserNameLength || trimmedUsername.length > maxUsernameLength )
 		return ErrorType.badUserNameLength;
-	if ( !hasValidCharacters(usrname) )
+	if ( !hasValidCharacters(trimmedUsername) )
 		return ErrorType.usernameContainsInvalChars;
 
-	return usrname;
+	return trimmedUsername;
 }

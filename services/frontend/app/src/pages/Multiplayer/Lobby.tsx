@@ -1,10 +1,10 @@
-import React, { useState } from "react";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import React, { useEffect, useRef, useState } from "react";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
 import SideBar from "../../components/SideBar";
-import { PopupType, AvatarSize, RoutePath, MobilePosition } from "../../utils/utils";
+import { PopupType, AvatarSize, RoutePath, MobilePosition, JoinStatus, getLobbyDraftKey } from "../../utils/utils";
 import { BottomButtons } from "../../components/ButtonContainers";
 import { BottomButton } from "../../components/Buttons";
 import styles from "./Lobby.module.scss";
@@ -12,30 +12,24 @@ import Avatar from "../../components/Avatar";
 import { useUser } from "../../contexts/UserContext";
 import noAvatar from "../../assets/no_avatar.png";
 import { LobbyChatHistory } from "../../components/Chat/ChatHistory";
-import { DRAFT_STORAGE_PREFIX, LOBBY_DRAFT, LobbyChatBox } from "../../components/Chat/ChatBox";
+import { LobbyChatBox } from "../../components/Chat/ChatBox";
 import useIsMobile from "../../hooks/useIsMobile";
 import InviteFriendPopup from "./LobbyInviteFriendPopup";
 import Popup from "../../components/Popup";
 import { useLobbies } from "../../contexts/LobbiesContext";
-
-interface PlayersData
-{
-	hostUsername: string;
-	hostAvatar: string;
-	guestUsername: string;
-	guestAvatar: string;
-}
+import { useError } from "../../contexts/ErrorContext";
+import { ErrorType } from "../../utils/errors";
 
 interface IHostButtons
 {
 	lobbyID: string;
-	numPlayers: number;
 	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
+	isClosingRef: React.RefObject<boolean>;
 }
 
 interface IGuestButtons
 {
-	setNumPlayers: React.Dispatch<React.SetStateAction<number>>;
+	lobbyID: string;
 }
 
 interface IPlayer
@@ -47,12 +41,12 @@ interface IPlayer
 
 interface IPlayers
 {
-	players: PlayersData;
+	lobbyID: string;
 }
 
 interface ILobbyWindow
 {
-	players: PlayersData;
+	lobbyID: string;
 }
 
 function Player( { username, avatar, alt } : IPlayer )
@@ -68,12 +62,48 @@ function Player( { username, avatar, alt } : IPlayer )
 	)
 }
 
-function Players( { players } : IPlayers )
+function Players( { lobbyID } : IPlayers )
 {
+	const { lobbies } = useLobbies();
+	const { user } = useUser();
+	const lobby = lobbies[lobbyID];
+
+	function getHostUsername() : string
+	{
+		if ( lobby.hostID === user.userID )
+			return user.username;
+		return "Host"; // TODO: fetch username from database
+	}
+
+	function getHostAvatar() : string
+	{
+		if ( lobby.hostID === user.userID )
+			return user.avatar;
+		return noAvatar; // TODO: fetch avatar from database
+	}
+
+	function getGuestUsername() : string
+	{
+		if ( lobby.guestID === user.userID )
+			return user.username;
+		if ( lobby.guestID )
+			return "Guest"; // TODO: fetch username from database
+		return "Waiting...";
+	}
+
+	function getGuestAvatar() : string
+	{
+		if ( lobby.guestID === user.userID )
+			return user.avatar;
+		if ( lobby.guestID )
+			return noAvatar; // TODO: fetch avatar from database
+		return noAvatar;
+	}
+
 	return (
 		<div className={styles.players}>
-			<Player username={players.hostUsername} avatar={players.hostAvatar} alt="Host avatar" />
-			<Player username={players.guestUsername} avatar={players.guestAvatar} alt="Guest avatar" />
+			<Player username={getHostUsername()} avatar={getHostAvatar()} alt="Host avatar" />
+			<Player username={getGuestUsername()} avatar={getGuestAvatar()} alt="Guest avatar" />
 		</div>
 	);
 }
@@ -88,26 +118,29 @@ function Chat()
 	)
 }
 
-function LobbyWindow( { players } : ILobbyWindow )
+function LobbyWindow( { lobbyID } : ILobbyWindow )
 {
 	return (
 		<div className={styles.lobbyWindow}>
-			<Players players={players} />
+			<Players lobbyID={lobbyID} />
 			<Chat />
 		</div>
 	);
 }
 
-function HostButtons( { lobbyID, numPlayers, setPopupType } : IHostButtons )
+function HostButtons( { lobbyID, setPopupType, isClosingRef } : IHostButtons )
 {
 	const navigate = useNavigate();
-	const { closeLobby } = useLobbies();
+	const { lobbies, closeLobby } = useLobbies();
+	const { user } = useUser();
+	const numPlayers = lobbies[lobbyID]?.guestID ? 2 : 1;
 
 	function onCloseLobby()
 	{
-		localStorage.removeItem(DRAFT_STORAGE_PREFIX + LOBBY_DRAFT);
-		navigate(RoutePath.mainMenu); // intentional back to main menu instead of multiplayer page
-		setTimeout(() => closeLobby(lobbyID), 50); // using a timeout so Lobby has time to unmount before lobbies state updates. Otherwise the early return for a non-existent lobby causes a brief screen flash.
+		isClosingRef.current = true;
+		localStorage.removeItem(getLobbyDraftKey(user.userID, lobbyID));
+		closeLobby(lobbyID);
+		navigate(RoutePath.mainMenu, { replace: true }); // intentional back to main menu instead of multiplayer page
 	}
 
 	function onStartGame()
@@ -134,14 +167,16 @@ function HostButtons( { lobbyID, numPlayers, setPopupType } : IHostButtons )
 	);
 }
 
-function GuestButtons( { setNumPlayers } : IGuestButtons )
+function GuestButtons( { lobbyID } : IGuestButtons )
 {
 	const navigate = useNavigate();
+	const { user } = useUser();
+	const { leaveLobby } = useLobbies();
 
 	function onLeaveLobby()
 	{
-		setNumPlayers(prev => prev - 1);
-		localStorage.removeItem(DRAFT_STORAGE_PREFIX + LOBBY_DRAFT);
+		localStorage.removeItem(getLobbyDraftKey(user.userID, lobbyID));
+		leaveLobby(lobbyID);
 		navigate(RoutePath.mainMenu); // intentional back to main menu instead of multiplayer page
 	}
 
@@ -154,47 +189,63 @@ function GuestButtons( { setNumPlayers } : IGuestButtons )
 
 export default function Lobby()
 {
-	const { lobbies } = useLobbies();
+	const { setError } = useError();
+	const { lobbies, joinLobby } = useLobbies();
 	const { lobbyID } = useParams();
 	const { user } = useUser();
+	const location = useLocation();
 
 	const hostID = lobbyID ? lobbies[lobbyID]?.hostID : undefined;
 	const isHost = user.userID === hostID;
+	const isValidLobby = lobbyID && lobbies[lobbyID] ? true : false;
 
-	const [ players, _setPlayers ] = useState<PlayersData>(initPlayers); // TODO: needs to update when a second player joins (WebSockets)
-	const [ numPlayers, setNumPlayers ] = useState<number>( isHost ? 1 : 2 ); // TODO: needs to update when a second player joins (WebSockets)
+	const isClosingRef = useRef(false);
+	const [ joinStatus, setJoinStatus ] = useState<JoinStatus>( isHost ? JoinStatus.ok : JoinStatus.pending );
 	const [ popupType, setPopupType ] = useState<PopupType>(PopupType.none);
 
-	if ( !lobbyID || !lobbies[lobbyID] )
-		return <Navigate to={RoutePath.mainMenu} />;
-
-	function initPlayers() : PlayersData
+	useEffect(() =>
 	{
-		if ( isHost )
+		if ( !isValidLobby )
 		{
-			return {
-				hostUsername: user.username,
-				hostAvatar: user.avatar,
-				guestUsername: "Waiting...", // TODO: needs to update and fetch from database when a second player joins (WebSockets)
-				guestAvatar: noAvatar, // TODO: needs to update and fetch from database when a second player joins (WebSockets)
-			}
+			if ( isClosingRef.current === false )
+				setError(ErrorType.lobbyDoesNotExist);
+			return;
 		}
-		return {
-			hostUsername: "Host", // TODO: fetch from database instead
-			hostAvatar: noAvatar, // TODO: fetch from database instead
-			guestUsername: user.username,
-			guestAvatar: user.avatar,
+		if ( !isHost )
+		{
+			const errorType = joinLobby(lobbyID!, user.userID);
+			const status = errorType === ErrorType.none ? JoinStatus.ok : JoinStatus.failed;
+			setJoinStatus(status);
+			if ( errorType !== ErrorType.none)
+				setError(errorType);
 		}
+	}, [isValidLobby, isHost, lobbyID, user.userID]);
+
+	// I'm returning Background instead of null to prevent a jarring screen flash.
+	// It essentially serves as an intermediary 'loading' screen.
+	// From what AI's been telling me: this is because React Router v7 wraps navigate()'s
+	// internal state update in React's startTransition by default. That makes it a
+	// deferred, low-priority update, so it no longer lands in the same commit as
+	// closeLobby's setLobbies (an immediate update) — the two used to batch together
+	// in RR6, but don't anymore.
+	if ( isClosingRef.current === true )
+		return <Background />;
+	if ( !isValidLobby || joinStatus === JoinStatus.failed )
+	{
+		const path = location.state && location.state.from ? location.state.from : RoutePath.mainMenu;
+		return <Navigate to={path} />;
 	}
+	if ( joinStatus === JoinStatus.pending )
+		return <Background />;
 
 	return (
 		<>
 			<Background />
 			<Page>
 				<MenuTitle title="Lobby" />
-				<LobbyWindow players={players} />
-				{ isHost && <HostButtons lobbyID={lobbyID} numPlayers={numPlayers} setPopupType={setPopupType} /> }
-				{ !isHost && <GuestButtons setNumPlayers={setNumPlayers} /> }
+				<LobbyWindow lobbyID={lobbyID!} />
+				{ isHost && <HostButtons lobbyID={lobbyID!} setPopupType={setPopupType} isClosingRef={isClosingRef} /> }
+				{ !isHost && <GuestButtons lobbyID={lobbyID!} /> }
 				<SideBar />
 				{ popupType === PopupType.inviteFriend && <Popup> <InviteFriendPopup setPopupType={setPopupType} /> </Popup> }
 			</Page>

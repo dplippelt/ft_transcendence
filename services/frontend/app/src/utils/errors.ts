@@ -21,6 +21,8 @@ export enum ErrorType
 	lobbyNameContainsInvalChars,
 	lobbyNameAlreadyExists,
 	usernameCannotBeTheSame,
+	lobbyDoesNotExist,
+	lobbyFull,
 }
 
 export function isErrorType( value: string | ErrorType ) : value is ErrorType
@@ -66,6 +68,10 @@ export function errorMsg( error: ErrorType ): string
 			return "A lobby with this name already exists!";
 		case ErrorType.usernameCannotBeTheSame:
 			return "Username must be different from Player 1's username";
+		case ErrorType.lobbyDoesNotExist:
+			return "Failed to join because the lobby does not exist";
+		case ErrorType.lobbyFull:
+			return "Failed to join because the lobby is full";
 		default:
 			return "";
 	}

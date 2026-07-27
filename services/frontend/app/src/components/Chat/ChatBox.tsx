@@ -7,9 +7,7 @@ import { useUser } from "../../contexts/UserContext";
 import { useFriends } from "../../contexts/FriendsContext";
 import { useLobbies } from "../../contexts/LobbiesContext";
 import { useParams } from "react-router-dom";
-
-export const DRAFT_STORAGE_PREFIX = "draft:";
-export const LOBBY_DRAFT = "lobby";
+import { getFriendDraftKey, getLobbyDraftKey } from "../../utils/utils";
 
 export default function ChatBox()
 {
@@ -18,12 +16,15 @@ export default function ChatBox()
 	const { activeFriendID } = useFriends();
 	const [msg, setMsg] = useState<string>("");
 
+	if ( !activeFriendID )
+		return null;
+
 	useEffect(() =>
 	{
 		if ( activeFriendID === undefined )
 			return;
 
-		const draft = localStorage.getItem(DRAFT_STORAGE_PREFIX + activeFriendID) ?? "";
+		const draft = localStorage.getItem(getFriendDraftKey(user.userID, activeFriendID)) ?? "";
 		setMsg(draft);
 	}, [activeFriendID])
 
@@ -32,7 +33,7 @@ export default function ChatBox()
 		if ( activeFriendID === undefined )
 			return;
 
-		const timeOutID = setTimeout(() => localStorage.setItem(DRAFT_STORAGE_PREFIX + activeFriendID, msg), 400);
+		const timeOutID = setTimeout(() => localStorage.setItem(getFriendDraftKey(user.userID, activeFriendID), msg), 400);
 		return () => clearTimeout(timeOutID);
 	}, [msg, activeFriendID])
 
@@ -41,6 +42,7 @@ export default function ChatBox()
 		if ( msg.trim().length > 0 )
 		{
 			addChatHistory(activeFriendID!, user.username, msg);
+			localStorage.setItem(getFriendDraftKey(user.userID, activeFriendID!), msg);
 			setMsg("");
 		}
 	}
@@ -60,23 +62,27 @@ export function LobbyChatBox()
 	const { user } = useUser();
 	const [msg, setMsg] = useState<string>("");
 
-	useEffect(() =>
-	{
-		const draft = localStorage.getItem(DRAFT_STORAGE_PREFIX + LOBBY_DRAFT) ?? "";
-		setMsg(draft);
-	}, [])
+	if ( !lobbyID )
+		return null;
 
 	useEffect(() =>
 	{
-		const timeOutID = setTimeout(() => localStorage.setItem(DRAFT_STORAGE_PREFIX + LOBBY_DRAFT, msg), 400);
+		const draft = localStorage.getItem(getLobbyDraftKey(user.userID, lobbyID)) ?? "";
+		setMsg(draft);
+	}, [user.userID, lobbyID])
+
+	useEffect(() =>
+	{
+		const timeOutID = setTimeout(() => localStorage.setItem(getLobbyDraftKey(user.userID, lobbyID), msg), 400);
 		return () => clearTimeout(timeOutID);
-	}, [msg])
+	}, [msg, user.userID, lobbyID])
 
 	function handleSend()
 	{
 		if ( msg.trim().length > 0 )
 		{
 			addChatHistory(lobbyID!, user.username, msg);
+			localStorage.setItem(getLobbyDraftKey(user.userID, lobbyID!), msg)
 			setMsg("");
 		}
 	}

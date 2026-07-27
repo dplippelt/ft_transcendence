@@ -46,6 +46,13 @@ export enum SortBy
 	noSort,
 }
 
+export enum JoinStatus
+{
+	ok,
+	pending,
+	failed,
+}
+
 export enum RoutePath
 {
 	landingPage = "/",
@@ -67,5 +74,19 @@ export enum RouteParam
 	login = "?mode=login",
 	signup = "?mode=signup",
 	lobbyID = "/:lobbyID",
+}
+
+export const DRAFT_STORAGE_PREFIX = "draft:";
+const FRIEND_DRAFT = "friend:"
+const LOBBY_DRAFT = "lobby:";
+
+export function getFriendDraftKey( userID: string, activeFriendID: string ) : string
+{
+	return DRAFT_STORAGE_PREFIX + FRIEND_DRAFT + userID + ":" + activeFriendID;
+}
+
+export function getLobbyDraftKey( userID: string, lobbyID: string ) : string
+{
+	return DRAFT_STORAGE_PREFIX + LOBBY_DRAFT + userID + ":" + lobbyID;
 }
 

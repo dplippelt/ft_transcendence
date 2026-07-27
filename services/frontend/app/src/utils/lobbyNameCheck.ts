@@ -10,14 +10,14 @@ export const maxLobbyNameLength = 20;
 
 export function getValidLobbyName( lobbyName: string ) : string | ErrorType
 {
-	const lbbyName = lobbyName.trim();
+	const trimmedLobbyName = lobbyName.trim();
 
-	if ( lbbyName.length === 0 )
+	if ( trimmedLobbyName.length === 0 )
 		return ErrorType.lobbyNameCannotBeEmpty;
-	if ( lbbyName.length < minLobbyNameLength || lbbyName.length > maxLobbyNameLength )
+	if ( trimmedLobbyName.length < minLobbyNameLength || trimmedLobbyName.length > maxLobbyNameLength )
 		return ErrorType.badLobbyNameLength;
-	if ( !hasValidCharacters(lbbyName) )
+	if ( !hasValidCharacters(trimmedLobbyName) )
 		return ErrorType.lobbyNameContainsInvalChars;
 
-	return lbbyName;
+	return trimmedLobbyName;
 }
