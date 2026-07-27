@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from app.api.v1 import auth, cards, dungeons, leaderboard, puzzles, scores, users
+from app.api.v1 import auth, cards, dungeons, leaderboard, puzzles, scores, users, friends
 from app.db.database import Base, engine
 
 # Import model modules so SQLAlchemy registers their tables in Base.metadata.
@@ -29,6 +29,7 @@ app.include_router(cards.router,       prefix="/cards",        tags=["cards"])
 app.include_router(puzzles.router,     prefix="/puzzles",      tags=["puzzles"])
 app.include_router(scores.router,      prefix="/scores",       tags=["scores"])
 app.include_router(leaderboard.router, prefix="/leaderboard",  tags=["leaderboard"])
+app.include_router(friends.router,     prefix="/friends",     tags=["friends"])
 
 @app.get("/")
 def root():
