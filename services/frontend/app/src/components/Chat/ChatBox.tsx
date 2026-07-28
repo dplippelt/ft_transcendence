@@ -16,7 +16,6 @@ export default function ChatBox()
 	const { activeFriendID } = useFriends();
 	const [msg, setMsg] = useState<string>("");
 	const timeoutIDRef = useRef<number | undefined>(undefined);
-	const skipWriteRef = useRef<boolean>(false);
 
 	useEffect(() =>
 	{
@@ -31,11 +30,6 @@ export default function ChatBox()
 	{
 		if ( activeFriendID === undefined )
 			return;
-		if ( skipWriteRef.current )
-		{
-			skipWriteRef.current = false;
-			return;
-		}
 
 		function persistDraft()
 		{
@@ -58,7 +52,6 @@ export default function ChatBox()
 			addChatHistory(activeFriendID!, user.username, msg);
 			clearTimeout(timeoutIDRef.current);
 			localStorage.removeItem(getFriendDraftKey(user.userID, activeFriendID!));
-			skipWriteRef.current = true;
 			setMsg("");
 		}
 	}
@@ -77,8 +70,7 @@ export function LobbyChatBox()
 	const { addChatHistory } = useLobbies();
 	const { user } = useUser();
 	const [msg, setMsg] = useState<string>("");
-	const timeoutIDRef = useRef<number | null>(null);
-	const skipWriteRef = useRef<boolean>(false);
+	const timeoutIDRef = useRef<number | undefined>(undefined);
 
 	useEffect(() =>
 	{
@@ -93,11 +85,6 @@ export function LobbyChatBox()
 	{
 		if ( lobbyID === undefined )
 			return;
-		if ( skipWriteRef.current )
-		{
-			skipWriteRef.current = false;
-			return;
-		}
 
 		function persistDraft()
 		{
@@ -107,7 +94,7 @@ export function LobbyChatBox()
 		}
 
 		timeoutIDRef.current = setTimeout(persistDraft, 400);
-		return () => { if ( timeoutIDRef.current ) clearTimeout(timeoutIDRef.current) };
+		return () => { clearTimeout(timeoutIDRef.current) };
 	}, [msg, user.userID, lobbyID])
 
 	if ( !lobbyID )
@@ -118,10 +105,8 @@ export function LobbyChatBox()
 		if ( msg.trim().length > 0 )
 		{
 			addChatHistory(lobbyID!, user.username, msg);
-			if ( timeoutIDRef.current )
-				clearTimeout(timeoutIDRef.current);
+			clearTimeout(timeoutIDRef.current);
 			localStorage.removeItem(getLobbyDraftKey(user.userID, lobbyID!));
-			skipWriteRef.current = true;
 			setMsg("");
 		}
 	}
