@@ -58,6 +58,7 @@ export default class CardHand {
     this.numCards++;
   }
 
+  // TODO: reconsider if reusing cards is really necessary
   clearHand() {
     const cards = this.cards.getAll() as CardBase[];
     for (const card of cards) {
