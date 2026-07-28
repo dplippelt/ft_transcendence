@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field, field_validator
+from pydantic import BaseModel, EmailStr, Field, HttpUrl
 
 
 class UserRegister(BaseModel):
@@ -15,15 +15,7 @@ class UserLogin(BaseModel):
 class UserUpdate(BaseModel):
     username: str | None = Field(default=None, min_length=3, max_length=50)
     display_name: str | None = Field(default=None, max_length=100)
-    avatar_url: str | None = Field(default=None, max_length=500)
-
-    @field_validator("avatar_url")
-    @classmethod
-    def validate_avatar_url_scheme(cls, value: str | None) -> str | None:
-        if value is not None and not value.startswith(("http://", "https://")):
-            raise ValueError("avatar_url must be an http:// or https:// URL")
-
-        return value
+    avatar_url: HttpUrl | None = Field(default=None, max_length=500)
 
 
 class UserResponse(BaseModel):

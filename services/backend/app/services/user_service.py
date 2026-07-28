@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import bad_request
+from app.db.utils import commit_or_bad_request
 from app.models.auth_account import AuthAccount
 from app.models.user import User
 from app.schemas.user import UserUpdate
-from app.services.friend_service import commit_or_bad_request
 
 
 def get_active_user_by_id(db: Session, user_id: int) -> User | None:
@@ -42,8 +42,10 @@ def update_user_profile(db: Session, user: User, data: UserUpdate) -> User:
     ensure_username_is_available(db, data.username, exclude_user_id=user.id)
 
     # exclude_unset (not exclude_none) so a field explicitly sent as null
-    # clears it, while an omitted field is left untouched.
-    for field, value in data.model_dump(exclude_unset=True).items():
+    # clears it, while an omitted field is left untouched. mode="json" so
+    # avatar_url (an HttpUrl object) is serialized to a plain str before
+    # being assigned to the ORM's String column.
+    for field, value in data.model_dump(exclude_unset=True, mode="json").items():
         setattr(user, field, value)
 
     commit_or_bad_request(db, "Username already exists")
