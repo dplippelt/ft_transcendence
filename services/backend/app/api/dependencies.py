@@ -54,7 +54,7 @@ def get_current_user(token: BearerToken, db: DbSession) -> User:
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
-def get_current_user_ws(
+def get_current_user_id_ws(
     websocket: WebSocket,
     # Browsers can't set custom headers on the WS handshake, so the token
     # travels in the query string instead. That risks exposure via
@@ -62,12 +62,17 @@ def get_current_user_ws(
     # should keep this behind WSS and avoid logging query strings for this
     # path, and access tokens should stay short-lived.
     token: str | None = Query(default=None),
-) -> User:
+) -> int:
     # Deliberately not the DbSession dependency: that session stays open for
     # as long as the WebSocket connection does (get_db only closes it when
     # the endpoint returns), which for a long-lived connection means an idle
     # session/transaction held for hours just to check the token once at
     # connect time. Use a short-lived session instead, scoped to this check.
+    #
+    # Returns just the id rather than the User: the object would be detached
+    # once this session closes, and the id is all the WS layer needs -- this
+    # keeps future code from being tempted to lazy-load a relationship off
+    # a detached instance.
     db = SessionLocal()
 
     try:
@@ -78,7 +83,7 @@ def get_current_user_ws(
     if user is None or not user.is_active:
         raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
 
-    return user
+    return user.id
 
 
-CurrentUserWS = Annotated[User, Depends(get_current_user_ws)]
+CurrentUserIdWS = Annotated[int, Depends(get_current_user_id_ws)]

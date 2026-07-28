@@ -4,7 +4,7 @@ import anyio.from_thread
 from fastapi import APIRouter, WebSocket, status
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import CurrentUser, CurrentUserWS, DbSession
+from app.api.dependencies import CurrentUser, CurrentUserIdWS, DbSession
 from app.core.exceptions import bad_request, not_found
 from app.core.websocket_manager import connection_manager
 from app.models.user import User
@@ -85,8 +85,8 @@ def mark_as_read(friend_id: int, current_user: CurrentUser, db: DbSession):
 
 
 @router.websocket("/ws")
-async def chat_websocket(websocket: WebSocket, current_user: CurrentUserWS):
-    await connection_manager.connect(current_user.id, websocket)
+async def chat_websocket(websocket: WebSocket, current_user_id: CurrentUserIdWS):
+    await connection_manager.connect(current_user_id, websocket)
 
     # receive() (not receive_text()) accepts any frame type without raising,
     # and cleanup runs in `finally` so it happens regardless of *how* the
@@ -99,4 +99,4 @@ async def chat_websocket(websocket: WebSocket, current_user: CurrentUserWS):
             if message["type"] == "websocket.disconnect":
                 break
     finally:
-        connection_manager.disconnect(current_user.id, websocket)
+        connection_manager.disconnect(current_user_id, websocket)
