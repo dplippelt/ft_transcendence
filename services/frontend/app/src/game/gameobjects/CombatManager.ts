@@ -5,7 +5,7 @@ import { Operator, type CardValue } from "./cards/CardBase";
 import Button from "./utils/Button";
 import type { ButtonConfig } from "./utils/Button";
 import { buttonContentConfig, buttonStyleConfig } from "./utils/buttonConfig";
-import CombatTimeManager, { TurnEvents } from "./CombatTimeManager";
+import CombatTurnManager, { TurnEvents } from "./CombatTurnManager";
 import type { PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 
@@ -19,7 +19,7 @@ export default class CombatManager {
   readonly playerStatus: PlayerStatus;
   readonly enemy: CombatEnemy;
   readonly cardManager: CardManager;
-  readonly timeManager: CombatTimeManager;
+  readonly turnManager: CombatTurnManager;
   readonly executeButton: Button;
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
@@ -27,9 +27,9 @@ export default class CombatManager {
     this.playerStatus = playerStatus;
     this.enemy = new CombatEnemy(scene, enemyData);
     this.cardManager = new CardManager(scene);
-    this.timeManager = new CombatTimeManager(this);
-    this.timeManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
-    this.timeManager.turnEvents.on(TurnEvents.STARTENEMY, this.executeEnemyEffect, this);
+    this.turnManager = new CombatTurnManager(this);
+    this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
+    this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.executeEnemyEffect, this);
     this.executeButton = new Button(scene, "Execute", executeButtonConfig);
     this.executeButton.setPosition(100, 50);
     this.executeButton.on("pointerdown", this.execute, this);
@@ -40,7 +40,7 @@ export default class CombatManager {
     this.cardManager.alignAllCards();
 
     // show a timer
-    this.timeManager.displayTimer();
+    this.turnManager.displayTimer();
 
     // show player's hit point and enemy's hitpoint -> to be rendered with React
     console.log("player hitPoint = " + this.playerStatus.hitPoint);
@@ -84,7 +84,7 @@ export default class CombatManager {
     }
     // this.cardManager.clearHandAndSelection();
     // this.cardManager.fillCardHand(5);
-    this.timeManager.switchTurn();
+    this.turnManager.switchTurn();
   }
 
   // TODO: implement the ending the game condition
