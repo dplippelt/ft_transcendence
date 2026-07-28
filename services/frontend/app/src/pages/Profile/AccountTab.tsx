@@ -6,15 +6,15 @@ import Popup from "../../components/Popup";
 import EditPopup from "./EditPopup";
 import { EditButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
-import { EditWindowType } from "./enums";
-import AvatarImg, { AvatarSize } from "../../components/Avatar";
+import { PopupType, AvatarSize } from "../../utils/utils";
+import AvatarImg  from "../../components/Avatar";
 
 interface IAccountInfo
 {
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-function Avatar( { setEditWindowType } : IAccountInfo )
+function Avatar( { setPopupType } : IAccountInfo )
 {
 	const { user } = useUser();
 
@@ -22,12 +22,12 @@ function Avatar( { setEditWindowType } : IAccountInfo )
 		<>
 			<div className={sharedStyle.profileLabel}>Avatar:</div>
 			<AvatarImg src={user.avatar} alt="User avatar" size={AvatarSize.medium} />
-			<EditButton editType={EditWindowType.avatar} setEditWindowType={setEditWindowType} />
+			<EditButton popupType={PopupType.editAvatar} setPopupType={setPopupType} />
 		</>
 	);
 }
 
-function Username( { setEditWindowType } : IAccountInfo )
+function Username( { setPopupType } : IAccountInfo )
 {
 	const { user } = useUser();
 
@@ -35,33 +35,33 @@ function Username( { setEditWindowType } : IAccountInfo )
 		<>
 			<div className={sharedStyle.profileLabel}>Username:</div>
 			<div className={sharedStyle.textInfo}>{user.username}</div>
-			<EditButton editType={EditWindowType.username} setEditWindowType={setEditWindowType} />
+			<EditButton popupType={PopupType.editUsername} setPopupType={setPopupType} />
 		</>
 	);
 }
 
-function Password( { setEditWindowType } : IAccountInfo )
+function Password( { setPopupType } : IAccountInfo )
 {
 	return (
 		<>
 			<div className={sharedStyle.profileLabel}>Password:</div>
 			<div />
-			<EditButton editType={EditWindowType.password} setEditWindowType={setEditWindowType} />
+			<EditButton popupType={PopupType.editPassword} setPopupType={setPopupType} />
 		</>
 	);
 }
 
 export default function Account()
 {
-	const [editWindowType, setEditWindowType] = useState<EditWindowType>(EditWindowType.none);
+	const [popupType, setPopupType] = useState<PopupType>(PopupType.none);
 
 	return (
 		<>
 			<div className={styles.accountInfo}>
-				<Avatar setEditWindowType={setEditWindowType} />
-				<Username setEditWindowType={setEditWindowType} />
-				<Password setEditWindowType={setEditWindowType} />
-				{ editWindowType !== EditWindowType.none && <Popup> <EditPopup  editWindowType={editWindowType} setEditWindowType={setEditWindowType} /> </Popup> }
+				<Avatar setPopupType={setPopupType} />
+				<Username setPopupType={setPopupType} />
+				<Password setPopupType={setPopupType} />
+				{ popupType !== PopupType.none && <Popup> <EditPopup  popupType={popupType} setPopupType={setPopupType} /> </Popup> }
 			</div>
 		</>
 	);

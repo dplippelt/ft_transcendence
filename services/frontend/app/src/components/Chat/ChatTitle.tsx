@@ -1,8 +1,8 @@
 import React from "react";
 import useIsMobile from "../../hooks/useIsMobile";
-import Avatar, { AvatarSize } from "../Avatar";
+import Avatar from "../Avatar";
+import { PopupType, AvatarSize } from "../../utils/utils";
 import { InviteToPlayButton, SideBarBackButton } from "../Buttons";
-import { PopupType } from "./enums";
 import styles from "./ChatTitle.module.scss";
 import { useFriends, type IFriendData } from "../../contexts/FriendsContext";
 
@@ -13,6 +13,7 @@ interface IChatTitleSideBar
 
 interface IChatTitle
 {
+	activeFriendID: string | undefined;
 	activeFriend: IFriendData | undefined;
 	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
@@ -30,9 +31,9 @@ export function ChatTitleSideBar( { activeFriend } : IChatTitleSideBar )
 	);
 }
 
-export function ChatTitle( { activeFriend, setPopupType } : IChatTitle )
+export function ChatTitle( { activeFriendID, activeFriend, setPopupType } : IChatTitle )
 {
-	const { activeFriendID, setSelectedFriendID } = useFriends();
+	const { setSelectedFriendID } = useFriends();
 	const isMobile = useIsMobile(720);
 	const extraStyling = setExtraStyling();
 

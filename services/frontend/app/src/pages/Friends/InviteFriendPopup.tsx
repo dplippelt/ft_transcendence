@@ -1,6 +1,6 @@
 import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
-import { PopupType } from "../../components/Chat/enums";
+import { PopupType } from "../../utils/utils";
 import React, { useEffect } from "react";
 import styles from "./FriendPopup.module.scss";
 import { useFriends, type IFriendData } from "../../contexts/FriendsContext";

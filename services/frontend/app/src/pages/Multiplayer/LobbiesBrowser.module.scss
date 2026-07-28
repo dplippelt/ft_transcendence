@@ -1,0 +1,47 @@
+@use '../../mixins' as *;
+@use '../../variables' as *;
+
+.browserWindow
+{
+	@include window;
+	@include menuWindow;
+
+	grid-template-rows: auto 1fr;
+	row-gap: 0.5rem;
+}
+
+.columnTitles
+{
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	border-bottom: 1px solid $primary-text-color;
+	border-radius: 0px;
+}
+
+.lobbies
+{
+	display: flex;
+	flex-direction: column;
+	row-gap: 0.3rem;
+	@include scrollbar;
+}
+
+.lobby
+{
+	display: grid;
+	grid-template-columns: 1fr 1fr 1fr;
+	align-items: center;
+	font-size: 0.8rem;
+}
+
+.lobbyName
+{
+	text-wrap: nowrap;
+	overflow-x: hidden;
+	text-overflow: ellipsis;
+}
+
+.players
+{
+	justify-self: center;
+}

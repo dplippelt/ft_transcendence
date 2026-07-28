@@ -9,8 +9,7 @@ import Page from "../../components/Page";
 import { BottomButtons } from "../../components/ButtonContainers";
 import { MenuTitle } from "../../components/PageTitle";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Tab } from "./enums";
-import { RoutePath } from "../../utils/utils";
+import { Tab, RoutePath } from "../../utils/utils";
 import SideBar from "../../components/SideBar";
 
 interface IProfileTabs

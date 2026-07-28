@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import type React from "react";
-import { ErrorType, MobilePosition } from "../../utils/utils";
+import { PopupType, AvatarSize } from "../../utils/utils";
+import { ErrorType, isErrorType } from "../../utils/errors";
 import styles from "./EditPopup.module.scss";
 import { PopupButtons } from "../../components/ButtonContainers";
 import ErrorText from "../../components/ErrorText";
@@ -9,22 +10,21 @@ import { useUser } from "../../contexts/UserContext";
 import guestAvatar from  "../../assets/guest_avatar_test.jpg";
 import testAvatar from "../../assets/mesca_avatar_test.png";
 import { PasswordInput, TextInput } from "../../components/TextInput";
-import { EditWindowType } from "./enums";
-import Avatar, { AvatarSize } from "../../components/Avatar";
-import { getValidUsername, isErrorType } from "../../utils/usernameCheck";
+import Avatar from "../../components/Avatar";
+import { getValidUsername } from "../../utils/usernameCheck";
 
 interface IEditPopup
 {
-	editWindowType: EditWindowType;
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>;
+	popupType: PopupType;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 interface IEditContent
 {
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-function EditAvatarContent( { setEditWindowType } : IEditContent )
+function EditAvatarContent( { setPopupType } : IEditContent )
 {
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const fileInputRef = useRef<HTMLInputElement>(null);
@@ -44,7 +44,7 @@ function EditAvatarContent( { setEditWindowType } : IEditContent )
 	function avatarCheck(newAvatar: string)
 	{
 		user.updateAvatar(newAvatar); //also update database
-		setEditWindowType(EditWindowType.none);
+		setPopupType(PopupType.none);
 	}
 
 	// start temp list of example avatars
@@ -65,15 +65,15 @@ function EditAvatarContent( { setEditWindowType } : IEditContent )
 				))}
 			</div>
 			<PopupButtons>
-				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } mobilePosition={MobilePosition.bottom} />
-				<MossButton label="Upload" onClick={ () => fileInputRef.current?.click() } mobilePosition={MobilePosition.top} />
+				<MossButton label="Upload" onClick={ () => fileInputRef.current?.click() } />
+				<MossButton label="Back" onClick={ () => setPopupType(PopupType.none) } />
 				<input type="file" ref={fileInputRef} style={{ display: "none" }} onChange={ handleUpload } />
 			</PopupButtons>
 		</>
 	)
 }
 
-function EditUsernameContent( { setEditWindowType } : IEditContent )
+function EditUsernameContent( { setPopupType } : IEditContent )
 {
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [username, setUsername] = useState<string>("");
@@ -92,7 +92,7 @@ function EditUsernameContent( { setEditWindowType } : IEditContent )
 			return setError(ErrorType.usernameAlreadyTaken);
 
 		user.updateUsername(validUsername); //also update database
-		setEditWindowType(EditWindowType.none);
+		setPopupType(PopupType.none);
 	}
 
 	return (
@@ -100,14 +100,14 @@ function EditUsernameContent( { setEditWindowType } : IEditContent )
 			{ error !== ErrorType.none && <ErrorText error={error}/> }
 			<TextInput label="Edit username:" placeholder="Enter new username" setter={setUsername} id="newUsername" />
 			<PopupButtons>
-				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } />
 				<MossButton label="Ok" onClick={ usernameCheck } />
+				<MossButton label="Back" onClick={ () => setPopupType(PopupType.none) } />
 			</PopupButtons>
 		</>
 	)
 }
 
-function EditPasswordContent( { setEditWindowType } : IEditContent )
+function EditPasswordContent( { setPopupType } : IEditContent )
 {
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [password, setPassword] = useState<string>("");
@@ -122,7 +122,7 @@ function EditPasswordContent( { setEditWindowType } : IEditContent )
 			return setError(ErrorType.passwordsDontMatch);
 
 		// update password in database
-		setEditWindowType(EditWindowType.none);
+		setPopupType(PopupType.none);
 	}
 
 	return (
@@ -131,23 +131,23 @@ function EditPasswordContent( { setEditWindowType } : IEditContent )
 			<PasswordInput label="Edit password:" placeholder="Enter new password" isNewPassword={true} setter={setPassword} id="newPassword" />
 			<PasswordInput label="Confirm password:" placeholder="Confirm new password" isNewPassword={true} setter={setConfirmPassword} id="confirmPassword" />
 			<PopupButtons>
-				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } />
 				<MossButton label="Ok" onClick={ passwordCheck } />
+				<MossButton label="Back" onClick={ () => setPopupType(PopupType.none) } />
 			</PopupButtons>
 		</>
 	)
 }
 
-export default function EditPopup( { editWindowType, setEditWindowType } : IEditPopup )
+export default function EditPopup( { popupType, setPopupType } : IEditPopup )
 {
-	switch (editWindowType)
+	switch (popupType)
 	{
-		case EditWindowType.username:
-			return <EditUsernameContent setEditWindowType={setEditWindowType} />
-		case EditWindowType.password:
-			return <EditPasswordContent setEditWindowType={setEditWindowType} />
-		case EditWindowType.avatar:
-			return <EditAvatarContent setEditWindowType={setEditWindowType} />
+		case PopupType.editUsername:
+			return <EditUsernameContent setPopupType={setPopupType} />
+		case PopupType.editPassword:
+			return <EditPasswordContent setPopupType={setPopupType} />
+		case PopupType.editAvatar:
+			return <EditAvatarContent setPopupType={setPopupType} />
 		default:
 			return null;
 	}
