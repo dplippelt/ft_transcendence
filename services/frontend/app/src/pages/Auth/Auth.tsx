@@ -11,6 +11,43 @@ import { ErrorType, isErrorType, mapAuthApiError } from "../../utils/errors";
 import { MossButton, TextButton } from "../../components/Buttons";
 import { PasswordInput, TextInput } from "../../components/TextInput";
 import { getValidUsername } from "../../utils/usernameCheck";
+import { GoogleLogin } from "@react-oauth/google";
+
+
+interface GoogleAuthButtonProps
+{
+    setError: (error: ErrorType) => void;
+}
+
+function GoogleAuthButton({ setError }: GoogleAuthButtonProps)
+{
+    const navigate = useNavigate();
+    const { loginWithGoogle } = useAuth();
+
+    return (
+    <GoogleLogin
+        theme="filled_black"
+        shape="rectangle"
+        text="continue_with"
+        onSuccess={async (credentialResponse) => {
+            if (!credentialResponse.credential)
+                return setError(ErrorType.googleLoginFailed);
+
+            try {
+                setError(ErrorType.none);
+                await loginWithGoogle(credentialResponse.credential);
+                navigate(RoutePath.mainMenu);
+            }
+            catch (error) {
+                setError(mapAuthApiError(error));
+            }
+        }}
+        onError={() => {
+            setError(ErrorType.googleLoginFailed);
+        }}
+        />
+    )
+}
 
 function LoginQuery()
 {
@@ -56,7 +93,7 @@ function LoginQuery()
             <TextInput label="Email:" placeholder="Enter email" setter={setEmail} id="email" />
             <PasswordInput label="Password:" placeholder="Enter password" isNewPassword={false} setter={setPassword} id="password" />
             <MossButton label={isSubmitting ? "Logging in..." : "Login"} onClick={checkLogin} />
-            <MossButton label="Continue with Google" onClick={ () => {} } />
+            <GoogleAuthButton setError={setError} />
             <TextButton label="Don't have an account? Sign-up" onClick={ () => navigate(RoutePath.auth + RouteParam.signup) } />
         </div>
     );
@@ -155,10 +192,7 @@ function SignupQuery()
 				onClick={signupCheck}
 			/>
 
-			<MossButton
-				label="Continue with Google"
-				onClick={() => {}}
-			/>
+			<GoogleAuthButton setError={setError} />
 
 			<TextButton
 				label="Already have an account? Login"
