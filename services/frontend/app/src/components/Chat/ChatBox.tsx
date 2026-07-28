@@ -37,7 +37,14 @@ export default function ChatBox()
 			return;
 		}
 
-		timeoutIDRef.current = setTimeout(() => localStorage.setItem(getFriendDraftKey(user.userID, activeFriendID), msg), 400);
+		function persistDraft()
+		{
+			if ( msg.trim().length === 0 )
+				return localStorage.removeItem(getFriendDraftKey(user.userID, activeFriendID!));
+			return localStorage.setItem(getFriendDraftKey(user.userID, activeFriendID!), msg);
+		}
+
+		timeoutIDRef.current = setTimeout(persistDraft, 400);
 		return () => { if ( timeoutIDRef.current ) clearTimeout(timeoutIDRef.current) };
 	}, [msg, user.userID, activeFriendID])
 
@@ -51,7 +58,7 @@ export default function ChatBox()
 			addChatHistory(activeFriendID!, user.username, msg);
 			if ( timeoutIDRef.current )
 				clearTimeout(timeoutIDRef.current);
-			localStorage.setItem(getFriendDraftKey(user.userID, activeFriendID!), "");
+			localStorage.removeItem(getFriendDraftKey(user.userID, activeFriendID!));
 			skipWriteRef.current = true;
 			setMsg("");
 		}
@@ -93,7 +100,14 @@ export function LobbyChatBox()
 			return;
 		}
 
-		timeoutIDRef.current = setTimeout(() => localStorage.setItem(getLobbyDraftKey(user.userID, lobbyID), msg), 400);
+		function persistDraft()
+		{
+			if ( msg.trim().length === 0 )
+				return localStorage.removeItem(getLobbyDraftKey(user.userID, lobbyID!));
+			return localStorage.setItem(getLobbyDraftKey(user.userID, lobbyID!), msg);
+		}
+
+		timeoutIDRef.current = setTimeout(persistDraft, 400);
 		return () => { if ( timeoutIDRef.current ) clearTimeout(timeoutIDRef.current) };
 	}, [msg, user.userID, lobbyID])
 
@@ -107,7 +121,7 @@ export function LobbyChatBox()
 			addChatHistory(lobbyID!, user.username, msg);
 			if ( timeoutIDRef.current )
 				clearTimeout(timeoutIDRef.current);
-			localStorage.setItem(getLobbyDraftKey(user.userID, lobbyID!), "");
+			localStorage.removeItem(getLobbyDraftKey(user.userID, lobbyID!));
 			skipWriteRef.current = true;
 			setMsg("");
 		}
