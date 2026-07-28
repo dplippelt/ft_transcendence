@@ -2,7 +2,6 @@ import { Scene, Actions, GameObjects, Geom } from "phaser";
 import CardBase, { CardEvents } from "./CardBase";
 
 interface CardHandConfig {
-  maxNumCards: number;
   firstCardCenterX: number;
   firstCardCenterY: number;
   handStartX: number;
@@ -16,7 +15,6 @@ interface CardHandConfig {
 }
 
 export const cardHandConfig: CardHandConfig = {
-  maxNumCards: 8,
   firstCardCenterX: 0,
   firstCardCenterY: 0,
   handStartX: 100,
@@ -49,11 +47,8 @@ export default class CardHand {
   }
 
   addCard(card: CardBase) {
-    if (this.numCards >= this.cardHandConfig.maxNumCards) return;
-
     card.on(CardEvents.FOCUSON, this.focusOn, this);
     card.on(CardEvents.FOCUSOFF, this.focusOff, this);
-
     this.cards.add(card);
     this.numCards++;
   }

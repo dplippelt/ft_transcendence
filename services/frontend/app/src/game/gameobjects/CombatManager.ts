@@ -1,5 +1,5 @@
 import Phaser, { type Scene } from "phaser";
-import CardManager from "./cards/CardManager";
+import CardManager, { cardManagerConfig } from "./cards/CardManager";
 import type CardBase from "./cards/CardBase";
 import { Operator, type CardValue } from "./cards/CardBase";
 import Button from "./utils/Button";
@@ -15,8 +15,8 @@ const executeButtonConfig: ButtonConfig = {
 };
 
 export enum CombatEvents {
-    ENDCOMBAT = "endCombat",
-    ENDGAME = "endGame",
+  ENDCOMBAT = "endCombat",
+  ENDGAME = "endGame",
 }
 
 export default class CombatManager {
@@ -27,14 +27,14 @@ export default class CombatManager {
   readonly turnManager: CombatTurnManager;
   readonly events: Phaser.Events.EventEmitter;
   readonly executeButton: Button;
-    // show player's hit point and enemy's hitpoint -> to be rendered with React
+  // show player's hit point and enemy's hitpoint -> to be rendered with React
   readonly hitpointsText: Phaser.GameObjects.Text;
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
     this.playerStatus = playerStatus;
     this.enemy = new CombatEnemy(scene, enemyData);
-    this.cardManager = new CardManager(scene);
+    this.cardManager = new CardManager(scene, playerStatus, cardManagerConfig);
     this.turnManager = new CombatTurnManager(this);
     this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
     this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.executeEnemyEffect, this);
@@ -55,7 +55,7 @@ export default class CombatManager {
 
     // show player's hit point and enemy's hitpoint -> to be rendered with React
     const output: string[] = [];
-    output.push("player hitPoint = " + this.playerStatus.hitPoint);
+    output.push("player hitPoint = " + this.playerStatus.hitPoint + " player mana: " + this.playerStatus.mana);
     output.push("enemy hitPoint = " + this.enemy.hitPoint);
     this.hitpointsText.setText(output);
   }
@@ -92,11 +92,11 @@ export default class CombatManager {
     }
     if (this.playerStatus.hitPoint <= 0) {
       this.endGame();
-      return ;
+      return;
     }
     if (this.enemy.hitPoint <= 0) {
       this.endCombat();
-      return ;
+      return;
     }
     this.turnManager.switchTurn();
   }
