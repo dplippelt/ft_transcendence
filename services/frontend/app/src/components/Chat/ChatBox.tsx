@@ -15,7 +15,7 @@ export default function ChatBox()
 	const { user } = useUser();
 	const { activeFriendID } = useFriends();
 	const [msg, setMsg] = useState<string>("");
-	const timeoutIDRef = useRef<number | null>(null);
+	const timeoutIDRef = useRef<number | undefined>(undefined);
 	const skipWriteRef = useRef<boolean>(false);
 
 	useEffect(() =>
@@ -45,7 +45,7 @@ export default function ChatBox()
 		}
 
 		timeoutIDRef.current = setTimeout(persistDraft, 400);
-		return () => { if ( timeoutIDRef.current ) clearTimeout(timeoutIDRef.current) };
+		return () => { clearTimeout(timeoutIDRef.current) };
 	}, [msg, user.userID, activeFriendID])
 
 	if ( !activeFriendID )
@@ -56,8 +56,7 @@ export default function ChatBox()
 		if ( msg.trim().length > 0 )
 		{
 			addChatHistory(activeFriendID!, user.username, msg);
-			if ( timeoutIDRef.current )
-				clearTimeout(timeoutIDRef.current);
+			clearTimeout(timeoutIDRef.current);
 			localStorage.removeItem(getFriendDraftKey(user.userID, activeFriendID!));
 			skipWriteRef.current = true;
 			setMsg("");
