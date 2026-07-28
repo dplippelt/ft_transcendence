@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { EventBus } from "../EventBus";
-import CombatManager from "../gameobjects/CombatManager";
+import CombatManager, { CombatEvents } from "../gameobjects/CombatManager";
 import { type CombatEventData } from "../events/CombatEventData";
 import { GameManagerScene, GameEvents } from "./GameManagerScene";
 import { EnemyLevel, enemyTypes, type EnemyData } from "../gameobjects/CombatEnemy";
@@ -51,6 +51,17 @@ export default class CombatScene extends Phaser.Scene {
     this.enemyData = enemyTypes[EnemyLevel.NORMAL];
 
     this.combatManager = new CombatManager(this, this.playerStatus, this.enemyData);
+    this.combatManager.events.on(CombatEvents.ENDCOMBAT, () => {
+        console.assert(this.eventData !== undefined, "this.eventData is undefined");
+        this.endCombat(this.eventData!);
+    }, this);
+
+    // Temporarily use endCombat(), needs to implement endGame().
+    this.combatManager.events.on(CombatEvents.ENDGAME, () => {
+        console.assert(this.eventData !== undefined, "this.eventData is undefined");
+        this.endCombat(this.eventData!);
+    }, this);
+    // this.combatManager.events.on(CombatEvents.ENDGAME, this.endCombat, this);
 
     EventBus.emit("current-scene-ready", this);
   }
@@ -60,6 +71,7 @@ export default class CombatScene extends Phaser.Scene {
   }
 
   endCombat(eventData: CombatEventData) {
+    console.log("End Combat");
     eventData.player.inCombat = false;
     eventData.player.isAlive = true;
     eventData.enemy.inCombat = false;
@@ -68,5 +80,10 @@ export default class CombatScene extends Phaser.Scene {
 
     GameManagerScene.EventsCenter.emit(GameEvents.CombatOver, eventData);
     this.eventData = undefined;
+  }
+
+  endGame() {
+    // TODO: implement the end action.
+    console.log("Game Over");
   }
 }

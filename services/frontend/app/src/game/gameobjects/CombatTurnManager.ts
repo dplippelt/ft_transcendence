@@ -39,7 +39,7 @@ export default class CombatTurnManager {
 
     // To display, not necessary.
     this.enemyTimer = null;
-    this.timerText = this.scene.add.text(300, 300, "timer");
+    this.timerText = this.scene.add.text(500, 200, "timer");
   }
 
   switchTurn() {
@@ -86,7 +86,7 @@ export default class CombatTurnManager {
       output.push("Player time: " + this.playerTimer.getRemaining().toString());
     }
     if (this.enemyTimer) {
-      output.push("Enemy time" + this.enemyTimer.getRemaining().toString());
+      output.push("Enemy time: " + this.enemyTimer.getRemaining().toString());
     }
     this.timerText.setText(output);
   }
