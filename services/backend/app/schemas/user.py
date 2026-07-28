@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class UserRegister(BaseModel):
@@ -17,6 +17,14 @@ class UserUpdate(BaseModel):
     display_name: str | None = Field(default=None, max_length=100)
     avatar_url: str | None = Field(default=None, max_length=500)
 
+    @field_validator("avatar_url")
+    @classmethod
+    def validate_avatar_url_scheme(cls, value: str | None) -> str | None:
+        if value is not None and not value.startswith(("http://", "https://")):
+            raise ValueError("avatar_url must be an http:// or https:// URL")
+
+        return value
+
 
 class UserResponse(BaseModel):
     id: int
@@ -25,6 +33,20 @@ class UserResponse(BaseModel):
     avatar_url: str | None = None
     is_guest: bool
     is_active: bool
+
+    model_config = {
+        "from_attributes": True
+    }
+
+
+# A reduced, public-safe view of a user for endpoints that look up someone
+# other than the current user -- mirrors FriendUserResponse's rationale of
+# not exposing internal account state like is_guest/is_active.
+class PublicUserResponse(BaseModel):
+    id: int
+    username: str | None = None
+    display_name: str | None = None
+    avatar_url: str | None = None
 
     model_config = {
         "from_attributes": True

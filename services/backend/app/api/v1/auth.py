@@ -23,6 +23,7 @@ from app.core.settings import get_settings
 from app.models.auth_account import AuthAccount
 from app.models.user import User
 from app.schemas.user import GoogleLogin, Token, UserLogin, UserRegister, UserResponse
+from app.services.user_service import ensure_username_is_available
 
 
 router = APIRouter()
@@ -77,20 +78,6 @@ def get_google_account_by_sub(db: Session, google_sub: str) -> AuthAccount | Non
         )
         .first()
     )
-
-
-def ensure_username_is_available(db: Session, username: str | None) -> None:
-    if username is None:
-        return
-
-    existing_user = (
-        db.query(User)
-        .filter(User.username == username)
-        .first()
-    )
-
-    if existing_user:
-        raise bad_request("Username already exists")
 
 
 def authenticate_password_user(db: Session, email: str, password: str) -> User:
