@@ -7,9 +7,14 @@ import Button, { type ButtonConfig } from "../utils/Button";
 import { buttonContentConfig, buttonStyleConfig } from "../utils/buttonConfig";
 
 const drawButtonConfig: ButtonConfig = {
-    styleConfig: buttonStyleConfig,
-    textConfig: buttonContentConfig,
-}
+  styleConfig: buttonStyleConfig,
+  textConfig: buttonContentConfig,
+};
+
+const selectionResetButtonConfig: ButtonConfig = {
+  styleConfig: buttonStyleConfig,
+  textConfig: buttonContentConfig,
+};
 
 export default class CardManager {
   readonly scene: Scene;
@@ -17,6 +22,7 @@ export default class CardManager {
   readonly cardHand: CardHand;
   readonly cardSelection: CardSelection;
   readonly drawButton: Button;
+  readonly selectionResetButton: Button;
 
   constructor(scene: Scene) {
     this.scene = scene;
@@ -25,13 +31,19 @@ export default class CardManager {
     this.cardSelection = new CardSelection(this.scene, cardSelectionConfig);
     this.drawButton = new Button(scene, "draw", drawButtonConfig);
     this.drawButton.setPosition(100, 100);
+    this.selectionResetButton = new Button(scene, "reset", selectionResetButtonConfig);
+    this.selectionResetButton.setPosition(100, 200);
 
     scene.input.setTopOnly(true);
     this.drawButton.on("pointerdown", this.drawCard, this);
+    this.selectionResetButton.on("pointerdown", this.resetSelection, this);
   }
 
-  clearHandAndSelection() {
+  resetSelection() {
     this.cardSelection.unsetAllCards();
+  }
+
+  clearHand() {
     this.cardHand.clearHand();
   }
 
