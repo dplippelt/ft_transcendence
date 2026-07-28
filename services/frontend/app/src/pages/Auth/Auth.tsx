@@ -7,98 +7,165 @@ import Page from "../../components/Page";
 import { useAuth } from "../../contexts/AuthContext";
 import ErrorText from "../../components/ErrorText";
 import { RouteParam, RoutePath } from "../../utils/utils";
-import { ErrorType, isErrorType } from "../../utils/errors";
+import { ErrorType, isErrorType, mapAuthApiError } from "../../utils/errors";
 import { MossButton, TextButton } from "../../components/Buttons";
-import { useUser } from "../../contexts/UserContext";
 import { PasswordInput, TextInput } from "../../components/TextInput";
 import { getValidUsername } from "../../utils/usernameCheck";
 
 function LoginQuery()
 {
-	const [username, setUsername] = useState<string>("");
+	const [email, setEmail] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
-	const [error, setError] = useState<ErrorType>(ErrorType.none);
-	const navigate = useNavigate();
-	const auth = useAuth();
-	const user = useUser();
+    const [error, setError] = useState<ErrorType>(ErrorType.none);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    
+    const navigate = useNavigate();
+    const { login } = useAuth();
 
-	function checkLogin()
-	{
-		const result: string | ErrorType = getValidUsername(username);
-		if ( isErrorType(result) )
-			return setError(result);
+    async function checkLogin()
+    {
+        if (isSubmitting)
+            return;
 
-		const validUsername = result;
+        setError(ErrorType.none);
+        setIsSubmitting(true);
 
-		// TODO: check creds against back-end data.
+        try
+        {
+            await login(
+            {
+                email,
+                password,
+            });
 
-		// Mock login check:
-		if ( validUsername !== password )
-			return setError(ErrorType.incorrectCreds);
+            navigate(RoutePath.mainMenu);
+        }
+        catch (err)
+        {
+            setError(mapAuthApiError(err));
+        }
+        finally
+        {
+            setIsSubmitting(false);
+        }
+    }
 
-		auth.login();
-		user.updateUsername(validUsername);
-		user.setUserID(validUsername + "_ID"); // TODO: fetch userID from backend!
-		navigate(RoutePath.mainMenu);
-	}
-
-	return (
-		<div className={styles.window}>
-			{ error !== ErrorType.none && <ErrorText error={error}/> }
-			<TextInput label="Username:" placeholder="Enter username" setter={setUsername} id="username" />
-			<PasswordInput label="Password:" placeholder="Enter password" isNewPassword={false} setter={setPassword} id="password" />
-			<MossButton label="Login" onClick={checkLogin} />
-			<MossButton label="Continue with Google" onClick={ () => {} } />
-			<TextButton label="Don't have an account? Sign-up" onClick={ () => navigate(RoutePath.auth + RouteParam.signup) } />
-		</div>
-	);
+    return (
+        <div className={styles.window}>
+            { error !== ErrorType.none && <ErrorText error={error}/> }
+            <TextInput label="Email:" placeholder="Enter email" setter={setEmail} id="email" />
+            <PasswordInput label="Password:" placeholder="Enter password" isNewPassword={false} setter={setPassword} id="password" />
+            <MossButton label={isSubmitting ? "Logging in..." : "Login"} onClick={checkLogin} />
+            <MossButton label="Continue with Google" onClick={ () => {} } />
+            <TextButton label="Don't have an account? Sign-up" onClick={ () => navigate(RoutePath.auth + RouteParam.signup) } />
+        </div>
+    );
 }
 
 function SignupQuery()
 {
-	const [username, setUsername] = useState<string>("");
-	const [password, setPassword] = useState<string>("");
-	const [confirmPassword, setConfirmPassword] = useState<string>("");
-	const [error, setError] = useState<ErrorType>(ErrorType.none);
-	const navigate = useNavigate();
-	const auth = useAuth();
-	const user = useUser();
+    const [email, setEmail] = useState<string>("");
+    const [username, setUsername] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
+    const [confirmPassword, setConfirmPassword] = useState<string>("");
+    const [error, setError] = useState<ErrorType>(ErrorType.none);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-	function signupCheck()
-	{
-		const result: string | ErrorType = getValidUsername(username);
-		if ( isErrorType(result) )
-			return setError(result);
+    const navigate = useNavigate();
+    const { register } = useAuth();
 
-		const validUsername = result;
+    async function signupCheck()
+    {
+        if (isSubmitting)
+            return;
 
-		// TODO: check creds against back-end data.
+        setError(ErrorType.none);
 
-		// if username has been taken setError(Error.usernameAlreadyExists)
-		// else if password !=== confirmPassword setError(Error.passwordsDontMatch)
-		// else naviagte(RoutePath.mainMenu)
+        const result: string | ErrorType = getValidUsername(username);
 
-		// Mock signup check
-		if ( validUsername.length === 1 )
-			return setError(ErrorType.usernameAlreadyTaken);
-		if ( password !== confirmPassword )
-			return setError(ErrorType.passwordsDontMatch);
+        if (isErrorType(result))
+            return setError(result);
 
-		auth.login();
-		user.setUserID(validUsername + "_ID"); // TODO: instead of using username replace with stable userID fetched from backend after user is created
-		user.updateUsername(validUsername);
-		navigate(RoutePath.mainMenu);
+        if (password !== confirmPassword)
+            return setError(ErrorType.passwordsDontMatch);
+
+        const validUsername = result;
+
+        setIsSubmitting(true);
+
+        try
+        {
+            await register(
+            {
+                email,
+                username: validUsername,
+                password,
+            });
+
+            navigate(RoutePath.mainMenu);
+        }
+        catch (err)
+        {
+            setError(mapAuthApiError(err));
+        }
+        finally
+        {
+            setIsSubmitting(false);
+        }
 	}
 
 	return (
 		<div className={styles.window}>
-			{ error !== ErrorType.none && <ErrorText error={error}/> }
-			<TextInput label="Username:" placeholder="Enter new username" setter={setUsername} id="newUsername" />
-			<PasswordInput label="Password:" placeholder="Enter new password" isNewPassword={true} setter={setPassword} id="newPassword" />
-			<PasswordInput label="Confirm password:" placeholder="Confirm new password" isNewPassword={true} setter={setConfirmPassword} id="confirmPassword" />
-			<MossButton label="Sign-up" onClick={signupCheck} />
-			<MossButton label="Continue with Google" onClick={ () => {} } />
-			<TextButton label="Already have an account? Login" onClick={ () => navigate(RoutePath.auth + RouteParam.login) } />
+			{error !== ErrorType.none &&
+				<ErrorText error={error}/>
+			}
+
+			<TextInput
+				label="Email:"
+				placeholder="Enter email"
+				setter={setEmail}
+				id="newEmail"
+			/>
+
+			<TextInput
+				label="Username:"
+				placeholder="Enter new username"
+				setter={setUsername}
+				id="newUsername"
+			/>
+
+			<PasswordInput
+				label="Password:"
+				placeholder="Enter new password"
+				isNewPassword={true}
+				setter={setPassword}
+				id="newPassword"
+			/>
+
+			<PasswordInput
+				label="Confirm password:"
+				placeholder="Confirm new password"
+				isNewPassword={true}
+				setter={setConfirmPassword}
+				id="confirmPassword"
+			/>
+
+			<MossButton
+				label={isSubmitting ? "Signing up..." : "Sign-up"}
+				onClick={signupCheck}
+			/>
+
+			<MossButton
+				label="Continue with Google"
+				onClick={() => {}}
+			/>
+
+			<TextButton
+				label="Already have an account? Login"
+				onClick={() =>
+					navigate(RoutePath.auth + RouteParam.login)
+				}
+			/>
 		</div>
 	);
 }
