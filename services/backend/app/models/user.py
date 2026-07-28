@@ -78,3 +78,20 @@ class User(Base):
         foreign_keys="Friendship.user_b_id",
         passive_deletes=True,
     )
+
+    # Not delete-orphan: a ChatMessage has two independent parents (sender
+    # and receiver), and delete-orphan on both sides means removing a
+    # message from *either* collection deletes the row outright, even
+    # though the other side still references it. Actual cleanup on user
+    # deletion is left to the FK's ondelete="CASCADE" instead.
+    sent_messages: Mapped[list["ChatMessage"]] = relationship(
+        back_populates="sender",
+        foreign_keys="ChatMessage.sender_id",
+        passive_deletes=True,
+    )
+
+    received_messages: Mapped[list["ChatMessage"]] = relationship(
+        back_populates="receiver",
+        foreign_keys="ChatMessage.receiver_id",
+        passive_deletes=True,
+    )
