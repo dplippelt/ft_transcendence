@@ -16,7 +16,7 @@ interface CardHandConfig {
 }
 
 export const cardHandConfig: CardHandConfig = {
-  maxNumCards: 8, // limit for the hand cards to be implemented
+  maxNumCards: 8,
   firstCardCenterX: 0,
   firstCardCenterY: 0,
   handStartX: 100,
@@ -49,7 +49,7 @@ export default class CardHand {
   }
 
   addCard(card: CardBase) {
-    // if (this.numCards >= this.cardHandConfig.maxNumCards) return;
+    if (this.numCards >= this.cardHandConfig.maxNumCards) return;
 
     card.on(CardEvents.FOCUSON, this.focusOn, this);
     card.on(CardEvents.FOCUSOFF, this.focusOff, this);
