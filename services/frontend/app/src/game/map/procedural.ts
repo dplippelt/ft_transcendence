@@ -71,10 +71,6 @@ export interface MapData {
 export interface DungeonConfig {
   roomCount: Range;
   emptyRoomConfig: RoomConfig;
-
-  // amount of puzzles
-  // amount of enemies
-  // amount of chests
 }
 
 // Calculate the map bounds based on the bounding box of the rooms
@@ -291,12 +287,12 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
   const map: number[][] = Array.from({ length: mapSize.y }, () => Array(mapSize.x).fill(-1));
 
   for (const room of placedRooms) {
-    room.aabb.move(mapOffset);
+    room.aabb.move(mapOffset).floor();
     layoutPutRoom(map, room, config.emptyRoomConfig.tileMapping);
   }
 
   for (const door of placedDoors) {
-    door.position = Vector2.add(door.position, mapOffset);
+    door.position = Vector2.add(door.position, mapOffset).floor();
     layoutPutDoor(map, door, config.emptyRoomConfig.tileMapping);
   }
 
