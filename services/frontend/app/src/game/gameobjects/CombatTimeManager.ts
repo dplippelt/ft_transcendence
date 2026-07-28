@@ -14,7 +14,7 @@ const turnCOnfig: TurnConfig = {
 export enum TurnEvents {
   SWITCH = "switch",
   STARTPLAYER = "startPlayer",
-  STARTENEMY = "startEnemy"
+  STARTENEMY = "startEnemy",
 }
 
 export default class CombatTimeManager {
@@ -44,18 +44,24 @@ export default class CombatTimeManager {
 
   switchTurn() {
     this.isPlayerTurn = !this.isPlayerTurn;
+
     if (this.isPlayerTurn) {
       this.scene.input.enabled = true;
+
       if (this.playerTimer) {
         this.playerTimer.remove();
       }
+
       this.playerTimer = this.playNextTurnFor(this.turnConfig.playerDelayMs);
       this.turnEvents.emit(TurnEvents.STARTPLAYER);
     } else {
       this.scene.input.enabled = false;
+
       if (this.playerTimer) {
         this.playerTimer.paused = true;
       }
+
+      // To display, not necessary.
       this.enemyTimer?.remove();
       this.enemyTimer = this.playNextTurnFor(this.turnConfig.enemyDelayMs);
       this.turnEvents.emit(TurnEvents.STARTENEMY);
@@ -74,7 +80,7 @@ export default class CombatTimeManager {
   }
 
   displayTimer() {
-    // TODO: align with other objects
+    // TODO: need to align with other objects
     const output: string[] = [];
     if (this.playerTimer) {
       output.push("Player time: " + this.playerTimer.getRemaining().toString());

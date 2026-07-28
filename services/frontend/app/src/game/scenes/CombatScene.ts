@@ -10,7 +10,6 @@ export interface PlayerStatus {
   mana: number;
 }
 
-
 export default class CombatScene extends Phaser.Scene {
   private playerStatus!: PlayerStatus;
   private enemyData!: EnemyData;
@@ -58,17 +57,6 @@ export default class CombatScene extends Phaser.Scene {
 
   update() {
     this.combatManager.update();
-  }
-
-  endCombat(eventData: CombatEventData) {
-    eventData.player.inCombat = false;
-    eventData.player.isAlive = true;
-    eventData.enemy.inCombat = false;
-    eventData.enemy.isAlive = false;
-    eventData.sceneInvoker = this;
-
-    GameManagerScene.EventsCenter.emit(GameEvents.CombatOver, eventData);
-    this.eventData = undefined;
   }
 
   endCombat(eventData: CombatEventData) {
