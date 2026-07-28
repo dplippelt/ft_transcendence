@@ -1,11 +1,11 @@
 import { Physics, Scene, Tilemaps, Math as pMath, type Types } from "phaser";
 import { AssetsKey } from "../Assets";
-import { Direction, dungeonBuilder, type DungeonConfig, type MapData, type Room } from "../map/procedural";
+import { dungeonBuilder, type DungeonConfig, type MapData, type Room } from "../map/procedural";
 import { Enemy } from "./Enemy";
-import { randomPoint, randomPointOnEdge, Vector2 } from "../map/math";
+import { random, randomPoint, randomPointOnEdge, Vector2 } from "../map/math";
 import Player from "./Player";
 import { playerOne } from "../components/KeyboardComponent";
-import { FloorType, PassageType, type TileSetMap } from "../map/TileSetMap";
+import { FloorType, type TileSetMap } from "../map/TileSetMap";
 import { Passage } from "./Passage";
 
 export interface SpawnLocation {
