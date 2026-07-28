@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { SendButton } from "../Buttons";
 import { ChatInput } from "../TextInput";
 import styles from "./ChatBox.module.scss";
@@ -15,9 +15,8 @@ export default function ChatBox()
 	const { user } = useUser();
 	const { activeFriendID } = useFriends();
 	const [msg, setMsg] = useState<string>("");
-
-	if ( !activeFriendID )
-		return null;
+	const timeoutIDRef = useRef<number | null>(null);
+	const skipWriteRef = useRef<boolean>(false);
 
 	useEffect(() =>
 	{
@@ -26,23 +25,34 @@ export default function ChatBox()
 
 		const draft = localStorage.getItem(getFriendDraftKey(user.userID, activeFriendID)) ?? "";
 		setMsg(draft);
-	}, [activeFriendID])
+	}, [user.userID, activeFriendID])
 
 	useEffect(() =>
 	{
 		if ( activeFriendID === undefined )
 			return;
+		if ( skipWriteRef.current )
+		{
+			skipWriteRef.current = false;
+			return;
+		}
 
-		const timeOutID = setTimeout(() => localStorage.setItem(getFriendDraftKey(user.userID, activeFriendID), msg), 400);
-		return () => clearTimeout(timeOutID);
-	}, [msg, activeFriendID])
+		timeoutIDRef.current = setTimeout(() => localStorage.setItem(getFriendDraftKey(user.userID, activeFriendID), msg), 400);
+		return () => { if ( timeoutIDRef.current ) clearTimeout(timeoutIDRef.current) };
+	}, [msg, user.userID, activeFriendID])
+
+	if ( !activeFriendID )
+		return null;
 
 	function handleSend()
 	{
 		if ( msg.trim().length > 0 )
 		{
 			addChatHistory(activeFriendID!, user.username, msg);
-			localStorage.setItem(getFriendDraftKey(user.userID, activeFriendID!), msg);
+			if ( timeoutIDRef.current )
+				clearTimeout(timeoutIDRef.current);
+			localStorage.setItem(getFriendDraftKey(user.userID, activeFriendID!), "");
+			skipWriteRef.current = true;
 			setMsg("");
 		}
 	}
@@ -61,28 +71,44 @@ export function LobbyChatBox()
 	const { addChatHistory } = useLobbies();
 	const { user } = useUser();
 	const [msg, setMsg] = useState<string>("");
-
-	if ( !lobbyID )
-		return null;
+	const timeoutIDRef = useRef<number | null>(null);
+	const skipWriteRef = useRef<boolean>(false);
 
 	useEffect(() =>
 	{
+		if ( lobbyID === undefined )
+			return;
+
 		const draft = localStorage.getItem(getLobbyDraftKey(user.userID, lobbyID)) ?? "";
 		setMsg(draft);
 	}, [user.userID, lobbyID])
 
 	useEffect(() =>
 	{
-		const timeOutID = setTimeout(() => localStorage.setItem(getLobbyDraftKey(user.userID, lobbyID), msg), 400);
-		return () => clearTimeout(timeOutID);
+		if ( lobbyID === undefined )
+			return;
+		if ( skipWriteRef.current )
+		{
+			skipWriteRef.current = false;
+			return;
+		}
+
+		timeoutIDRef.current = setTimeout(() => localStorage.setItem(getLobbyDraftKey(user.userID, lobbyID), msg), 400);
+		return () => { if ( timeoutIDRef.current ) clearTimeout(timeoutIDRef.current) };
 	}, [msg, user.userID, lobbyID])
+
+	if ( !lobbyID )
+		return null;
 
 	function handleSend()
 	{
 		if ( msg.trim().length > 0 )
 		{
 			addChatHistory(lobbyID!, user.username, msg);
-			localStorage.setItem(getLobbyDraftKey(user.userID, lobbyID!), msg)
+			if ( timeoutIDRef.current )
+				clearTimeout(timeoutIDRef.current);
+			localStorage.setItem(getLobbyDraftKey(user.userID, lobbyID!), "");
+			skipWriteRef.current = true;
 			setMsg("");
 		}
 	}

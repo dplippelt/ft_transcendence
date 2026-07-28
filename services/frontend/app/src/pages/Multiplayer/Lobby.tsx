@@ -233,7 +233,7 @@ export default function Lobby()
 	if ( !isValidLobby || joinStatus === JoinStatus.failed )
 	{
 		const path = location.state && location.state.from ? location.state.from : RoutePath.mainMenu;
-		return <Navigate to={path} />;
+		return <Navigate to={path} replace />;
 	}
 	if ( joinStatus === JoinStatus.pending )
 		return <Background />;

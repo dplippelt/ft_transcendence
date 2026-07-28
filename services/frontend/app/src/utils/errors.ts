@@ -1,12 +1,14 @@
-import { maxLobbyNameLength, minLobbyNameLength } from "./lobbyNameCheck";
-import { maxUsernameLength, minUserNameLength } from "./usernameCheck";
+export const MIN_USERNAME_LENGTH = 3;
+export const MAX_USERNAME_LENGTH = 20;
+export const MIN_LOBBY_NAME_LENGTH = 3;
+export const MAX_LOBBY_NAME_LENGTH = 20;
 
 export enum ErrorType
 {
 	none,
 	usernameAlreadyTaken,
 	usernameCannotBeEmpty,
-	badUserNameLength,
+	badUsernameLength,
 	usernameContainsInvalChars,
 	passwordsDontMatch,
 	passwordCannotBeEmpty,
@@ -38,8 +40,8 @@ export function errorMsg( error: ErrorType ): string
 			return "Username already taken!";
 		case ErrorType.usernameCannotBeEmpty:
 			return "Username cannot be empty!";
-		case ErrorType.badUserNameLength:
-			return "Username must be between " + minUserNameLength + " and " + maxUsernameLength + " characters long!";
+		case ErrorType.badUsernameLength:
+			return "Username must be between " + MIN_USERNAME_LENGTH + " and " + MAX_USERNAME_LENGTH + " characters long!";
 		case ErrorType.usernameContainsInvalChars:
 			return "Username may only contain letters, numbers and the symbols _ . -";
 		case ErrorType.passwordsDontMatch:
@@ -61,7 +63,7 @@ export function errorMsg( error: ErrorType ): string
 		case ErrorType.lobbyNameCannotBeEmpty:
 			return "Lobby name cannot be empty!";
 		case ErrorType.badLobbyNameLength:
-			return "Lobby name must be between " + minLobbyNameLength + " and " + maxLobbyNameLength + " characters long!";
+			return "Lobby name must be between " + MIN_LOBBY_NAME_LENGTH + " and " + MAX_LOBBY_NAME_LENGTH + " characters long!";
 		case ErrorType.lobbyNameContainsInvalChars:
 			return "Lobby name may only contain letters, numbers, spaces and the symbols _ . -";
 		case ErrorType.lobbyNameAlreadyExists:

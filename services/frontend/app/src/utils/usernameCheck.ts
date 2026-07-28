@@ -1,12 +1,9 @@
-import { ErrorType } from "./errors";
+import { ErrorType, MAX_USERNAME_LENGTH, MIN_USERNAME_LENGTH } from "./errors";
 
 function hasValidCharacters( str: string ) : boolean
 {
 	return /^[a-zA-Z0-9_.-]+$/.test(str);
 }
-
-export const minUserNameLength = 3;
-export const maxUsernameLength = 20;
 
 export function getValidUsername( username: string ) : string | ErrorType
 {
@@ -14,8 +11,8 @@ export function getValidUsername( username: string ) : string | ErrorType
 
 	if ( trimmedUsername.length === 0 )
 		return ErrorType.usernameCannotBeEmpty;
-	if ( trimmedUsername.length < minUserNameLength || trimmedUsername.length > maxUsernameLength )
-		return ErrorType.badUserNameLength;
+	if ( trimmedUsername.length < MIN_USERNAME_LENGTH || trimmedUsername.length > MAX_USERNAME_LENGTH )
+		return ErrorType.badUsernameLength;
 	if ( !hasValidCharacters(trimmedUsername) )
 		return ErrorType.usernameContainsInvalChars;
 

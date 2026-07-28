@@ -1,12 +1,9 @@
-import { ErrorType } from "./errors";
+import { ErrorType, MAX_LOBBY_NAME_LENGTH, MIN_LOBBY_NAME_LENGTH } from "./errors";
 
 function hasValidCharacters( str: string ) : boolean
 {
 	return /^[ a-zA-Z0-9_.-]+$/.test(str);
 }
-
-export const minLobbyNameLength = 3;
-export const maxLobbyNameLength = 20;
 
 export function getValidLobbyName( lobbyName: string ) : string | ErrorType
 {
@@ -14,7 +11,7 @@ export function getValidLobbyName( lobbyName: string ) : string | ErrorType
 
 	if ( trimmedLobbyName.length === 0 )
 		return ErrorType.lobbyNameCannotBeEmpty;
-	if ( trimmedLobbyName.length < minLobbyNameLength || trimmedLobbyName.length > maxLobbyNameLength )
+	if ( trimmedLobbyName.length < MIN_LOBBY_NAME_LENGTH || trimmedLobbyName.length > MAX_LOBBY_NAME_LENGTH )
 		return ErrorType.badLobbyNameLength;
 	if ( !hasValidCharacters(trimmedLobbyName) )
 		return ErrorType.lobbyNameContainsInvalChars;
