@@ -1,18 +1,22 @@
 import { createContext, useContext, /* useEffect, */ useState } from "react";
 import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
+import { useFriends } from "./FriendsContext";
+import { useChatHistory } from "./ChatHistoryContext";
 
 interface IUserContext
 {
 	user: IUser;
+	setUserID: ( userID: string ) => void;
 	updateUsername: ( username: string ) => void;
-	resetUsername: () => void;
+	resetUser: () => void;
 	updateAvatar: ( newAvatar: string ) => void;
 }
 
 export interface IUser
 {
 	// define data type for each User value
+	userID: string;
 	username: string;
 	avatar: string;
 }
@@ -22,22 +26,34 @@ const UserContext = createContext<IUserContext | null>(null);
 export const defaultUser: IUser =
 {
 	// define default User values
+	userID: "Guest",
 	username: "Guest",
 	avatar: guestAvatar,
 };
 
 export default function UserProvider( { children } : {children: ReactNode} )
 {
+	const { resetFriends } = useFriends();
+	const { updateUsername: updateUsernameInChatHistory, resetChatHistory } = useChatHistory();
 	const [user, setUser] = useState<IUser>(defaultUser);
 
-	function updateUsername( username: string )
+	function setUserID( newUserID: string )
 	{
-		setUser( prev => ({ ...prev, username: username }) );
+		setUser( prev => ({ ...prev, userID: newUserID }));
 	}
 
-	function resetUsername()
+	function updateUsername( newUsername: string )
+	{
+		const oldUsername = user.username;
+		updateUsernameInChatHistory(oldUsername, newUsername);
+		setUser(prev => ({ ...prev, username: newUsername }));
+	}
+
+	function resetUser()
 	{
 		setUser(defaultUser);
+		resetFriends();
+		resetChatHistory();
 	}
 
 	function updateAvatar( newAvatar: string )
@@ -64,7 +80,7 @@ export default function UserProvider( { children } : {children: ReactNode} )
 		<UserContext.Provider
 			value=
 			{{
-				user, updateUsername, resetUsername, updateAvatar,
+				user, setUserID, updateUsername, resetUser, updateAvatar,
 			}}>
 			{children}
 		</UserContext.Provider>

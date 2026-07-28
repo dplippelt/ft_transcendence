@@ -7,6 +7,8 @@ import PhaserGame, { type IRefPhaserGame } from "./pages/PhaserGame/PhaserGame"
 import Leaderboard from "./pages/Leaderboard/Leaderboard"
 import Profile from "./pages/Profile/Profile"
 import Auth from "./pages/Auth/Auth"
+import Friends from "./pages/Friends/Friends"
+import { RoutePath } from "./utils/utils"
 
 export default function App()
 {
@@ -21,13 +23,14 @@ export default function App()
 	return (
 		<BrowserRouter>
 			<Routes>
-				<Route path="/" element={ <LandingPage/> } />
-				<Route path="/auth" element={ <Auth/> } />
-				<Route path="/main-menu" element={ <MainMenu/> } />
-				<Route path="/profile" element={ <Profile/> } />
-				<Route path="/leaderboard" element={ <Leaderboard/> } />
-				<Route path="/settings" element={ <Settings/> } />
-				<Route path="/game-dev" element={ <PhaserGame ref={ phaserRef } currentActiveScene={ currentScene } /> } />
+				<Route path={RoutePath.landingPage} element={ <LandingPage/> } />
+				<Route path={RoutePath.auth} element={ <Auth/> } />
+				<Route path={RoutePath.mainMenu} element={ <MainMenu/> } />
+				<Route path={RoutePath.friends} element={ <Friends/> } />
+				<Route path={RoutePath.profile} element={ <Profile/> } />
+				<Route path={RoutePath.leaderboard} element={ <Leaderboard/> } />
+				<Route path={RoutePath.settings} element={ <Settings/> } />
+				<Route path={RoutePath.gameDev} element={ <PhaserGame ref={ phaserRef } currentActiveScene={ currentScene } /> } />
 			</Routes>
 		</BrowserRouter>
 	)

@@ -13,16 +13,16 @@
 	justify-content: center;
 	column-gap: 1.75rem;
 	row-gap: 0.75rem;
+}
 
-	:global(.avatar)
+.avatar
+{
+	cursor: pointer;
+	transition: border-color 0.2s ease;
+
+	&:hover
 	{
-		cursor: pointer;
-		transition: border-color 0.2s ease;
-
-		&:hover
-		{
-			border-color: $golden-brown
-		}
+		border-color: $golden-brown
 	}
 }
 

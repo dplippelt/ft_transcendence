@@ -1,6 +1,7 @@
 $grey-light: #4a4a5a;
 $grey-dark: #2a2a35;
-$grey-darker: #18181f;
+$grey-darker: #212129;
+$grey-darkest: #18181f;
 $grey-brown: #71695D;
 $golden-brown: #8a7a5a;
 $creme-beige: #e8dcc8;
@@ -17,7 +18,7 @@ $orange: #ff6600;
 
 $primary-text-color: $creme-beige;
 $button-bg-color: $grey-dark;
-$button-hover-bg-color: $grey-darker;
+$button-hover-bg-color: $grey-darkest;
 $button-hover-color: $creme-beige-lighter;
 $button-border-color: $grey-brown;
 $button-v1-bg-color: $moss-green-dark;
@@ -25,7 +26,7 @@ $button-v1-hover-bg-color: $moss-green-darker;
 $button-v1-hover-color: $creme-beige-light;
 $window-bg-color: $grey-dark;
 $window-border-color: $grey-light;
-$input-bg-color: $grey-darker;
+$input-bg-color: $grey-darkest;
 $input-border-color: $grey-light;
 $input-focus-border-color: $golden-brown;
 $error-color: $orange;
@@ -36,6 +37,7 @@ $slider-thumb-border-color: $muddy-gold-dark;
 $profile-label-color: $creme-beige-dark;
 $profile-avatar-border-color: $grey-light;
 $profile-edit-color: $creme-beige-dark;
+$panel-bg-color: $grey-darker;
 
 $app-title-font: 'Cinzel Decorative', serif;
 $menu-title-font: 'Cinzel', serif;

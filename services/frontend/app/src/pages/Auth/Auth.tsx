@@ -1,48 +1,53 @@
-import { Navigate, useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { MenuTitle } from "../../components/PageTitle";
 import styles from "./Auth.module.scss";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { useAuth } from "../../contexts/AuthContext";
 import ErrorText from "../../components/ErrorText";
-import { AccountError } from "../../utils/errors";
+import { ErrorType, RouteParam, RoutePath } from "../../utils/utils";
 import { MossButton, TextButton } from "../../components/Buttons";
 import { useUser } from "../../contexts/UserContext";
 import { PasswordInput, TextInput } from "../../components/TextInput";
+import { getValidUsername, isErrorType } from "../../utils/usernameCheck";
 
 function LoginQuery()
 {
 	const [username, setUsername] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
-	const [error, setError] = useState<AccountError>(AccountError.none);
+	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const navigate = useNavigate();
 	const auth = useAuth();
 	const user = useUser();
 
 	function checkLogin()
 	{
-		//if invalid username + password combo setError(true)
-		//else navigate("/main-menu")
+		const result: string | ErrorType = getValidUsername(username);
+		if ( isErrorType(result) )
+			return setError(result);
+
+		const validUsername = result;
+
+		// TODO: check creds against back-end data.
 
 		// Mock login check:
-		if ( username !== password )
-			return setError(AccountError.incorrectCreds);
+		if ( validUsername !== password )
+			return setError(ErrorType.incorrectCreds);
 
 		auth.login();
-		user.updateUsername(username);
-		navigate("/main-menu");
+		user.updateUsername(validUsername);
+		navigate(RoutePath.mainMenu);
 	}
 
 	return (
 		<div className={styles.window}>
-			{ error !== AccountError.none && <ErrorText error={error}/> }
+			{ error !== ErrorType.none && <ErrorText error={error}/> }
 			<TextInput label="Username:" placeholder="Enter username" setter={setUsername} id="username" />
 			<PasswordInput label="Password:" placeholder="Enter password" isNewPassword={false} setter={setPassword} id="password" />
 			<MossButton label="Login" onClick={checkLogin} />
 			<MossButton label="Continue with Google" onClick={ () => {} } />
-			<TextButton label="Don't have an account? Sign-up" onClick={ () => navigate("/auth?mode=signup") } />
+			<TextButton label="Don't have an account? Sign-up" onClick={ () => navigate(RoutePath.auth + RouteParam.signup) } />
 		</div>
 	);
 }
@@ -52,37 +57,46 @@ function SignupQuery()
 	const [username, setUsername] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
 	const [confirmPassword, setConfirmPassword] = useState<string>("");
-	const [error, setError] = useState<AccountError>(AccountError.none);
+	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const navigate = useNavigate();
 	const auth = useAuth();
 	const user = useUser();
 
 	function signupCheck()
 	{
-		// if username has been taken setError(AccountError.usernameAlreadyExists)
-		// else if password !=== confirmPassword setError(AccountError.passwordsDontMatch)
-		// else naviagte("/main-menu")
+		const result: string | ErrorType = getValidUsername(username);
+		if ( isErrorType(result) )
+			return setError(result);
+
+		const validUsername = result;
+
+		// TODO: check creds against back-end data.
+
+		// if username has been taken setError(Error.usernameAlreadyExists)
+		// else if password !=== confirmPassword setError(Error.passwordsDontMatch)
+		// else naviagte(RoutePath.mainMenu)
 
 		// Mock signup check
-		if ( username.length === 1 )
-			return setError(AccountError.usernameAlreadyTaken);
+		if ( validUsername.length === 1 )
+			return setError(ErrorType.usernameAlreadyTaken);
 		if ( password !== confirmPassword )
-			return setError(AccountError.passwordsDontMatch);
+			return setError(ErrorType.passwordsDontMatch);
 
 		auth.login();
-		user.updateUsername(username);
-		navigate("/main-menu");
+		user.setUserID(validUsername + "_ID"); // TODO: Replace with stable userID instead of using username
+		user.updateUsername(validUsername);
+		navigate(RoutePath.mainMenu);
 	}
 
 	return (
 		<div className={styles.window}>
-			{ error !== AccountError.none && <ErrorText error={error}/> }
+			{ error !== ErrorType.none && <ErrorText error={error}/> }
 			<TextInput label="Username:" placeholder="Enter new username" setter={setUsername} id="newUsername" />
 			<PasswordInput label="Password:" placeholder="Enter new password" isNewPassword={true} setter={setPassword} id="newPassword" />
 			<PasswordInput label="Confirm password:" placeholder="Confirm new password" isNewPassword={true} setter={setConfirmPassword} id="confirmPassword" />
 			<MossButton label="Sign-up" onClick={signupCheck} />
 			<MossButton label="Continue with Google" onClick={ () => {} } />
-			<TextButton label="Already have an account? Login" onClick={ () => navigate("/auth?mode=login") } />
+			<TextButton label="Already have an account? Login" onClick={ () => navigate(RoutePath.auth + RouteParam.login) } />
 		</div>
 	);
 }
@@ -125,6 +139,6 @@ export default function Auth()
 		case "signup":
 			return <Signup/>
 		default:
-			return <Navigate to="/auth?mode=login" replace />;
+			return <Navigate to={RoutePath.auth + RouteParam.login} replace />;
 	}
 }

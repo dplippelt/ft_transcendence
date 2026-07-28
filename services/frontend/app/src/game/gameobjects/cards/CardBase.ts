@@ -27,10 +27,7 @@ export default class CardBase extends BoxedText {
   private value!: CardValue;
 
   constructor(scene: Scene, value: CardValue) {
-    let text: string;
-    if (typeof value === "number") text = value.toString();
-    else text = value;
-
+    const text: string = typeof value === "number" ? value.toString() : value;
     super(scene, text, cardConfig.cardContentConfig, cardConfig.cardStyleConfig);
 
     this.cardBaseConfig = cardConfig;

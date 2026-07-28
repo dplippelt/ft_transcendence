@@ -8,8 +8,10 @@ import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { BottomButtons } from "../../components/ButtonContainers";
 import { MenuTitle } from "../../components/PageTitle";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Tab } from "./enums";
+import { RoutePath } from "../../utils/utils";
+import SideBar from "../../components/SideBar";
 
 interface IProfileTabs
 {
@@ -42,11 +44,12 @@ function ProfileWindow()
 function Buttons()
 {
 	const navigate = useNavigate();
+	const location = useLocation();
 
 	return (
 		<BottomButtons>
-			<BackButton />
-			<BottomButton label="Leaderboard" onClick={ () => navigate("/leaderboard") } />
+			<BackButton path={RoutePath.mainMenu} />
+			<BottomButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname } }) } />
 		</BottomButtons>
 	);
 }
@@ -60,6 +63,7 @@ export default function Profile()
 				<MenuTitle title="Profile" />
 				<ProfileWindow />
 				<Buttons />
+				<SideBar />
 			</Page>
 		</>
 	);

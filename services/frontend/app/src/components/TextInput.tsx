@@ -1,4 +1,5 @@
 import type React from "react";
+import styles from "./TextInput.module.scss";
 
 interface ITextInput
 {
@@ -17,6 +18,14 @@ interface IPasswordInput
 	setter: (value: React.SetStateAction<string>) => void;
 }
 
+interface IChatInput
+{
+	placeholder: string;
+	onSend: () => void;
+	msg: string;
+	setMsg: React.Dispatch<React.SetStateAction<string>>;
+}
+
 export function TextInput( { label, placeholder, id, setter } : ITextInput )
 {
 	function handleChange( e: React.ChangeEvent<HTMLInputElement> )
@@ -27,7 +36,11 @@ export function TextInput( { label, placeholder, id, setter } : ITextInput )
 	return (
 		<>
 			<label htmlFor={id}>{label}</label>
-			<input type="text" id={id} placeholder={placeholder} onChange={handleChange}/>
+			<input
+				type="text"
+				id={id}
+				placeholder={placeholder}
+				onChange={handleChange}/>
 		</>
 	);
 }
@@ -42,7 +55,37 @@ export function PasswordInput( { label, placeholder, isNewPassword, id, setter }
 	return (
 		<>
 			<label htmlFor={id}>{label}</label>
-			<input type="password" id={id} autoComplete={ isNewPassword ? "new-password" : "current-password" } placeholder={placeholder} onChange={handleChange}/>
+			<input
+				type="password"
+				id={id}
+				autoComplete={ isNewPassword ? "new-password" : "current-password" }
+				placeholder={placeholder}
+				onChange={handleChange}/>
 		</>
 	);
+}
+
+export function ChatInput( { placeholder, onSend, msg, setMsg } : IChatInput )
+{
+	function handleChange( e: React.ChangeEvent<HTMLTextAreaElement> )
+	{
+		setMsg(e.target.value);
+	}
+
+	function handleKeyDown( e: React.KeyboardEvent<HTMLTextAreaElement> )
+	{
+		if ( e.key === "Enter" && !e.shiftKey )
+		{
+			e.preventDefault();
+			onSend();
+		}
+	}
+
+	return <textarea
+				className={styles.chatInput}
+				rows={2}
+				placeholder={placeholder}
+				value={msg}
+				onChange={handleChange}
+				onKeyDown={handleKeyDown} />;
 }

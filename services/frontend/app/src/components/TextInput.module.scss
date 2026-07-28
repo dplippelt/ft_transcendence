@@ -1,0 +1,7 @@
+@use '../variables' as *;
+
+.chatInput
+{
+	background-color: $input-bg-color;
+	resize: none;
+}

@@ -41,8 +41,8 @@ interface WeightReduction {
 }
 
 export default class CardDeck {
-  readonly scene!: Scene;
-  readonly config!: CardDeckConfig;
+  readonly scene: Scene;
+  readonly config: CardDeckConfig;
   readonly baseWeights: CardWeight[];
   readonly weightReduction: WeightReduction;
   deck!: CardBase[];
@@ -54,7 +54,6 @@ export default class CardDeck {
     this.baseWeights = this.initBaseWeights(this.config);
     this.weightReduction = this.setWeightReductionFromConfig(this.config);
     this.deck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
-
   }
 
   initBaseWeights(config: CardDeckConfig) {
@@ -112,13 +111,14 @@ export default class CardDeck {
     return new CardBase(this.scene, cardWeight.value);
   }
 
-  adjustWeights(cards: CardWeight[], target: CardBase, reduction: WeightReduction) {
+  adjustWeights(cardWeights: CardWeight[], target: CardBase, reduction: WeightReduction) {
     const targetValue = target.getValue();
 
-    for (const card of cards) {
+    for (const card of cardWeights) {
       if (card.value !== targetValue) continue;
       if (target.isValueNumber()) card.weight -= reduction.number;
       else if (target.isValueOperator()) card.weight -= reduction.operator;
+      else throw Error("Unexpected CardValue")
       break;
     }
   }
@@ -132,7 +132,7 @@ export default class CardDeck {
       normalizedWeights.push({ value: value, weight: expWeight });
       sum += expWeight;
     }
-    if (sum) normalizedWeights.forEach((value) => (value.weight /= sum));
+    if (sum) normalizedWeights.forEach((card) => (card.weight /= sum));
     return normalizedWeights;
   }
 
@@ -177,4 +177,3 @@ export function shuffle(arr: Array<any>): void {
     [arr[pick], arr[i]] = [arr[i], arr[pick]];
   }
 }
-
