@@ -18,6 +18,17 @@ def get_active_user_by_id(db: Session, user_id: int) -> User | None:
     )
 
 
+def get_active_user_by_username(db: Session, username: str) -> User | None:
+    return (
+        db.query(User)
+        .filter(
+            User.username == username,
+            User.is_active.is_(True),
+        )
+        .first()
+    )
+
+
 def ensure_username_is_available(db: Session, username: str | None, exclude_user_id: int | None = None) -> None:
     if username is None:
         return
