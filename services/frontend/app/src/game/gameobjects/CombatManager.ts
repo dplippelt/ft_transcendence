@@ -1,11 +1,11 @@
-import Phaser, { type Scene } from "phaser";
+import { type Scene } from "phaser";
 import CardManager from "./cards/CardManager";
 import type CardBase from "./cards/CardBase";
 import { Operator, type CardValue } from "./cards/CardBase";
 import Button from "./utils/Button";
 import type { ButtonConfig } from "./utils/Button";
 import { buttonContentConfig, buttonStyleConfig } from "./utils/buttonConfig";
-import CombatTimeManager from "./CombatTimeManager";
+import CombatTimeManager, { TurnEvents } from "./CombatTimeManager";
 import type { PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 
@@ -19,19 +19,21 @@ export default class CombatManager {
   readonly playerStatus: PlayerStatus;
   readonly enemy: CombatEnemy;
   readonly cardManager: CardManager;
-  readonly executeButton: Button;
   readonly timeManager: CombatTimeManager;
+  readonly executeButton: Button;
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
     this.playerStatus = playerStatus;
     this.enemy = new CombatEnemy(scene, enemyData);
     this.cardManager = new CardManager(scene);
-    this.cardManager.fillCardHand(5);
+    this.timeManager = new CombatTimeManager(this);
+    this.timeManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
+    this.timeManager.turnEvents.on(TurnEvents.STARTENEMY, this.executeEnemyEffect, this);
     this.executeButton = new Button(scene, "Execute", executeButtonConfig);
     this.executeButton.setPosition(100, 50);
     this.executeButton.on("pointerdown", this.execute, this);
-    this.timeManager = new CombatTimeManager(this);
+    this.initPlayerTurn();
   }
 
   update() {
@@ -40,16 +42,20 @@ export default class CombatManager {
     // show a timer
     this.timeManager.displayTimer();
 
-    // show player's hit point and enemy's hitpoint
+    // show player's hit point and enemy's hitpoint -> to be rendered with React
     console.log("player hitPoint = " + this.playerStatus.hitPoint);
     console.log("enemy hitPoint = " + this.enemy.hitPoint);
     //
   }
 
+  initPlayerTurn() {
+    this.cardManager.clearHandAndSelection();
+    this.cardManager.fillCardHand(5);
+  }
+
   executeEnemyEffect() {
     this.enemy.attack(this.playerStatus);
     if (this.playerStatus.hitPoint <= 0) {
-      // TODO: implement the ending condition
       this.endGame();
     }
   }
@@ -76,15 +82,17 @@ export default class CombatManager {
     if (this.enemy.hitPoint <= 0) {
       this.endCombat();
     }
-    this.cardManager.clearHandAndSelection();
-    this.cardManager.fillCardHand(5);
+    // this.cardManager.clearHandAndSelection();
+    // this.cardManager.fillCardHand(5);
     this.timeManager.switchTurn();
   }
 
+  // TODO: implement the ending the game condition
   endGame() {
     console.log("Game over");
   }
 
+  // TODO: implement the ending the combat condition
   endCombat() {
     console.log("You win");
   }

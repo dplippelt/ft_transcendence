@@ -11,8 +11,10 @@ const turnCOnfig: TurnConfig = {
   enemyDelayMs: 5000,
 };
 
-enum TurnEvents {
+export enum TurnEvents {
   SWITCH = "switch",
+  STARTPLAYER = "startPlayer",
+  STARTENEMY = "startEnemy"
 }
 
 export default class CombatTimeManager {
@@ -20,7 +22,7 @@ export default class CombatTimeManager {
   readonly scene: Scene;
   readonly clock: Phaser.Time.Clock;
   readonly turnConfig: TurnConfig = turnCOnfig;
-  private turnSwitcher: Phaser.Events.EventEmitter;
+  readonly turnEvents: Phaser.Events.EventEmitter;
   private isPlayerTurn: boolean;
   private playerTimer: Phaser.Time.TimerEvent | null;
   private enemyTimer: Phaser.Time.TimerEvent | null;
@@ -30,8 +32,8 @@ export default class CombatTimeManager {
     this.combatManager = combatManager;
     this.scene = combatManager.scene;
     this.clock = this.scene.time;
-    this.turnSwitcher = new Phaser.Events.EventEmitter();
-    this.turnSwitcher.on(TurnEvents.SWITCH, this.switchTurn, this);
+    this.turnEvents = new Phaser.Events.EventEmitter();
+    this.turnEvents.on(TurnEvents.SWITCH, this.switchTurn, this);
     this.isPlayerTurn = true;
     this.playerTimer = this.playNextTurnFor(this.turnConfig.playerDelayMs);
 
@@ -48,6 +50,7 @@ export default class CombatTimeManager {
         this.playerTimer.remove();
       }
       this.playerTimer = this.playNextTurnFor(this.turnConfig.playerDelayMs);
+      this.turnEvents.emit(TurnEvents.STARTPLAYER);
     } else {
       this.scene.input.enabled = false;
       if (this.playerTimer) {
@@ -55,7 +58,7 @@ export default class CombatTimeManager {
       }
       this.enemyTimer?.remove();
       this.enemyTimer = this.playNextTurnFor(this.turnConfig.enemyDelayMs);
-      this.combatManager.executeEnemyEffect();
+      this.turnEvents.emit(TurnEvents.STARTENEMY);
     }
   }
 
@@ -63,7 +66,7 @@ export default class CombatTimeManager {
     const config: Phaser.Types.Time.TimerEventConfig = {
       delay: ms,
       callback: () => {
-        this.turnSwitcher.emit(TurnEvents.SWITCH);
+        this.turnEvents.emit(TurnEvents.SWITCH);
       },
       callbackScope: this,
     };
