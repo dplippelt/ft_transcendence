@@ -6,15 +6,14 @@
 	@include window;
 	@include menuWindow;
 
-	max-height: min(800px, 60vh);
-	max-width: min(500px, 60%);
+	max-width: max(500px, 60%);
 	row-gap: 0.3rem;
 	padding: 1rem;
 	font-size: 0.7rem;
 	margin-left: 0rem;
 	grid-template-rows: auto 1fr auto ;
 
-	@media (max-width: 480px)
+	@media (max-width: 720px)
 	{
 		margin: 0 auto;
 		max-width: 100%;

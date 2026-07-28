@@ -1,9 +1,8 @@
 import { FriendButton, InviteToPlayButton, RemoveFriendButton } from "../../components/Buttons";
-import { PopupType } from "../../components/Chat/enums";
+import { PopupType, MobileView } from "../../utils/utils";
 import TheFriendsList from "../../components/FriendsList";
 import { useFriends } from "../../contexts/FriendsContext";
 import useIsMobile from "../../hooks/useIsMobile";
-import { MobileView } from "./enums";
 import styles from "./FriendsWindow.module.scss";
 
 interface IFriendsWindow

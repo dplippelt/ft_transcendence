@@ -7,7 +7,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from google.auth import exceptions as google_auth_exceptions
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
-from app.core.exceptions import bad_request, unauthorized, forbidden, service_unavailable
+from app.core.exceptions import ErrorCode, bad_request, unauthorized, forbidden, service_unavailable
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -90,7 +90,7 @@ def ensure_username_is_available(db: Session, username: str | None) -> None:
     )
 
     if existing_user:
-        raise bad_request("Username already exists")
+        raise bad_request("Username already exists", code=ErrorCode.USERNAME_ALREADY_EXISTS)
 
 
 def authenticate_password_user(db: Session, email: str, password: str) -> User:
@@ -107,12 +107,12 @@ def authenticate_password_user(db: Session, email: str, password: str) -> User:
     is_valid_password = verify_password(password, password_hash)
 
     if not auth_account or not is_valid_password:
-        raise unauthorized("Invalid email or password",)
+        raise unauthorized("Invalid email or password", code=ErrorCode.INVALID_CREDENTIALS)
 
     user = auth_account.user
 
     if not user or not user.is_active:
-        raise forbidden("User account is inactive")
+        raise forbidden("User account is inactive", code=ErrorCode.ACCOUNT_INACTIVE)
 
     return user
 
@@ -124,7 +124,7 @@ def register_user(user_data: UserRegister, db: DbSession):
     existing_auth_account = get_auth_account_by_email(db, email)
 
     if existing_auth_account:
-        raise bad_request("Email already exists")
+        raise bad_request("Email already exists", code=ErrorCode.EMAIL_ALREADY_EXISTS)
 
     ensure_username_is_available(db, user_data.username)
 
@@ -150,7 +150,7 @@ def register_user(user_data: UserRegister, db: DbSession):
         db.commit()
     except IntegrityError:
         db.rollback()
-        raise bad_request("User could not be registered")
+        raise bad_request("User could not be registered", code=ErrorCode.REGISTRATION_FAILED)
 
     db.refresh(user)
 
@@ -182,7 +182,7 @@ def login_for_access_token(form_data: OAuth2Form, db: DbSession):
 @router.post("/google", response_model=Token)
 def google_login(user_data: GoogleLogin, db: DbSession):
     if not settings.google_client_id:
-        raise service_unavailable("Google login is not configured")
+        raise service_unavailable("Google login is not configured", code=ErrorCode.GOOGLE_NOT_CONFIGURED)
 
     try:
         # Verifies the token signature, audience, expiry, and Google issuer.
@@ -192,7 +192,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
             settings.google_client_id,
         )
     except (ValueError, google_auth_exceptions.GoogleAuthError):
-        raise unauthorized("Invalid Google credentials")
+        raise unauthorized("Invalid Google credentials", code=ErrorCode.INVALID_GOOGLE_CREDENTIALS  )
 
     google_sub = google_user.get("sub")
     email = google_user.get("email")
@@ -201,13 +201,13 @@ def google_login(user_data: GoogleLogin, db: DbSession):
     avatar_url = google_user.get("picture")
 
     if not google_sub:
-        raise unauthorized("Google account has no subject identifier",)
+        raise unauthorized("Google account has no subject identifier", code=ErrorCode.GOOGLE_SUBJECT_MISSING)
 
     if not email:
-        raise unauthorized("Google account has no email",)
+        raise unauthorized("Google account has no email", code=ErrorCode.GOOGLE_EMAIL_MISSING)
 
     if not email_verified:
-        raise unauthorized("Google email is not verified",)
+        raise unauthorized("Google email is not verified", code=ErrorCode.GOOGLE_EMAIL_NOT_VERIFIED)
 
     email = normalize_email(email)
 
@@ -217,7 +217,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
         user = google_auth_account.user
 
         if not user or not user.is_active:
-            raise forbidden("User account is inactive",)
+            raise forbidden("User account is inactive", code=ErrorCode.ACCOUNT_INACTIVE)
 
         return create_token_for_user(user)
 
@@ -227,7 +227,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
         user = password_auth_account.user
 
         if not user or not user.is_active:
-            raise forbidden("User account is inactive",)
+            raise forbidden("User account is inactive", code=ErrorCode.ACCOUNT_INACTIVE)
 
         google_auth_account = AuthAccount(
             user=user,
@@ -260,7 +260,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
             ):
                 return create_token_for_user(existing_google_auth_account.user)
 
-            raise bad_request("Google account could not be linked",)
+            raise bad_request("Google account could not be linked", code=ErrorCode.GOOGLE_LINK_FAILED)
 
         db.refresh(user)
 
@@ -299,7 +299,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
         ):
             return create_token_for_user(existing_google_auth_account.user)
 
-        raise bad_request("Google account could not be registered",)
+        raise bad_request("Google account could not be registered", code=ErrorCode.GOOGLE_REGISTRATION_FAILED)
 
     db.refresh(user)
 

@@ -2,13 +2,22 @@ import Phaser from "phaser";
 import { EventBus } from "../EventBus";
 import CardManager from "../gameobjects/cards/CardManager";
 import CombatManager from "../gameobjects/CombatManager";
+import { type CombatEventData } from "../events/CombatEventData";
+import { GameManagerScene, GameEvents } from "./GameManagerScene";
 
 export default class CombatScene extends Phaser.Scene {
   private cardManager!: CardManager;
   private combatManager!: CombatManager;
+  private eventData: CombatEventData | undefined;
 
-  constructor() {
-    super("combat");
+  constructor(handle: string) {
+    super(handle);
+  }
+
+  init(eventData: CombatEventData) {
+    eventData.player.inCombat = true;
+    eventData.enemy.inCombat = true;
+    this.eventData = eventData;
   }
 
   preload() {
@@ -18,6 +27,13 @@ export default class CombatScene extends Phaser.Scene {
     // temporarily set the background color for ths combat scene, needs to be replace by an image
     const backgroundColor = new Phaser.Display.Color(200, 200, 200);
     this.cameras.main.setBackgroundColor(backgroundColor.color);
+
+    this.input.on("pointerdown", () => {
+      if (this.input.activePointer.rightButtonDown()) {
+        console.assert(this.eventData !== undefined, "this.eventData is undefined");
+        this.endCombat(this.eventData!);
+      }
+    });
   }
 
   create() {
@@ -31,5 +47,16 @@ export default class CombatScene extends Phaser.Scene {
 
   update() {
     this.cardManager.alignAllCards();
+  }
+
+  endCombat(eventData: CombatEventData) {
+    eventData.player.inCombat = false;
+    eventData.player.isAlive = true;
+    eventData.enemy.inCombat = false;
+    eventData.enemy.isAlive = false;
+    eventData.sceneInvoker = this;
+
+    GameManagerScene.EventsCenter.emit(GameEvents.CombatOver, eventData);
+    this.eventData = undefined;
   }
 }

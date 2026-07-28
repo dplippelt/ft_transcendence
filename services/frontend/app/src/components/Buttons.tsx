@@ -1,11 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
-import { EditWindowType } from "../pages/Profile/enums";
-import { ChevronLeft, Dot, MessageCircle, MessageCircleWarning, SendHorizontal, Swords, UserMinus } from "lucide-react";
-import Avatar, { AvatarSize } from "./Avatar";
-import { MobilePosition } from "../utils/utils";
+import { PopupType, AvatarSize, MobilePosition, RoutePath, SortBy } from "../utils/utils";
+import { ArrowDown01, ArrowDown10, ArrowDownAZ, ArrowDownZA, ChevronLeft, Dot, MessageCircle, MessageCircleWarning, RefreshCcw, SendHorizontal, Swords, UserMinus } from "lucide-react";
+import Avatar from "./Avatar";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
+import { useLobbies } from "../contexts/LobbiesContext";
 
 interface IMenuButton
 {
@@ -17,7 +17,8 @@ interface IMossButton
 {
 	label: string;
 	onClick: () => void;
-	extraStyling?: string,
+	extraStyling?: string;
+	disabled?: boolean;
 	mobilePosition?: string;
 }
 
@@ -25,6 +26,7 @@ interface IBottomButton
 {
 	label: string;
 	onClick: () => void;
+	disabled?: boolean;
 	mobilePosition?: string;
 }
 
@@ -35,15 +37,15 @@ interface IBackButton
 
 interface IEditButton
 {
-	editType: EditWindowType;
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>;
+	popupType: PopupType;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 interface ITextButton
 {
 	label: string;
 	onClick: () => void;
-	extraStyling?: string,
+	extraStyling?: string;
 }
 
 interface ITabButton
@@ -83,19 +85,37 @@ interface ISideBarBackButton
 	onClick: () => void;
 }
 
+interface IJoinButton
+{
+	lobbyID: string;
+}
+
+interface IColumnButton
+{
+	label: string;
+	onClick: () => void;
+	sortBy?: SortBy;
+	extraStyling?: string;
+}
+
+interface IRefreshButton
+{
+	onClick: () => void;
+}
+
 export function MenuButton( { label, onClick } : IMenuButton )
 {
 	return <button className={styles.menuButton} type="button" onClick={onClick}>{label}</button>
 }
 
-export function MossButton( { label, onClick, extraStyling="", mobilePosition="" } : IMossButton )
+export function MossButton( { label, onClick, extraStyling="", disabled=false, mobilePosition="" } : IMossButton )
 {
-	return <button className={`${styles.mossButton} type="button" ${extraStyling} ${mobilePosition}`} onClick={onClick}>{label}</button>;
+	return <button className={`${styles.mossButton} ${extraStyling} ${mobilePosition}`} type="button" disabled={disabled} onClick={onClick}>{label}</button>;
 }
 
-export function BottomButton( { label, onClick, mobilePosition="" } : IBottomButton )
+export function BottomButton( { label, onClick, disabled=false, mobilePosition="" } : IBottomButton )
 {
-	return <button className={`${styles.bottomButton} type="button" ${mobilePosition}`} onClick={onClick}>{label}</button>;
+	return <button className={`${styles.bottomButton} ${mobilePosition}`} type="button" disabled={disabled} onClick={onClick}>{label}</button>;
 }
 
 export function BackButton( { path } : IBackButton )
@@ -105,9 +125,9 @@ export function BackButton( { path } : IBackButton )
 	return <BottomButton label="Back" onClick={ () => navigate(path) } mobilePosition={MobilePosition.bottom} />;
 }
 
-export function EditButton( { editType, setEditWindowType } : IEditButton )
+export function EditButton( { popupType, setPopupType } : IEditButton )
 {
-	return <MossButton label="Edit" onClick={ () => setEditWindowType(editType) } extraStyling={styles.editButton}/>;
+	return <MossButton label="Edit" onClick={ () => setPopupType(popupType) } extraStyling={styles.editButton}/>;
 }
 
 export function TextButton( { label, onClick, extraStyling="" } : ITextButton )
@@ -193,6 +213,84 @@ export function SideBarBackButton( { onClick } : ISideBarBackButton )
 	return (
 		<button className={styles.actionButton} type="button" aria-label="Return to side bar friends list" title="Back" onClick={onClick}>
 			<ChevronLeft />
+		</button>
+	);
+}
+
+export function JoinButton( { lobbyID } : IJoinButton )
+{
+	const navigate = useNavigate();
+	const { lobbies } = useLobbies();
+	const lobby = lobbies[lobbyID];
+	const disabled: boolean = !lobby || lobby.guestID !== null ? true : false;
+
+	function onClick()
+	{
+		navigate(RoutePath.mpLobby + `/${lobbyID}`, { state: { from: RoutePath.mpBrowser } });
+	}
+
+	return <MossButton label="Join" onClick={onClick} extraStyling={styles.joinButton} disabled={disabled} />;
+}
+
+export default function ColumnButton( { label, onClick, sortBy, extraStyling="" } : IColumnButton )
+{
+	function SortIcon()
+	{
+		switch ( sortBy )
+		{
+			case SortBy.name:
+				return <ArrowDownAZ className={styles.sortIcon} />;
+			case SortBy.nameRev:
+				return <ArrowDownZA className={styles.sortIcon} />;
+			case SortBy.players:
+				return <ArrowDown01 className={styles.sortIcon} />;
+			case SortBy.playersRev:
+				return <ArrowDown10 className={styles.sortIcon} />;
+			default:
+				return null;
+		}
+	}
+
+	function getSortDescription() : string | null
+	{
+		switch ( sortBy )
+		{
+			case SortBy.name:
+				return "sorted name ascending";
+			case SortBy.nameRev:
+				return "sorted name descending";
+			case SortBy.players:
+				return "sorted player count ascending";
+			case SortBy.playersRev:
+				return "sorted player count descending";
+			case SortBy.noSort:
+				return "not sorted";
+			default:
+				return null;
+		}
+	}
+
+	const sortDescription = getSortDescription();
+	const ariaLabel = sortDescription ? `${label}, ${sortDescription}` : label;
+
+	return (
+		<button
+			className={`${styles.columnButton} ${extraStyling}`}
+			type="button"
+			onClick={onClick}
+			aria-label={ariaLabel}
+		>
+			<div>{label}</div>
+			{ SortIcon() }
+		</button>
+	);
+}
+
+export function RefreshButton( { onClick } : IRefreshButton )
+{
+	return (
+		<button className={styles.refreshButton} type="button" aria-label="Refresh lobbies list" title="Refresh" onClick={onClick} >
+			<RefreshCcw />
 		</button>
 	);
 }

@@ -1,7 +1,5 @@
 import { Scene } from "phaser";
 import { EventBus } from "../EventBus";
-import Player from "../gameobjects/Player";
-import { playerOne } from "../components/KeyboardComponent";
 import { Dungeon } from "../gameobjects/Dungeon";
 import { FloorType, Direction, type DungeonConfig, WallType } from "../map/procedural";
 
@@ -56,6 +54,7 @@ const dungeonConfig: DungeonConfig = {
   roomCount: { min: 8, max: 32 },
 };
 
+// TODO: GameSession structure (local / network) -> thruth sayer; player hp, position etc, syncs up with the game itself
 export default class GameScene extends Scene {
   constructor() {
     super("game");
@@ -66,21 +65,16 @@ export default class GameScene extends Scene {
   }
 
   create() {
-    const player = new Player(this, 40, 40, playerOne);
-    this.add.existing(player);
-    this.physics.add.existing(player);
-
     const map = new Dungeon(this, dungeonConfig, 1.5);
-    map.insertSprite(player, true);
 
-    // Temporarily added to launch the combat scene by clicking the screen
+    // Temporarily mouse event for map generation
     this.input.on("pointerdown", () => {
-      // this.scene.sleep().launch('combat');
-      map.generate(dungeonConfig);
-      map.insertSprite(player, true);
+      this.cameras.main.stopFollow();
+      map.build(dungeonConfig);
+      this.cameras.main.startFollow(map.players[0]);
     });
+    this.cameras.main.startFollow(map.players[0]);
 
-    this.cameras.main.startFollow(player);
     EventBus.emit("current-scene-ready", this);
   }
 }

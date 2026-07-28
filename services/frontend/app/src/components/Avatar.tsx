@@ -1,13 +1,6 @@
 import type { JSX } from "react";
 import styles from "./Avatar.module.scss";
-
-export enum AvatarSize
-{
-	smaller,
-	small,
-	medium,
-	large,
-}
+import { AvatarSize } from "../utils/utils";
 
 const sizes: Record<AvatarSize, string> =
 {
@@ -31,7 +24,7 @@ export default function Avatar( { src, alt, size, onClick, extraStyling="" } : I
 	const img: JSX.Element = <img className={`${styles.avatar} ${sizes[size]} ${extraStyling}`} src={src} alt={alt} />;
 
 	if ( onClick )
-		return <button className={styles.avatarButton} onClick={onClick}>{img}</button>
+		return <button className={styles.avatarButton} type="button" onClick={onClick}>{img}</button>
 
 	return img;
 }

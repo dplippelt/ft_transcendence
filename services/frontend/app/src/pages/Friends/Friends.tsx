@@ -9,13 +9,11 @@ import ChatWindow from "./ChatWindow";
 import { useEffect, useState } from "react";
 import useIsMobile from "../../hooks/useIsMobile";
 import React from "react";
-import { MobilePosition, RoutePath } from "../../utils/utils";
+import { MobilePosition, MobileView, PopupType, RoutePath } from "../../utils/utils";
 import Popup from "../../components/Popup";
 import AddFriendPopup from "./AddFriendPopup";
-import { MobileView } from "./enums";
 import RemoveFriendPopup from "./RemoveFriendPopup";
 import InviteFriendPopup from "./InviteFriendPopup";
-import { PopupType } from "../../components/Chat/enums";
 import { useLocation } from "react-router-dom";
 import { useFriends } from "../../contexts/FriendsContext";
 
