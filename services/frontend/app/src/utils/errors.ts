@@ -32,6 +32,8 @@ export enum ErrorType
     usernameCannotBeTheSame,
     lobbyDoesNotExist,
     lobbyFull,
+    invalidEmail,
+    passwordTooShort,
     unknown,
 }
 
@@ -94,6 +96,10 @@ export function errorMsg( error: ErrorType ): string
             return "Google login failed.";
         case ErrorType.googleLoginUnavailable:
             return "Google login is currently unavailable.";
+        case ErrorType.invalidEmail:
+            return "Please enter a valid email address!";
+        case ErrorType.passwordTooShort:
+            return "Password must be at least 8 characters long!";
 		default:
 			return "";
 	}
@@ -125,7 +131,26 @@ export function mapAuthApiError(error: unknown): ErrorType
         case "GOOGLE_LINK_FAILED":
         case "GOOGLE_REGISTRATION_FAILED":
             return ErrorType.googleLoginFailed;
-        default:
-            return ErrorType.unknown;
     }
+    if (error.status === 422 && error.validationErrors)
+    {
+        for (const validationError of error.validationErrors)
+        {
+            const field =
+                validationError.loc?.[validationError.loc.length - 1];
+
+            switch (field)
+            {
+                case "email":
+                    return ErrorType.invalidEmail;
+
+                case "password":
+                    return ErrorType.passwordTooShort;
+
+                case "username":
+                    return ErrorType.badUsernameLength;
+            }
+        }
+    }
+    return ErrorType.unknown;
 }

@@ -4,6 +4,7 @@ const API_BASE_URL =
 // This represnts one FastAPI validation error, we only care about the message, but there are type and loc.
 interface ValidationError
 {
+	loc?: (string | number)[];
 	msg?: string;
 }
 
@@ -24,17 +25,24 @@ export class ApiError extends Error
 {
     status: number;
     code?: string;
+    validationErrors?: ValidationError[];
 
-    constructor(status: number, message: string, code?: string)
+    constructor(
+        status: number,
+        message: string,
+        code?: string,
+        validationErrors?: ValidationError[],
+    )
     {
         super(message);
         this.name = "ApiError";
         this.status = status;
         this.code = code;
+        this.validationErrors = validationErrors;
     }
 }
 
-function getApiError(error: BackendError | undefined,): { message: string; code?: string }
+function getApiError(error: BackendError | undefined,): { message: string; code?: string; validationErrors?: ValidationError[]; }
 {
     if (typeof error?.detail === "string")
     {
@@ -55,7 +63,7 @@ function getApiError(error: BackendError | undefined,): { message: string; code?
             .map(item => item.msg)
             .filter((message): message is string => Boolean(message));
 
-        return { message: messages.join(", ") || "Request failed",};
+        return { message: messages.join(", ") || "Invalid input", validationErrors: error.detail };
     }
 
     return { message: "Request failed", };
@@ -98,6 +106,7 @@ export async function apiRequest<T>(
             response.status,
             apiError.message,
             apiError.code,
+            apiError.validationErrors,
         );
     }
 
