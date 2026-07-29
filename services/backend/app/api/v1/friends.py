@@ -1,5 +1,6 @@
 from fastapi import APIRouter, status
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 
 from app.api.dependencies import CurrentUser, DbSession
 from app.core.exceptions import not_found
