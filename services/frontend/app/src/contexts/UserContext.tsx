@@ -1,13 +1,13 @@
-import { createContext, useContext, /* useEffect, */ useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
+import { useAuth } from "./AuthContext";
 import { useFriends } from "./FriendsContext";
 import { useChatHistory } from "./ChatHistoryContext";
 
 interface IUserContext
 {
 	user: IUser;
-	setUserID: ( userID: string ) => void;
 	updateUsername: ( username: string ) => void;
 	resetUser: () => void;
 	updateAvatar: ( newAvatar: string ) => void;
@@ -33,54 +33,59 @@ export const defaultUser: IUser =
 
 export default function UserProvider( { children } : {children: ReactNode} )
 {
+	const { auth } = useAuth();
 	const { resetFriends } = useFriends();
 	const { updateUsername: updateUsernameInChatHistory, resetChatHistory } = useChatHistory();
-	const [user, setUser] = useState<IUser>(defaultUser);
 
-	function setUserID( newUserID: string )
+	const authUser: IUser = auth.user
+		? {
+			userID: String(auth.user.id),
+			username: auth.user.username ?? auth.user.display_name ?? "Guest",
+			avatar: auth.user.avatar_url ?? guestAvatar,
+		}
+		: defaultUser;
+
+	// Local-only overlay on top of the real logged-in user, for edits that
+	// aren't persisted to the backend yet (see updateUsername/updateAvatar
+	// below). Dropped whenever the authenticated user changes so a new
+	// login doesn't inherit the previous account's unsaved edits.
+	const [overrides, setOverrides] = useState<Partial<IUser>>({});
+
+	useEffect(() =>
 	{
-		setUser( prev => ({ ...prev, userID: newUserID }));
-	}
+		setOverrides({});
+	}, [authUser.userID]);
+
+	const user: IUser = { ...authUser, ...overrides };
 
 	function updateUsername( newUsername: string )
 	{
 		const oldUsername = user.username;
 		updateUsernameInChatHistory(oldUsername, newUsername);
-		setUser(prev => ({ ...prev, username: newUsername }));
+		// TODO: persist via PUT /users/{id} once profile editing is wired
+		// up (FT-49) -- local-only for now.
+		setOverrides(prev => ({ ...prev, username: newUsername }));
 	}
 
 	function resetUser()
 	{
-		setUser(defaultUser);
+		setOverrides({});
 		resetFriends();
 		resetChatHistory();
 	}
 
 	function updateAvatar( newAvatar: string )
 	{
-		setUser(prev => ({ ...prev, avatar: newAvatar }));
+		// TODO: persist via PUT /users/{id} once profile editing is wired
+		// up (FT-49) -- local-only for now.
+		setOverrides(prev => ({ ...prev, avatar: newAvatar }));
 	}
-
-	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)
-	// at the moment when you hit F5 everything is rerendered and User info will be set to default again.
-	// turn it into a custom hook because it also needs to be called in the login / signup button handler after a succesful login/sign-up
-
-	// useEffect(() =>
-	// {
-	// 	async function loadUser()
-	// 	{
-	// 		const sessionToken = localStorage.getItem("sessionToken");
-	// 		if (await isValidToken(sessionToken))
-	// 			setUser(await fetchDbUser(sessionToken));
-	// 	}
-	// 	loadUser();
-	// }, []);
 
 	return (
 		<UserContext.Provider
 			value=
 			{{
-				user, setUserID, updateUsername, resetUser, updateAvatar,
+				user, updateUsername, resetUser, updateAvatar,
 			}}>
 			{children}
 		</UserContext.Provider>
