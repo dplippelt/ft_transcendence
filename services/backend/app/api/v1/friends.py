@@ -3,7 +3,7 @@ from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 
 from app.api.dependencies import CurrentUser, DbSession
-from app.core.exceptions import not_found
+from app.core.exceptions import ErrorCode, not_found
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
 from app.models.user import User
@@ -106,7 +106,7 @@ def create_friend_request(request_data: FriendRequestCreate, current_user: Curre
     recipient = get_active_user_by_username(db, request_data.username)
 
     if recipient is None:
-        raise not_found("User not found.",)
+        raise not_found("User not found.", code=ErrorCode.USER_NOT_FOUND)
 
     return send_friend_request(
         db=db,
