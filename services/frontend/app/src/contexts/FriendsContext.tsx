@@ -1,8 +1,20 @@
-import { createContext, useContext, /* useEffect, */ useState } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
-import testAvatar from "../assets/mesca_avatar_test.png";
+import { useAuth } from "./AuthContext";
 import { useChatHistory } from "./ChatHistoryContext";
+import
+{
+	getFriends,
+	getIncomingFriendRequests,
+	getOutgoingFriendRequests,
+	sendFriendRequest,
+	acceptFriendRequest,
+	rejectFriendRequest,
+	cancelFriendRequest,
+	removeFriend as removeFriendRequest,
+} from "../api/friendsApi";
+import type { PublicUser } from "../api/friendsApi";
 
 export interface IFriendData
 {
@@ -10,85 +22,125 @@ export interface IFriendData
 	avatar: string;
 }
 
+export interface IFriendRequestData
+{
+	requestId: number;
+	userID: string;
+	username: string;
+	avatar: string;
+}
+
 type userID = string;
 type Friends = Record<userID, IFriendData>;
 
-// start temporary default friends list for testing
-export const defaultFriends: Friends =
+function toFriendData( user: PublicUser ): IFriendData
 {
-	"Mesca_ID": {username: "Mesca", avatar: testAvatar},
-	"Valr_ID": {username: "Valr", avatar: guestAvatar},
-	"Lemon_ID": {username: "Lemon", avatar: testAvatar},
-	"Crawly_ID": {username: "Crawly", avatar: guestAvatar},
-	"Takato_ID": {username: "Takato", avatar: testAvatar},
-	"Seungah_ID": {username: "Seungah", avatar: guestAvatar},
-	"Bell_ID": {username: "Bell", avatar: testAvatar},
-	"José_ID": {username: "José", avatar: guestAvatar},
-	"Friend_1_ID": {username: "Friend 1", avatar: testAvatar},
-	"Friend_2_ID": {username: "Friend 2", avatar: guestAvatar},
-	"Friend_3_ID": {username: "Friend 3", avatar: testAvatar},
-	"Friend_4_ID": {username: "Friend 4", avatar: guestAvatar},
-	"Friend_5_ID": {username: "Friend 5", avatar: testAvatar},
-	"Friend_6_ID": {username: "Friend 6", avatar: guestAvatar},
-	"Friend_7_ID": {username: "Friend 7", avatar: testAvatar},
-	"Friend_8_ID": {username: "Friend 8", avatar: guestAvatar},
-	"Friend_9_ID": {username: "Friend 9", avatar: testAvatar},
+	return {
+		username: user.username ?? user.display_name ?? "Unknown",
+		avatar: user.avatar_url ?? guestAvatar,
+	};
 }
-// end temporary default friends list for testing
+
+function toFriendRequestData( requestId: number, user: PublicUser ): IFriendRequestData
+{
+	return {
+		requestId,
+		userID: String(user.id),
+		...toFriendData(user),
+	};
+}
 
 interface IFriendsContext
 {
 	friends: Friends;
+	incomingRequests: IFriendRequestData[];
+	outgoingRequests: IFriendRequestData[];
 	selectedFriendID: string | undefined;
 	activeFriendID: string | undefined;
 	setSelectedFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
 	setActiveFriendID: React.Dispatch<React.SetStateAction<string | undefined>>;
 	resetFriends: () => void;
-	addFriend: ( username: string ) => void;
-	removeFriend: ( friendID: string ) => void;
+	refreshFriends: () => Promise<void>;
+	addFriend: ( username: string ) => Promise<void>;
+	removeFriend: ( friendID: string ) => Promise<void>;
+	acceptRequest: ( requestId: number ) => Promise<void>;
+	rejectRequest: ( requestId: number ) => Promise<void>;
+	cancelRequest: ( requestId: number ) => Promise<void>;
 }
 
 const FriendsContext = createContext<IFriendsContext | null>(null);
 
 export default function FriendsProvider( { children } : {children: ReactNode} )
 {
+	const { auth } = useAuth();
 	const { addChatHistoryEntry, removeChatHistoryEntry } = useChatHistory();
-	const [friends, setFriends] = useState<Friends>(defaultFriends);
+	const [friends, setFriends] = useState<Friends>({});
+	const [incomingRequests, setIncomingRequests] = useState<IFriendRequestData[]>([]);
+	const [outgoingRequests, setOutgoingRequests] = useState<IFriendRequestData[]>([]);
 	const [selectedFriendID, setSelectedFriendID] = useState<string | undefined>(undefined);
 	const [activeFriendID, setActiveFriendID] = useState<string | undefined>(undefined);
+
+	// Fetches friends + pending requests fresh from the backend. Called on
+	// login and after every mutation (send/accept/reject/cancel/remove)
+	// rather than optimistically patching local state, since a request can
+	// be accepted/removed from the other side at any time too.
+	const refreshFriends = useCallback(async () =>
+	{
+		if ( !auth.accessToken )
+			return;
+
+		const [friendList, incoming, outgoing] = await Promise.all(
+		[
+			getFriends(auth.accessToken),
+			getIncomingFriendRequests(auth.accessToken),
+			getOutgoingFriendRequests(auth.accessToken),
+		]);
+
+		const newFriends: Friends = Object.fromEntries(
+			friendList.friends.map(entry => [String(entry.friend.id), toFriendData(entry.friend)])
+		);
+
+		setFriends(newFriends);
+		setIncomingRequests(incoming.map(request => toFriendRequestData(request.id, request.requester)));
+		setOutgoingRequests(outgoing.map(request => toFriendRequestData(request.id, request.recipient)));
+
+		// addChatHistoryEntry no-ops if an entry already exists, so this is
+		// safe to call on every refresh regardless of who accepted the request.
+		for ( const friendID of Object.keys(newFriends) )
+			addChatHistoryEntry(friendID);
+	}, [auth.accessToken, addChatHistoryEntry]);
+
+	useEffect(() =>
+	{
+		if ( auth.status === "authenticated" )
+			void refreshFriends();
+	}, [auth.status, refreshFriends]);
 
 	function resetFriends()
 	{
 		setSelectedFriendID(undefined);
 		setActiveFriendID(undefined);
-		setFriends(defaultFriends);
+		setFriends({});
+		setIncomingRequests([]);
+		setOutgoingRequests([]);
 	}
 
-	function addFriend( username: string )
+	async function addFriend( username: string )
 	{
-		// Temp mock random avatar image
-		// TODO: fetch from DB later
-		const avatar = username.length % 2 ? testAvatar : guestAvatar;
-		const friendID = username + "_ID"; // TODO: fetch friend's userID from DB later
+		if ( !auth.accessToken )
+			return;
 
-		setFriends(prev => {
-			if ( prev[friendID] !== undefined )
-				return prev;
-
-			return {
-				...prev,
-				[friendID]: {
-					username: username,
-					avatar: avatar,
-				}
-			}
-		});
-
-		addChatHistoryEntry(friendID);
+		await sendFriendRequest(username, auth.accessToken);
+		await refreshFriends();
 	}
 
-	function removeFriend( friendID: string )
+	async function removeFriend( friendID: string )
 	{
+		if ( !auth.accessToken )
+			return;
+
+		await removeFriendRequest(Number(friendID), auth.accessToken);
+
 		setFriends(prev => {
 			if ( prev[friendID] === undefined )
 				return prev;
@@ -96,7 +148,7 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 			const newFriends = { ...prev };
 			delete newFriends[friendID];
 			return newFriends;
-		})
+		});
 
 		if ( friendID === activeFriendID )
 			setActiveFriendID(undefined);
@@ -106,33 +158,51 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 		removeChatHistoryEntry(friendID);
 	}
 
-	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)
-	// at the moment when you hit F5 everything is rerendered and Friends info will be set to default again.
-	// turn it into a custom hook because it also needs to be called in the login / signup button handler after a succesful login/sign-up
+	async function acceptRequest( requestId: number )
+	{
+		if ( !auth.accessToken )
+			return;
 
-	// useEffect(() =>
-	// {
-	// 	async function loadFriends()
-	// 	{
-	// 		const sessionToken = localStorage.getItem("sessionToken");
-	// 		if (await isValidToken(sessionToken))
-	// 			setFriends(await fetchDbUser(sessionToken));
-	// 	}
-	// 	loadFriends();
-	// }, []);
+		await acceptFriendRequest(requestId, auth.accessToken);
+		await refreshFriends();
+	}
+
+	async function rejectRequest( requestId: number )
+	{
+		if ( !auth.accessToken )
+			return;
+
+		await rejectFriendRequest(requestId, auth.accessToken);
+		await refreshFriends();
+	}
+
+	async function cancelRequest( requestId: number )
+	{
+		if ( !auth.accessToken )
+			return;
+
+		await cancelFriendRequest(requestId, auth.accessToken);
+		await refreshFriends();
+	}
 
 	return (
 		<FriendsContext.Provider
 			value=
 			{{
 				friends,
+				incomingRequests,
+				outgoingRequests,
 				selectedFriendID,
 				activeFriendID,
 				setSelectedFriendID,
 				setActiveFriendID,
 				resetFriends,
+				refreshFriends,
 				addFriend,
 				removeFriend,
+				acceptRequest,
+				rejectRequest,
+				cancelRequest,
 			}}>
 			{children}
 		</FriendsContext.Provider>

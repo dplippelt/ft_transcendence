@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import { useUser } from "../../contexts/UserContext";
 import ErrorText from "../../components/ErrorText";
-import { ErrorType, isErrorType } from "../../utils/errors";
+import { ErrorType, isErrorType, mapFriendsApiError } from "../../utils/errors";
 import { TextInput } from "../../components/TextInput";
 import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
@@ -18,28 +17,36 @@ export default function AddFriendPopup( { setPopupType } : IAddFriendPopup )
 {
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [username, setUsername] = useState<string>("");
-	const { user } = useUser();
-	const { friends, addFriend } = useFriends();
+	const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+	const { addFriend } = useFriends();
 
-	function usernameCheck()
+	async function usernameCheck()
 	{
+		if ( isSubmitting )
+			return;
+
 		const result: string | ErrorType = getValidUsername(username);
 		if ( isErrorType(result) )
 			return setError(result);
 
 		const validUsername = result;
 
-		if ( validUsername.toLowerCase() === user.username.toLowerCase() )
-			return setError(ErrorType.cannotAddSelf);
+		setError(ErrorType.none);
+		setIsSubmitting(true);
 
-		// Mock username checks
-		if ( validUsername.toLowerCase().length === 1 )
-			return setError(ErrorType.userDoesNotExist);
-		if ( Object.values(friends).some(friend => friend.username.toLowerCase() === validUsername.toLowerCase()) )
-			return setError(ErrorType.userAlreadyFriend);
-
-		addFriend(validUsername)
-		setPopupType(PopupType.none);
+		try
+		{
+			await addFriend(validUsername);
+			setPopupType(PopupType.none);
+		}
+		catch (err)
+		{
+			setError(mapFriendsApiError(err));
+		}
+		finally
+		{
+			setIsSubmitting(false);
+		}
 	}
 
 	return (
@@ -47,7 +54,7 @@ export default function AddFriendPopup( { setPopupType } : IAddFriendPopup )
 			{ error !== ErrorType.none && <ErrorText error={error}/> }
 			<TextInput label="Add new friend:" placeholder="Friend's username" setter={setUsername} id="newUsername" />
 			<PopupButtons>
-				<MossButton label="Add" onClick={ usernameCheck } />
+				<MossButton label={isSubmitting ? "Adding..." : "Add"} onClick={ usernameCheck } />
 				<MossButton label="Cancel" onClick={ () => setPopupType(PopupType.none) } />
 			</PopupButtons>
 		</>

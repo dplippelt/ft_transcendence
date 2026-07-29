@@ -25,6 +25,9 @@ export enum ErrorType
     userDoesNotExist,
     userAlreadyFriend,
     noFriendSelected,
+    friendRequestAlreadySent,
+    friendRequestNotFound,
+    friendshipNotFound,
     lobbyNameCannotBeEmpty,
     badLobbyNameLength,
     lobbyNameContainsInvalChars,
@@ -70,6 +73,12 @@ export function errorMsg( error: ErrorType ): string
 			return "User already in friends list!";
 		case ErrorType.noFriendSelected:
 			return "Select a friend to invite";
+		case ErrorType.friendRequestAlreadySent:
+			return "Friend request already sent!";
+		case ErrorType.friendRequestNotFound:
+			return "This friend request no longer exists.";
+		case ErrorType.friendshipNotFound:
+			return "You are not friends with this user.";
 		case ErrorType.lobbyNameCannotBeEmpty:
 			return "Lobby name cannot be empty!";
 		case ErrorType.badLobbyNameLength:
@@ -151,6 +160,29 @@ export function mapAuthApiError(error: unknown): ErrorType
                     return ErrorType.badUsernameLength;
             }
         }
+    }
+    return ErrorType.unknown;
+}
+
+export function mapFriendsApiError(error: unknown): ErrorType
+{
+    if (!(error instanceof ApiError))
+        return ErrorType.unknown;
+
+    switch (error.code)
+    {
+        case "USER_NOT_FOUND":
+            return ErrorType.userDoesNotExist;
+        case "CANNOT_ADD_SELF":
+            return ErrorType.cannotAddSelf;
+        case "ALREADY_FRIENDS":
+            return ErrorType.userAlreadyFriend;
+        case "FRIEND_REQUEST_ALREADY_SENT":
+            return ErrorType.friendRequestAlreadySent;
+        case "FRIEND_REQUEST_NOT_FOUND":
+            return ErrorType.friendRequestNotFound;
+        case "FRIENDSHIP_NOT_FOUND":
+            return ErrorType.friendshipNotFound;
     }
     return ErrorType.unknown;
 }
