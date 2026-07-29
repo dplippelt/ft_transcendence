@@ -4,6 +4,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.core.exceptions import bad_request, forbidden, not_found
 
+from app.db.utils import commit_or_bad_request
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
 from app.models.user import User
@@ -16,15 +17,6 @@ REJECTED = "rejected"
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
-
-
-def commit_or_bad_request(db: Session, detail: str) -> None:
-    # Used for writes that may hit DB uniqueness constraints.
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise bad_request(detail)
 
 
 def normalize_friend_pair(user_a_id: int, user_b_id: int,) -> tuple[int, int]:

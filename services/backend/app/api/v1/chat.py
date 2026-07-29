@@ -2,30 +2,21 @@ import logging
 
 import anyio.from_thread
 from fastapi import APIRouter, WebSocket, status
-from sqlalchemy.orm import Session
 
 from app.api.dependencies import CurrentUser, CurrentUserIdWS, DbSession
-from app.core.exceptions import bad_request, not_found
+from app.core.exceptions import not_found
 from app.core.websocket_manager import connection_manager
-from app.models.user import User
 from app.schemas.chat import ChatMessageCreate, ChatMessageResponse
 from app.services.chat_service import (
     get_conversation,
     mark_conversation_as_read,
     send_message,
 )
+from app.services.user_service import get_active_user_by_id
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-
-def get_user_by_id(db: Session, user_id: int) -> User | None:
-    return (
-        db.query(User)
-        .filter(User.id == user_id)
-        .first()
-    )
 
 
 def notify_receiver(receiver_id: int, message: object) -> None:
@@ -53,13 +44,10 @@ def get_messages(friend_id: int, current_user: CurrentUser, db: DbSession):
 
 @router.post("/{friend_id}/messages", response_model=ChatMessageResponse)
 def create_message(friend_id: int, message_data: ChatMessageCreate, current_user: CurrentUser, db: DbSession):
-    receiver = get_user_by_id(db, friend_id)
+    receiver = get_active_user_by_id(db, friend_id)
 
     if receiver is None:
         raise not_found("User not found.")
-
-    if not receiver.is_active:
-        raise bad_request("User account is inactive.")
 
     message = send_message(
         db=db,
