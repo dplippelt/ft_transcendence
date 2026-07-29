@@ -27,7 +27,7 @@ function GoogleAuthButton({ setError }: GoogleAuthButtonProps)
     return (
     <GoogleLogin
         theme="filled_black"
-        shape="rectangle"
+        shape="rectangular"
         text="continue_with"
         onSuccess={async (credentialResponse) => {
             if (!credentialResponse.credential)
