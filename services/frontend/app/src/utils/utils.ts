@@ -66,6 +66,7 @@ export enum RoutePath
 	friends = "/friends",
 	profile = "/profile",
 	leaderboard = "/leaderboard",
+	howToPlay = "/how-to-play",
 	settings = "/settings",
 	gameDev = "/game-dev",
 	game = "/game-dev", //TODO: change path to just "/game" or "/sp-game" later
@@ -76,6 +77,13 @@ export enum RouteParam
 	login = "?mode=login",
 	signup = "?mode=signup",
 	lobbyID = "/:lobbyID",
+}
+
+export enum GameEvent
+{
+	gameMenu = "game-menu",
+	gameVis = "game-visibility",
+	chatFocus = "chat-focused",
 }
 
 export const DRAFT_STORAGE_PREFIX = "draft:";

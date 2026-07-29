@@ -1,5 +1,8 @@
 import type React from "react";
 import styles from "./TextInput.module.scss";
+import { EventBus } from "../game/EventBus";
+import { GameEvent } from "../utils/utils";
+import { useEffect, useRef } from "react";
 
 interface ITextInput
 {
@@ -71,6 +74,24 @@ export function PasswordInput( { label, placeholder, isNewPassword, id, setter }
 
 export function ChatInput( { placeholder, onSend, msg, setMsg } : IChatInput )
 {
+	const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
+
+	/* This useEffect makes sure that clicking anywhere outside of a
+	 * Side Bar that contains a ChatInput also unfocuses the textarea
+	 * element. Without it, only clicking somewhere inside the Side Bar,
+	 * but outside the textarea element would unfocus it.*/
+	useEffect(() =>
+	{
+		function handlePointerDown( e: PointerEvent )
+		{
+			if ( textAreaRef.current && !textAreaRef.current.contains(e.target as Node) )
+				textAreaRef.current.blur();
+		}
+
+		document.addEventListener("pointerdown", handlePointerDown);
+		return () => document.removeEventListener("pointerdown", handlePointerDown);
+	}, [])
+
 	function handleChange( e: React.ChangeEvent<HTMLTextAreaElement> )
 	{
 		setMsg(e.target.value);
@@ -86,10 +107,13 @@ export function ChatInput( { placeholder, onSend, msg, setMsg } : IChatInput )
 	}
 
 	return <textarea
+				ref={textAreaRef}
 				className={styles.chatInput}
 				rows={2}
 				placeholder={placeholder}
 				value={msg}
 				onChange={handleChange}
-				onKeyDown={handleKeyDown} />;
+				onKeyDown={handleKeyDown}
+				onFocus={ () => EventBus.emit(GameEvent.chatFocus, true) }
+				onBlur={ () => EventBus.emit(GameEvent.chatFocus, false) } />;
 }

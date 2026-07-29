@@ -44,10 +44,11 @@ function Buttons()
 {
 	const navigate = useNavigate();
 	const location = useLocation();
+	const path = location.state?.from ?? RoutePath.mainMenu;
 
 	return (
 		<BottomButtons>
-			<BackButton path={RoutePath.mainMenu} />
+			<BackButton path={path} />
 			<BottomButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname } }) } />
 		</BottomButtons>
 	);
