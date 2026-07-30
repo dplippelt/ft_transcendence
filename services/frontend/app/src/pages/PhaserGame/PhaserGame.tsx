@@ -7,6 +7,8 @@ import { useLocation } from "react-router-dom";
 import { GameEvent, RoutePath } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import SideBar from "../../components/SideBar";
+import { OpenGameMenuButton } from "../../components/Buttons";
+import { useAuth } from "../../contexts/AuthContext";
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -55,17 +57,18 @@ function Game( { currentActiveScene, gameRef, isGameURL } : IGame )
  * in the background. */
 export default function PhaserGame( { currentActiveScene } : IPhaserGame )
 {
+  const auth = useAuth();
   const location = useLocation();
   const isGameURL = location.pathname === RoutePath.gameDev;
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
   const gameRef = useRef<Phaser.Game | null>(null!);
+  const loggedIn = !auth.auth.guest
 
   useEffect(() =>
   {
     EventBus.emit(GameEvent.gameVis, isGameURL);
 
-    function preserveGame() : boolean
-    {
+    function preserveGame() : boolean {
       if ( location.pathname === RoutePath.gameDev )
         return true;
       if ( location.pathname === RoutePath.friends )
@@ -81,19 +84,22 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       return false;
     }
 
-    if ( gameRef.current && !preserveGame() ) {
-      gameRef.current.destroy(true);
+    function cleanupGame() {
+      gameRef.current!.destroy(true);
       gameRef.current = null;
+      EventBus.removeListener(GameEvent.gameVis);
+      EventBus.removeListener(GameEvent.chatFocus);
+      setGameMenuVis(false);
     }
+
+    if ( gameRef.current && !preserveGame() )
+      cleanupGame();
 
     if ( !isGameURL )
       return;
 
     EventBus.addListener(GameEvent.gameMenu, () => setGameMenuVis(prev => !prev));
-
-    return () => {
-      EventBus.removeListener(GameEvent.gameMenu);
-    };
+    return () => { EventBus.removeListener(GameEvent.gameMenu); };
   }, [location.pathname, isGameURL])
 
   return (
@@ -101,7 +107,8 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       <Background />
       <Game currentActiveScene={currentActiveScene} gameRef={gameRef} isGameURL={isGameURL} />
       { gameMenuVis && <GameMenu />}
-      <SideBar />
+      { loggedIn && <SideBar /> }
+      <OpenGameMenuButton onClick={ () => setGameMenuVis(prev => !prev) } />
     </div>
   );
 }

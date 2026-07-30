@@ -1,11 +1,12 @@
 import Popup from "./Popup";
 import { MenuButtons } from "./ButtonContainers";
-import { MenuButton } from "./Buttons";
+import { GameMenuButton } from "./Buttons";
 import { GameEvent, RoutePath } from "../utils/utils";
 import { useAuth } from "../contexts/AuthContext";
 import { useLocation, useNavigate } from "react-router-dom";
 import useSessionCleanup from "../hooks/useSessionCleanup";
 import { EventBus } from "../game/EventBus";
+import styles from "./GameMenu.module.scss";
 
 function Buttons()
 {
@@ -13,6 +14,7 @@ function Buttons()
 	const location = useLocation();
 	const auth = useAuth();
 	const sessionCleanup = useSessionCleanup();
+	const loggedIn = !auth.auth.guest;
 
 	function logout()
 	{
@@ -22,15 +24,15 @@ function Buttons()
 	}
 
 	return (
-		<MenuButtons>
-			<MenuButton label="Continue" onClick={ () => EventBus.emit(GameEvent.gameMenu) } />
-			<MenuButton label="Friends" onClick={ () => navigate(RoutePath.friends, { state: { from: location.pathname } }) } />
-			<MenuButton label="Profile" onClick={ () => navigate(RoutePath.profile, { state: { from: location.pathname } }) } />
-			<MenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname } }) } />
-			<MenuButton label="How to play" onClick={ () => {} } />
-			<MenuButton label="Settings" onClick={ () => navigate(RoutePath.settings, { state: { from: location.pathname } }) } />
-			<MenuButton label="Back to main menu" onClick={ () => navigate(RoutePath.mainMenu, { replace: true }) } />
-			<MenuButton label="Logout" onClick={ logout } />
+		<MenuButtons extraStyling={styles.gameMenuButtons}>
+			<GameMenuButton label="Continue" onClick={ () => EventBus.emit(GameEvent.gameMenu) } />
+			{ loggedIn && <GameMenuButton label="Friends" onClick={ () => navigate(RoutePath.friends, { state: { from: location.pathname } }) } /> }
+			{ loggedIn && <GameMenuButton label="Profile" onClick={ () => navigate(RoutePath.profile, { state: { from: location.pathname } }) } /> }
+			{ loggedIn && <GameMenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname } }) } /> }
+			<GameMenuButton label="How to play" onClick={ () => {} } />
+			{ loggedIn && <GameMenuButton label="Settings" onClick={ () => navigate(RoutePath.settings, { state: { from: location.pathname } }) } /> }
+			{ loggedIn && <GameMenuButton label="Back to main menu" onClick={ () => navigate(RoutePath.mainMenu, { replace: true }) } /> }
+			<GameMenuButton label={ loggedIn ? "Logout" : "Quit" } onClick={ logout } />
 		</MenuButtons>
 	)
 }
@@ -38,7 +40,7 @@ function Buttons()
 export default function GameMenu()
 {
 	return (
-		<Popup>
+		<Popup extraStyling={styles.gameMenu}>
 			<Buttons />
 		</Popup>
 	)

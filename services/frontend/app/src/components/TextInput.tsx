@@ -76,10 +76,11 @@ export function ChatInput( { placeholder, onSend, msg, setMsg } : IChatInput )
 {
 	const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
-	/* This useEffect makes sure that clicking anywhere outside of a
-	 * Side Bar that contains a ChatInput also unfocuses the textarea
-	 * element. Without it, only clicking somewhere inside the Side Bar,
-	 * but outside the textarea element would unfocus it.*/
+	/* When on the game page chat input focus / unfocus toggles whether keyboard
+	 * input is enabled for the game. This useEffect makes sure that clicking anywhere
+	 * outside of a Side Bar that contains a ChatInput also unfocuses the textarea
+	 * element. Without it, only clicking somewhere inside the Side Bar, but outside
+	 * the textarea element would unfocus it. */
 	useEffect(() =>
 	{
 		function handlePointerDown( e: PointerEvent )

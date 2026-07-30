@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
 import { PopupType, AvatarSize, MobilePosition, RoutePath, SortBy } from "../utils/utils";
-import { ArrowDown01, ArrowDown10, ArrowDownAZ, ArrowDownZA, ChevronLeft, Dot, MessageCircle, MessageCircleWarning, RefreshCcw, SendHorizontal, Swords, UserMinus } from "lucide-react";
+import { ArrowDown01, ArrowDown10, ArrowDownAZ, ArrowDownZA, ChevronLeft, Dot, Menu, MessageCircle, MessageCircleWarning, RefreshCcw, SendHorizontal, Swords, UserMinus } from "lucide-react";
 import Avatar from "./Avatar";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
 import { useLobbies } from "../contexts/LobbiesContext";
@@ -105,9 +105,19 @@ interface IRefreshButton
 	onClick: () => void;
 }
 
+interface IOpenGameMenuButton
+{
+	onClick: () => void;
+}
+
 export function MenuButton( { label, onClick } : IMenuButton )
 {
 	return <button className={styles.menuButton} type="button" onClick={onClick}>{label}</button>
+}
+
+export function GameMenuButton( { label, onClick } : IMenuButton )
+{
+	return <button className={styles.gameMenuButton} type="button" onClick={onClick}>{label}</button>
 }
 
 export function MossButton( { label, onClick, extraStyling="", disabled=false, mobilePosition="", type="button" } : IMossButton )
@@ -312,4 +322,13 @@ export function PageNotFoundButton()
 					: () => navigate(RoutePath.landingPage, { replace: true })
 
 	return <TextButton label={label} onClick={onClick} extraStyling={styles.pageNotFoundButton} />;
+}
+
+export function OpenGameMenuButton( { onClick } : IOpenGameMenuButton )
+{
+	return (
+		<button className={styles.openGameMenuButton} type="button" aria-label="Open the game menu" title="Open game menu" onClick={onClick}>
+			<Menu size={30} />
+		</button>
+	);
 }

@@ -114,8 +114,7 @@ export default class GameScene extends Scene {
     EventBus.emit("current-scene-ready", this);
   }
 
-  private updateGlobalCapture()
-  {
+  private updateGlobalCapture() {
     const shouldCapture = this.isGameVisible && !this.isChatFocused;
 
     if ( this.input.keyboard )

@@ -9,6 +9,7 @@ export interface PlayerStatus {
   hitPoint: number;
   mana: number;
 }
+import { GameEvent } from "../../utils/utils";
 
 export default class CombatScene extends Phaser.Scene {
   private playerStatus!: PlayerStatus;
@@ -57,6 +58,12 @@ export default class CombatScene extends Phaser.Scene {
         console.assert(this.eventData !== undefined, "this.eventData is undefined");
         this.endGame(this.eventData!);
     }, this);
+
+    function handleEscape() { EventBus.emit(GameEvent.gameMenu) };
+    this.input.keyboard?.on("keydown-ESC", handleEscape);
+    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+      this.input.keyboard?.off("keydown-ESC", handleEscape);
+    });
 
     EventBus.emit("current-scene-ready", this);
   }
