@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from app.core.exceptions import bad_request, forbidden, not_found
+from app.core.exceptions import ErrorCode, bad_request, forbidden, not_found
 
 from app.db.utils import commit_or_bad_request
 from app.models.friend_request import FriendRequest
@@ -65,6 +65,7 @@ def handle_existing_friend_request(db: Session, existing_request: FriendRequest,
         commit_or_bad_request(
             db,
             "Friend request could not be sent.",
+            code=ErrorCode.FRIEND_REQUEST_ALREADY_EXISTS,
         )
 
         db.refresh(existing_request)
@@ -138,6 +139,7 @@ def accept_pending_friend_request(db: Session, friend_request: FriendRequest,) -
     commit_or_bad_request(
         db,
         "Friend request could not be accepted.",
+        code=ErrorCode.FRIEND_REQUEST_ALREADY_EXISTS,
     )
 
     db.refresh(friend_request)
