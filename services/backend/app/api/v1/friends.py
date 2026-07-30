@@ -1,9 +1,8 @@
 from fastapi import APIRouter, status
 from sqlalchemy import or_
-from sqlalchemy.orm import Session, joinedload
 
 from app.api.dependencies import CurrentUser, DbSession
-from app.core.exceptions import bad_request, not_found
+from app.core.exceptions import not_found
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
 from app.models.user import User
@@ -22,16 +21,9 @@ from app.services.friend_service import (
     remove_friend as remove_friend_service,
     send_friend_request,
 )
+from app.services.user_service import get_active_user_by_username
 
 router = APIRouter()
-
-
-def get_user_by_username(db: Session, username: str) -> User | None:
-    return (
-        db.query(User)
-        .filter(User.username == username)
-        .first()
-    )
 
 
 def build_friend_response(friendship: Friendship, friend: User) -> FriendResponse:
@@ -106,13 +98,14 @@ def get_friends(current_user: CurrentUser, db: DbSession):
 @router.post("/requests", response_model=FriendRequestResponse)
 def create_friend_request(request_data: FriendRequestCreate, current_user: CurrentUser, db: DbSession,):
 
-    recipient = get_user_by_username(db, request_data.username)
+    # Look up via the active-only helper (rather than checking is_active
+    # separately) so a deactivated recipient reads as "not found" here too,
+    # matching chat.py/users.py -- otherwise this endpoint would be the one
+    # place that leaks whether a username belongs to a deactivated account.
+    recipient = get_active_user_by_username(db, request_data.username)
 
     if recipient is None:
         raise not_found("User not found.",)
-
-    if not recipient.is_active:
-        raise bad_request("User account is inactive.",)
 
     return send_friend_request(
         db=db,

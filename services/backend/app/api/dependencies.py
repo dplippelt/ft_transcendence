@@ -54,6 +54,16 @@ def get_current_user(token: BearerToken, db: DbSession) -> User:
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
+def get_current_user_matching_path(user_id: int, current_user: CurrentUser) -> User:
+    if user_id != current_user.id:
+        raise forbidden("You can only modify your own account")
+
+    return current_user
+
+
+SelfUser = Annotated[User, Depends(get_current_user_matching_path)]
+
+
 def get_current_user_id_ws(
     websocket: WebSocket,
     # Browsers can't set custom headers on the WS handshake, so the token
