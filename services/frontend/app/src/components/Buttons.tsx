@@ -16,10 +16,11 @@ interface IMenuButton
 interface IMossButton
 {
 	label: string;
-	onClick: () => void;
+	onClick?: () => void;
 	extraStyling?: string;
 	disabled?: boolean;
 	mobilePosition?: string;
+	type?: "button" | "submit" | "reset";
 }
 
 interface IBottomButton
@@ -108,9 +109,9 @@ export function MenuButton( { label, onClick } : IMenuButton )
 	return <button className={styles.menuButton} type="button" onClick={onClick}>{label}</button>
 }
 
-export function MossButton( { label, onClick, extraStyling="", disabled=false, mobilePosition="" } : IMossButton )
+export function MossButton( { label, onClick, extraStyling="", disabled=false, mobilePosition="", type="button" } : IMossButton )
 {
-	return <button className={`${styles.mossButton} ${extraStyling} ${mobilePosition}`} type="button" disabled={disabled} onClick={onClick}>{label}</button>;
+	return <button className={`${styles.mossButton} ${extraStyling} ${mobilePosition}`} type={type} disabled={disabled} onClick={onClick}>{label}</button>;
 }
 
 export function BottomButton( { label, onClick, disabled=false, mobilePosition="" } : IBottomButton )
