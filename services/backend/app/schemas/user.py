@@ -4,7 +4,7 @@ from pydantic import BaseModel, EmailStr, Field, HttpUrl
 class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
-    username: str | None = Field(default=None, min_length=3, max_length=50)
+    username: str = Field(min_length=3, max_length=50)
 
 
 class UserLogin(BaseModel):
