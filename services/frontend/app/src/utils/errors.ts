@@ -1,9 +1,9 @@
 import { ApiError } from "../api/http";
 
 export const MIN_USERNAME_LENGTH = 3;
-export const MAX_USERNAME_LENGTH = 20;
+export const MAX_USERNAME_LENGTH = 50;
 export const MIN_LOBBY_NAME_LENGTH = 3;
-export const MAX_LOBBY_NAME_LENGTH = 20;
+export const MAX_LOBBY_NAME_LENGTH = 50;
 
 export enum ErrorType
 {
@@ -34,6 +34,7 @@ export enum ErrorType
     lobbyFull,
     invalidEmail,
     passwordTooShort,
+    emailCannotBeEmpty,
     unknown,
 }
 
@@ -100,6 +101,8 @@ export function errorMsg( error: ErrorType ): string
             return "Please enter a valid email address!";
         case ErrorType.passwordTooShort:
             return "Password must be at least 8 characters long!";
+        case ErrorType.emailCannotBeEmpty:
+            return "Email cannot be empty!";
 		default:
 			return "";
 	}
