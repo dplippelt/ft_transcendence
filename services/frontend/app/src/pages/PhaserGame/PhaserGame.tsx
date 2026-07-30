@@ -89,6 +89,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       gameRef.current = null;
       EventBus.removeListener(GameEvent.gameVis);
       EventBus.removeListener(GameEvent.chatFocus);
+      EventBus.removeListener(GameEvent.gameMenu); 
       setGameMenuVis(false);
     }
 
@@ -98,8 +99,9 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     if ( !isGameURL )
       return;
 
-    EventBus.addListener(GameEvent.gameMenu, () => setGameMenuVis(prev => !prev));
-    return () => { EventBus.removeListener(GameEvent.gameMenu); };
+    function toggleGameMenu() { setGameMenuVis(prev => !prev); }
+    EventBus.addListener(GameEvent.gameMenu, toggleGameMenu);
+    return () => { EventBus.removeListener(GameEvent.gameMenu, toggleGameMenu); };
   }, [location.pathname, isGameURL])
 
   return (
@@ -108,7 +110,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       <Game currentActiveScene={currentActiveScene} gameRef={gameRef} isGameURL={isGameURL} />
       { gameMenuVis && <GameMenu />}
       { loggedIn && <SideBar /> }
-      <OpenGameMenuButton onClick={ () => setGameMenuVis(prev => !prev) } />
+      <OpenGameMenuButton onClick={ () => EventBus.emit(GameEvent.gameMenu) } />
     </div>
   );
 }

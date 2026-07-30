@@ -3,6 +3,8 @@ import GameScene from "./GameScene";
 import CombatScene from "./CombatScene";
 import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
+import { EventBus } from "../EventBus";
+import { GameEvent } from "../../utils/utils";
 
 export enum GameEvents {
   CombatInitiated = "combat-initiated",
@@ -30,6 +32,7 @@ export class GameManagerScene extends Scene {
   private _gameScene!: GameScene;
   private _combatScenes: CombatScene[];
   private _gameType: GameType;
+  private _activeScene!: Phaser.Scene;
   private _exitedPlayers: Set<Player>;
   private _levelCount: number = 5; // TODO: Hard-coded for now
 
@@ -53,6 +56,18 @@ export class GameManagerScene extends Scene {
 
     this._gameScene = new GameScene();
     this.scene.add("GameScene", this._gameScene, true);
+    this._activeScene = this._gameScene;
+  }
+
+  create() {
+    this.input.keyboard?.on("keydown-ESC", () => EventBus.emit(GameEvent.gameMenu));
+
+    EventBus.on(GameEvent.gameMenu, () => {
+      if (this.scene.isPaused(this._activeScene))
+        this.scene.resume(this._activeScene);
+      else
+        this.scene.pause(this._activeScene);
+    });
   }
 
   private onCombatInitiated(combatEventData: CombatEventData) {
@@ -66,6 +81,7 @@ export class GameManagerScene extends Scene {
       this._combatScenes.push(combatScene);
     }
     this.scene.moveUp(combatScene);
+    this._activeScene = combatScene;
     if (this._gameType === GameType.SinglePlayer) {
       this.scene.sleep(this._gameScene);
     }
@@ -83,6 +99,7 @@ export class GameManagerScene extends Scene {
 
     this.scene.moveDown(combatEventData.sceneInvoker);
     this.scene.stop(combatEventData.sceneInvoker);
+    this._activeScene = this._gameScene;
     if (this._gameType === GameType.SinglePlayer) {
       this.scene.wake(this._gameScene);
     }

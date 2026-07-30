@@ -59,10 +59,11 @@ export default class CombatScene extends Phaser.Scene {
         this.endGame(this.eventData!);
     }, this);
 
-    function handleEscape() { EventBus.emit(GameEvent.gameMenu) };
-    this.input.keyboard?.on("keydown-ESC", handleEscape);
-    this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.input.keyboard?.off("keydown-ESC", handleEscape);
+    EventBus.on(GameEvent.gameMenu, () => {
+      if (this.scene.isPaused())
+        this.scene.resume();
+      else
+        this.scene.pause();
     });
 
     EventBus.emit("current-scene-ready", this);

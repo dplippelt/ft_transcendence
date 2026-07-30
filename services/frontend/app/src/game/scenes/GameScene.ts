@@ -92,16 +92,14 @@ export default class GameScene extends Scene {
     EventBus.on(GameEvent.gameVis, (visible: boolean) => {
       this.isGameVisible = visible;
       this.updateGlobalCapture();
-    })
+    });
 
     EventBus.on(GameEvent.chatFocus, (focused: boolean) => {
       this.isChatFocused = focused;
       this.updateGlobalCapture();
       if ( focused )
         this.game.events.emit(Core.Events.BLUR)
-    })
-
-    this.input.keyboard?.on("keydown-ESC", () => EventBus.emit(GameEvent.gameMenu));
+    });
     this.cameras.main.startFollow(this.getPlayerOne());
 
     // Temporarily mouse event for map generation
