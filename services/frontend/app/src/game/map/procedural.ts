@@ -13,6 +13,13 @@ export enum Direction {
   DownRight = Down | Right,
 }
 
+export enum RoomType {
+  Standard,
+  Entrance,
+  Exit
+}
+
+export type RoomGraph = Map<Room, Set<Room>>;
 type CornerDirection = Direction.TopLeft | Direction.TopRight | Direction.DownLeft | Direction.DownRight;
 type WallDirection = Direction.Top | Direction.Right | Direction.Down | Direction.Left;
 
@@ -33,8 +40,25 @@ interface Range {
   max: number;
 }
 
+export enum TileNodeType {
+  None,
+  EnterPoint,
+  SpawnPoint,
+  ExitPoint
+}
+
+interface TileNode {
+  position: Vector2;
+  type: TileNodeType
+}
+
 export interface Room {
   aabb: BoundingBox;
+  doors: Door[];
+  visited: boolean;
+  cost: number;
+  type: RoomType;
+  tileNode: TileNode | undefined;
 }
 
 export interface MapData {
@@ -43,6 +67,7 @@ export interface MapData {
   rooms: Room[];
   width: number;
   height: number;
+  graph: RoomGraph;
 }
 
 export interface DungeonConfig {
@@ -81,6 +106,11 @@ function generateRooms(amount: number, roomConfig: RoomConfig): Room[] {
           random(roomConfig.height.min, roomConfig.height.max),
         ),
       ),
+      doors: [],
+      visited: false,
+      cost: -1,
+      type: RoomType.Standard,
+      tileNode: undefined
     });
   }
 
@@ -156,6 +186,9 @@ function placeDoorway(pivotRoom: Room, neighborRoom: Room, direction: Direction)
     default:
       throw new Error(`Invalid Direction value ${direction} for door placement`);
   }
+  pivotRoom.doors.push(door);
+  neighborRoom.doors.push(door);
+
   return door;
 }
 
@@ -242,6 +275,11 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
   // Generated the rooms
   const roomConfig = config.emptyRoomConfig;
   const rooms: Room[] = generateRooms(random(config.roomCount.min, config.roomCount.max), roomConfig);
+  const graph: RoomGraph = new Map<Room, Set<Room>>();
+  for (const room of rooms) {
+    graph.set(room, new Set<Room>());
+  }
+
   const placedRooms: Room[] = [rooms.shift()!];
   const placedDoors: Door[] = [];
 
@@ -253,11 +291,16 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
     for (let j = 0; j < doorCount; ++j) {
       const direction: Direction = directions[j % directions.length];
       if (tryPlaceRoom(rooms[0], placedRooms[i], direction, placedRooms)) {
+        graph.get(placedRooms[i])!.add(rooms[0]);
+        graph.get(rooms[0])!.add(placedRooms[i]);
+
         placedDoors.push(placeDoorway(placedRooms[i], rooms[0], direction));
         placedRooms.push(rooms.shift()!);
       }
     }
   }
+
+  // TODO: what about the unplaced rooms? Can we somehow still place them?
 
   // construct the layout
   const [mapOffset, mapSize]: [Vector2, Vector2] = mapBounds(placedRooms);
@@ -273,11 +316,18 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
     layoutPutDoor(map, door, config.emptyRoomConfig.tileSetMap);
   }
 
+  graph.forEach((value, key) => {
+    if (value.size === 0) {
+      graph.delete(key);
+    }
+  });
+
   return {
     map: map,
     doors: placedDoors,
     rooms: placedRooms,
     width: mapSize.x,
     height: mapSize.y,
+    graph: graph
   };
 }

@@ -40,7 +40,7 @@ export class Passage extends Physics.Arcade.Sprite {
   }
 
   destroy(fromScene?: boolean): void {
-    this.destroy(fromScene);
+    super.destroy(fromScene);
 
     this.collider.destroy();
     this.trigger.destroy();

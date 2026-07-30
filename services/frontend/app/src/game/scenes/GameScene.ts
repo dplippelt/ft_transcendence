@@ -1,6 +1,6 @@
 import { Scene } from "phaser";
 import { EventBus } from "../EventBus";
-import { Dungeon } from "../gameobjects/Dungeon";
+import { Dungeon } from "../gameobjects/dungeon/Dungeon.ts";
 import { Direction, type DungeonConfig } from "../map/procedural";
 import { WallType, FloorType, PassageType } from "../map/TileSetMap.ts";
 
@@ -62,7 +62,7 @@ const dungeonConfig: DungeonConfig = {
       },
     },
   },
-  roomCount: { min: 8, max: 32 },
+  roomCount: { min: 8, max: 8 },
 };
 
 // TODO: GameSession structure (local / network) -> thruth sayer; player hp, position etc, syncs up with the game itself

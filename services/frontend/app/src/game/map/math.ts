@@ -196,14 +196,15 @@ export function randomPointOnEdge(rect: BoundingBox): Vector2 {
   const perimeter = 2 * width + 2 * height;
   const distance = random(0, perimeter);
 
+  // TODO: Why is the -1 needed?
   if (distance < width) {
     return new Vector2(rect.min.x + distance, rect.min.y);
   } else if (distance < width + height) {
-    return new Vector2(rect.max.x, rect.min.y + (distance - width));
+    return new Vector2(rect.max.x - 1, rect.min.y + (distance - width));
   } else if (distance < 2 * width + height) {
-    return new Vector2(rect.max.x - (distance - width - height), rect.max.y);
+    return new Vector2(rect.min.x + (distance - width - height), rect.max.y - 1);
   }
-  return new Vector2(rect.min.x, rect.max.y - (distance - 2 * width - height));
+  return new Vector2(rect.min.x, rect.min.y + (distance - 2 * width - height));
 }
 
 export interface weight {

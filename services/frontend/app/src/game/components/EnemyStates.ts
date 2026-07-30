@@ -106,6 +106,7 @@ export class CombatState implements IFiniteState<Enemy> {
       throw new Error('Player cannot null when entering the combat state');
     }
 
+    // BUG: Player can engage in multiple combats because inCombat flag is set at next update
     GameManagerScene.EventsCenter.emit(GameEvents.CombatInitiated, {
       player: player,
       enemy: enemy,

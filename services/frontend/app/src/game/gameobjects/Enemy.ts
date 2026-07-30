@@ -11,7 +11,7 @@ import {
   DieState,
 } from "../components/EnemyStates";
 import { EnemySightSensor } from "../components/EnemySightSensor";
-import { type SpawnLocation } from "./Dungeon";
+import { type SpawnLocation } from "./dungeon/Dungeon";
 import { DungeonLocation } from "../components/DungeonLocation";
 import { WaitFor } from "../components/WaitFor";
 import { MoveTowardsTarget } from "../components/MoveTowardsTarget";
