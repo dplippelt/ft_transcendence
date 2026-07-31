@@ -4,7 +4,7 @@ import { getFriendDraftKey, PopupType } from "../../utils/utils";
 import React, { useEffect } from "react";
 import styles from "./FriendPopup.module.scss";
 import { useFriends, type IFriendData } from "../../contexts/FriendsContext";
-import { useUser } from "../../contexts/UserContext";
+import { useCurrentUser } from "../../contexts/AuthContext";
 
 interface IRemoveFriendPopup
 {
@@ -15,7 +15,7 @@ export default function RemoveFriendPopup( { setPopupType } : IRemoveFriendPopup
 {
 	const { friends, selectedFriendID, setSelectedFriendID, removeFriend } = useFriends();
 	const friend = getSelectedFriend();
-	const { user } = useUser();
+	const user = useCurrentUser();
 
 	useEffect(() =>
 	{
@@ -41,7 +41,7 @@ export default function RemoveFriendPopup( { setPopupType } : IRemoveFriendPopup
 	// The button should also be disable while submitting so double-clicking doesn't send two requests.
 	function handleRemoveFriend()
 	{
-		localStorage.removeItem(getFriendDraftKey(user.userID, selectedFriendID!));
+		localStorage.removeItem(getFriendDraftKey(String(user.id), selectedFriendID!));
 		removeFriend(selectedFriendID!);
 		closePopup();
 	}

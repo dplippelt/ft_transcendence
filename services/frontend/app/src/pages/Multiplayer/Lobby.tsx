@@ -9,7 +9,6 @@ import { BottomButtons } from "../../components/ButtonContainers";
 import { BottomButton } from "../../components/Buttons";
 import styles from "./Lobby.module.scss";
 import Avatar from "../../components/Avatar";
-import { useUser } from "../../contexts/UserContext";
 import noAvatar from "../../assets/no_avatar.png";
 import { LobbyChatHistory } from "../../components/Chat/ChatHistory";
 import { LobbyChatBox } from "../../components/Chat/ChatBox";
@@ -19,6 +18,7 @@ import Popup from "../../components/Popup";
 import { useLobbies } from "../../contexts/LobbiesContext";
 import { useError } from "../../contexts/ErrorContext";
 import { ErrorType } from "../../utils/errors";
+import { useCurrentUser } from "../../contexts/AuthContext";
 
 interface IHostButtons
 {
@@ -65,27 +65,28 @@ function Player( { username, avatar, alt } : IPlayer )
 function Players( { lobbyID } : IPlayers )
 {
 	const { lobbies } = useLobbies();
-	const { user } = useUser();
+	const user = useCurrentUser();
 	const lobby = lobbies[lobbyID];
 
 	function getHostUsername() : string
 	{
-		if ( lobby.hostID === user.userID )
-			return user.username;
+		if ( lobby.hostID === String(user.id) )
+			return user.username ?? user.display_name ?? "Unknown";
 		return "Host"; // TODO: fetch username from database
 	}
 
-	function getHostAvatar() : string
-	{
-		if ( lobby.hostID === user.userID )
-			return user.avatar;
-		return noAvatar; // TODO: fetch avatar from database
-	}
+	function getHostAvatar(): string
+    {
+        if (lobby.hostID === String(user.id))
+            return user.avatar_url ?? noAvatar;
+
+        return noAvatar;
+    }
 
 	function getGuestUsername() : string
 	{
-		if ( lobby.guestID === user.userID )
-			return user.username;
+		if ( lobby.guestID === String(user.id) )
+			return user.username ?? user.display_name ?? "Unknown";
 		if ( lobby.guestID )
 			return "Guest"; // TODO: fetch username from database
 		return "Waiting...";
@@ -93,10 +94,9 @@ function Players( { lobbyID } : IPlayers )
 
 	function getGuestAvatar() : string
 	{
-		if ( lobby.guestID === user.userID )
-			return user.avatar;
-		if ( lobby.guestID )
-			return noAvatar; // TODO: fetch avatar from database
+		if ( lobby.guestID === String(user.id) )
+			return user.avatar_url ?? noAvatar;
+
 		return noAvatar;
 	}
 
@@ -132,13 +132,13 @@ function HostButtons( { lobbyID, setPopupType, isClosingRef } : IHostButtons )
 {
 	const navigate = useNavigate();
 	const { lobbies, closeLobby } = useLobbies();
-	const { user } = useUser();
+	const user = useCurrentUser();
 	const numPlayers = lobbies[lobbyID]?.guestID ? 2 : 1;
 
 	function onCloseLobby()
 	{
 		isClosingRef.current = true;
-		localStorage.removeItem(getLobbyDraftKey(user.userID, lobbyID));
+		localStorage.removeItem(getLobbyDraftKey(String(user.id), lobbyID));
 		closeLobby(lobbyID);
 		navigate(RoutePath.mainMenu, { replace: true }); // intentional back to main menu instead of multiplayer page
 	}
@@ -170,12 +170,12 @@ function HostButtons( { lobbyID, setPopupType, isClosingRef } : IHostButtons )
 function GuestButtons( { lobbyID } : IGuestButtons )
 {
 	const navigate = useNavigate();
-	const { user } = useUser();
+	const user = useCurrentUser();
 	const { leaveLobby } = useLobbies();
 
 	function onLeaveLobby()
 	{
-		localStorage.removeItem(getLobbyDraftKey(user.userID, lobbyID));
+		localStorage.removeItem(getLobbyDraftKey(String(user.id), lobbyID));
 		leaveLobby(lobbyID);
 		navigate(RoutePath.mainMenu); // intentional back to main menu instead of multiplayer page
 	}
@@ -192,11 +192,11 @@ export default function Lobby()
 	const { setError } = useError();
 	const { lobbies, joinLobby } = useLobbies();
 	const { lobbyID } = useParams();
-	const { user } = useUser();
+	const user  = useCurrentUser();
 	const location = useLocation();
 
 	const hostID = lobbyID ? lobbies[lobbyID]?.hostID : undefined;
-	const isHost = user.userID === hostID;
+	const isHost = String(user.id) === hostID;
 	const isValidLobby = lobbyID && lobbies[lobbyID] ? true : false;
 
 	const isClosingRef = useRef(false);
@@ -213,13 +213,13 @@ export default function Lobby()
 		}
 		if ( !isHost )
 		{
-			const errorType = joinLobby(lobbyID!, user.userID);
+			const errorType = joinLobby(lobbyID!, String(user.id));
 			const status = errorType === ErrorType.none ? JoinStatus.ok : JoinStatus.failed;
 			setJoinStatus(status);
 			if ( errorType !== ErrorType.none)
 				setError(errorType);
 		}
-	}, [isValidLobby, isHost, lobbyID, user.userID]);
+	}, [isValidLobby, isHost, lobbyID, user.id]);
 
 	// I'm returning Background instead of null to prevent a jarring screen flash.
 	// It essentially serves as an intermediary 'loading' screen.

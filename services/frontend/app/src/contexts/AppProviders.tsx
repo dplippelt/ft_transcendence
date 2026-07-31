@@ -1,7 +1,6 @@
 import type React from "react";
 import SettingsProvider from "./SettingsContext";
 import AuthProvider from "./AuthContext";
-import UserProvider from "./UserContext";
 import FriendsProvider from "./FriendsContext";
 import ChatHistoryProvider from "./ChatHistoryContext";
 import LobbiesProvider from "./LobbiesContext";
@@ -14,13 +13,11 @@ export default function AppProviders( { children } : { children: React.ReactNode
 			<LobbiesProvider>
 				<ChatHistoryProvider>
 					<FriendsProvider>
-						<UserProvider>
 							<SettingsProvider>
 								<ErrorProvider>
 									{children}
 								</ErrorProvider>
 							</SettingsProvider>
-						</UserProvider>
 					</FriendsProvider>
 				</ChatHistoryProvider>
 			</LobbiesProvider>

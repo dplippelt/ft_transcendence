@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { PopupType } from "../../utils/utils";
 import { ErrorType, isErrorType } from "../../utils/errors";
-import { useUser } from "../../contexts/UserContext";
 import { useNavigate } from "react-router-dom";
 import ErrorText from "../../components/ErrorText";
 import { TextInput } from "../../components/TextInput";
 import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
 import { getValidUsername } from "../../utils/usernameCheck";
+import { useCurrentUser } from "../../contexts/AuthContext";
 
 interface ILocalCoopPopup
 {
@@ -19,7 +19,7 @@ export default function LocalCoopPopup( { setPopupType } : ILocalCoopPopup )
 	const navigate = useNavigate();
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [coopPlayerName, setCoopPlayerName] = useState<string>("");
-	const { user } = useUser();
+	const user = useCurrentUser();
 
 	function usernameCheck()
 	{

@@ -1,20 +1,21 @@
-import {createContext, useContext, useEffect, useCallback, useMemo, useState,} from "react";
+import {createContext, useContext, useEffect, useCallback, useState,} from "react";
 import type { ReactNode } from "react";
 
-import {getCurrentUser, loginUser, loginWithGoogleCredentials, registerUser,} from "../api/authApi";
+import {getCurrentUser, loginUser, loginWithGoogleCredentials, registerUser, updateUser,} from "../api/authApi";
 
-import type {AuthUser, LoginRequest, RegisterRequest,} from "../api/authApi";
+import type { AuthUser, LoginRequest, RegisterRequest, UpdateUserRequest, } from "../api/authApi";
+import { ApiError } from "../api/http";
 
 const ACCESS_TOKEN_KEY = "accessToken";
 
 type AuthStatus =
 	| "loading"
 	| "authenticated"
-    | "unauthenticated";
+	| "unauthenticated"
+	| "error";
 
 export interface IAuth
 {
-    guest: boolean;
     accessToken: string | null;
     user: AuthUser | null;
     status: AuthStatus;
@@ -26,12 +27,21 @@ interface IAuthContext
 	login: (credentials: LoginRequest) => Promise<void>;
 	register: (userData: RegisterRequest) => Promise<void>;
 	loginWithGoogle: (credential: string) => Promise<void>;
-	refreshUser: () => Promise<void>;
+    updateProfile: (data: UpdateUserRequest) => Promise<void>;
 	logout: () => void;
 }
 
 const AuthContext = createContext<IAuthContext | null>(null);
 
+export function useCurrentUser(): AuthUser
+{
+	const { auth } = useAuth();
+
+	if (!auth.user)
+		throw new Error("useCurrentUser() requires an authenticated user");
+
+	return auth.user;
+}
 
 export default function AuthProvider( { children } : {children: ReactNode} )
 {
@@ -49,22 +59,26 @@ export default function AuthProvider( { children } : {children: ReactNode} )
         setStatus("unauthenticated");
     }, []);
 
+    // expired/invalid token/inactive account -> logout, network/backend 500/temporary restart -> preserve token
     const establishSession = useCallback(async (token: string) => 
     {
         setStatus("loading");
 
+        localStorage.setItem(ACCESS_TOKEN_KEY, token);
+        setAccessToken(token);
+
         try
         {
             const currentUser = await getCurrentUser(token);
-
-            localStorage.setItem(ACCESS_TOKEN_KEY, token);
-            setAccessToken(token);
             setUser(currentUser);
             setStatus("authenticated");
         }
         catch (error)
         {
-            logout();
+            if (error instanceof ApiError && (error.status === 401 || error.status === 403))
+                logout();
+            else
+                setStatus("error");
             throw error;
         }
     }, [logout]);
@@ -93,14 +107,6 @@ export default function AuthProvider( { children } : {children: ReactNode} )
         await establishSession(tokenResponse.access_token);
     }, [establishSession]);
 
-    const refreshUser = useCallback(async () =>
-    {
-        if (!accessToken)
-            throw new Error("No authenticated session");
-        const currentUser = await getCurrentUser(accessToken);
-        setUser(currentUser);
-    }, [accessToken]);
-
     useEffect(() =>
     {
         const storedToken = localStorage.getItem(ACCESS_TOKEN_KEY);
@@ -111,31 +117,25 @@ export default function AuthProvider( { children } : {children: ReactNode} )
         }
 
         void establishSession(storedToken).catch(() => {
-            // TODO: establishSession clears invalid session.
+            // Auth state is handled by establishSession.
         });
     }, [establishSession]);
 
-    const auth = useMemo(() => ({
-        guest: user === null,
-        accessToken,
-        user,
-        status,
-    }), [accessToken, user, status]);
-
-	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)
-	// at the moment when you hit F5 everything is rerendered and Auth info will be set to default again.
-	// turn it into a custom hook because it also needs to be called in the login / signup button handler after a succesful login/sign-up
-
-	// useEffect(() =>
-	// {
-	// 	async function loadAuth()
-	// 	{
-	// 		const sessionToken = localStorage.getItem("sessionToken");
-	// 		if (await isValidToken(sessionToken))
-	// 			setAuth(await fetchDbAuth(sessionToken));
-	// 	}
-	// 	loadAuth();
-	// }, []);
+    const auth: IAuth = {accessToken, user,status,};
+    
+    const updateProfile = useCallback(async (data: UpdateUserRequest) =>
+        {
+            if (!accessToken || !user)
+                throw new Error("No authenticated session");
+        
+            const updatedUser = await updateUser(
+                user.id,
+                data,
+                accessToken,
+            );
+        
+            setUser(updatedUser);
+        }, [accessToken, user]);
 
 	return (
 		<AuthContext.Provider
@@ -145,8 +145,8 @@ export default function AuthProvider( { children } : {children: ReactNode} )
 				login,
 				register,
 				loginWithGoogle,
-				refreshUser,
 				logout,
+				updateProfile,
 			}}
 		>
 			{children}
