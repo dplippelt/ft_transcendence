@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import ErrorCode, bad_request
 
 
-def commit_or_bad_request(db: Session, detail: str, code: ErrorCode,) -> None:
+def commit_or_bad_request(db: Session, detail: str, code: ErrorCode | None = None,) -> None:
     try:
         db.commit()
     except IntegrityError:
