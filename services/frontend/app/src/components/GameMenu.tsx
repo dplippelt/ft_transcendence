@@ -20,7 +20,7 @@ function Buttons()
 	{
 		auth.logout();
 		sessionCleanup();
-		navigate(RoutePath.landingPage);
+		navigate(RoutePath.landingPage, { replace: true });
 	}
 
 	return (
