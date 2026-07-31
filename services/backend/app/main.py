@@ -6,10 +6,13 @@ from fastapi import FastAPI
 
 from app.api.v1 import auth, cards, chat, dungeons, leaderboard, puzzles, scores, users, friends
 from app.db.database import Base, engine
+from app.core.settings import get_settings
 
 # Import model modules so SQLAlchemy registers their tables in Base.metadata.
 import app.models  # noqa: F401
 
+
+settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,7 +28,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[settings.frontend_origin],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
