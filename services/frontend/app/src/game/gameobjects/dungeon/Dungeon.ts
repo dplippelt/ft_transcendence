@@ -8,6 +8,7 @@ import { playerOne } from "../../components/KeyboardComponent";
 import { FloorType, PassageType, type TileSetMap } from "../../map/TileSetMap";
 import { Passage } from "../Passage";
 import { RoomSetup } from "./RoomSetup";
+import { DungeonSpawner } from "./DungeonSpawner";
 
 export interface SpawnLocation {
   spawnPoint: Types.Math.Vector2Like;
@@ -22,20 +23,18 @@ interface TileSize {
 
 // TODO: Create/insert the doorway to the exit of the level
 export class Dungeon extends Tilemaps.Tilemap {
-  origin: Vector2;
-  scale: number;
-  mapData!: MapData;
-  tileSetMap: TileSetMap;
-  tileSet: Tilemaps.Tileset;
-  tileSize: TileSize;
-  mapColliders: Physics.Arcade.Collider[];
-  enemies: Enemy[];
-  players: Player[];
-  dynamics: Physics.Arcade.Group;
-  passage: Passage | undefined;
-  entrance: Room | undefined;
-  exit: Room | undefined;
-  roomSetup: RoomSetup;
+  private origin: Vector2;
+  private scale: number;
+  private mapData!: MapData;
+  private tileSetMap: TileSetMap;
+  private tileSet: Tilemaps.Tileset;
+  private tileSize: TileSize;
+  private mapColliders: Physics.Arcade.Collider[];
+  private passage: Passage | undefined;
+  private entrance: Room | undefined;
+  private exit: Room | undefined;
+  private roomSetup: RoomSetup;
+  private spawner: DungeonSpawner;
 
   constructor(scene: Scene, dungeonConfig: DungeonConfig, scale: number = 1.0, tileSize: number = 16) {
     super(scene, new Tilemaps.MapData({ tileWidth: tileSize, tileHeight: tileSize }));
@@ -50,30 +49,24 @@ export class Dungeon extends Tilemaps.Tilemap {
     this.tileSet = tileSet;
     this.tileSetMap = dungeonConfig.emptyRoomConfig.tileSetMap;
     this.mapColliders = [];
-    this.enemies = [];
-    this.players = [];
     this.tileSize = {
       size: new Vector2(this.tileWidth * this.scale, this.tileHeight * this.scale),
       invSize: new Vector2(1.0 / (this.tileWidth * this.scale), 1.0 / (this.tileHeight * this.scale)),
     };
-    this.dynamics = scene.physics.add.group();
     this.entrance = undefined;
     this.exit = undefined;
     this.roomSetup = new RoomSetup();
+    this.spawner = new DungeonSpawner(scene);
 
     this.build(dungeonConfig);
   }
 
   private clear() {
-    this.enemies.forEach((enemy) => enemy.destroy());
-    this.enemies = [];
-    this.players.forEach((player) => player.destroy());
-    this.players = [];
     this.passage?.destroy(); // stack overflow...
     this.passage = undefined;
     this.mapColliders.forEach((col) => col.destroy());
     this.mapColliders = [];
-    this.dynamics.clear();
+    this.spawner.clear();
     this.removeAllLayers();
   }
 
@@ -83,14 +76,17 @@ export class Dungeon extends Tilemaps.Tilemap {
     if (this.mapData.rooms.length < 3) {
       throw new Error("Invalid Dungeon layout. Not Enough rooms");
     }
+
     [this.entrance, this.exit] = this.roomSetup.apply(this.mapData.graph);
+    this.createLevelLayer();
+    // eslint-disable-next-line prefer-spread
+    this.spawner.apply(this, this.mapData.graph);
     // spawn entities
 
 
-    this.createLevelLayer();
     // decorate rooms
 
-    this.spawnPlayers(1); // TODO: Hard-coded...
+    // this.spawnPlayers(1); // TODO: Hard-coded...
     // this.spawnEnemies(this.mapData.rooms.length - 2); // excluding the entrance and exit room
   }
 
@@ -119,19 +115,6 @@ export class Dungeon extends Tilemaps.Tilemap {
     this.setCollisionBetween(41, 44);
   }
 
-  getRandomWalkableTile(room?: Room): SpawnLocation {
-    if (room === undefined) {
-      room = pMath.RND.pick(this.mapData.rooms); // cannot be entrance/exit
-    }
-    const point = randomPoint(room.aabb.min.clone().addXY(1, 1), room.aabb.max.clone().subXY(2, 2));
-
-    return {
-      spawnPoint: this.transformPointToWorld(point.addXY(0.5, 0.5)),
-      startingRoom: room,
-      dungeon: this,
-    };
-  }
-
   transformPointToLocal(point: Vector2) {
     return point.clone().add(this.origin).mul(this.tileSize.invSize).floor();
   }
@@ -147,25 +130,6 @@ export class Dungeon extends Tilemaps.Tilemap {
     }
     object.setDepth(layer.depth + 1 + depthOffset);
     this.mapColliders.push(this.scene.physics.add.collider(object, layer));
-  }
-
-  spawnPlayers(count: number) {
-    // TODO: Only spawn within the entrance room
-    for (let i: number = 0; i < count; ++i) {
-      const spawn: SpawnLocation = this.getRandomWalkableTile(this.entrance);
-      const player = new Player(this.scene, playerOne, spawn);
-      this.addColliderWithMap(player, 5);
-      this.players.push(player);
-      this.dynamics.add(player);
-    }
-  }
-
-  spawnEnemies(count: number): void {
-    // TODO: exclude entrance and exit
-    for (let i: number = 0; i < count; ++i) {
-      const spawn: SpawnLocation = this.getRandomWalkableTile();
-      this.enemies.push(Enemy.createSkeletonEnemy(this.scene, spawn));
-    }
   }
 
   findRoom(localPoint: Vector2): Room | undefined {
@@ -239,5 +203,9 @@ export class Dungeon extends Tilemaps.Tilemap {
       this.dynamics,
     );
     this.passage.setDepth(5); // TODO need correct depth
+  }
+
+  getPlayer(index: number): Player | undefined {
+    return this.spawner.getPlayer(index);
   }
 }

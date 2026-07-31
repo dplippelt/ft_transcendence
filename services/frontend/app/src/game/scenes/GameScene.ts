@@ -3,6 +3,7 @@ import { EventBus } from "../EventBus";
 import { Dungeon } from "../gameobjects/dungeon/Dungeon.ts";
 import { Direction, type DungeonConfig } from "../map/procedural";
 import { WallType, FloorType, PassageType } from "../map/TileSetMap.ts";
+import Player from "../gameobjects/Player.ts";
 
 const dungeonConfig: DungeonConfig = {
   emptyRoomConfig: {
@@ -82,10 +83,18 @@ export default class GameScene extends Scene {
     this.input.on("pointerdown", () => {
       this.cameras.main.stopFollow();
       map.build(dungeonConfig);
-      this.cameras.main.startFollow(map.players[0]);
+      this.cameras.main.startFollow(this.getPlayerOne(map));
     });
-    this.cameras.main.startFollow(map.players[0]);
+    this.cameras.main.startFollow(this.getPlayerOne(map));
 
     EventBus.emit("current-scene-ready", this);
+  }
+
+  getPlayerOne(map: Dungeon): Player {
+    const player = map.getPlayer(0);
+    if (player === undefined) {
+      throw new Error("Player missing!")
+    }
+    return player;
   }
 }
