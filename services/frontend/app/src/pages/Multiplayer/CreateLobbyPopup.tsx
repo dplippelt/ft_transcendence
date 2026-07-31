@@ -2,7 +2,6 @@ import { useState } from "react";
 import { PopupType, RoutePath } from "../../utils/utils";
 import { ErrorType, isErrorType } from "../../utils/errors";
 import { getValidLobbyName } from "../../utils/lobbyNameCheck";
-import { useUser } from "../../contexts/UserContext";
 import { useLobbies } from "../../contexts/LobbiesContext";
 import { useNavigate } from "react-router-dom";
 import ErrorText from "../../components/ErrorText";
@@ -10,6 +9,7 @@ import { TextInput } from "../../components/TextInput";
 import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
 import { nanoid } from 'nanoid';
+import { useCurrentUser } from "../../contexts/AuthContext";
 
 interface ICreateLobbyPopup
 {
@@ -21,7 +21,7 @@ export default function CreateLobbyPopup( { setPopupType } : ICreateLobbyPopup )
 	const navigate = useNavigate();
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [lobbyname, setLobbyName] = useState<string>("");
-	const { user } = useUser();
+	const user = useCurrentUser();
 	const { lobbies, createLobby } = useLobbies();
 
 	function lobbyNameCheck()
@@ -36,7 +36,7 @@ export default function CreateLobbyPopup( { setPopupType } : ICreateLobbyPopup )
 
 		const lobbyID = nanoid(8);
 
-		createLobby(lobbyID, user.userID, validLobbyName);
+		createLobby(lobbyID, String(user.id), validLobbyName);
 		setPopupType(PopupType.none);
 		navigate(RoutePath.mpLobby + `/${lobbyID}`);
 	}
