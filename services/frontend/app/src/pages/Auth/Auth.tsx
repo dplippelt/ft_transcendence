@@ -63,17 +63,29 @@ function LoginForm()
     async function checkLogin( event: React.FormEvent<HTMLFormElement> )
     {
         event.preventDefault();
+
         if (isSubmitting)
             return;
 
         setError(ErrorType.none);
+
+        const emailResult = getValidEmail(email);
+
+        if (isErrorType(emailResult))
+            return setError(emailResult);
+
+        if (password.length === 0)
+            return setError(ErrorType.passwordCannotBeEmpty);
+
+        const validEmail = emailResult;
+
         setIsSubmitting(true);
 
         try
         {
             await login(
             {
-                email,
+                email: validEmail,
                 password,
             });
 
@@ -93,6 +105,7 @@ function LoginForm()
         <form
             className={styles.window}
             onSubmit={checkLogin}
+            noValidate
         >
             {error !== ErrorType.none &&
                 <ErrorText error={error}/>
@@ -197,6 +210,7 @@ function SignupForm()
         <form
             className={styles.window}
             onSubmit={signupCheck}
+            noValidate
         >
 			{error !== ErrorType.none &&
 				<ErrorText error={error}/>
