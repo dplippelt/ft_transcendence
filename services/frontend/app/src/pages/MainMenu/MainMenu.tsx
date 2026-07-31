@@ -17,12 +17,12 @@ function Buttons()
 {
 	const navigate = useNavigate();
 	const location = useLocation();
-	const auth = useAuth();
+    const { logout } = useAuth();
 	const sessionCleanup = useSessionCleanup();
 
-	function logout()
+	function handleLogout()
 	{
-		auth.logout();
+		logout();
 		sessionCleanup();
 		navigate(RoutePath.landingPage);
 	}
@@ -36,7 +36,7 @@ function Buttons()
 			<MenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname } }) } />
 			<MenuButton label="How to play" onClick={ () => {} } />
 			<MenuButton label="Settings" onClick={ () => navigate(RoutePath.settings) } />
-			<MenuButton label="Logout" onClick={ logout } />
+			<MenuButton label="Logout" onClick={ handleLogout } />
 		</MenuButtons>
 	)
 }
