@@ -13,7 +13,7 @@ if (!GOOGLE_CLIENT_ID)
 createRoot(document.getElementById("root")!).render(
     <StrictMode>
         <GoogleOAuthProvider
-            clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}
+            clientId={GOOGLE_CLIENT_ID}
             locale="en"
         >
 			<AppProviders>
