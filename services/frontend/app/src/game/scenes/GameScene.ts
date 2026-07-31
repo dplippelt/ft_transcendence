@@ -98,7 +98,7 @@ export default class GameScene extends Scene {
       this.isChatFocused = focused;
       this.updateGlobalCapture();
       if ( focused )
-        this.game.events.emit(Core.Events.BLUR)
+        this.game.events.emit(Core.Events.BLUR);
     });
     this.cameras.main.startFollow(this.getPlayerOne());
 
