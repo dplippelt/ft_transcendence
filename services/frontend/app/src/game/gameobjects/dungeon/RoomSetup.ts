@@ -2,12 +2,15 @@ import { type RoomGraph, type Room, RoomType, TileNodeType } from "../../map/pro
 import { Vector2, randomPoint, weightedRandom, type weight } from "../../map/math";
 
 export class RoomSetup {
-  apply(graph: RoomGraph): [Room, Room] {
-    const entrance = this.setupEntranceRoom(graph);
-    const exit = this.setupExitRoom(entrance, graph);
+  private _entrance: Room | undefined = undefined;
+  private _exit: Room | undefined = undefined;
+
+  apply(graph: RoomGraph) {
+    this._entrance = this.setupEntranceRoom(graph);
+    this._exit = this.setupExitRoom(this._entrance, graph);
     this.setupStandardRooms(graph);
 
-    return [entrance, exit];
+    void this._exit;
   }
 
   private pickRandomRoomTile(room: Room): Vector2 {

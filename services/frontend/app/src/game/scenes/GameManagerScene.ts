@@ -1,6 +1,7 @@
 import Phaser, { Scene } from "phaser";
 import GameScene from "./GameScene";
 import CombatScene from "./CombatScene";
+import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
 
 export enum GameEvents {
@@ -9,7 +10,12 @@ export enum GameEvents {
   PlayerDefeated = "player-defeated",
   EnemyDefeated = "enemy-defeated",
   LevelComplete = "level-complete",
+  LevelExit = "level-exit",
   GameOver = "game-over",
+}
+
+export interface LevelExitEventData {
+  player: Player;
 }
 
 enum GameType {
