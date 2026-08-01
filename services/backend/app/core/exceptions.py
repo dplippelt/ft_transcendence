@@ -16,8 +16,13 @@ class ErrorCode(StrEnum):
     GOOGLE_SUBJECT_MISSING = "GOOGLE_SUBJECT_MISSING"
     GOOGLE_EMAIL_MISSING = "GOOGLE_EMAIL_MISSING"
     GOOGLE_EMAIL_NOT_VERIFIED = "GOOGLE_EMAIL_NOT_VERIFIED"
+
+    GOOGLE_ACCOUNT_NOT_LINKED = "GOOGLE_ACCOUNT_NOT_LINKED"
+    GOOGLE_ACCOUNT_ALREADY_LINKED = "GOOGLE_ACCOUNT_ALREADY_LINKED"
+    GOOGLE_PROVIDER_ALREADY_LINKED = "GOOGLE_PROVIDER_ALREADY_LINKED"
     GOOGLE_LINK_FAILED = "GOOGLE_LINK_FAILED"
     GOOGLE_REGISTRATION_FAILED = "GOOGLE_REGISTRATION_FAILED"
+
 
 def error_detail(message: str, code: ErrorCode | None = None,) -> str | dict[str, str]:
     if code is None:
@@ -61,5 +66,12 @@ def not_found(detail: str, code: ErrorCode | None = None,) -> HTTPException:
 def service_unavailable(detail: str, code: ErrorCode | None = None,) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail=error_detail(detail, code),
+    )
+
+
+def conflict(detail: str, code: ErrorCode | None = None,) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_409_CONFLICT,
         detail=error_detail(detail, code),
     )
