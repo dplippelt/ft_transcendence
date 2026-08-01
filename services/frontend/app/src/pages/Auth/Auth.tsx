@@ -26,28 +26,36 @@ function GoogleAuthButton({ setError }: GoogleAuthButtonProps)
     const { loginWithGoogle } = useAuth();
 
     return (
-    <GoogleLogin
-        theme="filled_black"
-        shape="rectangular"
-        text="continue_with"
-        onSuccess={async (credentialResponse) => {
-            if (!credentialResponse.credential)
-                return setError(ErrorType.googleLoginFailed);
+        <GoogleLogin
+            theme="filled_black"
+            shape="rectangular"
+            text="continue_with"
+            onSuccess={async (credentialResponse) =>
+            {
+                if (!credentialResponse.credential)
+                    return setError(ErrorType.googleLoginFailed);
 
-            try {
-                setError(ErrorType.none);
-                await loginWithGoogle(credentialResponse.credential);
-                navigate(RoutePath.mainMenu);
-            }
-            catch (error) {
-                setError(mapAuthApiError(error));
-            }
-        }}
-        onError={() => {
-            setError(ErrorType.googleLoginFailed);
-        }}
+                try
+                {
+                    setError(ErrorType.none);
+
+                    await loginWithGoogle(
+                        credentialResponse.credential,
+                    );
+
+                    navigate(RoutePath.mainMenu);
+                }
+                catch (error)
+                {
+                    setError(mapAuthApiError(error));
+                }
+            }}
+            onError={() =>
+            {
+                setError(ErrorType.googleLoginFailed);
+            }}
         />
-    )
+    );
 }
 
 function LoginForm()
@@ -132,7 +140,7 @@ function LoginForm()
                 type="submit"
                 disabled={isSubmitting}
             />
-    
+
             <GoogleAuthButton setError={setError}/>
     
             <TextButton
