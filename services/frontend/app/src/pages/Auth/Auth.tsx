@@ -140,7 +140,6 @@ function LoginForm()
                 type="submit"
                 disabled={isSubmitting}
             />
-
             <GoogleAuthButton setError={setError}/>
     
             <TextButton
