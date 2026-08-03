@@ -1,11 +1,16 @@
 import { Physics, Scene, Tilemaps, type Types } from "phaser";
 import { AssetsKey } from "../../Assets";
-import { dungeonBuilder, type DungeonConfig, type MapData, type Room} from "../../map/procedural";
+import { dungeonBuilder, type DungeonConfig, type MapData, type Room, type RoomGraph } from "../../map/procedural";
 import { Vector2 } from "../../map/math";
 import Player from "../Player";
 import { type TileSetMap } from "../../map/TileSetMap";
 import { RoomSetup } from "./RoomSetup";
 import { DungeonSpawner } from "./DungeonSpawner";
+import type { Enemy } from "../Enemy";
+import { Passage } from "../Passage";
+import type { ExitZone } from "./ExitZone";
+import { EnemyFactory, PassageFactory, PlayerFactory } from "./factories";
+import { DungeonDecorator } from "./DungeonDecorator";
 
 export interface SpawnLocation {
   spawnPoint: Types.Math.Vector2Like;
@@ -28,6 +33,12 @@ export class Dungeon extends Tilemaps.Tilemap {
   private mapColliders: Physics.Arcade.Collider[];
   private roomSetup: RoomSetup;
   private spawner: DungeonSpawner;
+  private decorator: DungeonDecorator;
+
+  private enemies: Enemy[];
+  private playerGroup: Physics.Arcade.Group;
+  private exitPoint: ExitZone | undefined;
+  private passage: Passage | undefined;
 
   constructor(scene: Scene, dungeonConfig: DungeonConfig, scale: number = 1.0, tileSize: number = 16) {
     super(scene, new Tilemaps.MapData({ tileWidth: tileSize, tileHeight: tileSize }));
@@ -47,23 +58,41 @@ export class Dungeon extends Tilemaps.Tilemap {
       invSize: new Vector2(1.0 / (this.tileWidth * this.scale), 1.0 / (this.tileHeight * this.scale)),
     };
     this.roomSetup = new RoomSetup();
-    this.spawner = new DungeonSpawner(scene);
+    this.spawner = new DungeonSpawner(this, new PlayerFactory(), new EnemyFactory(), new PassageFactory());
+    this.decorator = new DungeonDecorator();
+
+    this.enemies = [];
+    this.playerGroup = scene.physics.add.group();
+    this.exitPoint = undefined;
+    this.passage = undefined;
 
     this.build(dungeonConfig);
   }
 
-  getTileSize(): TileSize {
-    return this.tileSize;
+  getTileSize(): Vector2 {
+    return this.tileSize.size;
   }
 
   getScale(): number {
     return this.scale;
   }
 
+  getOrigin(): Vector2 {
+    return this.origin;
+  }
+
   private clear() {
     this.mapColliders.forEach((col) => col.destroy());
     this.mapColliders = [];
-    this.spawner.clear();
+    this.enemies.forEach((enemy) => enemy.destroy());
+    this.enemies = [];
+    this.playerGroup.clear(true, true);
+
+    this.exitPoint?.destroy();
+    this.exitPoint = undefined;
+    this.passage?.destroy();
+    this.passage = undefined;
+
     this.removeAllLayers();
   }
 
@@ -76,8 +105,8 @@ export class Dungeon extends Tilemaps.Tilemap {
 
     this.roomSetup.apply(this.mapData.graph);
     this.createLevelLayer();
-    // eslint-disable-next-line prefer-spread
-    this.spawner.apply(this, this.mapData.graph);
+    this.decorator.apply(this, this.mapData.graph, this.tileSet, this.tileSetMap);
+    this.spawner.apply(this.mapData.graph);
   }
 
   private createLevelLayer() {
@@ -113,7 +142,7 @@ export class Dungeon extends Tilemaps.Tilemap {
     return point.clone().mul(this.tileSize.size).sub(this.origin);
   }
 
-  addColliderWithMap(object: Physics.Arcade.Sprite, depthOffset: number = 0) {
+  private addColliderWithMap(object: Physics.Arcade.Sprite, depthOffset: number = 0) {
     const layer = this.getLayer(0)?.tilemapLayer;
     if (layer === undefined) {
       return;
@@ -127,6 +156,34 @@ export class Dungeon extends Tilemaps.Tilemap {
   }
 
   getPlayer(index: number): Player | undefined {
-    return this.spawner.getPlayer(index);
+    return this.playerGroup.getFirstNth(index, true, false);
+  }
+
+  addPlayer(player: Player): void {
+    this.addColliderWithMap(player, 5);
+    this.playerGroup.add(player);
+  }
+
+  addEnemy(enemy: Enemy): void {
+    enemy.setDepth(5);
+    this.enemies.push(enemy);
+  }
+
+  addDoor(door: Passage): void {
+    if (this.passage !== undefined) {
+      throw new Error("There can only be one door per dungeon");
+    }
+
+    door.collideWithGroup(this.playerGroup);
+    this.passage = door;
+  }
+
+  addExit(exit: ExitZone): void {
+    if (this.exitPoint !== undefined) {
+      throw new Error("There can only be one exit per dungeon");
+    }
+
+    exit.overlapWithGroup(this.playerGroup);
+    this.exitPoint = exit;
   }
 }

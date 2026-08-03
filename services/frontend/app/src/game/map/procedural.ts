@@ -16,7 +16,7 @@ export enum Direction {
 export enum RoomType {
   Standard,
   Entrance,
-  Exit
+  Exit,
 }
 
 export type RoomGraph = Map<Room, Set<Room>>;
@@ -44,12 +44,12 @@ export enum TileNodeType {
   None,
   EnterPoint,
   SpawnPoint,
-  ExitPoint
+  ExitPoint,
 }
 
 interface TileNode {
   position: Vector2;
-  type: TileNodeType
+  type: TileNodeType;
 }
 
 export interface Room {
@@ -110,7 +110,7 @@ function generateRooms(amount: number, roomConfig: RoomConfig): Room[] {
       visited: false,
       cost: -1,
       type: RoomType.Standard,
-      tileNode: undefined
+      tileNode: undefined,
     });
   }
 
@@ -148,7 +148,7 @@ function tryPlaceRoom(roomToPlace: Room, currentRoom: Room, direction: Direction
   roomToPlace.aabb.place(Vector2.add(currentRoom.aabb.position, offset));
   console.assert(roomToPlace.aabb.isOverlap(currentRoom.aabb) === false, "roomToPlace is overlapping currentRoom");
 
-  return placedRooms.every(room => roomToPlace.aabb.isOverlap(room.aabb) === false);
+  return placedRooms.every((room) => roomToPlace.aabb.isOverlap(room.aabb) === false);
 }
 
 // Randomly place a doorway between two rooms
@@ -186,9 +186,9 @@ function placeDoorway(pivotRoom: Room, neighborRoom: Room, direction: Direction)
     default:
       throw new Error(`Invalid Direction value ${direction} for door placement`);
   }
+
   pivotRoom.doors.push(door);
   neighborRoom.doors.push(door);
-
   return door;
 }
 
@@ -225,15 +225,19 @@ function layoutPutRoom(map: number[][], room: Room, tileSetMap: TileSetMap): voi
       let direction = y === min.y ? Direction.Top : y === max.y - 1 ? Direction.Down : Direction.None;
       direction |= x === min.x ? Direction.Left : x === max.x - 1 ? Direction.Right : Direction.None;
 
-      if (direction === Direction.TopLeft ||
+      if (
+        direction === Direction.TopLeft ||
         direction === Direction.TopRight ||
         direction === Direction.DownLeft ||
-        direction === Direction.DownRight) {
+        direction === Direction.DownRight
+      ) {
         map[y][x] = getCornerTile(direction, tileSetMap.corners);
-      } else if (direction === Direction.Top ||
+      } else if (
+        direction === Direction.Top ||
         direction === Direction.Right ||
         direction === Direction.Down ||
-        direction === Direction.Left) {
+        direction === Direction.Left
+      ) {
         map[y][x] = getWallTile(direction, tileSetMap.walls);
       } else {
         map[y][x] = getFloorTile(tileSetMap.floor);
@@ -328,6 +332,6 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
     rooms: placedRooms,
     width: mapSize.x,
     height: mapSize.y,
-    graph: graph
+    graph: graph,
   };
 }

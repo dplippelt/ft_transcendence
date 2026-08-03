@@ -30,6 +30,22 @@ export interface EnemyData {
   states: EnemyStates;
 }
 
+export const skeletonData: EnemyData = {
+  assetKey: AssetsKey.Skeleton,
+  idleTime: { minimum: 3000, maximum: 5000 },
+  searchRadius: 64,
+  sightRadius: 128,
+  movementSpeed: 196,
+  states: {
+    idle: new IdleState(),
+    wander: new WanderState(),
+    chase: new ChaseState(),
+    recall: new RecallState(),
+    combat: new CombatState(),
+    die: new DieState(),
+  },
+};
+
 export class Enemy extends Physics.Arcade.Sprite {
   fsm: FiniteStateMachine<Enemy>;
   waitFor: WaitFor;
@@ -61,25 +77,5 @@ export class Enemy extends Physics.Arcade.Sprite {
 
     this.scene.add.existing(this);
     this.scene.physics.add.existing(this);
-  }
-
-  private static skeletonData: EnemyData = {
-    assetKey: AssetsKey.Skeleton,
-    idleTime: { minimum: 3000, maximum: 5000 },
-    searchRadius: 64,
-    sightRadius: 128,
-    movementSpeed: 196,
-    states: {
-      idle: new IdleState(),
-      wander: new WanderState(),
-      chase: new ChaseState(),
-      recall: new RecallState(),
-      combat: new CombatState(),
-      die: new DieState(),
-    },
-  };
-
-  static createSkeletonEnemy(scene: Scene, spawnLocation: SpawnLocation): Enemy {
-    return new Enemy(scene, spawnLocation, Enemy.skeletonData);
   }
 }

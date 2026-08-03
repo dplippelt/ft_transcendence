@@ -42,6 +42,12 @@ export enum PassageType {
   FramedDoorClosed,
 }
 
+export enum FoilageType {
+  Grass,
+  RedMushroom,
+  PurpleMushroom
+}
+
 type CornerDirection = Direction.TopLeft | Direction.TopRight | Direction.DownLeft | Direction.DownRight;
 type WallDirection = Direction.Top | Direction.Right | Direction.Down | Direction.Left;
 
@@ -50,5 +56,6 @@ export interface TileSetMap {
   innerCorners: Record<CornerDirection, number>;
   walls: Record<WallDirection, Partial<Record<WallType, number>>>;
   floor: Record<FloorType, weight>;
-  passages: Record<PassageType, number>
+  passages: Record<PassageType, number>;
+  foilage: Record<FoilageType, weight>
 }

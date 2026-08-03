@@ -2,7 +2,7 @@ import { Scene } from "phaser";
 import { EventBus } from "../EventBus";
 import { Dungeon } from "../gameobjects/dungeon/Dungeon.ts";
 import { Direction, type DungeonConfig } from "../map/procedural";
-import { WallType, FloorType, PassageType } from "../map/TileSetMap.ts";
+import { WallType, FloorType, PassageType, FoilageType } from "../map/TileSetMap.ts";
 import Player from "../gameobjects/Player.ts";
 
 const dungeonConfig: DungeonConfig = {
@@ -61,6 +61,11 @@ const dungeonConfig: DungeonConfig = {
         [PassageType.FramedDoorOpen]: 62,
         [PassageType.FramedDoorClosed]: 63,
       },
+      foilage: {
+        [FoilageType.RedMushroom]: { index: 20, weight: 5},
+        [FoilageType.PurpleMushroom]: {index: 33, weight: 2},
+        [FoilageType.Grass]: { index: 46, weight: 20 },
+      }
     },
   },
   roomCount: { min: 8, max: 8 },

@@ -133,7 +133,7 @@ export class CombatState implements IFiniteState<Enemy> {
 
 export class DieState implements IFiniteState<Enemy> {
   onEnter(enemy: Enemy): void {
-    enemy.destroy(false);
+    enemy.disableBody(true, true);
   }
 
   onUpdate(): NextState<Enemy> {

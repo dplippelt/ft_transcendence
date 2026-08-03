@@ -2,15 +2,10 @@ import { type RoomGraph, type Room, RoomType, TileNodeType } from "../../map/pro
 import { Vector2, randomPoint, weightedRandom, type weight } from "../../map/math";
 
 export class RoomSetup {
-  private _entrance: Room | undefined = undefined;
-  private _exit: Room | undefined = undefined;
-
   apply(graph: RoomGraph) {
-    this._entrance = this.setupEntranceRoom(graph);
-    this._exit = this.setupExitRoom(this._entrance, graph);
+    const entrance = this.setupEntranceRoom(graph);
+    this.setupExitRoom(entrance, graph);
     this.setupStandardRooms(graph);
-
-    void this._exit;
   }
 
   private pickRandomRoomTile(room: Room): Vector2 {
@@ -20,14 +15,14 @@ export class RoomSetup {
   private setupEntranceRoom(graph: RoomGraph): Room {
     const candidates: Room[] = [...graph.keys()];
     for (const room of candidates) {
-      room.cost = 5 + 10 - room.doors.length * 4;
+      room.cost = 5 + 10 - room.doors.length * 4; // TODO: hard-coded values
     }
 
     const weights: weight[] = candidates.map((room, index) => ({ index: index, weight: room.cost }));
     const entranceRoom = candidates[weightedRandom(weights).index];
     entranceRoom.type = RoomType.Entrance;
     entranceRoom.tileNode = {
-      position: this.pickRandomRoomTile(entranceRoom),
+      position: this.pickRandomRoomTile(entranceRoom), // TODO: Same constraint as with exit
       type: TileNodeType.EnterPoint
     };
     return entranceRoom;
@@ -56,7 +51,7 @@ export class RoomSetup {
         if (graph.get(neighbor)!.size > 1) {
           queue.push(neighbor);
         } else {
-          neighbor.cost += room.cost === 0 ? 2 : 10; // other considerations: room size
+          neighbor.cost += room.cost === 0 ? 2 : 10; // TODO other considerations: room size
           candidates.push(neighbor);
         }
       }
@@ -66,7 +61,7 @@ export class RoomSetup {
     const exitRoom = candidates[weightedRandom(exitWeights).index];
     exitRoom.type = RoomType.Exit;
     exitRoom.tileNode = {
-      position: this.pickRandomRoomTile(exitRoom), // TODO: Center the exit point
+      position: this.pickRandomRoomTile(exitRoom), // TODO: Put the exit point in the center of the room instead
       type: TileNodeType.ExitPoint
     };
     return exitRoom;
@@ -77,6 +72,7 @@ export class RoomSetup {
       if (room.type === RoomType.Entrance || room.type === RoomType.Exit) {
         continue;
       }
+
       room.type = RoomType.Standard;
       room.tileNode = {
         position: this.pickRandomRoomTile(room),

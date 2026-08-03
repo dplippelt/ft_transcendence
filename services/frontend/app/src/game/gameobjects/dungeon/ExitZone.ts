@@ -10,14 +10,29 @@ type ColliderType =
   | Phaser.Tilemaps.Tile;
 
 export class ExitZone extends GameObjects.Zone {
-  constructor(scene: Scene, position: Vector2Like, size: Vector2Like, players: Physics.Arcade.Group) {
+  collider: Physics.Arcade.Collider | undefined;
+
+  constructor(scene: Scene, position: Vector2Like, size: Vector2Like) {
     super(scene, position.x, position.y, size.x, size.y);
 
+    scene.add.existing(this);
     scene.physics.world.enableBody(this);
-    scene.physics.add.overlap(this, players, this.onEnter, undefined, this);
   }
 
-  onEnter(entity: ColliderType) {
+  destroy(fromScene?: boolean): void {
+    super.destroy(fromScene);
+    this.collider?.destroy();
+  }
+
+  overlapWithGroup(group: Physics.Arcade.Group) {
+    if (this.collider !== undefined) {
+      this.collider.destroy();
+    }
+
+    this.collider = this.scene.physics.add.overlap(this, group, this.onEnter, undefined, this);
+  }
+
+  private onEnter(entity: ColliderType) {
     if ((entity as GameObjects.GameObject).name !== "player") {
       return;
     }
