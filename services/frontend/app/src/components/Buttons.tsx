@@ -6,6 +6,7 @@ import { ArrowDown01, ArrowDown10, ArrowDownAZ, ArrowDownZA, ChevronLeft, Dot, M
 import Avatar from "./Avatar";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
 import { useLobbies } from "../contexts/LobbiesContext";
+import { useAuth } from "../contexts/AuthContext";
 
 interface IMenuButton
 {
@@ -294,4 +295,21 @@ export function RefreshButton( { onClick } : IRefreshButton )
 			<RefreshCcw />
 		</button>
 	);
+}
+
+export function PageNotFoundButton()
+{
+	const { auth } = useAuth();
+	const loggedIn = !auth.guest;
+	const navigate = useNavigate();
+
+	const label = loggedIn
+					? "Return to main menu"
+					: "Return to landing page";
+
+	const onClick = loggedIn
+					? () => navigate(RoutePath.mainMenu, { replace: true })
+					: () => navigate(RoutePath.landingPage, { replace: true })
+
+	return <TextButton label={label} onClick={onClick} extraStyling={styles.pageNotFoundButton} />;
 }
