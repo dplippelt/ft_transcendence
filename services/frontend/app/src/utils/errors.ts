@@ -1,30 +1,41 @@
+import { ApiError } from "../api/http";
+
 export const MIN_USERNAME_LENGTH = 3;
-export const MAX_USERNAME_LENGTH = 20;
+export const MAX_USERNAME_LENGTH = 50;
 export const MIN_LOBBY_NAME_LENGTH = 3;
-export const MAX_LOBBY_NAME_LENGTH = 20;
+export const MAX_LOBBY_NAME_LENGTH = 50;
 
 export enum ErrorType
 {
-	none,
-	usernameAlreadyTaken,
-	usernameCannotBeEmpty,
-	badUsernameLength,
-	usernameContainsInvalChars,
-	passwordsDontMatch,
-	passwordCannotBeEmpty,
-	incorrectCreds,
-	avatarBadFileType,
-	cannotAddSelf,
-	userDoesNotExist,
-	userAlreadyFriend,
-	noFriendSelected,
-	lobbyNameCannotBeEmpty,
-	badLobbyNameLength,
-	lobbyNameContainsInvalChars,
-	lobbyNameAlreadyExists,
-	usernameCannotBeTheSame,
-	lobbyDoesNotExist,
-	lobbyFull,
+    none,
+    usernameAlreadyTaken,
+    emailAlreadyTaken,
+    usernameCannotBeEmpty,
+    badUsernameLength,
+    usernameContainsInvalChars,
+    passwordsDontMatch,
+    passwordCannotBeEmpty,
+    incorrectCreds,
+    accountInactive,
+    registrationFailed,
+    googleLoginFailed,
+    googleLoginUnavailable,
+    avatarBadFileType,
+    cannotAddSelf,
+    userDoesNotExist,
+    userAlreadyFriend,
+    noFriendSelected,
+    lobbyNameCannotBeEmpty,
+    badLobbyNameLength,
+    lobbyNameContainsInvalChars,
+    lobbyNameAlreadyExists,
+    usernameCannotBeTheSame,
+    lobbyDoesNotExist,
+    lobbyFull,
+    invalidEmail,
+    passwordTooShort,
+    emailCannotBeEmpty,
+    unknown,
 }
 
 export function isErrorType( value: string | ErrorType ) : value is ErrorType
@@ -49,7 +60,7 @@ export function errorMsg( error: ErrorType ): string
 		case ErrorType.passwordCannotBeEmpty:
 			return "Password cannot be empty!";
 		case ErrorType.incorrectCreds:
-			return "Incorrect username or password!";
+			return "Incorrect email or password!";
 		case ErrorType.avatarBadFileType:
 			return "Avatar must be JPEG or PNG!";
 		case ErrorType.cannotAddSelf:
@@ -73,8 +84,76 @@ export function errorMsg( error: ErrorType ): string
 		case ErrorType.lobbyDoesNotExist:
 			return "Failed to join because the lobby does not exist";
 		case ErrorType.lobbyFull:
-			return "Failed to join because the lobby is full";
+            return "Failed to join because the lobby is full";
+        case ErrorType.emailAlreadyTaken:
+            return "Email already registered!";
+        case ErrorType.unknown:
+            return "Something went wrong!";
+        case ErrorType.accountInactive:
+            return "This account is inactive.";
+        case ErrorType.registrationFailed:
+            return "Failed to create account.";
+        case ErrorType.googleLoginFailed:
+            return "Google login failed.";
+        case ErrorType.googleLoginUnavailable:
+            return "Google login is currently unavailable.";
+        case ErrorType.invalidEmail:
+            return "Please enter a valid email address!";
+        case ErrorType.passwordTooShort:
+            return "Password must be at least 8 characters long!";
+        case ErrorType.emailCannotBeEmpty:
+            return "Email cannot be empty!";
 		default:
 			return "";
 	}
+}
+
+export function mapAuthApiError(error: unknown): ErrorType
+{
+    if (!(error instanceof ApiError))
+        return ErrorType.unknown;
+
+    switch (error.code)
+    {
+        case "INVALID_CREDENTIALS":
+            return ErrorType.incorrectCreds;
+        case "EMAIL_ALREADY_EXISTS":
+            return ErrorType.emailAlreadyTaken;
+        case "USERNAME_ALREADY_EXISTS":
+            return ErrorType.usernameAlreadyTaken;
+        case "ACCOUNT_INACTIVE":
+            return ErrorType.accountInactive;
+        case "REGISTRATION_FAILED":
+            return ErrorType.registrationFailed;
+        case "GOOGLE_NOT_CONFIGURED":
+            return ErrorType.googleLoginUnavailable;
+        case "INVALID_GOOGLE_CREDENTIALS":
+        case "GOOGLE_SUBJECT_MISSING":
+        case "GOOGLE_EMAIL_MISSING":
+        case "GOOGLE_EMAIL_NOT_VERIFIED":
+        case "GOOGLE_LINK_FAILED":
+        case "GOOGLE_REGISTRATION_FAILED":
+            return ErrorType.googleLoginFailed;
+    }
+    if (error.status === 422 && error.validationErrors)
+    {
+        for (const validationError of error.validationErrors)
+        {
+            const field =
+                validationError.loc?.[validationError.loc.length - 1];
+
+            switch (field)
+            {
+                case "email":
+                    return ErrorType.invalidEmail;
+
+                case "password":
+                    return ErrorType.passwordTooShort;
+
+                case "username":
+                    return ErrorType.badUsernameLength;
+            }
+        }
+    }
+    return ErrorType.unknown;
 }

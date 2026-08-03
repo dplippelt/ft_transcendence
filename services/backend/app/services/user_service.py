@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import bad_request
+from app.core.exceptions import ErrorCode, bad_request
 from app.db.utils import commit_or_bad_request
 from app.models.auth_account import AuthAccount
 from app.models.user import User
@@ -46,7 +46,7 @@ def ensure_username_is_available(db: Session, username: str | None, exclude_user
         query = query.filter(User.id != exclude_user_id)
 
     if query.first():
-        raise bad_request("Username already exists")
+        raise bad_request("Username already exists", code=ErrorCode.USERNAME_ALREADY_EXISTS)
 
 
 def update_user_profile(db: Session, user: User, data: UserUpdate) -> User:
@@ -59,7 +59,7 @@ def update_user_profile(db: Session, user: User, data: UserUpdate) -> User:
     for field, value in data.model_dump(exclude_unset=True, mode="json").items():
         setattr(user, field, value)
 
-    commit_or_bad_request(db, "Username already exists")
+    commit_or_bad_request(db, "Username already exists", code=ErrorCode.USERNAME_ALREADY_EXISTS)
 
     return user
 
@@ -95,4 +95,4 @@ def deactivate_user(db: Session, user: User) -> None:
                 auth_account.email, user.id, AuthAccount.__table__.c.email.type.length
             )
 
-    commit_or_bad_request(db, "Account could not be deactivated")
+    commit_or_bad_request(db, "Account could not be deactivated",)

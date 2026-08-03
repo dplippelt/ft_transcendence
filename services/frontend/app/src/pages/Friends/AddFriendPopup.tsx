@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import { useUser } from "../../contexts/UserContext";
 import ErrorText from "../../components/ErrorText";
 import { ErrorType, isErrorType } from "../../utils/errors";
 import { TextInput } from "../../components/TextInput";
@@ -8,6 +7,7 @@ import { MossButton } from "../../components/Buttons";
 import { PopupType } from "../../utils/utils";
 import { getValidUsername } from "../../utils/usernameCheck";
 import { useFriends } from "../../contexts/FriendsContext";
+import { useCurrentUser } from "../../contexts/AuthContext";
 
 interface IAddFriendPopup
 {
@@ -18,7 +18,7 @@ export default function AddFriendPopup( { setPopupType } : IAddFriendPopup )
 {
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [username, setUsername] = useState<string>("");
-	const { user } = useUser();
+	const user = useCurrentUser();
 	const { friends, addFriend } = useFriends();
 
 	function usernameCheck()
@@ -29,7 +29,7 @@ export default function AddFriendPopup( { setPopupType } : IAddFriendPopup )
 
 		const validUsername = result;
 
-		if ( validUsername.toLowerCase() === user.username.toLowerCase() )
+		if ( user.username && validUsername.toLowerCase() === user.username.toLowerCase() )
 			return setError(ErrorType.cannotAddSelf);
 
 		// Mock username checks

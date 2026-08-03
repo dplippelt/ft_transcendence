@@ -7,99 +7,261 @@ import Page from "../../components/Page";
 import { useAuth } from "../../contexts/AuthContext";
 import ErrorText from "../../components/ErrorText";
 import { RouteParam, RoutePath } from "../../utils/utils";
-import { ErrorType, isErrorType } from "../../utils/errors";
+import { ErrorType, isErrorType, mapAuthApiError } from "../../utils/errors";
 import { MossButton, TextButton } from "../../components/Buttons";
-import { useUser } from "../../contexts/UserContext";
 import { PasswordInput, TextInput } from "../../components/TextInput";
 import { getValidUsername } from "../../utils/usernameCheck";
+import { GoogleLogin } from "@react-oauth/google";
+import { getValidEmail } from "../../utils/emailCheck";
 
-function LoginQuery()
+
+interface GoogleAuthButtonProps
 {
-	const [username, setUsername] = useState<string>("");
-	const [password, setPassword] = useState<string>("");
-	const [error, setError] = useState<ErrorType>(ErrorType.none);
-	const navigate = useNavigate();
-	const auth = useAuth();
-	const user = useUser();
-
-	function checkLogin()
-	{
-		const result: string | ErrorType = getValidUsername(username);
-		if ( isErrorType(result) )
-			return setError(result);
-
-		const validUsername = result;
-
-		// TODO: check creds against back-end data.
-
-		// Mock login check:
-		if ( validUsername !== password )
-			return setError(ErrorType.incorrectCreds);
-
-		auth.login();
-		user.updateUsername(validUsername);
-		user.setUserID(validUsername + "_ID"); // TODO: fetch userID from backend!
-		navigate(RoutePath.mainMenu);
-	}
-
-	return (
-		<div className={styles.window}>
-			{ error !== ErrorType.none && <ErrorText error={error}/> }
-			<TextInput label="Username:" placeholder="Enter username" setter={setUsername} id="username" />
-			<PasswordInput label="Password:" placeholder="Enter password" isNewPassword={false} setter={setPassword} id="password" />
-			<MossButton label="Login" onClick={checkLogin} />
-			<MossButton label="Continue with Google" onClick={ () => {} } />
-			<TextButton label="Don't have an account? Sign-up" onClick={ () => navigate(RoutePath.auth + RouteParam.signup) } />
-		</div>
-	);
+    setError: (error: ErrorType) => void;
 }
 
-function SignupQuery()
+function GoogleAuthButton({ setError }: GoogleAuthButtonProps)
 {
-	const [username, setUsername] = useState<string>("");
+    const navigate = useNavigate();
+    const { loginWithGoogle } = useAuth();
+
+    return (
+    <GoogleLogin
+        theme="filled_black"
+        shape="rectangular"
+        text="continue_with"
+        onSuccess={async (credentialResponse) => {
+            if (!credentialResponse.credential)
+                return setError(ErrorType.googleLoginFailed);
+
+            try {
+                setError(ErrorType.none);
+                await loginWithGoogle(credentialResponse.credential);
+                navigate(RoutePath.mainMenu);
+            }
+            catch (error) {
+                setError(mapAuthApiError(error));
+            }
+        }}
+        onError={() => {
+            setError(ErrorType.googleLoginFailed);
+        }}
+        />
+    )
+}
+
+function LoginForm()
+{
+	const [email, setEmail] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
-	const [confirmPassword, setConfirmPassword] = useState<string>("");
-	const [error, setError] = useState<ErrorType>(ErrorType.none);
-	const navigate = useNavigate();
-	const auth = useAuth();
-	const user = useUser();
+    const [error, setError] = useState<ErrorType>(ErrorType.none);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    
+    const navigate = useNavigate();
+    const { login } = useAuth();
 
-	function signupCheck()
-	{
-		const result: string | ErrorType = getValidUsername(username);
-		if ( isErrorType(result) )
-			return setError(result);
+    async function checkLogin( event: React.FormEvent<HTMLFormElement> )
+    {
+        event.preventDefault();
 
-		const validUsername = result;
+        if (isSubmitting)
+            return;
 
-		// TODO: check creds against back-end data.
+        setError(ErrorType.none);
 
-		// if username has been taken setError(Error.usernameAlreadyExists)
-		// else if password !=== confirmPassword setError(Error.passwordsDontMatch)
-		// else naviagte(RoutePath.mainMenu)
+        const emailResult = getValidEmail(email);
 
-		// Mock signup check
-		if ( validUsername.length === 1 )
-			return setError(ErrorType.usernameAlreadyTaken);
-		if ( password !== confirmPassword )
-			return setError(ErrorType.passwordsDontMatch);
+        if (isErrorType(emailResult))
+            return setError(emailResult);
 
-		auth.login();
-		user.setUserID(validUsername + "_ID"); // TODO: instead of using username replace with stable userID fetched from backend after user is created
-		user.updateUsername(validUsername);
-		navigate(RoutePath.mainMenu);
+        if (password.length === 0)
+            return setError(ErrorType.passwordCannotBeEmpty);
+
+        const validEmail = emailResult;
+
+        setIsSubmitting(true);
+
+        try
+        {
+            await login(
+            {
+                email: validEmail,
+                password,
+            });
+
+            navigate(RoutePath.mainMenu);
+        }
+        catch (err)
+        {
+            setError(mapAuthApiError(err));
+        }
+        finally
+        {
+            setIsSubmitting(false);
+        }
+    }
+
+    return (
+        <form
+            className={styles.window}
+            onSubmit={checkLogin}
+            noValidate
+        >
+            {error !== ErrorType.none &&
+                <ErrorText error={error}/>
+            }
+    
+            <TextInput
+                type="email"
+                label="Email:"
+                placeholder="Enter email"
+                setter={setEmail}
+                id="email"
+            />
+    
+            <PasswordInput
+                label="Password:"
+                placeholder="Enter password"
+                isNewPassword={false}
+                setter={setPassword}
+                id="password"
+            />
+    
+            <MossButton
+                label="Login"
+                type="submit"
+                disabled={isSubmitting}
+            />
+    
+            <GoogleAuthButton setError={setError}/>
+    
+            <TextButton
+                label="Don't have an account? Sign-up"
+                onClick={() =>
+                    navigate(RoutePath.auth + RouteParam.signup)
+                }
+            />
+        </form>
+    );
+}
+
+function SignupForm()
+{
+    const [email, setEmail] = useState<string>("");
+    const [username, setUsername] = useState<string>("");
+    const [password, setPassword] = useState<string>("");
+    const [confirmPassword, setConfirmPassword] = useState<string>("");
+    const [error, setError] = useState<ErrorType>(ErrorType.none);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+    const navigate = useNavigate();
+    const { register } = useAuth();
+
+    async function signupCheck(event: React.FormEvent<HTMLFormElement>)
+    {
+        event.preventDefault();
+        if (isSubmitting)
+            return;
+        setError(ErrorType.none);
+
+        const emailResult: string | ErrorType = getValidEmail(email);
+
+        if (isErrorType(emailResult))
+            return setError(emailResult);
+
+        const validEmail = emailResult;
+        const usernameResult: string | ErrorType = getValidUsername(username);
+
+        if (isErrorType(usernameResult))
+            return setError(usernameResult);
+
+        const validUsername = usernameResult;
+
+        if (password.length < 8)
+            return setError(ErrorType.passwordTooShort);
+
+        if (password !== confirmPassword)
+            return setError(ErrorType.passwordsDontMatch);
+
+        setIsSubmitting(true);
+
+        try
+        {
+            await register(
+            {
+                email: validEmail,
+                username: validUsername,
+                password,
+            });
+
+            navigate(RoutePath.mainMenu);
+        }
+        catch (err)
+        {
+            setError(mapAuthApiError(err));
+        }
+        finally
+        {
+            setIsSubmitting(false);
+        }
 	}
 
 	return (
-		<div className={styles.window}>
-			{ error !== ErrorType.none && <ErrorText error={error}/> }
-			<TextInput label="Username:" placeholder="Enter new username" setter={setUsername} id="newUsername" />
-			<PasswordInput label="Password:" placeholder="Enter new password" isNewPassword={true} setter={setPassword} id="newPassword" />
-			<PasswordInput label="Confirm password:" placeholder="Confirm new password" isNewPassword={true} setter={setConfirmPassword} id="confirmPassword" />
-			<MossButton label="Sign-up" onClick={signupCheck} />
-			<MossButton label="Continue with Google" onClick={ () => {} } />
-			<TextButton label="Already have an account? Login" onClick={ () => navigate(RoutePath.auth + RouteParam.login) } />
-		</div>
+        <form
+            className={styles.window}
+            onSubmit={signupCheck}
+            noValidate
+        >
+			{error !== ErrorType.none &&
+				<ErrorText error={error}/>
+			}
+
+            <TextInput
+                type="email"
+				label="Email:"
+				placeholder="Enter email"
+				setter={setEmail}
+				id="newEmail"
+			/>
+
+            <TextInput
+				label="Username:"
+				placeholder="Enter new username"
+				setter={setUsername}
+				id="newUsername"
+			/>
+
+			<PasswordInput
+				label="Password:"
+				placeholder="Enter new password"
+				isNewPassword={true}
+				setter={setPassword}
+				id="newPassword"
+			/>
+
+			<PasswordInput
+				label="Confirm password:"
+				placeholder="Confirm new password"
+				isNewPassword={true}
+				setter={setConfirmPassword}
+				id="confirmPassword"
+			/>
+
+			<MossButton
+				label="Sign-up"
+                type="submit"
+                disabled={isSubmitting}
+			/>
+
+			<GoogleAuthButton setError={setError} />
+
+			<TextButton
+				label="Already have an account? Login"
+				onClick={() =>
+					navigate(RoutePath.auth + RouteParam.login)
+				}
+			/>
+		</form>
 	);
 }
 
@@ -110,7 +272,7 @@ function Login()
 			<Background/>
 			<Page>
 				<MenuTitle title="Login"/>
-				<LoginQuery/>
+				<LoginForm/>
 			</Page>
 		</>
 	);
@@ -123,7 +285,7 @@ function Signup()
 			<Background/>
 			<Page>
 				<MenuTitle title="Sign-up"/>
-				<SignupQuery/>
+				<SignupForm/>
 			</Page>
 		</>
 	);

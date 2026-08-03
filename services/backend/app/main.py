@@ -1,14 +1,18 @@
 
 from contextlib import asynccontextmanager
+from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi import FastAPI
 
 from app.api.v1 import auth, cards, chat, dungeons, leaderboard, puzzles, scores, users, friends
 from app.db.database import Base, engine
+from app.core.settings import get_settings
 
 # Import model modules so SQLAlchemy registers their tables in Base.metadata.
 import app.models  # noqa: F401
 
+
+settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,6 +24,14 @@ app = FastAPI(
     title="ft_transcendence API",
     version="1.0.0",
     lifespan=lifespan,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[settings.frontend_origin],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 app.include_router(auth.router,        prefix="/auth",         tags=["auth"])

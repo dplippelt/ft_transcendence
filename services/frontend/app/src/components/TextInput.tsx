@@ -6,7 +6,8 @@ interface ITextInput
 	label: string;
 	placeholder: string;
 	id: string;
-	setter: (value: React.SetStateAction<string>) => void;
+    setter: (value: React.SetStateAction<string>) => void;
+    type?: React.HTMLInputTypeAttribute;
 }
 
 interface IPasswordInput
@@ -26,7 +27,7 @@ interface IChatInput
 	setMsg: React.Dispatch<React.SetStateAction<string>>;
 }
 
-export function TextInput( { label, placeholder, id, setter } : ITextInput )
+export function TextInput( { label, placeholder, id, setter, type = "text" } : ITextInput )
 {
 	function handleChange( e: React.ChangeEvent<HTMLInputElement> )
 	{
@@ -37,7 +38,7 @@ export function TextInput( { label, placeholder, id, setter } : ITextInput )
 		<>
 			<label htmlFor={id}>{label}</label>
 			<input
-				type="text"
+				type={type}
 				id={id}
 				placeholder={placeholder}
 				onChange={handleChange}/>
