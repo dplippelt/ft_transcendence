@@ -25,7 +25,6 @@ export class PassageFactory {
       spawnLocation.dungeon.scene,
       spawnLocation.spawnPoint,
       {
-        direction: Direction.Top, // TODO: get rid of this
         frame: {
           open: 58,
           close: 59
@@ -41,7 +40,6 @@ export class PassageFactory {
       spawnLocation.dungeon.scene,
       spawnLocation.spawnPoint,
       {
-        direction: Direction.Top, // TODO: get rid of this
         frame: {
           open: 60,
           close: 61

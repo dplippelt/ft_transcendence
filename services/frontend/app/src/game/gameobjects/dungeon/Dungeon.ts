@@ -1,6 +1,6 @@
 import { Physics, Scene, Tilemaps, type Types } from "phaser";
 import { AssetsKey } from "../../Assets";
-import { dungeonBuilder, type DungeonConfig, type MapData, type Room, type RoomGraph } from "../../map/procedural";
+import { dungeonBuilder, type DungeonConfig, type MapData, type Room } from "../../map/procedural";
 import { Vector2 } from "../../map/math";
 import Player from "../Player";
 import { type TileSetMap } from "../../map/TileSetMap";
