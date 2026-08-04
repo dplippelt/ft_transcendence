@@ -8,7 +8,7 @@ import { Direction } from "../../map/procedural";
 import { AssetsKey } from "../../Assets";
 
 export class PlayerFactory {
-  createPlayer(index: number, spawnLocation: SpawnLocation): Player {
+  createPlayer(_index: number, spawnLocation: SpawnLocation): Player {
     return new Player(spawnLocation.dungeon.scene, playerOne, spawnLocation);
   }
 }

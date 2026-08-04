@@ -94,6 +94,7 @@ export class GameManagerScene extends Scene {
 
   private onGameOver(): void {
     // TODO: Go back to main menu
+    this._levelCount = 5;
     console.error("Game Over!!!");
   }
 

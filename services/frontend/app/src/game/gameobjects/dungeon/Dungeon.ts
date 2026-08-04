@@ -38,11 +38,11 @@ export class Dungeon extends Tilemaps.Tilemap {
   private mapData!: MapData;
   private tileSetMap: TileSetMap;
   private tileSet: Tilemaps.Tileset;
-  private mapColliders: Physics.Arcade.Collider[];
   private roomSetup: RoomSetup;
   private spawner: DungeonSpawner;
   private decorator: DungeonDecorator;
 
+  private mapColliders: Physics.Arcade.Collider[];
   private enemies: Enemy[];
   private playerGroup: Physics.Arcade.Group;
   private exitPoint: ExitZone | undefined;
