@@ -7,7 +7,6 @@ import { MenuTitle } from "./PageTitle";
 import { useAuth } from "../contexts/AuthContext";
 import { RouteParam, RoutePath, } from "../utils/utils";
 
-
 export default function ProtectedRoute()
 {
     const { auth } = useAuth();

@@ -13,6 +13,8 @@ import Multiplayer from "./pages/Multiplayer/Multiplayer"
 import Lobby from "./pages/Multiplayer/Lobby"
 import LobbiesBrowser from "./pages/Multiplayer/LobbiesBrowser"
 import ProtectedRoute from "./components/ProtectedRoute";
+import RequireUsernameRoute from "./components/RequireUsernameRoute";
+import CompleteProfile from "./pages/Profile/CompleteProfile";
 
 export default function App()
 {
@@ -30,17 +32,20 @@ export default function App()
 				<Route path={RoutePath.landingPage} element={ <LandingPage/> } />
                 <Route path={RoutePath.auth} element={<Auth />} />
                 <Route element={<ProtectedRoute />}>
-                    <Route path={RoutePath.mainMenu} element={ <MainMenu/> } />
-                    <Route path={RoutePath.multiplayer} element={ <Multiplayer/> } />
-                    <Route path={RoutePath.mpLobby + RouteParam.lobbyID} element={ <Lobby/> } />
-                    <Route path={RoutePath.mpBrowser} element={ <LobbiesBrowser/> } />
-                    <Route path={RoutePath.friends} element={ <Friends/> } />
-                    <Route path={RoutePath.profile} element={ <Profile/> } />
-                    <Route path={RoutePath.leaderboard} element={ <Leaderboard/> } />
-                    <Route path={RoutePath.settings} element={ <Settings/> } />
-                    <Route path={RoutePath.gameDev} element={<PhaserGame ref={phaserRef} currentActiveScene={currentScene} />} />
+                    <Route path={RoutePath.completeProfile} element={<CompleteProfile />} />
+                    <Route element={<RequireUsernameRoute />}>
+                        <Route path={RoutePath.mainMenu} element={ <MainMenu/> } />
+                        <Route path={RoutePath.multiplayer} element={ <Multiplayer/> } />
+                        <Route path={RoutePath.mpLobby + RouteParam.lobbyID} element={ <Lobby/> } />
+                        <Route path={RoutePath.mpBrowser} element={ <LobbiesBrowser/> } />
+                        <Route path={RoutePath.friends} element={ <Friends/> } />
+                        <Route path={RoutePath.profile} element={ <Profile/> } />
+                        <Route path={RoutePath.leaderboard} element={ <Leaderboard/> } />
+                        <Route path={RoutePath.settings} element={ <Settings/> } />
+                        <Route path={RoutePath.gameDev} element={<PhaserGame ref={phaserRef} currentActiveScene={currentScene} />} />
+                    </Route>
                 </Route>
-			</Routes>
-		</BrowserRouter>
-	)
+            </Routes>
+        </BrowserRouter>
+    )
 }
