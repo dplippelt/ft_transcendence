@@ -12,30 +12,12 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import CurrentUser, DbSession
-from app.core.exceptions import (
-    ErrorCode,
-    bad_request,
-    conflict,
-    forbidden,
-    service_unavailable,
-    unauthorized,
-)
-from app.core.security import (
-    DUMMY_PASSWORD_HASH,
-    create_access_token,
-    get_password_hash,
-    verify_password,
-)
+from app.core.exceptions import (ErrorCode, bad_request, conflict, forbidden, service_unavailable, unauthorized,)
+from app.core.security import (DUMMY_PASSWORD_HASH, create_access_token, get_password_hash, verify_password,)
 from app.core.settings import get_settings
 from app.models.auth_account import AuthAccount
 from app.models.user import User
-from app.schemas.user import (
-    GoogleLogin,
-    Token,
-    UserLogin,
-    UserRegister,
-    UserResponse,
-)
+from app.schemas.user import ( GoogleLogin, PasswordUpdate, Token, UserLogin, UserRegister, UserResponse,)
 from app.services.user_service import ensure_username_is_available
 
 
@@ -244,12 +226,12 @@ def authenticate_password_user(db: Session, email: str, password: str) -> User:
     return get_active_user_from_auth_account(auth_account)
 
 
-def get_google_account_by_email(db: Session, email: str,) -> AuthAccount | None:
+def get_password_account_for_user(db: Session, user_id: int) -> AuthAccount | None:
     return (
         db.query(AuthAccount)
         .filter(
-            AuthAccount.provider == GOOGLE_PROVIDER,
-            AuthAccount.email == email,
+            AuthAccount.user_id == user_id,
+            AuthAccount.provider == PASSWORD_PROVIDER,
         )
         .first()
     )
@@ -279,6 +261,88 @@ def raise_google_email_conflict_if_present(db: Session, email: str,) -> None:
             code=ErrorCode.GOOGLE_ACCOUNT_NOT_LINKED,
         )
 
+def get_verified_email_for_user(db: Session, user_id: int) -> str | None:
+    auth_account = (
+        db.query(AuthAccount)
+        .filter(
+            AuthAccount.user_id == user_id,
+            AuthAccount.email.is_not(None),
+            AuthAccount.email_verified.is_(True),
+        )
+        .first()
+    )
+    return auth_account.email if auth_account else None
+
+
+def set_or_change_password(db: Session, user: User, password_data: PasswordUpdate) -> None:
+    password_account = get_password_account_for_user(db, user.id,)
+
+    if password_account:
+        if not password_data.current_password:
+            raise bad_request(
+                "Current password is required",
+                code=ErrorCode.PASSWORD_REQUIRED,
+            )
+
+        if (not password_account.password_hash or not verify_password(password_data.current_password, password_account.password_hash)):
+            raise unauthorized(
+                "Current password is incorrect",
+                code=ErrorCode.INVALID_CURRENT_PASSWORD,
+            )
+
+        password_account.password_hash = get_password_hash(password_data.new_password)
+
+        try:
+            db.commit()
+        except SQLAlchemyError:
+            db.rollback()
+            raise bad_request(
+                "Password could not be updated",
+                code=ErrorCode.PASSWORD_UPDATE_FAILED,
+            )
+        return
+    email = get_verified_email_for_user(db, user.id,)
+
+    if not email:
+        raise bad_request(
+            "No verified email is available for this user",
+            code=ErrorCode.PASSWORD_EMAIL_UNAVAILABLE,
+        )
+
+    existing_password_account = get_password_account_by_email(db, email,)
+
+    if existing_password_account:
+        raise conflict(
+            "This email is already used by another password account",
+            code=ErrorCode.PASSWORD_EMAIL_UNAVAILABLE,
+        )
+
+    password_account = AuthAccount(
+        user=user,
+        provider=PASSWORD_PROVIDER,
+        provider_account_id=email,
+        email=email,
+        email_verified=True,
+        password_hash=get_password_hash(
+            password_data.new_password,
+        ),
+    )
+
+    db.add(password_account)
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        password_account = get_password_account_for_user(db, user.id,)
+
+        if password_account:
+            return
+
+        raise conflict(
+            "A password account could not be created",
+            code=ErrorCode.PASSWORD_UPDATE_FAILED,
+        )
 
 @router.post("/register", response_model=UserResponse)
 def register_user(user_data: UserRegister, db: DbSession):
@@ -417,4 +481,11 @@ def link_google_account(user_data: GoogleLogin,db: DbSession, current_user: Curr
             code=ErrorCode.GOOGLE_LINK_FAILED,
         )
 
+    return current_user
+
+
+@router.put("/password", response_model=UserResponse,)
+def update_password(password_data: PasswordUpdate, db: DbSession, current_user: CurrentUser, ):
+    set_or_change_password(db, current_user, password_data,)
+    db.refresh(current_user)
     return current_user
