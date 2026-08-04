@@ -489,3 +489,10 @@ def update_password(password_data: PasswordUpdate, db: DbSession, current_user: 
     set_or_change_password(db, current_user, password_data,)
     db.refresh(current_user)
     return current_user
+
+
+@router.put("/password", response_model=UserResponse,)
+def update_password(password_data: PasswordUpdate, db: DbSession, current_user: CurrentUser, ):
+    set_or_change_password(db, current_user, password_data,)
+    db.refresh(current_user)
+    return current_user
