@@ -95,4 +95,4 @@ def deactivate_user(db: Session, user: User) -> None:
                 auth_account.email, user.id, AuthAccount.__table__.c.email.type.length
             )
 
-    commit_or_bad_request(db, "Account could not be deactivated")
+    commit_or_bad_request(db, "Account could not be deactivated",)

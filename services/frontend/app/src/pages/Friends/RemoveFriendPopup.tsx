@@ -4,7 +4,7 @@ import { getFriendDraftKey, PopupType } from "../../utils/utils";
 import React, { useEffect, useState } from "react";
 import styles from "./FriendPopup.module.scss";
 import { useFriends, type IFriendData } from "../../contexts/FriendsContext";
-import { useUser } from "../../contexts/UserContext";
+import { useCurrentUser } from "../../contexts/AuthContext";
 import ErrorText from "../../components/ErrorText";
 import { ErrorType, mapFriendsApiError } from "../../utils/errors";
 
@@ -17,7 +17,7 @@ export default function RemoveFriendPopup( { setPopupType } : IRemoveFriendPopup
 {
 	const { friends, selectedFriendID, setSelectedFriendID, removeFriend } = useFriends();
 	const friend = getSelectedFriend();
-	const { user } = useUser();
+	const user = useCurrentUser();
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -51,7 +51,7 @@ export default function RemoveFriendPopup( { setPopupType } : IRemoveFriendPopup
 		try
 		{
 			await removeFriend(selectedFriendID!);
-			localStorage.removeItem(getFriendDraftKey(user.userID, selectedFriendID!));
+			localStorage.removeItem(getFriendDraftKey(String(user.id), selectedFriendID!));
 			closePopup();
 		}
 		catch (err)

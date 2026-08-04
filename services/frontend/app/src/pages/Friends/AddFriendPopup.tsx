@@ -7,6 +7,7 @@ import { MossButton } from "../../components/Buttons";
 import { PopupType } from "../../utils/utils";
 import { getValidUsername } from "../../utils/usernameCheck";
 import { useFriends } from "../../contexts/FriendsContext";
+import { useCurrentUser } from "../../contexts/AuthContext";
 
 interface IAddFriendPopup
 {
@@ -18,6 +19,7 @@ export default function AddFriendPopup( { setPopupType } : IAddFriendPopup )
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [username, setUsername] = useState<string>("");
 	const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+	const user = useCurrentUser();
 	const { addFriend } = useFriends();
 
 	async function usernameCheck()
@@ -30,6 +32,9 @@ export default function AddFriendPopup( { setPopupType } : IAddFriendPopup )
 			return setError(result);
 
 		const validUsername = result;
+
+		if ( user.username && validUsername.toLowerCase() === user.username.toLowerCase() )
+			return setError(ErrorType.cannotAddSelf);
 
 		setError(ErrorType.none);
 		setIsSubmitting(true);

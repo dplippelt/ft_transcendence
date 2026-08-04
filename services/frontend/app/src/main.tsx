@@ -12,7 +12,11 @@ if (!GOOGLE_CLIENT_ID)
 
 createRoot(document.getElementById("root")!).render(
 	<StrictMode>
-		<GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+		<GoogleOAuthProvider
+			clientId={GOOGLE_CLIENT_ID}
+			locale="en"
+		>
+
 			<AppProviders>
 				<App/>
 			</AppProviders>

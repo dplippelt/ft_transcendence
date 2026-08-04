@@ -12,6 +12,7 @@ import { MossButton, TextButton } from "../../components/Buttons";
 import { PasswordInput, TextInput } from "../../components/TextInput";
 import { getValidUsername } from "../../utils/usernameCheck";
 import { GoogleLogin } from "@react-oauth/google";
+import { getValidEmail } from "../../utils/emailCheck";
 
 
 interface GoogleAuthButtonProps
@@ -49,7 +50,7 @@ function GoogleAuthButton({ setError }: GoogleAuthButtonProps)
     )
 }
 
-function LoginQuery()
+function LoginForm()
 {
 	const [email, setEmail] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
@@ -59,19 +60,32 @@ function LoginQuery()
     const navigate = useNavigate();
     const { login } = useAuth();
 
-    async function checkLogin()
+    async function checkLogin( event: React.FormEvent<HTMLFormElement> )
     {
+        event.preventDefault();
+
         if (isSubmitting)
             return;
 
         setError(ErrorType.none);
+
+        const emailResult = getValidEmail(email);
+
+        if (isErrorType(emailResult))
+            return setError(emailResult);
+
+        if (password.length === 0)
+            return setError(ErrorType.passwordCannotBeEmpty);
+
+        const validEmail = emailResult;
+
         setIsSubmitting(true);
 
         try
         {
             await login(
             {
-                email,
+                email: validEmail,
                 password,
             });
 
@@ -88,18 +102,50 @@ function LoginQuery()
     }
 
     return (
-        <div className={styles.window}>
-            { error !== ErrorType.none && <ErrorText error={error}/> }
-            <TextInput label="Email:" placeholder="Enter email" setter={setEmail} id="email" />
-            <PasswordInput label="Password:" placeholder="Enter password" isNewPassword={false} setter={setPassword} id="password" />
-            <MossButton label={isSubmitting ? "Logging in..." : "Login"} onClick={checkLogin} />
-            <GoogleAuthButton setError={setError} />
-            <TextButton label="Don't have an account? Sign-up" onClick={ () => navigate(RoutePath.auth + RouteParam.signup) } />
-        </div>
+        <form
+            className={styles.window}
+            onSubmit={checkLogin}
+            noValidate
+        >
+            {error !== ErrorType.none &&
+                <ErrorText error={error}/>
+            }
+    
+            <TextInput
+                type="email"
+                label="Email:"
+                placeholder="Enter email"
+                setter={setEmail}
+                id="email"
+            />
+    
+            <PasswordInput
+                label="Password:"
+                placeholder="Enter password"
+                isNewPassword={false}
+                setter={setPassword}
+                id="password"
+            />
+    
+            <MossButton
+                label="Login"
+                type="submit"
+                disabled={isSubmitting}
+            />
+    
+            <GoogleAuthButton setError={setError}/>
+    
+            <TextButton
+                label="Don't have an account? Sign-up"
+                onClick={() =>
+                    navigate(RoutePath.auth + RouteParam.signup)
+                }
+            />
+        </form>
     );
 }
 
-function SignupQuery()
+function SignupForm()
 {
     const [email, setEmail] = useState<string>("");
     const [username, setUsername] = useState<string>("");
@@ -111,22 +157,31 @@ function SignupQuery()
     const navigate = useNavigate();
     const { register } = useAuth();
 
-    async function signupCheck()
+    async function signupCheck(event: React.FormEvent<HTMLFormElement>)
     {
+        event.preventDefault();
         if (isSubmitting)
             return;
-
         setError(ErrorType.none);
 
-        const result: string | ErrorType = getValidUsername(username);
+        const emailResult: string | ErrorType = getValidEmail(email);
 
-        if (isErrorType(result))
-            return setError(result);
+        if (isErrorType(emailResult))
+            return setError(emailResult);
+
+        const validEmail = emailResult;
+        const usernameResult: string | ErrorType = getValidUsername(username);
+
+        if (isErrorType(usernameResult))
+            return setError(usernameResult);
+
+        const validUsername = usernameResult;
+
+        if (password.length < 8)
+            return setError(ErrorType.passwordTooShort);
 
         if (password !== confirmPassword)
             return setError(ErrorType.passwordsDontMatch);
-
-        const validUsername = result;
 
         setIsSubmitting(true);
 
@@ -134,7 +189,7 @@ function SignupQuery()
         {
             await register(
             {
-                email,
+                email: validEmail,
                 username: validUsername,
                 password,
             });
@@ -152,19 +207,24 @@ function SignupQuery()
 	}
 
 	return (
-		<div className={styles.window}>
+        <form
+            className={styles.window}
+            onSubmit={signupCheck}
+            noValidate
+        >
 			{error !== ErrorType.none &&
 				<ErrorText error={error}/>
 			}
 
-			<TextInput
+            <TextInput
+                type="email"
 				label="Email:"
 				placeholder="Enter email"
 				setter={setEmail}
 				id="newEmail"
 			/>
 
-			<TextInput
+            <TextInput
 				label="Username:"
 				placeholder="Enter new username"
 				setter={setUsername}
@@ -188,8 +248,9 @@ function SignupQuery()
 			/>
 
 			<MossButton
-				label={isSubmitting ? "Signing up..." : "Sign-up"}
-				onClick={signupCheck}
+				label="Sign-up"
+                type="submit"
+                disabled={isSubmitting}
 			/>
 
 			<GoogleAuthButton setError={setError} />
@@ -200,7 +261,7 @@ function SignupQuery()
 					navigate(RoutePath.auth + RouteParam.login)
 				}
 			/>
-		</div>
+		</form>
 	);
 }
 
@@ -211,7 +272,7 @@ function Login()
 			<Background/>
 			<Page>
 				<MenuTitle title="Login"/>
-				<LoginQuery/>
+				<LoginForm/>
 			</Page>
 		</>
 	);
@@ -224,7 +285,7 @@ function Signup()
 			<Background/>
 			<Page>
 				<MenuTitle title="Sign-up"/>
-				<SignupQuery/>
+				<SignupForm/>
 			</Page>
 		</>
 	);

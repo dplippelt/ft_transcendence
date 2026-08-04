@@ -1,17 +1,17 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type React from "react";
 import { PopupType, AvatarSize } from "../../utils/utils";
-import { ErrorType, isErrorType } from "../../utils/errors";
+import { ErrorType, isErrorType, mapAuthApiError } from "../../utils/errors";
 import styles from "./EditPopup.module.scss";
 import { PopupButtons } from "../../components/ButtonContainers";
 import ErrorText from "../../components/ErrorText";
 import { MossButton } from "../../components/Buttons";
-import { useUser } from "../../contexts/UserContext";
-import guestAvatar from  "../../assets/guest_avatar_test.jpg";
+import guestAvatar from "../../assets/guest_avatar_test.jpg";
 import testAvatar from "../../assets/mesca_avatar_test.png";
-import { PasswordInput, TextInput } from "../../components/TextInput";
+import { TextInput } from "../../components/TextInput";
 import Avatar from "../../components/Avatar";
 import { getValidUsername } from "../../utils/usernameCheck";
+import { useAuth } from "../../contexts/AuthContext";
 
 interface IEditPopup
 {
@@ -27,127 +27,198 @@ interface IEditContent
 function EditAvatarContent( { setPopupType } : IEditContent )
 {
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
-	const fileInputRef = useRef<HTMLInputElement>(null);
-	const user = useUser();
+	const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+	const { updateProfile } = useAuth();
 
-	function handleUpload(e: React.ChangeEvent<HTMLInputElement>)
-	{
-		const file = e.target.files?.[0];
-		if ( !file )
-			return;
-		if ( file.type !== "image/png" && file.type !== "image/jpeg" )
-			return setError(ErrorType.avatarBadFileType);
-		const uploadedAvatar = URL.createObjectURL(file); // upload to database later and fetch from there (and revoke object URL after upload to DB and get real URL).
-		avatarCheck(uploadedAvatar);
-	}
-
-	function avatarCheck(newAvatar: string)
-	{
-		user.updateAvatar(newAvatar); //also update database
-		setPopupType(PopupType.none);
-	}
-
-	// start temp list of example avatars
+	// Temporary local presets until avatar upload/storage is implemented.
 	const avatars =
 	[
 		guestAvatar,
 		testAvatar,
-	]
-	// end temp list of example avatars
+	];
+
+	async function avatarCheck(avatar: string)
+	{
+		if (isSubmitting)
+			return;
+
+		setError(ErrorType.none);
+		setIsSubmitting(true);
+
+		try
+		{
+			// Vite asset imports may be relative paths. The backend requires
+			// avatar_url to be an absolute HTTP(S) URL.
+			const avatarUrl = new URL(
+				avatar,
+				window.location.origin,
+			).href;
+
+			await updateProfile({
+				avatar_url: avatarUrl,
+			});
+
+			setPopupType(PopupType.none);
+		}
+		catch (error)
+		{
+			setError(mapAuthApiError(error));
+		}
+		finally
+		{
+			setIsSubmitting(false);
+		}
+	}
 
 	return (
 		<>
-			{ error !== ErrorType.none && <ErrorText error={error}/> }
-			<label className={styles.avatarsLabel}>Pick an avatar</label>
+			{ error !== ErrorType.none &&
+				<ErrorText error={error}/>
+			}
+
+			<label className={styles.avatarsLabel}>
+				Pick an avatar
+			</label>
+
 			<div className={styles.avatars}>
 				{ avatars.map((avatar, idx) => (
-					<Avatar key={avatar} src={avatar} alt={`Avatar ${idx + 1}`} size={AvatarSize.medium} onClick={ () => avatarCheck(avatar) } extraStyling={styles.avatar} />
+					<Avatar
+						key={avatar}
+						src={avatar}
+						alt={`Avatar ${idx + 1}`}
+						size={AvatarSize.medium}
+						onClick={() => void avatarCheck(avatar)}
+						extraStyling={styles.avatar}
+					/>
 				))}
 			</div>
+
 			<PopupButtons>
-				<MossButton label="Upload" onClick={ () => fileInputRef.current?.click() } />
-				<MossButton label="Back" onClick={ () => setPopupType(PopupType.none) } />
-				<input type="file" ref={fileInputRef} style={{ display: "none" }} onChange={ handleUpload } />
+				<MossButton
+					label="Back"
+					onClick={() => setPopupType(PopupType.none)}
+					disabled={isSubmitting}
+				/>
 			</PopupButtons>
 		</>
-	)
+	);
 }
 
 function EditUsernameContent( { setPopupType } : IEditContent )
 {
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [username, setUsername] = useState<string>("");
-	const user = useUser();
+	const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-	function usernameCheck()
+	const { updateProfile } = useAuth();
+
+	async function usernameCheck()
 	{
-		const result: string | ErrorType = getValidUsername(username);
-		if ( isErrorType(result) )
+		if (isSubmitting)
+			return;
+
+		setError(ErrorType.none);
+
+		const result = getValidUsername(username);
+
+		if (isErrorType(result))
 			return setError(result);
 
-		const validUsername = result;
+		setIsSubmitting(true);
 
-		// Mock username check
-		if ( validUsername.length === 1 )
-			return setError(ErrorType.usernameAlreadyTaken);
+		try
+		{
+			await updateProfile({
+				username: result,
+			});
 
-		user.updateUsername(validUsername); //also update database
-		setPopupType(PopupType.none);
+			setPopupType(PopupType.none);
+		}
+		catch (error)
+		{
+			setError(mapAuthApiError(error));
+		}
+		finally
+		{
+			setIsSubmitting(false);
+		}
 	}
 
 	return (
 		<>
-			{ error !== ErrorType.none && <ErrorText error={error}/> }
-			<TextInput label="Edit username:" placeholder="Enter new username" setter={setUsername} id="newUsername" />
+			{ error !== ErrorType.none &&
+				<ErrorText error={error}/>
+			}
+
+			<TextInput
+				label="Edit username:"
+				placeholder="Enter new username"
+				setter={setUsername}
+				id="newUsername"
+			/>
+
 			<PopupButtons>
-				<MossButton label="Ok" onClick={ usernameCheck } />
-				<MossButton label="Back" onClick={ () => setPopupType(PopupType.none) } />
+				<MossButton
+					label="Ok"
+					onClick={() => void usernameCheck()}
+					disabled={isSubmitting}
+				/>
+
+				<MossButton
+					label="Back"
+					onClick={() => setPopupType(PopupType.none)}
+					disabled={isSubmitting}
+				/>
 			</PopupButtons>
 		</>
-	)
+	);
 }
 
 function EditPasswordContent( { setPopupType } : IEditContent )
 {
-	const [error, setError] = useState<ErrorType>(ErrorType.none);
-	const [password, setPassword] = useState<string>("");
-	const [confirmPassword, setConfirmPassword] = useState<string>("");
-
-	function passwordCheck()
-	{
-		// Mock username check
-		if ( password.length === 0 )
-			return setError(ErrorType.passwordCannotBeEmpty);
-		if ( password !== confirmPassword )
-			return setError(ErrorType.passwordsDontMatch);
-
-		// update password in database
-		setPopupType(PopupType.none);
-	}
-
 	return (
 		<>
-			{ error !== ErrorType.none && <ErrorText error={error}/> }
-			<PasswordInput label="Edit password:" placeholder="Enter new password" isNewPassword={true} setter={setPassword} id="newPassword" />
-			<PasswordInput label="Confirm password:" placeholder="Confirm new password" isNewPassword={true} setter={setConfirmPassword} id="confirmPassword" />
+			<label>
+				Password changes are not available yet.
+			</label>
+
 			<PopupButtons>
-				<MossButton label="Ok" onClick={ passwordCheck } />
-				<MossButton label="Back" onClick={ () => setPopupType(PopupType.none) } />
+				<MossButton
+					label="Back"
+					onClick={() => setPopupType(PopupType.none)}
+				/>
 			</PopupButtons>
 		</>
-	)
+	);
 }
 
-export default function EditPopup( { popupType, setPopupType } : IEditPopup )
+export default function EditPopup(
+	{ popupType, setPopupType } : IEditPopup
+)
 {
 	switch (popupType)
 	{
 		case PopupType.editUsername:
-			return <EditUsernameContent setPopupType={setPopupType} />
+			return (
+				<EditUsernameContent
+					setPopupType={setPopupType}
+				/>
+			);
+
 		case PopupType.editPassword:
-			return <EditPasswordContent setPopupType={setPopupType} />
+			return (
+				<EditPasswordContent
+					setPopupType={setPopupType}
+				/>
+			);
+
 		case PopupType.editAvatar:
-			return <EditAvatarContent setPopupType={setPopupType} />
+			return (
+				<EditAvatarContent
+					setPopupType={setPopupType}
+				/>
+			);
+
 		default:
 			return null;
 	}
