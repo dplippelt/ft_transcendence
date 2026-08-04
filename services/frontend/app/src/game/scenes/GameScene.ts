@@ -68,11 +68,13 @@ const dungeonConfig: DungeonConfig = {
       }
     },
   },
-  roomCount: { min: 8, max: 8 },
+  roomCount: { min: 3, max: 3 },
 };
 
 // TODO: GameSession structure (local / network) -> thruth sayer; player hp, position etc, syncs up with the game itself
 export default class GameScene extends Scene {
+  private _dungeon!: Dungeon;
+
   constructor() {
     super("game");
   }
@@ -82,24 +84,38 @@ export default class GameScene extends Scene {
   }
 
   create() {
-    const map = new Dungeon(this, dungeonConfig, 1.5);
+    this._dungeon = new Dungeon(this, dungeonConfig, 1.5);
+    this.cameras.main.startFollow(this.getPlayerOne());
 
     // Temporarily mouse event for map generation
     this.input.on("pointerdown", () => {
-      this.cameras.main.stopFollow();
-      map.build(dungeonConfig);
-      this.cameras.main.startFollow(this.getPlayerOne(map));
+      if (this.input.activePointer.leftButtonDown()) {
+        this.nextLevel();
+      }
     });
-    this.cameras.main.startFollow(this.getPlayerOne(map));
 
     EventBus.emit("current-scene-ready", this);
   }
 
-  getPlayerOne(map: Dungeon): Player {
-    const player = map.getPlayer(0);
+  getPlayerOne(): Player {
+    const player = this._dungeon.getPlayer(0);
     if (player === undefined) {
       throw new Error("Player missing!")
     }
     return player;
+  }
+
+  getAlivePlayerCount(): number {
+    return this._dungeon.getAlivePlayerCount();
+  }
+
+  getEnemyCount(): number {
+    return this._dungeon.getEnemyCount();
+  }
+
+  nextLevel(): void {
+    this.cameras.main.stopFollow();
+    this._dungeon.build(dungeonConfig, 1.5);
+    this.cameras.main.startFollow(this.getPlayerOne());
   }
 }

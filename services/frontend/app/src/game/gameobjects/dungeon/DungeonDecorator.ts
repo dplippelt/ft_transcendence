@@ -1,5 +1,5 @@
 import { Tilemaps } from "phaser";
-import { RoomType, type RoomGraph, type Room } from "../../map/procedural";
+import { RoomType, type RoomGraph, type Room, type MapData } from "../../map/procedural";
 import { PassageType, type TileSetMap } from "../../map/TileSetMap";
 import { Dungeon } from "./Dungeon";
 import { random, randomPoint, Vector2, weightedRandom, type weight } from "../../map/math";
@@ -7,27 +7,51 @@ import { random, randomPoint, Vector2, weightedRandom, type weight } from "../..
 export class DungeonDecorator {
   static layerIndex: number = 0;
 
-  apply(dungeon: Dungeon, roomGraph: RoomGraph, tileSet: Tilemaps.Tileset, tileSetMap: TileSetMap) {
+  apply(dungeon: Dungeon, mapData: MapData, tileSetMap: TileSetMap) {
+    this.createLevelLayer(dungeon, mapData);
+    this.createRoomLayer(dungeon, mapData.graph, tileSetMap);
+    dungeon.setLayer("map");
+  }
+
+  private createBlankLayer(name: string, depth: number, dungeon: Dungeon): Tilemaps.TilemapLayer {
+    const layer = dungeon.createBlankLayer(
+      name,
+      dungeon.getTileSet(),
+      -dungeon.getOrigin().x,
+      -dungeon.getOrigin().y,
+      dungeon.getTileWidth(),
+      dungeon.getTileHeight()
+    );
+
+    if (layer === null) {
+      throw new TypeError("Failed to create blank layer");
+    }
+
+    layer.setDepth(depth);
+    layer.setScale(dungeon.getScale())
+    return layer;
+  }
+
+  private createLevelLayer(dungeon: Dungeon, mapData: MapData) {
+    const layer = this.createBlankLayer("map", -1, dungeon);
+    layer.putTilesAt(mapData.map, 0, 0);
+    layer.setCollisionBetween(2, 5);
+    layer.setCollisionBetween(15, 18);
+    layer.setCollisionBetween(28, 31);
+    layer.setCollisionBetween(41, 44);
+  }
+
+  private createRoomLayer(dungeon: Dungeon, roomGraph: RoomGraph, tileSetMap: TileSetMap) {
     const baseLayer = dungeon.getLayer("map");
     if (baseLayer === null) {
       throw new Error("Missing base layer 'map'");
     }
 
-    const layer = dungeon.createBlankLayer(
+    const layer = this.createBlankLayer(
       `layer-${DungeonDecorator.layerIndex++}`,
-      tileSet,
-      -dungeon.getOrigin().x,
-      -dungeon.getOrigin().y,
-      baseLayer.width,
-      baseLayer.height,
-      baseLayer.tileWidth,
-      baseLayer.tileHeight,
+      DungeonDecorator.layerIndex,
+      dungeon
     );
-    if (layer === null) {
-      throw new Error("Unable to create a new black layer");
-    }
-    layer.setDepth(DungeonDecorator.layerIndex);
-    layer.setScale(baseLayer.tilemapLayer.scale);
 
     for (const room of roomGraph.keys()) {
       switch (room.type) {
@@ -44,8 +68,6 @@ export class DungeonDecorator {
           throw new Error("DungeonDecorator: Unknown room type");
       }
     }
-
-    dungeon.setLayer("map");
   }
 
   private pickRandomRoomTile(room: Room): Vector2 {

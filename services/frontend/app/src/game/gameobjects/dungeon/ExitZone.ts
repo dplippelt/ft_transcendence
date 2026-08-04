@@ -28,17 +28,10 @@ export class ExitZone extends GameObjects.Zone {
     if (this.collider !== undefined) {
       this.collider.destroy();
     }
-
     this.collider = this.scene.physics.add.overlap(this, group, this.onEnter, undefined, this);
   }
 
-  private onEnter(entity: ColliderType) {
-    if ((entity as GameObjects.GameObject).name !== "player") {
-      return;
-    }
-
-    GameManagerScene.EventsCenter.emit(GameEvents.LevelExit, {
-      player: entity as Player,
-    });
+  private onEnter(_zone: ColliderType, entity: ColliderType) {
+    GameManagerScene.EventsCenter.emit(GameEvents.LevelExit, entity as Player);
   }
 }
