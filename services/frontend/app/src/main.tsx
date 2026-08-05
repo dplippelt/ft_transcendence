@@ -16,7 +16,6 @@ createRoot(document.getElementById("root")!).render(
 			clientId={GOOGLE_CLIENT_ID}
 			locale="en"
 		>
-
 			<AppProviders>
 				<App/>
 			</AppProviders>
