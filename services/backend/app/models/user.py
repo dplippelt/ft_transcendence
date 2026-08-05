@@ -95,3 +95,8 @@ class User(Base):
         foreign_keys="ChatMessage.receiver_id",
         passive_deletes=True,
     )
+
+    scores: Mapped[list["Score"]] = relationship(
+        back_populates="user",
+        passive_deletes=True,
+    )
