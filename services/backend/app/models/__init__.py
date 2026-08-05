@@ -3,3 +3,4 @@ from app.models.auth_account import AuthAccount
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
 from app.models.chat_message import ChatMessage
+from app.models.dungeon import Dungeon
