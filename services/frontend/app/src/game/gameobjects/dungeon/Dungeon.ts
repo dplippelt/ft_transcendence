@@ -1,5 +1,5 @@
 import { Physics, Scene, Tilemaps, type Types } from "phaser";
-import { AssetsKey } from "../../Assets";
+import { AssetsKey, DepthOrder } from "../../Assets";
 import { dungeonBuilder, type DungeonConfig, type MapData, type Room } from "../../map/procedural";
 import { Vector2 } from "../../map/math";
 import Player from "../Player";
@@ -184,12 +184,12 @@ export class Dungeon extends Tilemaps.Tilemap {
   }
 
   addPlayer(player: Player): void {
-    this.addColliderWithMap(player, 5);
+    this.addColliderWithMap(player, DepthOrder.playerAndEnemies);
     this.playerGroup.add(player);
   }
 
   addEnemy(enemy: Enemy): void {
-    enemy.setDepth(5);
+    enemy.setDepth(DepthOrder.playerAndEnemies);
     this.enemies.push(enemy);
   }
 

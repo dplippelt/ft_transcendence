@@ -3,10 +3,9 @@ import { RoomType, type RoomGraph, type Room, type MapData } from "../../map/pro
 import { PassageType, type TileSetMap } from "../../map/TileSetMap";
 import { Dungeon } from "./Dungeon";
 import { random, randomPoint, Vector2, weightedRandom, type weight } from "../../map/math";
+import { DepthOrder } from "../../Assets";
 
 export class DungeonDecorator {
-  static layerIndex: number = 0;
-
   apply(dungeon: Dungeon, mapData: MapData, tileSetMap: TileSetMap) {
     this.createLevelLayer(dungeon, mapData);
     this.createRoomLayer(dungeon, mapData.graph, tileSetMap);
@@ -33,7 +32,7 @@ export class DungeonDecorator {
   }
 
   private createLevelLayer(dungeon: Dungeon, mapData: MapData) {
-    const layer = this.createBlankLayer("map", -1, dungeon);
+    const layer = this.createBlankLayer("map", DepthOrder.background, dungeon);
     layer.putTilesAt(mapData.map, 0, 0);
     layer.setCollisionBetween(2, 5);
     layer.setCollisionBetween(15, 18);
@@ -47,7 +46,7 @@ export class DungeonDecorator {
       throw new Error("Missing base layer 'map'");
     }
 
-    const layer = this.createBlankLayer(`layer-${DungeonDecorator.layerIndex++}`, DungeonDecorator.layerIndex, dungeon);
+    const layer = this.createBlankLayer(`layer-0`, DepthOrder.layer0, dungeon);
     for (const room of roomGraph.keys()) {
       switch (room.type) {
         case RoomType.Entrance:
