@@ -175,6 +175,10 @@ export class BoundingBox {
   }
 
   shrink(): BoundingBox {
+    if (this.size.x < 2 || this.size.y < 2) {
+      throw new Error("Bounding box size is too small to shrink");
+    }
+
     this.min.addXY(1, 1);
     this.max.subXY(1, 1);
     this.size.subXY(2, 2);
