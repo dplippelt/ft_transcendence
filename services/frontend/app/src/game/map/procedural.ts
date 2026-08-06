@@ -56,7 +56,7 @@ export interface Room {
   aabb: BoundingBox;
   doors: Door[];
   visited: boolean;
-  cost: number;
+  score: number;
   type: RoomType;
   tileNode: TileNode | undefined;
 }
@@ -108,7 +108,7 @@ function generateRooms(amount: number, roomConfig: RoomConfig): Room[] {
       ),
       doors: [],
       visited: false,
-      cost: -1,
+      score: -1,
       type: RoomType.Standard,
       tileNode: undefined,
     });

@@ -20,7 +20,7 @@ export class DungeonDecorator {
       -dungeon.getOrigin().x,
       -dungeon.getOrigin().y,
       dungeon.getTileWidth(),
-      dungeon.getTileHeight()
+      dungeon.getTileHeight(),
     );
 
     if (layer === null) {
@@ -28,7 +28,7 @@ export class DungeonDecorator {
     }
 
     layer.setDepth(depth);
-    layer.setScale(dungeon.getScale())
+    layer.setScale(dungeon.getScale());
     return layer;
   }
 
@@ -47,12 +47,7 @@ export class DungeonDecorator {
       throw new Error("Missing base layer 'map'");
     }
 
-    const layer = this.createBlankLayer(
-      `layer-${DungeonDecorator.layerIndex++}`,
-      DungeonDecorator.layerIndex,
-      dungeon
-    );
-
+    const layer = this.createBlankLayer(`layer-${DungeonDecorator.layerIndex++}`, DungeonDecorator.layerIndex, dungeon);
     for (const room of roomGraph.keys()) {
       switch (room.type) {
         case RoomType.Entrance:
@@ -85,7 +80,7 @@ export class DungeonDecorator {
   }
 
   private standardRoom(layer: Tilemaps.TilemapLayer, tileSetMap: TileSetMap, room: Room) {
-    if (Math.random() < .6) {
+    if (Math.random() < 0.6) {
       return;
     }
 
@@ -97,7 +92,7 @@ export class DungeonDecorator {
         tileXY = this.pickRandomRoomTile(room);
       }
 
-      layer.putTileAt(weightedRandom(weights).index, tileXY.x, tileXY.y)
+      layer.putTileAt(weightedRandom(weights).index, tileXY.x, tileXY.y);
     }
   }
 }

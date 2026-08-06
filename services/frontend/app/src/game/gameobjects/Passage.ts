@@ -2,7 +2,6 @@ import { Physics, Scene, type Types } from "phaser";
 import { GameEvents, GameManagerScene } from "../scenes/GameManagerScene";
 
 type Vector2Like = Types.Math.Vector2Like;
-export const OnPassageEnter = "enter-passage";
 
 interface PassageData {
   spriteKey: string;
@@ -13,7 +12,6 @@ interface PassageData {
   scale: number;
 }
 
-// TODO: Allow for custom collider size
 export class Passage extends Physics.Arcade.Sprite {
   private collider: Physics.Arcade.Collider | undefined;
   private passageData: PassageData;
@@ -26,7 +24,7 @@ export class Passage extends Physics.Arcade.Sprite {
 
     scene.add.existing(this);
     scene.physics.add.existing(this, true);
-    // TODO: Instead of the game manager perhaps use scene instead?
+    // TODO: Make the call to a session manager or to the scene owning the passage
     GameManagerScene.EventsCenter.on(GameEvents.LevelComplete, this.unlock, this);
   }
 
