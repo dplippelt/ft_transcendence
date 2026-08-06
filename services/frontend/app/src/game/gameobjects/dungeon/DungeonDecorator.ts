@@ -2,11 +2,11 @@ import { Tilemaps } from "phaser";
 import { RoomType, type RoomGraph, type Room, type MapData } from "../../map/procedural";
 import { PassageType, type TileSetMap } from "../../map/TileSetMap";
 import { Dungeon } from "./Dungeon";
-import { random, randomPoint, Vector2, weightedRandom, type weight } from "../../map/math";
+import { random, randomPoint, weightedRandom, type weight } from "../../map/math";
 import { DepthOrder } from "../../Assets";
 
 export class DungeonDecorator {
-  apply(dungeon: Dungeon, mapData: MapData, tileSetMap: TileSetMap) {
+  apply(dungeon: Dungeon, mapData: MapData, tileSetMap: TileSetMap): void {
     this.createLevelLayer(dungeon, mapData);
     this.createRoomLayer(dungeon, mapData.graph, tileSetMap);
     dungeon.setLayer("map");
@@ -31,7 +31,7 @@ export class DungeonDecorator {
     return layer;
   }
 
-  private createLevelLayer(dungeon: Dungeon, mapData: MapData) {
+  private createLevelLayer(dungeon: Dungeon, mapData: MapData): void {
     const layer = this.createBlankLayer("map", DepthOrder.background, dungeon);
     layer.putTilesAt(mapData.map, 0, 0);
     layer.setCollisionBetween(2, 5);
@@ -40,7 +40,7 @@ export class DungeonDecorator {
     layer.setCollisionBetween(41, 44);
   }
 
-  private createRoomLayer(dungeon: Dungeon, roomGraph: RoomGraph, tileSetMap: TileSetMap) {
+  private createRoomLayer(dungeon: Dungeon, roomGraph: RoomGraph, tileSetMap: TileSetMap): void {
     const baseLayer = dungeon.getLayer("map");
     if (baseLayer === null) {
       throw new Error("Missing base layer 'map'");
@@ -64,33 +64,31 @@ export class DungeonDecorator {
     }
   }
 
-  private pickRandomRoomTile(room: Room): Vector2 {
-    return randomPoint(room.aabb.min.clone().addXY(1, 1), room.aabb.max.clone().subXY(2, 2));
-  }
-
-  private entranceRoom(layer: Tilemaps.TilemapLayer, tileSetMap: TileSetMap, room: Room) {
+  private entranceRoom(layer: Tilemaps.TilemapLayer, tileSetMap: TileSetMap, room: Room): void {
     const position = room.tileNode?.position;
     layer.putTileAt(tileSetMap.passages[PassageType.StairwayUp], position!.x, position!.y);
+
   }
 
-  private exitRoom(layer: Tilemaps.TilemapLayer, tileSetMap: TileSetMap, room: Room) {
+  private exitRoom(layer: Tilemaps.TilemapLayer, tileSetMap: TileSetMap, room: Room): void {
     const position = room.tileNode?.position;
     layer.putTileAt(tileSetMap.passages[PassageType.StairwayDown], position!.x, position!.y);
   }
 
-  private standardRoom(layer: Tilemaps.TilemapLayer, tileSetMap: TileSetMap, room: Room) {
+  private standardRoom(layer: Tilemaps.TilemapLayer, tileSetMap: TileSetMap, room: Room): void {
     if (Math.random() < 0.6) {
       return;
     }
 
     const weights: weight[] = Object.values(tileSetMap.foilage);
-    let count: number = random(1, 5);
+    const innerRoom = room.aabb.clone().floor().shrink();
+    const maxTileCount = innerRoom.size.x * innerRoom.size.y;
+    let count: number = Math.min(random(1, 5), maxTileCount);
     while (count-- > 0) {
-      let tileXY = this.pickRandomRoomTile(room);
+      let tileXY = randomPoint(innerRoom.min, innerRoom.max);
       while (layer.getTileAt(tileXY.x, tileXY.y, true).index !== -1) {
-        tileXY = this.pickRandomRoomTile(room);
+        tileXY = randomPoint(innerRoom.min, innerRoom.max);
       }
-
       layer.putTileAt(weightedRandom(weights).index, tileXY.x, tileXY.y);
     }
   }
