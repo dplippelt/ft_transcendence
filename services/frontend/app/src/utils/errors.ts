@@ -17,6 +17,7 @@ export enum ErrorType
     badUsernameLength,
     usernameContainsInvalChars,
     usernameCannotBeTheSame,
+    usernameRequired,
 
     passwordsDontMatch,
     passwordCannotBeEmpty,
@@ -36,6 +37,7 @@ export enum ErrorType
     googleProviderAlreadyLinked,
     googleLinkFailed,
     googleRegistrationFailed,
+    googleEmailConflict,
 
     avatarBadFileType,
 
@@ -68,6 +70,8 @@ export function errorMsg(error: ErrorType): string
             return "Username already taken!";
         case ErrorType.usernameCannotBeEmpty:
             return "Username cannot be empty!";
+        case ErrorType.usernameRequired:
+            return "Choose a username before continuing.";
         case ErrorType.badUsernameLength:
             return (
                 "Username must be between " +
@@ -128,6 +132,11 @@ export function errorMsg(error: ErrorType): string
             return "Failed to link the Google account.";
         case ErrorType.googleRegistrationFailed:
             return "Failed to create an account with Google.";
+        case ErrorType.googleEmailConflict:
+            return (
+                "A Google account with this email is already " +
+                "registered under a different Google identity."
+            );
         case ErrorType.avatarBadFileType:
             return "Avatar must be JPEG or PNG!";
         case ErrorType.cannotAddSelf:
@@ -180,6 +189,8 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.emailAlreadyTaken;
         case "USERNAME_ALREADY_EXISTS":
             return ErrorType.usernameAlreadyTaken;
+        case "USERNAME_REQUIRED":
+            return ErrorType.usernameRequired;
         case "ACCOUNT_INACTIVE":
             return ErrorType.accountInactive;
         case "REGISTRATION_FAILED":
@@ -201,6 +212,8 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.googleLinkFailed;
         case "GOOGLE_REGISTRATION_FAILED":
             return ErrorType.googleRegistrationFailed;
+        case "GOOGLE_EMAIL_CONFLICT":
+            return ErrorType.googleEmailConflict;
     }
     if (error.status === 422 && error.validationErrors)
     {

@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from google.auth import exceptions as google_auth_exceptions
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
-from sqlalchemy.exc import IntegrityError, SQLAlchemyError
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import CurrentUser, DbSession
@@ -205,18 +205,13 @@ def get_active_user_from_auth_account(auth_account: AuthAccount) -> User:
     return user
 
 
-def apply_google_profile_defaults(user: User, identity: GoogleIdentity) -> bool:
-    changed = False
+def apply_google_profile_defaults(user: User, identity: GoogleIdentity) -> None:
 
-    if not user.display_name and identity.display_name:
+    if user.display_name is None and identity.display_name is not None :
         user.display_name = identity.display_name
-        changed = True
 
-    if not user.avatar_url and identity.avatar_url:
+    if user.avatar_url is None and identity.avatar_url is not None:
         user.avatar_url = identity.avatar_url
-        changed = True
-
-    return changed
 
 
 def create_google_auth_account(user: User, identity: GoogleIdentity,) -> AuthAccount:
@@ -247,6 +242,42 @@ def authenticate_password_user(db: Session, email: str, password: str) -> User:
         )
 
     return get_active_user_from_auth_account(auth_account)
+
+
+def get_google_account_by_email(db: Session, email: str,) -> AuthAccount | None:
+    return (
+        db.query(AuthAccount)
+        .filter(
+            AuthAccount.provider == GOOGLE_PROVIDER,
+            AuthAccount.email == email,
+        )
+        .first()
+    )
+
+
+def raise_google_email_conflict_if_present(db: Session, email: str,) -> None:
+    google_account = get_google_account_by_email(db, email,)
+
+    if google_account:
+        raise conflict(
+            (
+                "A Google account with this email is already "
+                "registered under a different Google identity."
+            ),
+            code=ErrorCode.GOOGLE_EMAIL_CONFLICT,
+        )
+
+    password_account = get_password_account_by_email(db, email,)
+
+    if password_account:
+        raise conflict(
+            (
+                "An account with this email already exists. "
+                "Sign in with email and password, then link "
+                "Google from your account settings."
+            ),
+            code=ErrorCode.GOOGLE_ACCOUNT_NOT_LINKED,
+        )
 
 
 @router.post("/register", response_model=UserResponse)
@@ -322,27 +353,9 @@ def google_login(user_data: GoogleLogin, db: DbSession):
     if google_auth_account:
         user = get_active_user_from_auth_account(google_auth_account,)
 
-        if apply_google_profile_defaults(user, identity):
-            try:
-                db.commit()
-            except SQLAlchemyError:
-                db.rollback()
-            else:
-                db.refresh(user)
-
         return create_token_for_user(user)
 
-    existing_email_account = get_auth_account_by_email(db, identity.email)
-
-    if existing_email_account:
-        raise conflict(
-            (
-                "An account with this email already exists. "
-                "Sign in to that account and link Google "
-                "from your account settings."
-            ),
-            code=ErrorCode.GOOGLE_ACCOUNT_NOT_LINKED,
-        )
+    raise_google_email_conflict_if_present(db, identity.email,)
 
     user = User(
         username=None,
@@ -352,7 +365,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
     )
 
     google_auth_account = create_google_auth_account(user, identity,)
-    
+
     db.add(user)
     db.add(google_auth_account)
 
@@ -364,22 +377,10 @@ def google_login(user_data: GoogleLogin, db: DbSession):
         existing_google_account = (get_google_account_by_sub(db, identity.sub,))
 
         if existing_google_account:
-            user = get_active_user_from_auth_account(
-                existing_google_account,
-            )
+            user = get_active_user_from_auth_account(existing_google_account,)
             return create_token_for_user(user)
 
-        existing_email_account = (get_auth_account_by_email(db, identity.email,))
-
-        if existing_email_account:
-            raise conflict(
-                (
-                    "An account with this email already "
-                    "exists. Sign in and link Google from "
-                    "your account settings."
-                ),
-                code=ErrorCode.GOOGLE_ACCOUNT_NOT_LINKED,
-            )
+        raise_google_email_conflict_if_present(db, identity.email,)
 
         raise bad_request(
             "Google account could not be registered",
@@ -396,45 +397,24 @@ def link_google_account(user_data: GoogleLogin,db: DbSession, current_user: Curr
     existing_link = find_existing_google_link(db, identity.sub, current_user)
 
     if existing_link:
-        if apply_google_profile_defaults(
-            current_user,
-            identity,
-        ):
-            try:
-                db.commit()
-            except SQLAlchemyError:
-                db.rollback()
-                raise bad_request(
-                    "Google profile could not be synchronized",
-                    code=ErrorCode.GOOGLE_LINK_FAILED,
-                )
-
-            db.refresh(current_user)
-
         return current_user
 
     google_auth_account = create_google_auth_account(current_user, identity,)
     apply_google_profile_defaults(current_user, identity,)
-
-    db.add(google_auth_account)
 
     try:
         db.commit()
     except IntegrityError:
         db.rollback()
 
-        # Re-query after rollback in case another request created the link between our initial check and commit.
         existing_link = find_existing_google_link(db, identity.sub, current_user,)
 
         if existing_link:
-            db.refresh(current_user)
             return current_user
 
         raise bad_request(
             "Google account could not be linked",
             code=ErrorCode.GOOGLE_LINK_FAILED,
         )
-
-    db.refresh(current_user)
 
     return current_user

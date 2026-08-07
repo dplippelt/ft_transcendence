@@ -12,7 +12,7 @@ export default function GoogleLinkButton()
     const { linkGoogle } = useAuth();
     const [error, setError] = useState<ErrorType>(ErrorType.none);
     const [isLinking, setIsLinking] = useState<boolean>(false);
-    const isGoogleLinked = user.linked_providers?.includes("google") ?? false;
+    const isGoogleLinked = user.linked_providers.includes("google");
 
     if (isGoogleLinked)
     {

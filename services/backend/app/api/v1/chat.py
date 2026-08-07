@@ -3,7 +3,7 @@ import logging
 import anyio.from_thread
 from fastapi import APIRouter, WebSocket, status
 
-from app.api.dependencies import CurrentUser, CurrentUserIdWS, DbSession
+from app.api.dependencies import CompletedUser, CurrentUserIdWS, DbSession
 from app.core.exceptions import not_found
 from app.core.websocket_manager import connection_manager
 from app.schemas.chat import ChatMessageCreate, ChatMessageResponse
@@ -34,7 +34,7 @@ def notify_receiver(receiver_id: int, message: object) -> None:
 
 
 @router.get("/{friend_id}/messages", response_model=list[ChatMessageResponse])
-def get_messages(friend_id: int, current_user: CurrentUser, db: DbSession):
+def get_messages(friend_id: int, current_user: CompletedUser, db: DbSession):
     return get_conversation(
         db=db,
         current_user=current_user,
@@ -43,7 +43,7 @@ def get_messages(friend_id: int, current_user: CurrentUser, db: DbSession):
 
 
 @router.post("/{friend_id}/messages", response_model=ChatMessageResponse)
-def create_message(friend_id: int, message_data: ChatMessageCreate, current_user: CurrentUser, db: DbSession):
+def create_message(friend_id: int, message_data: ChatMessageCreate, current_user: CompletedUser, db: DbSession):
     receiver = get_active_user_by_id(db, friend_id)
 
     if receiver is None:
@@ -62,7 +62,7 @@ def create_message(friend_id: int, message_data: ChatMessageCreate, current_user
 
 
 @router.post("/{friend_id}/read", status_code=status.HTTP_204_NO_CONTENT)
-def mark_as_read(friend_id: int, current_user: CurrentUser, db: DbSession):
+def mark_as_read(friend_id: int, current_user: CompletedUser, db: DbSession):
     mark_conversation_as_read(
         db=db,
         current_user=current_user,
