@@ -55,6 +55,14 @@ class User(Base):
         cascade="all, delete-orphan",
     )
 
+    # This doesnt create a database column. It calculates the list from the exisiting auth_accounts rows
+    @property
+    def linked_providers(self) -> list[str]:
+        return sorted({
+            account.provider
+            for account in self.auth_accounts
+        })
+
     sent_friend_requests: Mapped[list["FriendRequest"]] = relationship(
         back_populates="requester",
         foreign_keys="FriendRequest.requester_id",

@@ -65,6 +65,9 @@ class UserResponse(BaseModel):
     avatar_url: str | None = None
     is_guest: bool
     is_active: bool
+    linked_providers: list[str] = Field(
+        default_factory=list,
+    )
 
     model_config = {
         "from_attributes": True,
@@ -79,7 +82,6 @@ class PublicUserResponse(BaseModel):
     username: str | None = None
     display_name: str | None = None
     avatar_url: str | None = None
-
     model_config = {
         "from_attributes": True,
     }

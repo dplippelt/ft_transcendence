@@ -64,4 +64,9 @@ class AuthAccount(Base):
             "provider_account_id",
             name="uq_auth_provider_account",
         ),
+        UniqueConstraint(
+            "user_id",
+            "provider",
+            name="uq_user_provider",
+        ),
     )
