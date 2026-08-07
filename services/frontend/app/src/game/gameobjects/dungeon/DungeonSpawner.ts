@@ -2,7 +2,7 @@ import { type Types } from "phaser";
 import { TileNodeType, type RoomGraph, type Room, Direction } from "../../map/procedural";
 import { Dungeon } from "./Dungeon";
 import { PlayerFactory, EnemyFactory, PassageFactory } from "./factories";
-import type { Passage } from "../Passage";
+import type { Passage } from "./Passage";
 
 type Vector2Like = Types.Math.Vector2Like;
 

@@ -7,7 +7,7 @@ import { type TileSetMap } from "../../map/TileSetMap";
 import { RoomSetup } from "./RoomSetup";
 import { DungeonSpawner } from "./DungeonSpawner";
 import type { Enemy } from "../Enemy";
-import { Passage } from "../Passage";
+import { Passage } from "./Passage";
 import type { ExitZone } from "./ExitZone";
 import { EnemyFactory, PassageFactory, PlayerFactory } from "./factories";
 import { DungeonDecorator } from "./DungeonDecorator";

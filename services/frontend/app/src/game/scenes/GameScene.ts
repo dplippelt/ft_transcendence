@@ -68,7 +68,7 @@ const dungeonConfig: DungeonConfig = {
       }
     },
   },
-  roomCount: { min: 3, max: 3 },
+  roomCount: { min: 8, max: 16 },
 };
 
 // TODO: GameSession structure (local / network) -> thruth sayer; player hp, position etc, syncs up with the game itself

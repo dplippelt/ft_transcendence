@@ -1,7 +1,7 @@
 import Player from "../Player";
 import { Enemy, skeletonData } from "../Enemy";
 import { ExitZone } from "./ExitZone";
-import { Passage } from "../Passage";
+import { Passage } from "./Passage";
 import type { SpawnLocation } from "./Dungeon";
 import { playerOne } from "../../components/KeyboardComponent";
 import { Direction } from "../../map/procedural";
