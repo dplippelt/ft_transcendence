@@ -304,7 +304,7 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
     }
   }
 
-  // TODO: what about the unplaced rooms? Can we somehow still place them?
+  // TODO: Resolve unplaced rooms to ensure the minimum condition for room count
 
   // construct the layout
   const [mapOffset, mapSize]: [Vector2, Vector2] = mapBounds(placedRooms);
