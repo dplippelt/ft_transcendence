@@ -56,7 +56,8 @@ export enum JoinStatus
 export enum RoutePath
 {
 	landingPage = "/",
-	auth = "/auth",
+    auth = "/auth",
+    completeProfile = "/complete-profile",
 	mainMenu = "/main-menu",
 	multiplayer = "/multiplayer",
 	mpLobby = "/multiplayer/lobby",

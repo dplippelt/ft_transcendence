@@ -8,6 +8,7 @@ export interface AuthUser
     avatar_url: string | null;
     is_guest: boolean;
     is_active: boolean;
+    linked_providers: string[];
 }
 
 export interface TokenResponse
@@ -85,6 +86,18 @@ export function updateUser(userID: number, data: UpdateUserRequest, accessToken:
         {
             method: "PUT",
             body: JSON.stringify(data),
+        },
+        accessToken,
+    );
+}
+
+export function linkGoogleAccount(credential: string, accessToken: string,): Promise<AuthUser>
+{
+    return apiRequest<AuthUser>(
+        "/auth/google/link",
+        {
+            method: "POST",
+            body: JSON.stringify({ credential }),
         },
         accessToken,
     );

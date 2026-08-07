@@ -1,7 +1,7 @@
 import {createContext, useContext, useEffect, useCallback, useState,} from "react";
 import type { ReactNode } from "react";
 
-import {getCurrentUser, loginUser, loginWithGoogleCredentials, registerUser, updateUser,} from "../api/authApi";
+import {getCurrentUser, linkGoogleAccount, loginUser, loginWithGoogleCredentials, registerUser, updateUser,} from "../api/authApi";
 
 import type { AuthUser, LoginRequest, RegisterRequest, UpdateUserRequest, } from "../api/authApi";
 import { ApiError } from "../api/http";
@@ -28,7 +28,8 @@ interface IAuthContext
 	register: (userData: RegisterRequest) => Promise<void>;
 	loginWithGoogle: (credential: string) => Promise<void>;
     updateProfile: (data: UpdateUserRequest) => Promise<void>;
-	logout: () => void;
+    linkGoogle: (credential: string) => Promise<void>;
+    logout: () => void;
 }
 
 const AuthContext = createContext<IAuthContext | null>(null);
@@ -124,18 +125,30 @@ export default function AuthProvider( { children } : {children: ReactNode} )
     const auth: IAuth = {accessToken, user,status,};
     
     const updateProfile = useCallback(async (data: UpdateUserRequest) =>
-        {
-            if (!accessToken || !user)
-                throw new Error("No authenticated session");
-        
-            const updatedUser = await updateUser(
-                user.id,
-                data,
-                accessToken,
-            );
-        
-            setUser(updatedUser);
-        }, [accessToken, user]);
+    {
+        if (!accessToken || !user)
+            throw new Error("No authenticated session");
+    
+        const updatedUser = await updateUser(
+            user.id,
+            data,
+            accessToken,
+        );
+    
+        setUser(updatedUser);
+    }, [accessToken, user]);
+    
+    const linkGoogle = useCallback(async (credential: string) =>
+    {
+        if (!accessToken)
+            throw new Error("No authenticated session");
+        const updatedUser = await linkGoogleAccount(
+            credential,
+            accessToken,
+        );
+        setUser(updatedUser);
+    }, [accessToken]);
+
 
 	return (
 		<AuthContext.Provider
@@ -144,7 +157,8 @@ export default function AuthProvider( { children } : {children: ReactNode} )
 				auth,
 				login,
 				register,
-				loginWithGoogle,
+                loginWithGoogle,
+                linkGoogle,
 				logout,
 				updateProfile,
 			}}
