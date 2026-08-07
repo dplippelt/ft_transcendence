@@ -23,10 +23,6 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
         x: 0,
         y: 0,
       },
-      debug: true,
-      debugShowStaticBody: true,
-      debugStaticBodyColor: 0x00FF00,
-      debugVelocityColor: 0xDF0000,
     },
   },
 };
