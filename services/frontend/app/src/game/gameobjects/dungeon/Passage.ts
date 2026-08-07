@@ -1,5 +1,5 @@
 import { Physics, Scene, type Types } from "phaser";
-import { GameEvents, GameManagerScene } from "../scenes/GameManagerScene";
+import { GameEvents, GameManagerScene } from "../../scenes/GameManagerScene";
 
 type Vector2Like = Types.Math.Vector2Like;
 
