@@ -284,13 +284,29 @@ def set_or_change_password(db: Session, user: User, password_data: PasswordUpdat
                 code=ErrorCode.PASSWORD_REQUIRED,
             )
 
-        if (not password_account.password_hash or not verify_password(password_data.current_password, password_account.password_hash)):
+        if (not password_account.password_hash
+            or not verify_password(
+                password_data.current_password,
+                password_account.password_hash,
+            )
+        ):
             raise unauthorized(
                 "Current password is incorrect",
                 code=ErrorCode.INVALID_CURRENT_PASSWORD,
             )
 
-        password_account.password_hash = get_password_hash(password_data.new_password)
+        if verify_password(
+            password_data.new_password,
+            password_account.password_hash,
+        ):
+            raise bad_request(
+                "New password must be different from current password",
+                code=ErrorCode.PASSWORD_SAME_AS_CURRENT,
+            )
+
+        password_account.password_hash = get_password_hash(
+            password_data.new_password
+        )
 
         try:
             db.commit()

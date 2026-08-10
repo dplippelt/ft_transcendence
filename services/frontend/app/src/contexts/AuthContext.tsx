@@ -1,9 +1,9 @@
 import {createContext, useContext, useEffect, useCallback, useState,} from "react";
 import type { ReactNode } from "react";
 
-import {getCurrentUser, linkGoogleAccount, loginUser, loginWithGoogleCredentials, registerUser, updateUser,} from "../api/authApi";
+import {getCurrentUser, linkGoogleAccount, loginUser, loginWithGoogleCredentials, registerUser, updateUser, updatePassword as updatePasswordRequest} from "../api/authApi";
 
-import type { AuthUser, LoginRequest, RegisterRequest, UpdateUserRequest, } from "../api/authApi";
+import type { AuthUser, LoginRequest, RegisterRequest, UpdateUserRequest, PasswordUpdateRequest} from "../api/authApi";
 import { ApiError } from "../api/http";
 
 const ACCESS_TOKEN_KEY = "accessToken";
@@ -28,6 +28,7 @@ interface IAuthContext
 	register: (userData: RegisterRequest) => Promise<void>;
 	loginWithGoogle: (credential: string) => Promise<void>;
     updateProfile: (data: UpdateUserRequest) => Promise<void>;
+    updatePassword: (data: PasswordUpdateRequest) => Promise<void>;
     linkGoogle: (credential: string) => Promise<void>;
     logout: () => void;
 }
@@ -149,6 +150,18 @@ export default function AuthProvider( { children } : {children: ReactNode} )
         setUser(updatedUser);
     }, [accessToken]);
 
+    const updatePassword = useCallback(async (data: PasswordUpdateRequest) => {
+        if (!accessToken)
+            throw new Error("No authenticated session");
+        const updatedUser = await updatePasswordRequest(
+            data,
+            accessToken,
+        );
+
+        setUser(updatedUser);
+    }, [accessToken]
+    );
+
 
 	return (
 		<AuthContext.Provider
@@ -160,7 +173,8 @@ export default function AuthProvider( { children } : {children: ReactNode} )
                 loginWithGoogle,
                 linkGoogle,
 				logout,
-				updateProfile,
+                updateProfile,
+                updatePassword,
 			}}
 		>
 			{children}

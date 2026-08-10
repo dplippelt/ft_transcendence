@@ -57,6 +57,12 @@ export enum ErrorType
     lobbyDoesNotExist,
     lobbyFull,
 
+    currentPasswordRequired,
+    invalidCurrentPassword,
+    passwordEmailUnavailable,
+    passwordUpdateFailed,
+    passwordSameAsCurrent,
+
     unknown,
 }
 
@@ -183,6 +189,16 @@ export function errorMsg(error: ErrorType): string
             return "Failed to join because the lobby does not exist";
         case ErrorType.lobbyFull:
             return "Failed to join because the lobby is full";
+        case ErrorType.currentPasswordRequired:
+            return "Current password is required.";
+        case ErrorType.invalidCurrentPassword:
+            return "Current password is incorrect.";
+        case ErrorType.passwordEmailUnavailable:
+            return "No verified email is available for this account.";
+        case ErrorType.passwordUpdateFailed:
+            return "Failed to update password.";
+        case ErrorType.passwordSameAsCurrent:
+            return "New password must be different from your current password.";
         case ErrorType.unknown:
             return "Something went wrong!";
         default:
@@ -229,6 +245,16 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.googleRegistrationFailed;
         case "GOOGLE_EMAIL_CONFLICT":
             return ErrorType.googleEmailConflict;
+        case "PASSWORD_REQUIRED":
+            return ErrorType.currentPasswordRequired;
+        case "INVALID_CURRENT_PASSWORD":
+            return ErrorType.invalidCurrentPassword;
+        case "PASSWORD_EMAIL_UNAVAILABLE":
+            return ErrorType.passwordEmailUnavailable;
+        case "PASSWORD_UPDATE_FAILED":
+            return ErrorType.passwordUpdateFailed;
+        case "PASSWORD_SAME_AS_CURRENT":
+            return ErrorType.passwordSameAsCurrent;
     }
     if (error.status === 422 && error.validationErrors)
     {
@@ -241,6 +267,7 @@ export function mapAuthApiError(error: unknown): ErrorType
                 case "email":
                     return ErrorType.invalidEmail;
                 case "password":
+                case "new_password":
                     return ErrorType.passwordTooShort;
                 case "username":
                     return ErrorType.badUsernameLength;

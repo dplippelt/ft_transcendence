@@ -8,10 +8,10 @@ import ErrorText from "../../components/ErrorText";
 import { MossButton } from "../../components/Buttons";
 import guestAvatar from "../../assets/guest_avatar_test.jpg";
 import testAvatar from "../../assets/mesca_avatar_test.png";
-import { TextInput } from "../../components/TextInput";
+import { TextInput, PasswordInput } from "../../components/TextInput";
 import Avatar from "../../components/Avatar";
 import { getValidUsername } from "../../utils/usernameCheck";
-import { useAuth } from "../../contexts/AuthContext";
+import { useAuth, useCurrentUser } from "../../contexts/AuthContext";
 
 interface IEditPopup
 {
@@ -176,20 +176,122 @@ function EditUsernameContent( { setPopupType } : IEditContent )
 
 function EditPasswordContent( { setPopupType } : IEditContent )
 {
-	return (
-		<>
-			<label>
-				Password changes are not available yet.
-			</label>
+    const user = useCurrentUser();
+    const { updatePassword } = useAuth();
 
-			<PopupButtons>
-				<MossButton
-					label="Back"
-					onClick={() => setPopupType(PopupType.none)}
-				/>
-			</PopupButtons>
-		</>
-	);
+    const hasPassword = user.linked_providers.includes("password");
+    const [currentPassword, setCurrentPassword] = useState<string>("");
+    const [newPassword, setNewPassword] = useState<string>("");
+    const [confirmPassword, setConfirmPassword] = useState<string>("");
+    const [error, setError] = useState<ErrorType>(ErrorType.none);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+    async function passwordCheck()
+    {
+        if (isSubmitting)
+            return;
+        
+        setError(ErrorType.none);
+
+        if (hasPassword && !currentPassword)
+        {
+            setError(ErrorType.currentPasswordRequired);
+            return;
+        }
+
+        if (!newPassword)
+        {
+            setError(ErrorType.passwordCannotBeEmpty);
+            return;
+        }
+        
+        if (newPassword.length < 8)
+        {
+            setError(ErrorType.passwordTooShort);
+            return;
+        }
+
+        if (newPassword !== confirmPassword)
+        {
+            setError(ErrorType.passwordsDontMatch);
+            return;
+        }
+
+        if (hasPassword && newPassword === currentPassword)
+        {
+            setError(ErrorType.passwordSameAsCurrent);
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try
+        {
+            await updatePassword({
+                new_password: newPassword,
+                ...(hasPassword &&
+                {
+                    current_password: currentPassword,
+                }),
+            });
+
+            setPopupType(PopupType.none);
+        }
+        catch (error)
+        {
+            setError(mapAuthApiError(error));
+        }
+        finally
+        {
+            setIsSubmitting(false);
+        }
+    }
+
+    return (
+        <>
+            { error !== ErrorType.none && <ErrorText error={error}/> }
+
+            {hasPassword &&
+                <PasswordInput
+                    label="Current password:"
+                    placeholder="Enter current password"
+                    isNewPassword={false}
+                    setter={setCurrentPassword}
+                    id="currentPassword"
+                />
+            }
+
+            <PasswordInput
+                label={ hasPassword ? "New password:" : "Set password:" }
+                placeholder="Enter new password"
+                isNewPassword={true}
+                setter={setNewPassword}
+                id="newPassword"
+            />
+
+            <PasswordInput
+                label="Confirm password:"
+                placeholder="Confirm new password"
+                isNewPassword={true}
+                setter={setConfirmPassword}
+                id="confirmPassword"
+            />
+
+            <PopupButtons>
+                <MossButton
+                    label={ hasPassword ? "Change password" : "Set password" }
+                    onClick={() => void passwordCheck()}
+                    disabled={isSubmitting}
+                />
+
+                <MossButton
+                    label="Back"
+                    onClick={ () => setPopupType(PopupType.none) }
+                    disabled={isSubmitting}
+                />
+            </PopupButtons>
+        </>
+    );
 }
 
 export default function EditPopup(

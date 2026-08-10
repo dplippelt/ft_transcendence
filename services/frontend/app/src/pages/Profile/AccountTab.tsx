@@ -79,13 +79,25 @@ function DisplayName()
 }
 
 
-function Password()
+function Password({ setPopupType }: IAccountInfo)
 {
+    const user = useCurrentUser();
+    const hasPassword = user.linked_providers.includes("password");
+
     return (
         <>
-            <div className={sharedStyle.profileLabel}> Password: </div>
-            <div className={sharedStyle.textInfo}> Not available yet </div>
-            <div />
+            <div className={sharedStyle.profileLabel}>
+                Password:
+            </div>
+
+            <div className={sharedStyle.textInfo}>
+                {hasPassword ? "••••••••" : "Not set"}
+            </div>
+
+            <EditButton
+                popupType={PopupType.editPassword}
+                setPopupType={setPopupType}
+            />
         </>
     );
 }
@@ -112,7 +124,7 @@ export default function Account()
             <Avatar setPopupType={setPopupType} />
             <Username setPopupType={setPopupType} />
             <DisplayName />
-            <Password />
+            <Password setPopupType={setPopupType} />
             <GoogleAccount />
 
             {popupType !== PopupType.none &&
