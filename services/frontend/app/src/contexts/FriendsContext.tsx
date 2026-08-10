@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
 import { useAuth } from "./AuthContext";
@@ -80,21 +80,45 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 	const [selectedFriendID, setSelectedFriendID] = useState<string | undefined>(undefined);
 	const [activeFriendID, setActiveFriendID] = useState<string | undefined>(undefined);
 
+	// Tracks the access token a refreshFriends() call was made under, so a
+	// response that resolves after logout/relogin (a different or null
+	// token by then) can be discarded instead of overwriting the new
+	// session's state with stale data.
+	const accessTokenRef = useRef(auth.accessToken);
+	accessTokenRef.current = auth.accessToken;
+
+	const resetFriends = useCallback(() =>
+	{
+		setSelectedFriendID(undefined);
+		setActiveFriendID(undefined);
+		setFriends({});
+		setIncomingRequests([]);
+		setOutgoingRequests([]);
+	}, []);
+
 	// Fetches friends + pending requests fresh from the backend. Called on
 	// login and after every mutation (send/accept/reject/cancel/remove)
 	// rather than optimistically patching local state, since a request can
 	// be accepted/removed from the other side at any time too.
 	const refreshFriends = useCallback(async () =>
 	{
-		if ( !auth.accessToken )
+		const requestToken = auth.accessToken;
+
+		if ( !requestToken )
 			return;
 
 		const [friendList, incoming, outgoing] = await Promise.all(
 		[
-			getFriends(auth.accessToken),
-			getIncomingFriendRequests(auth.accessToken),
-			getOutgoingFriendRequests(auth.accessToken),
+			getFriends(requestToken),
+			getIncomingFriendRequests(requestToken),
+			getOutgoingFriendRequests(requestToken),
 		]);
+
+		// The session changed while this request was in flight (logout, or
+		// a different user logged in) -- this response no longer belongs
+		// to the active session, so don't let it clobber current state.
+		if ( accessTokenRef.current !== requestToken )
+			return;
 
 		const newFriends: Friends = Object.fromEntries(
 			friendList.friends.map(entry => [String(entry.friend.id), toFriendData(entry.friend)])
@@ -113,17 +137,16 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 	useEffect(() =>
 	{
 		if ( auth.status === "authenticated" )
-			void refreshFriends();
-	}, [auth.status, refreshFriends]);
-
-	function resetFriends()
-	{
-		setSelectedFriendID(undefined);
-		setActiveFriendID(undefined);
-		setFriends({});
-		setIncomingRequests([]);
-		setOutgoingRequests([]);
-	}
+		{
+			void refreshFriends().catch(() => {
+				// A background refresh failure just leaves the previous
+				// state in place; explicit actions (addFriend, etc.) surface
+				// their own errors to the user separately.
+			});
+		}
+		else if ( auth.status === "unauthenticated" )
+			resetFriends();
+	}, [auth.status, refreshFriends, resetFriends]);
 
 	async function addFriend( username: string )
 	{
