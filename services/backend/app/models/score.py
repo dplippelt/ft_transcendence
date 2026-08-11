@@ -30,6 +30,7 @@ class Score(Base):
     value: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
+        index=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
