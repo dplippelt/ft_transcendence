@@ -12,7 +12,6 @@ export enum EnemyLevel {
 export interface EnemyData {
   hitPoint: number;
   attackDamage: number;
-  battleRound: number;
 }
 
 export type EnemyTypes = Record<EnemyLevel, EnemyData>;
@@ -21,17 +20,14 @@ export const enemyTypes: EnemyTypes = {
   [EnemyLevel.EASY]: {
     hitPoint: 100,
     attackDamage: 10,
-    battleRound: 3,
   },
   [EnemyLevel.NORMAL]: {
     hitPoint: 200,
     attackDamage: 30,
-    battleRound: 2,
   },
   [EnemyLevel.HARD]: {
     hitPoint: 300,
     attackDamage: 50,
-    battleRound: 1,
   },
 };
 
