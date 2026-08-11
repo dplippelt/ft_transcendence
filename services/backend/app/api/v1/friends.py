@@ -1,8 +1,9 @@
 from fastapi import APIRouter, status
 from sqlalchemy import or_
+from sqlalchemy.orm import joinedload
 
-from app.api.dependencies import CurrentUser, DbSession
-from app.core.exceptions import not_found
+from app.api.dependencies import CompletedUser, DbSession
+from app.core.exceptions import ErrorCode, not_found
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
 from app.models.user import User
@@ -35,7 +36,7 @@ def build_friend_response(friendship: Friendship, friend: User) -> FriendRespons
 
 
 @router.get("", response_model=FriendListResponse)
-def get_friends(current_user: CurrentUser, db: DbSession):
+def get_friends(current_user: CompletedUser, db: DbSession):
     friendships = (
         db.query(Friendship)
         .filter(
@@ -96,7 +97,7 @@ def get_friends(current_user: CurrentUser, db: DbSession):
 
 
 @router.post("/requests", response_model=FriendRequestResponse)
-def create_friend_request(request_data: FriendRequestCreate, current_user: CurrentUser, db: DbSession,):
+def create_friend_request(request_data: FriendRequestCreate, current_user: CompletedUser, db: DbSession,):
 
     # Look up via the active-only helper (rather than checking is_active
     # separately) so a deactivated recipient reads as "not found" here too,
@@ -105,7 +106,7 @@ def create_friend_request(request_data: FriendRequestCreate, current_user: Curre
     recipient = get_active_user_by_username(db, request_data.username)
 
     if recipient is None:
-        raise not_found("User not found.",)
+        raise not_found("User not found.", code=ErrorCode.USER_NOT_FOUND)
 
     return send_friend_request(
         db=db,
@@ -115,7 +116,7 @@ def create_friend_request(request_data: FriendRequestCreate, current_user: Curre
 
 
 @router.get("/requests/incoming", response_model=list[FriendRequestResponse])
-def get_incoming_friend_requests(current_user: CurrentUser, db: DbSession):
+def get_incoming_friend_requests(current_user: CompletedUser, db: DbSession):
     return (
         db.query(FriendRequest)
         .options(
@@ -131,7 +132,7 @@ def get_incoming_friend_requests(current_user: CurrentUser, db: DbSession):
 
 
 @router.get("/requests/outgoing", response_model=list[FriendRequestResponse])
-def get_outgoing_friend_requests(current_user: CurrentUser, db: DbSession):
+def get_outgoing_friend_requests(current_user: CompletedUser, db: DbSession):
     return (
         db.query(FriendRequest)
         .options(
@@ -147,7 +148,7 @@ def get_outgoing_friend_requests(current_user: CurrentUser, db: DbSession):
 
 
 @router.post("/requests/{request_id}/accept", response_model=FriendRequestResponse)
-def accept_friend_request(request_id: int, current_user: CurrentUser, db: DbSession):
+def accept_friend_request(request_id: int, current_user: CompletedUser, db: DbSession):
 
     return accept_friend_request_service(
         db=db,
@@ -157,7 +158,7 @@ def accept_friend_request(request_id: int, current_user: CurrentUser, db: DbSess
 
 
 @router.post("/requests/{request_id}/reject", response_model=FriendRequestResponse)
-def reject_friend_request(request_id: int, current_user: CurrentUser, db: DbSession,):
+def reject_friend_request(request_id: int, current_user: CompletedUser, db: DbSession,):
 
     return reject_friend_request_service(
         db=db,
@@ -167,7 +168,7 @@ def reject_friend_request(request_id: int, current_user: CurrentUser, db: DbSess
 
 
 @router.delete("/{friend_id}", status_code=status.HTTP_204_NO_CONTENT)
-def remove_friend(friend_id: int, current_user: CurrentUser, db: DbSession,):
+def remove_friend(friend_id: int, current_user: CompletedUser, db: DbSession,):
     remove_friend_service(
         db=db,
         current_user=current_user,
@@ -178,7 +179,7 @@ def remove_friend(friend_id: int, current_user: CurrentUser, db: DbSession,):
 
 
 @router.delete("/requests/{request_id}", status_code=status.HTTP_204_NO_CONTENT)
-def cancel_friend_request(request_id: int, current_user: CurrentUser, db: DbSession,):
+def cancel_friend_request(request_id: int, current_user: CompletedUser, db: DbSession,):
     cancel_friend_request_service(
         db=db,
         request_id=request_id,

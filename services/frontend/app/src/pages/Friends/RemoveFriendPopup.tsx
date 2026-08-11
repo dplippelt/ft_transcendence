@@ -1,10 +1,12 @@
 import { PopupButtons } from "../../components/ButtonContainers";
 import { MossButton } from "../../components/Buttons";
 import { getFriendDraftKey, PopupType } from "../../utils/utils";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import styles from "./FriendPopup.module.scss";
 import { useFriends, type IFriendData } from "../../contexts/FriendsContext";
 import { useCurrentUser } from "../../contexts/AuthContext";
+import ErrorText from "../../components/ErrorText";
+import { ErrorType, mapFriendsApiError } from "../../utils/errors";
 
 interface IRemoveFriendPopup
 {
@@ -16,6 +18,8 @@ export default function RemoveFriendPopup( { setPopupType } : IRemoveFriendPopup
 	const { friends, selectedFriendID, setSelectedFriendID, removeFriend } = useFriends();
 	const friend = getSelectedFriend();
 	const user = useCurrentUser();
+	const [error, setError] = useState<ErrorType>(ErrorType.none);
+	const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
 	useEffect(() =>
 	{
@@ -36,14 +40,25 @@ export default function RemoveFriendPopup( { setPopupType } : IRemoveFriendPopup
 		return friends[selectedFriendID];
 	}
 
-	// TODO: for backend integration:
-	// The popup should remain open while the request is pending and show an error if it fails. We can use async to achieve this.
-	// The button should also be disable while submitting so double-clicking doesn't send two requests.
-	function handleRemoveFriend()
+	async function handleRemoveFriend()
 	{
-		localStorage.removeItem(getFriendDraftKey(String(user.id), selectedFriendID!));
-		removeFriend(selectedFriendID!);
-		closePopup();
+		if ( isSubmitting )
+			return;
+
+		setError(ErrorType.none);
+		setIsSubmitting(true);
+
+		try
+		{
+			await removeFriend(selectedFriendID!);
+			localStorage.removeItem(getFriendDraftKey(String(user.id), selectedFriendID!));
+			closePopup();
+		}
+		catch (err)
+		{
+			setError(mapFriendsApiError(err));
+			setIsSubmitting(false);
+		}
 	}
 
 	if ( !friend )
@@ -51,9 +66,10 @@ export default function RemoveFriendPopup( { setPopupType } : IRemoveFriendPopup
 
 	return (
 			<>
+				{ error !== ErrorType.none && <ErrorText error={error}/> }
 				<label className={styles.query}>{`Are you sure you want to remove ${friend.username} from your friends list?`}</label>
 				<PopupButtons>
-					<MossButton label="Remove" onClick={handleRemoveFriend} />
+					<MossButton label={isSubmitting ? "Removing..." : "Remove"} onClick={handleRemoveFriend} />
 					<MossButton label="Cancel" onClick={closePopup} />
 				</PopupButtons>
 			</>

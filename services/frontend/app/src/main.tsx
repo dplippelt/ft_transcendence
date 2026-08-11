@@ -11,11 +11,11 @@ if (!GOOGLE_CLIENT_ID)
 	throw new Error("VITE_GOOGLE_CLIENT_ID is not configured");
 
 createRoot(document.getElementById("root")!).render(
-    <StrictMode>
-        <GoogleOAuthProvider
-            clientId={GOOGLE_CLIENT_ID}
-            locale="en"
-        >
+	<StrictMode>
+		<GoogleOAuthProvider
+			clientId={GOOGLE_CLIENT_ID}
+			locale="en"
+		>
 			<AppProviders>
 				<App/>
 			</AppProviders>

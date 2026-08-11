@@ -42,9 +42,14 @@ export enum ErrorType
     avatarBadFileType,
 
     cannotAddSelf,
+    cannotRemoveSelf,
     userDoesNotExist,
     userAlreadyFriend,
     noFriendSelected,
+    friendRequestAlreadySent,
+    friendRequestNotFound,
+    friendRequestNotPending,
+    friendshipNotFound,
     lobbyNameCannotBeEmpty,
     badLobbyNameLength,
     lobbyNameContainsInvalChars,
@@ -141,12 +146,22 @@ export function errorMsg(error: ErrorType): string
             return "Avatar must be JPEG or PNG!";
         case ErrorType.cannotAddSelf:
             return "You cannot add yourself as a friend!";
+        case ErrorType.cannotRemoveSelf:
+            return "You cannot remove yourself as a friend!";
         case ErrorType.userDoesNotExist:
             return "User does not exist!";
         case ErrorType.userAlreadyFriend:
             return "User already in friends list!";
         case ErrorType.noFriendSelected:
             return "Select a friend to invite";
+        case ErrorType.friendRequestAlreadySent:
+            return "Friend request already sent!";
+        case ErrorType.friendRequestNotFound:
+            return "This friend request no longer exists.";
+        case ErrorType.friendRequestNotPending:
+            return "This friend request has already been handled.";
+        case ErrorType.friendshipNotFound:
+            return "You are not friends with this user.";
         case ErrorType.lobbyNameCannotBeEmpty:
             return "Lobby name cannot be empty!";
         case ErrorType.badLobbyNameLength:
@@ -233,5 +248,32 @@ export function mapAuthApiError(error: unknown): ErrorType
         }
     }
 
+    return ErrorType.unknown;
+}
+
+export function mapFriendsApiError(error: unknown): ErrorType
+{
+    if (!(error instanceof ApiError))
+        return ErrorType.unknown;
+
+    switch (error.code)
+    {
+        case "USER_NOT_FOUND":
+            return ErrorType.userDoesNotExist;
+        case "CANNOT_ADD_SELF":
+            return ErrorType.cannotAddSelf;
+        case "CANNOT_REMOVE_SELF":
+            return ErrorType.cannotRemoveSelf;
+        case "ALREADY_FRIENDS":
+            return ErrorType.userAlreadyFriend;
+        case "FRIEND_REQUEST_ALREADY_SENT":
+            return ErrorType.friendRequestAlreadySent;
+        case "FRIEND_REQUEST_NOT_FOUND":
+            return ErrorType.friendRequestNotFound;
+        case "FRIEND_REQUEST_NOT_PENDING":
+            return ErrorType.friendRequestNotPending;
+        case "FRIENDSHIP_NOT_FOUND":
+            return ErrorType.friendshipNotFound;
+    }
     return ErrorType.unknown;
 }
