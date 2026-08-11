@@ -6,7 +6,7 @@ interface TurnConfig {
   enemyDelayMs: number;
 }
 
-const turnCOnfig: TurnConfig = {
+const turnConfig: TurnConfig = {
   playerDelayMs: 10000,
   enemyDelayMs: 5000,
 };
@@ -21,7 +21,7 @@ export default class CombatTurnManager {
   readonly combatManager: CombatManager;
   readonly scene: Scene;
   readonly clock: Phaser.Time.Clock;
-  readonly turnConfig: TurnConfig = turnCOnfig;
+  readonly turnConfig: TurnConfig = turnConfig;
   readonly turnEvents: Phaser.Events.EventEmitter;
   private isPlayerTurn: boolean;
   private playerTimer: Phaser.Time.TimerEvent | null;
@@ -35,7 +35,7 @@ export default class CombatTurnManager {
     this.turnEvents = new Phaser.Events.EventEmitter();
     this.turnEvents.on(TurnEvents.SWITCH, this.switchTurn, this);
     this.isPlayerTurn = true;
-    this.playerTimer = this.playNextTurnFor(this.turnConfig.playerDelayMs);
+    this.playerTimer = this.playTurnFor(this.turnConfig.playerDelayMs);
 
     // To display, not necessary.
     this.enemyTimer = null;
@@ -52,7 +52,7 @@ export default class CombatTurnManager {
         this.playerTimer.remove();
       }
 
-      this.playerTimer = this.playNextTurnFor(this.turnConfig.playerDelayMs);
+      this.playerTimer = this.playTurnFor(this.turnConfig.playerDelayMs);
       this.turnEvents.emit(TurnEvents.STARTPLAYER);
     } else {
       this.scene.input.enabled = false;
@@ -63,12 +63,12 @@ export default class CombatTurnManager {
 
       // To display, not necessary.
       this.enemyTimer?.remove();
-      this.enemyTimer = this.playNextTurnFor(this.turnConfig.enemyDelayMs);
+      this.enemyTimer = this.playTurnFor(this.turnConfig.enemyDelayMs);
       this.turnEvents.emit(TurnEvents.STARTENEMY);
     }
   }
 
-  playNextTurnFor(ms: number) {
+  playTurnFor(ms: number) {
     const config: Phaser.Types.Time.TimerEventConfig = {
       delay: ms,
       callback: () => {
