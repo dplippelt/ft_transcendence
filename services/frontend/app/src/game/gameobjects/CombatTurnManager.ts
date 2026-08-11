@@ -8,7 +8,7 @@ interface TurnConfig {
 
 const turnConfig: TurnConfig = {
   playerDelayMs: 10000,
-  enemyDelayMs: 5000,
+  enemyDelayMs: 1000,
 };
 
 export enum TurnEvents {
