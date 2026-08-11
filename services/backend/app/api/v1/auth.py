@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from google.auth import exceptions as google_auth_exceptions
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import CurrentUser, DbSession
@@ -232,6 +232,17 @@ def get_password_account_for_user(db: Session, user_id: int) -> AuthAccount | No
         .filter(
             AuthAccount.user_id == user_id,
             AuthAccount.provider == PASSWORD_PROVIDER,
+        )
+        .first()
+    )
+
+
+def get_google_account_by_email(db: Session, email: str,) -> AuthAccount | None:
+    return (
+        db.query(AuthAccount)
+        .filter(
+            AuthAccount.provider == GOOGLE_PROVIDER,
+            AuthAccount.email == email,
         )
         .first()
     )
@@ -497,13 +508,6 @@ def link_google_account(user_data: GoogleLogin,db: DbSession, current_user: Curr
             code=ErrorCode.GOOGLE_LINK_FAILED,
         )
 
-    return current_user
-
-
-@router.put("/password", response_model=UserResponse,)
-def update_password(password_data: PasswordUpdate, db: DbSession, current_user: CurrentUser, ):
-    set_or_change_password(db, current_user, password_data,)
-    db.refresh(current_user)
     return current_user
 
 
