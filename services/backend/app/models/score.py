@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, func
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -8,6 +8,12 @@ from app.db.database import Base
 
 class Score(Base):
     __tablename__ = "scores"
+    __table_args__ = (
+        # Covers the per-dungeon leaderboard's filter+sort; the leading
+        # column also serves plain dungeon_id lookups, so no separate
+        # single-column index on dungeon_id is needed.
+        Index("ix_scores_dungeon_id_value", "dungeon_id", "value"),
+    )
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -24,7 +30,6 @@ class Score(Base):
     dungeon_id: Mapped[int] = mapped_column(
         ForeignKey("dungeons.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
 
     value: Mapped[int] = mapped_column(

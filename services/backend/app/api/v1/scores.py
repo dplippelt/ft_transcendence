@@ -25,5 +25,5 @@ def create_score(score_data: ScoreCreate, current_user: CompletedUser, db: DbSes
 
 
 @router.get("/{user_id}", response_model=list[ScoreResponse])
-def get_scores(self_user: SelfUser, db: DbSession):
+def get_scores(self_user: SelfUser, _completed: CompletedUser, db: DbSession):
     return get_scores_for_user(db, self_user.id)

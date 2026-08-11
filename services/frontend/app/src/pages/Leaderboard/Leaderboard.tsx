@@ -37,6 +37,7 @@ interface ILeaderboardList
 {
 	entries: LeaderboardEntryResponse[];
 	isLoading: boolean;
+	hasError: boolean;
 }
 
 interface ILeaderboardWindow
@@ -46,6 +47,7 @@ interface ILeaderboardWindow
 	setSelectedDungeonId: React.Dispatch<React.SetStateAction<number | undefined>>;
 	entries: LeaderboardEntryResponse[];
 	isLoading: boolean;
+	hasError: boolean;
 }
 
 function DungeonPicker( { dungeons, selectedDungeonId, setSelectedDungeonId } : IDungeonPicker )
@@ -103,11 +105,16 @@ function LeaderboardEntry( { entry, idx } : ILeaderboardEntry )
 	);
 }
 
-function LeaderboardList( { entries, isLoading } : ILeaderboardList )
+function LeaderboardList( { entries, isLoading, hasError } : ILeaderboardList )
 {
 	if ( isLoading )
 	{
 		return <div className={styles.leaderboardList}>Loading...</div>;
+	}
+
+	if ( hasError )
+	{
+		return <div className={styles.leaderboardList}>Couldn't load the leaderboard. Please try again later.</div>;
 	}
 
 	if ( entries.length === 0 )
@@ -124,7 +131,7 @@ function LeaderboardList( { entries, isLoading } : ILeaderboardList )
 	);
 }
 
-function LeaderboardWindow( { dungeons, selectedDungeonId, setSelectedDungeonId, entries, isLoading } : ILeaderboardWindow )
+function LeaderboardWindow( { dungeons, selectedDungeonId, setSelectedDungeonId, entries, isLoading, hasError } : ILeaderboardWindow )
 {
 	const selectedDungeon = dungeons.find(dungeon => dungeon.id === selectedDungeonId);
 
@@ -132,7 +139,7 @@ function LeaderboardWindow( { dungeons, selectedDungeonId, setSelectedDungeonId,
 		<div className={styles.leaderboardWindow}>
 			<DungeonPicker dungeons={dungeons} selectedDungeonId={selectedDungeonId} setSelectedDungeonId={setSelectedDungeonId} />
 			<ColumnTitles dungeonName={selectedDungeon?.name} />
-			<LeaderboardList entries={entries} isLoading={isLoading} />
+			<LeaderboardList entries={entries} isLoading={isLoading} hasError={hasError} />
 		</div>
 	);
 }
@@ -155,38 +162,89 @@ export default function Leaderboard()
 	const [dungeons, setDungeons] = useState<DungeonResponse[]>([]);
 	const [selectedDungeonId, setSelectedDungeonId] = useState<number | undefined>(undefined);
 	const [entries, setEntries] = useState<LeaderboardEntryResponse[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
+	const [isDungeonsLoading, setIsDungeonsLoading] = useState(true);
+	const [isEntriesLoading, setIsEntriesLoading] = useState(true);
+	const [dungeonsError, setDungeonsError] = useState(false);
+	const [entriesError, setEntriesError] = useState(false);
 
+	// Fetches the dungeon list whenever the session (re)starts, and resets
+	// all leaderboard state when it ends, so a logged-out view never keeps
+	// showing another session's data.
 	useEffect(() =>
 	{
 		if ( !auth.accessToken )
+		{
+			setDungeons([]);
+			setSelectedDungeonId(undefined);
+			setEntries([]);
+			setIsDungeonsLoading(false);
+			setIsEntriesLoading(false);
+			setDungeonsError(false);
+			setEntriesError(false);
 			return;
+		}
+
+		let isCurrent = true;
+		setIsDungeonsLoading(true);
+		setDungeonsError(false);
 
 		getDungeons(auth.accessToken)
 			.then(fetchedDungeons =>
 			{
+				if ( !isCurrent )
+					return;
+
 				setDungeons(fetchedDungeons);
 				setSelectedDungeonId(prev => prev ?? fetchedDungeons[0]?.id);
 			})
-			.catch(() => {
-				// Leave dungeons empty; the list simply stays empty on failure.
+			.catch(() =>
+			{
+				if ( isCurrent )
+					setDungeonsError(true);
+			})
+			.finally(() =>
+			{
+				if ( isCurrent )
+					setIsDungeonsLoading(false);
 			});
+
+		return () => { isCurrent = false; };
 	}, [auth.accessToken]);
 
+	// Fetches the selected dungeon's leaderboard. `isCurrent` guards against
+	// a slower, earlier request (e.g. from a dungeon the user already
+	// switched away from) overwriting a newer one once it resolves.
 	useEffect(() =>
 	{
 		if ( !auth.accessToken || selectedDungeonId === undefined )
 		{
-			setIsLoading(false);
+			setEntries([]);
+			setIsEntriesLoading(false);
 			return;
 		}
 
-		setIsLoading(true);
+		let isCurrent = true;
+		setIsEntriesLoading(true);
+		setEntriesError(false);
 
 		getDungeonLeaderboard(selectedDungeonId, auth.accessToken)
-			.then(setEntries)
-			.catch(() => setEntries([]))
-			.finally(() => setIsLoading(false));
+			.then(fetchedEntries =>
+			{
+				if ( isCurrent )
+					setEntries(fetchedEntries);
+			})
+			.catch(() =>
+			{
+				if ( isCurrent )
+					setEntriesError(true);
+			})
+			.finally(() =>
+			{
+				if ( isCurrent )
+					setIsEntriesLoading(false);
+			});
+
+		return () => { isCurrent = false; };
 	}, [auth.accessToken, selectedDungeonId]);
 
 	return (
@@ -199,7 +257,8 @@ export default function Leaderboard()
 					selectedDungeonId={selectedDungeonId}
 					setSelectedDungeonId={setSelectedDungeonId}
 					entries={entries}
-					isLoading={isLoading} />
+					isLoading={isDungeonsLoading || isEntriesLoading}
+					hasError={dungeonsError || entriesError} />
 				<Buttons />
 				<SideBar />
 			</Page>
