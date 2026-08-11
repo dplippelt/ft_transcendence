@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status
 
-from app.api.dependencies import CurrentUser, DbSession, SelfUser
+from app.api.dependencies import CompletedUser, CurrentUser, DbSession, SelfUser
 from app.core.exceptions import not_found
 from app.schemas.user import PublicUserResponse, UserResponse, UserUpdate
 from app.services.user_service import (
@@ -9,7 +9,7 @@ from app.services.user_service import (
     update_user_profile,
 )
 
-
+    
 router = APIRouter()
 
 
@@ -19,7 +19,7 @@ def get_me(current_user: CurrentUser):
 
 
 @router.get("/{user_id}", response_model=PublicUserResponse)
-def get_user(user_id: int, current_user: CurrentUser, db: DbSession):
+def get_user(user_id: int, _current_user: CompletedUser, db: DbSession):
     user = get_active_user_by_id(db, user_id)
 
     if user is None:
