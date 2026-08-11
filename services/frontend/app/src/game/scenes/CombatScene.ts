@@ -30,9 +30,6 @@ export default class CombatScene extends Phaser.Scene {
     // load images for the combat scene
     // needs to know which enemy the player is going to fight
     // needs to know the status such as health point or the items (?) it has
-    // temporarily set the background color for ths combat scene, needs to be replace by an image
-    const backgroundColor = new Phaser.Display.Color(200, 200, 200);
-    this.cameras.main.setBackgroundColor(backgroundColor.color);
 
     this.input.on("pointerdown", () => {
       if (this.input.activePointer.rightButtonDown()) {
@@ -56,12 +53,10 @@ export default class CombatScene extends Phaser.Scene {
         this.endCombat(this.eventData!);
     }, this);
 
-    // Temporarily use endCombat(), needs to implement endGame().
     this.combatManager.events.on(CombatEvents.ENDGAME, () => {
         console.assert(this.eventData !== undefined, "this.eventData is undefined");
-        this.endCombat(this.eventData!);
+        this.endGame(this.eventData!);
     }, this);
-    // this.combatManager.events.on(CombatEvents.ENDGAME, this.endCombat, this);
 
     EventBus.emit("current-scene-ready", this);
   }
@@ -82,8 +77,15 @@ export default class CombatScene extends Phaser.Scene {
     this.eventData = undefined;
   }
 
-  endGame() {
-    // TODO: implement the end action.
+  endGame(eventData: CombatEventData) {
     console.log("Game Over");
+    eventData.player.inCombat = false;
+    eventData.player.isAlive = false;
+    eventData.enemy.inCombat = false;
+    eventData.enemy.isAlive = true;
+    eventData.sceneInvoker = this;
+
+    GameManagerScene.EventsCenter.emit(GameEvents.CombatOver, eventData);
+    this.eventData = undefined;
   }
 }
