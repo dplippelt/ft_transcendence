@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from google.auth import exceptions as google_auth_exceptions
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import CurrentUser, DbSession
@@ -237,6 +237,17 @@ def get_password_account_for_user(db: Session, user_id: int) -> AuthAccount | No
     )
 
 
+def get_google_account_by_email(db: Session, email: str,) -> AuthAccount | None:
+    return (
+        db.query(AuthAccount)
+        .filter(
+            AuthAccount.provider == GOOGLE_PROVIDER,
+            AuthAccount.email == email,
+        )
+        .first()
+    )
+
+    
 def raise_google_email_conflict_if_present(db: Session, email: str,) -> None:
     google_account = get_google_account_by_email(db, email,)
 
@@ -358,6 +369,35 @@ def set_or_change_password(db: Session, user: User, password_data: PasswordUpdat
         raise conflict(
             "A password account could not be created",
             code=ErrorCode.PASSWORD_UPDATE_FAILED,
+        )
+
+
+def unlink_google_account(db: Session, user: User) -> None:
+    google_account = get_google_account_for_user(db, user.id,)
+
+    if not google_account:
+        raise bad_request(
+            "No Google account is linked to this user",
+            code=ErrorCode.GOOGLE_ACCOUNT_NOT_LINKED,
+        )
+
+    password_account = get_password_account_for_user(db, user.id,)
+
+    if not password_account or not password_account.password_hash:
+        raise conflict(
+            "Set a password before unlinking your Google",
+            code=ErrorCode.PASSWORD_REQUIRED_TO_UNLINK_GOOGLE,
+        )
+
+    db.delete(google_account)
+
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise bad_request(
+            "Google account could not be unlinked",
+            code=ErrorCode.GOOGLE_UNLINK_FAILED,
         )
 
 @router.post("/register", response_model=UserResponse)
@@ -500,10 +540,13 @@ def link_google_account(user_data: GoogleLogin,db: DbSession, current_user: Curr
     return current_user
 
 
-@router.put("/password", response_model=UserResponse,)
-def update_password(password_data: PasswordUpdate, db: DbSession, current_user: CurrentUser, ):
-    set_or_change_password(db, current_user, password_data,)
+@router.delete("/google/link", response_model=UserResponse,)
+def unlink_google_account(db: DbSession,
+    current_user: CurrentUser,):
+    unlink_google_from_user(db, current_user,)
+
     db.refresh(current_user)
+
     return current_user
 
 
