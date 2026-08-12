@@ -109,6 +109,17 @@ export function linkGoogleAccount(credential: string, accessToken: string,): Pro
     );
 }
 
+export function unlinkGoogleAccount(accessToken: string,): Promise<AuthUser>
+{
+    return apiRequest<AuthUser>(
+        "/auth/google/link",
+        {
+            method: "DELETE",
+        },
+        accessToken,
+    );
+}
+
 export function updatePassword(data: PasswordUpdateRequest, accessToken: string,): Promise<AuthUser>
 {
     return apiRequest<AuthUser>(

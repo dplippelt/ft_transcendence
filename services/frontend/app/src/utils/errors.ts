@@ -38,6 +38,8 @@ export enum ErrorType
     googleLinkFailed,
     googleRegistrationFailed,
     googleEmailConflict,
+    googleUnlinkRequiresPassword,
+    googleUnlinkFailed,
 
     avatarBadFileType,
 
@@ -125,10 +127,10 @@ export function errorMsg(error: ErrorType): string
             return "Google login is currently unavailable.";
         case ErrorType.googleAccountNotLinked:
             return (
-                "An account with this email already exists. " +
-                "Sign in with email and password, then link " +
-                "Google from your profile."
-            );
+                "Google is not linked to this account. " +
+                "Sign in with your email and password, then " +
+                "link Google again from your profile."
+        );
         case ErrorType.googleAccountAlreadyLinked:
             return (
                 "This Google account is already linked " +
@@ -148,6 +150,10 @@ export function errorMsg(error: ErrorType): string
                 "A Google account with this email is already " +
                 "registered under a different Google identity."
             );
+        case ErrorType.googleUnlinkRequiresPassword:
+            return "Password is required to unlink Google account.";
+        case ErrorType.googleUnlinkFailed:
+            return "Failed to unlink Google account.";
         case ErrorType.avatarBadFileType:
             return "Avatar must be JPEG or PNG!";
         case ErrorType.cannotAddSelf:
@@ -245,6 +251,11 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.googleRegistrationFailed;
         case "GOOGLE_EMAIL_CONFLICT":
             return ErrorType.googleEmailConflict;
+        case "PASSWORD_REQUIRED_TO_UNLINK_GOOGLE":
+            return ErrorType.googleUnlinkRequiresPassword;
+        
+        case "GOOGLE_UNLINK_FAILED":
+            return ErrorType.googleUnlinkFailed;
         case "PASSWORD_REQUIRED":
             return ErrorType.currentPasswordRequired;
         case "INVALID_CURRENT_PASSWORD":

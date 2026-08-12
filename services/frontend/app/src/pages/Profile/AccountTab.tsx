@@ -105,10 +105,19 @@ function Password({ setPopupType }: IAccountInfo)
 
 function GoogleAccount()
 {
+    const user = useCurrentUser();
+    const isGoogleLinked = user.linked_providers.includes("google");
+
     return (
         <>
-            <div className={sharedStyle.profileLabel}> Google account: </div>
-            <div />
+            <div className={sharedStyle.profileLabel}>
+                Google account:
+            </div>
+
+            <div className={sharedStyle.textInfo}>
+                {isGoogleLinked ? "Linked" : "Not linked"}
+            </div>
+
             <GoogleLinkButton />
         </>
     );
