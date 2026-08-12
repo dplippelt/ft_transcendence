@@ -22,6 +22,7 @@ export enum ErrorType
     passwordsDontMatch,
     passwordCannotBeEmpty,
     passwordTooShort,
+    passwordAlreadySet,
 
     emailCannotBeEmpty,
     invalidEmail,
@@ -107,6 +108,8 @@ export function errorMsg(error: ErrorType): string
             return "Password cannot be empty!";
         case ErrorType.passwordTooShort:
             return "Password must be at least 8 characters long!";
+        case ErrorType.passwordAlreadySet:
+            return "A password was already set. Please try again.";
         case ErrorType.emailCannotBeEmpty:
             return "Email cannot be empty!";
         case ErrorType.invalidEmail:
@@ -255,6 +258,8 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.passwordUpdateFailed;
         case "PASSWORD_SAME_AS_CURRENT":
             return ErrorType.passwordSameAsCurrent;
+        case "PASSWORD_ALREADY_SET":
+            return ErrorType.passwordAlreadySet;
     }
     if (error.status === 422 && error.validationErrors)
     {

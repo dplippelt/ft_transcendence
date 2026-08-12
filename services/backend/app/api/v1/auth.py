@@ -364,7 +364,18 @@ def set_or_change_password(db: Session, user: User, password_data: PasswordUpdat
         password_account = get_password_account_for_user(db, user.id,)
 
         if password_account:
-            return
+            if (
+                password_account.password_hash
+                and verify_password(
+                    password_data.new_password,
+                    password_account.password_hash,
+                )
+            ):
+                return
+            raise conflict(
+                "A password was set by another request",
+                code=ErrorCode.PASSWORD_ALREADY_SET,
+            )
 
         raise conflict(
             "A password account could not be created",

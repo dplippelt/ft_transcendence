@@ -150,17 +150,36 @@ export default function AuthProvider( { children } : {children: ReactNode} )
         setUser(updatedUser);
     }, [accessToken]);
 
-    const updatePassword = useCallback(async (data: PasswordUpdateRequest) => {
+    const refreshUser = useCallback(async () =>
+        {
+            if (!accessToken)
+                return;
+            const refreshedUser = await getCurrentUser(accessToken,);
+            setUser(refreshedUser);
+        }, [accessToken]);
+
+    const updatePassword = useCallback(async (data: PasswordUpdateRequest) =>
+    {
         if (!accessToken)
             throw new Error("No authenticated session");
-        const updatedUser = await updatePasswordRequest(
-            data,
-            accessToken,
-        );
-
-        setUser(updatedUser);
-    }, [accessToken]
-    );
+        try
+        {
+            const updatedUser = await updatePasswordRequest(
+                data,
+                accessToken,
+            );
+    
+            setUser(updatedUser);
+        }
+        catch (error)
+        {
+            if (error instanceof ApiError && (error.code === "PASSWORD_ALREADY_SET"))
+            {
+                await refreshUser();
+            }
+            throw error;
+        }
+    }, [accessToken, refreshUser]);
 
 
 	return (
