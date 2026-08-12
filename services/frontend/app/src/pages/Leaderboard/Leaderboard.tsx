@@ -1,5 +1,5 @@
 import styles from "./Leaderboard.module.scss";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Dropdown from "../../components/Dropdown";
 import useIsMobile from "../../hooks/useIsMobile";
 import { BackButton, MossButton } from "../../components/Buttons";
@@ -11,105 +11,52 @@ import type React from "react";
 import { useLocation } from "react-router-dom";
 import { RoutePath } from "../../utils/utils";
 import SideBar from "../../components/SideBar";
+import { useAuth } from "../../contexts/AuthContext";
+import { getDungeonLeaderboard, getDungeons } from "../../api/leaderboardApi";
+import type { DungeonResponse, LeaderboardEntryResponse } from "../../api/leaderboardApi";
 
-// start temporary example scores for three stats
-const stat_1_scores: Score[] =
-[
-	{ username: "Player_1", score: 5 },
-	{ username: "Player_2", score: 30 },
-	{ username: "Player_3 has a really long username man so long wow how much more .....!!!!", score: 999999 },
-	{ username: "Player_4", score: 12 },
-	{ username: "Player_5", score: 48 },
-	{ username: "Player_6", score: 34 },
-	{ username: "Player_7", score: 26 },
-	{ username: "Player_8", score: 17 },
-	{ username: "Player_9", score: 1 },
-	{ username: "Player_10", score: 29 },
-	{ username: "Player_11", score: 31 },
-	{ username: "Player_12", score: 21 },
-]
-
-const stat_2_scores: Score[] =
-[
-	{ username: "Player_1", score: 20 },
-	{ username: "Player_2", score: 25 },
-	{ username: "Player_3 has a really long username man so long wow how much more .....!!!!", score: 15 },
-	{ username: "Player_4", score: 112 },
-	{ username: "Player_5", score: 8 },
-	{ username: "Player_6", score: 54 },
-	{ username: "Player_7", score: 26 },
-	{ username: "Player_8", score: 37 },
-	{ username: "Player_9", score: 18 },
-	{ username: "Player_10", score: 49 },
-	{ username: "Player_11", score: 21 },
-	{ username: "Player_12", score: 29 },
-]
-
-const stat_3_scores: Score[] =
-[
-	{ username: "Player_1", score: 35 },
-	{ username: "Player_2", score: 25 },
-	{ username: "Player_3 has a really long username man so long wow how much more .....!!!!", score: 30 },
-	{ username: "Player_4", score: 112 },
-	{ username: "Player_5", score: 58 },
-	{ username: "Player_6", score: 14 },
-	{ username: "Player_7", score: 36 },
-	{ username: "Player_8", score: 11 },
-	{ username: "Player_9", score: 6 },
-	{ username: "Player_10", score: 79 },
-	{ username: "Player_11", score: 75 },
-	{ username: "Player_12", score: 28 },
-]
-// end temporary example scores for three stats
-
-enum Stat
+interface IDungeonPicker
 {
-	stat_1 = "Stat 1",
-	stat_2 = "Stat 2",
-	stat_3 = "Stat 3",
-}
-
-type Score =
-{
-	username: string,
-	score: number,
-}
-
-interface IStatsPicker
-{
-	stat: Stat;
-	setStat: React.Dispatch<React.SetStateAction<Stat>>;
+	dungeons: DungeonResponse[];
+	selectedDungeonId: number | undefined;
+	setSelectedDungeonId: React.Dispatch<React.SetStateAction<number | undefined>>;
 }
 
 interface IColumnTitles
 {
-	stat: Stat;
+	dungeonName: string | undefined;
 }
 
 interface ILeaderboardEntry
 {
-	entry: Score;
+	entry: LeaderboardEntryResponse;
 	idx: number;
 }
 
 interface ILeaderboardList
 {
-	stat: Stat;
+	entries: LeaderboardEntryResponse[];
+	isLoading: boolean;
+	hasError: boolean;
 }
 
 interface ILeaderboardWindow
 {
-	stat: Stat;
-	setStat: React.Dispatch<React.SetStateAction<Stat>>;
+	dungeons: DungeonResponse[];
+	selectedDungeonId: number | undefined;
+	setSelectedDungeonId: React.Dispatch<React.SetStateAction<number | undefined>>;
+	entries: LeaderboardEntryResponse[];
+	isLoading: boolean;
+	hasError: boolean;
 }
 
-function StatsPicker( { stat, setStat } : IStatsPicker )
+function DungeonPicker( { dungeons, selectedDungeonId, setSelectedDungeonId } : IDungeonPicker )
 {
 	const isMobile = useIsMobile(730);
 
 	function handleChange( e: React.ChangeEvent<HTMLSelectElement, Element> )
 	{
-		setStat(e.target.value as Stat);
+		setSelectedDungeonId(Number(e.target.value));
 	}
 
 	if ( isMobile )
@@ -117,82 +64,82 @@ function StatsPicker( { stat, setStat } : IStatsPicker )
 		return (
 			<Dropdown
 				extraStyling={styles.dropDownStatsPicker}
-				label="Sort by"
-				id="stat"
-				options={[ { value: Stat.stat_1, label: "Stat 1" }, { value: Stat.stat_2, label: "Stat 2" }, { value: Stat.stat_3, label: "Stat 3" } ]}
-				setting={stat}
+				label="Dungeon"
+				id="dungeon"
+				options={dungeons.map(dungeon => ({ value: String(dungeon.id), label: dungeon.name }))}
+				setting={selectedDungeonId !== undefined ? String(selectedDungeonId) : ""}
 				onChange={handleChange} />
 		);
 	}
 
 	return (
 		<div className={styles.statsPicker}>
-			<MossButton label="Stat 1" onClick={ () => setStat(Stat.stat_1) } />
-			<MossButton label="Stat 2" onClick={ () => setStat(Stat.stat_2) } />
-			<MossButton label="Stat 3" onClick={ () => setStat(Stat.stat_3) } />
+			{dungeons.map(dungeon =>
+				<MossButton key={dungeon.id} label={dungeon.name} onClick={ () => setSelectedDungeonId(dungeon.id) } />
+			)}
 		</div>
 	);
 }
 
-function ColumnTitles( { stat } : IColumnTitles )
+function ColumnTitles( { dungeonName } : IColumnTitles )
 {
 	return (
 		<div className={styles.columnTitles}>
 			<div>#</div>
 			<div>Username</div>
-			<div className={styles.score}>{stat}</div>
+			<div className={styles.score}>{dungeonName ?? "Score"}</div>
 		</div>
 	);
 }
 
 function LeaderboardEntry( { entry, idx } : ILeaderboardEntry )
 {
+	const username = entry.user.username ?? entry.user.display_name ?? "Unknown";
+
 	return (
 		<>
 			<div>{`${idx + 1}. `}</div>
-			<div>{entry.username}</div>
-			<div className={styles.score}>{entry.score}</div>
+			<div>{username}</div>
+			<div className={styles.score}>{entry.value}</div>
 		</>
 	);
 }
 
-function LeaderboardList( { stat } : ILeaderboardList )
+function LeaderboardList( { entries, isLoading, hasError } : ILeaderboardList )
 {
-	// get scores for all users for the specified stat from DB
-	// temporary mock scores getter
-	function getScores() : Score[]
+	if ( isLoading )
 	{
-		switch (stat)
-		{
-			case Stat.stat_1:
-				return stat_1_scores;
-			case Stat.stat_2:
-				return stat_2_scores;
-			case Stat.stat_3:
-				return stat_3_scores;
-			default:
-				return Array<Score>(0);
-		}
+		return <div className={styles.leaderboardList}>Loading...</div>;
 	}
 
-	const sortedScores: Score[] = [...getScores()].sort((a, b) => b.score - a.score).slice(0, 10);
+	if ( hasError )
+	{
+		return <div className={styles.leaderboardList}>Couldn't load the leaderboard. Please try again later.</div>;
+	}
+
+	if ( entries.length === 0 )
+	{
+		return <div className={styles.leaderboardList}>No scores yet.</div>;
+	}
 
 	return (
 		<div className={styles.leaderboardList}>
-			{sortedScores.map((entry, idx) =>
-				<LeaderboardEntry key={entry.username} entry={entry} idx={idx} />
+			{entries.map((entry, idx) =>
+				<LeaderboardEntry key={entry.user.id} entry={entry} idx={idx} />
 			)}
 		</div>
 	);
 }
 
-function LeaderboardWindow( { stat, setStat } : ILeaderboardWindow )
+function LeaderboardWindow( { dungeons, selectedDungeonId, setSelectedDungeonId, entries, isLoading, hasError } : ILeaderboardWindow )
 {
+	const selectedDungeon = dungeons.find(dungeon => dungeon.id === selectedDungeonId);
+
 	return (
 		<div className={styles.leaderboardWindow}>
-			<StatsPicker stat={stat} setStat={setStat} />
-			<ColumnTitles stat={stat} />
-			<LeaderboardList stat={stat} />
+			<DungeonPicker dungeons={dungeons} selectedDungeonId={selectedDungeonId} setSelectedDungeonId={setSelectedDungeonId} />
+			<ColumnTitles dungeonName={selectedDungeon?.name} />
+			<LeaderboardList entries={entries} isLoading={isLoading} hasError={hasError} />
 		</div>
 	);
 }
@@ -211,14 +158,107 @@ function Buttons()
 
 export default function Leaderboard()
 {
-	const [stat, setStat] = useState<Stat>(Stat.stat_1);
+	const { auth } = useAuth();
+	const [dungeons, setDungeons] = useState<DungeonResponse[]>([]);
+	const [selectedDungeonId, setSelectedDungeonId] = useState<number | undefined>(undefined);
+	const [entries, setEntries] = useState<LeaderboardEntryResponse[]>([]);
+	const [isDungeonsLoading, setIsDungeonsLoading] = useState(true);
+	const [isEntriesLoading, setIsEntriesLoading] = useState(true);
+	const [dungeonsError, setDungeonsError] = useState(false);
+	const [entriesError, setEntriesError] = useState(false);
+
+	// Fetches the dungeon list whenever the session (re)starts, and resets
+	// all leaderboard state when it ends, so a logged-out view never keeps
+	// showing another session's data.
+	useEffect(() =>
+	{
+		if ( !auth.accessToken )
+		{
+			setDungeons([]);
+			setSelectedDungeonId(undefined);
+			setEntries([]);
+			setIsDungeonsLoading(false);
+			setIsEntriesLoading(false);
+			setDungeonsError(false);
+			setEntriesError(false);
+			return;
+		}
+
+		let isCurrent = true;
+		setIsDungeonsLoading(true);
+		setDungeonsError(false);
+
+		getDungeons(auth.accessToken)
+			.then(fetchedDungeons =>
+			{
+				if ( !isCurrent )
+					return;
+
+				setDungeons(fetchedDungeons);
+				setSelectedDungeonId(prev => prev ?? fetchedDungeons[0]?.id);
+			})
+			.catch(() =>
+			{
+				if ( isCurrent )
+					setDungeonsError(true);
+			})
+			.finally(() =>
+			{
+				if ( isCurrent )
+					setIsDungeonsLoading(false);
+			});
+
+		return () => { isCurrent = false; };
+	}, [auth.accessToken]);
+
+	// Fetches the selected dungeon's leaderboard. `isCurrent` guards against
+	// a slower, earlier request (e.g. from a dungeon the user already
+	// switched away from) overwriting a newer one once it resolves.
+	useEffect(() =>
+	{
+		if ( !auth.accessToken || selectedDungeonId === undefined )
+		{
+			setEntries([]);
+			setIsEntriesLoading(false);
+			return;
+		}
+
+		let isCurrent = true;
+		setIsEntriesLoading(true);
+		setEntriesError(false);
+
+		getDungeonLeaderboard(selectedDungeonId, auth.accessToken)
+			.then(fetchedEntries =>
+			{
+				if ( isCurrent )
+					setEntries(fetchedEntries);
+			})
+			.catch(() =>
+			{
+				if ( isCurrent )
+					setEntriesError(true);
+			})
+			.finally(() =>
+			{
+				if ( isCurrent )
+					setIsEntriesLoading(false);
+			});
+
+		return () => { isCurrent = false; };
+	}, [auth.accessToken, selectedDungeonId]);
 
 	return (
 		<>
 			<Background />
 			<Page>
 				<MenuTitle title="Leaderboard" />
-				<LeaderboardWindow stat={stat} setStat={setStat} />
+				<LeaderboardWindow
+					dungeons={dungeons}
+					selectedDungeonId={selectedDungeonId}
+					setSelectedDungeonId={setSelectedDungeonId}
+					entries={entries}
+					isLoading={isDungeonsLoading || isEntriesLoading}
+					hasError={dungeonsError || entriesError} />
 				<Buttons />
 				<SideBar />
 			</Page>
