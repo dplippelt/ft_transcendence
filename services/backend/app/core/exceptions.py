@@ -36,6 +36,11 @@ class ErrorCode(StrEnum):
     FRIEND_REQUEST_NOT_FOUND = "FRIEND_REQUEST_NOT_FOUND"
     FRIEND_REQUEST_NOT_PENDING = "FRIEND_REQUEST_NOT_PENDING"
 
+    LOBBY_NOT_FOUND = "LOBBY_NOT_FOUND"
+    LOBBY_FULL = "LOBBY_FULL"
+    LOBBY_NAME_ALREADY_EXISTS = "LOBBY_NAME_ALREADY_EXISTS"
+    NOT_LOBBY_HOST = "NOT_LOBBY_HOST"
+
 def error_detail(message: str, code: ErrorCode | None = None,) -> str | dict[str, str]:
     if code is None:
         return message
