@@ -69,19 +69,23 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     EventBus.emit(GameEvent.gameVis, isGameURL);
 
     function preserveGame() : boolean {
-      if ( location.pathname === RoutePath.gameDev )
-        return true;
-      if ( location.pathname === RoutePath.friends )
-        return true;
-      if ( location.pathname === RoutePath.profile )
-        return true;
-      if ( location.pathname === RoutePath.leaderboard )
-        return true;
-      if ( location.pathname === RoutePath.howToPlay )
-        return true;
-      if ( location.pathname === RoutePath.settings )
-        return true;
-      return false;
+      switch ( location.pathname )
+      {
+        case RoutePath.gameDev:
+          return true;
+        case RoutePath.friends:
+          return true;
+        case RoutePath.profile:
+          return true;
+        case RoutePath.leaderboard:
+          return true;
+        case RoutePath.howToPlay:
+          return true;
+        case RoutePath.settings:
+          return true;
+        default:
+          return false;
+      }
     }
 
     function cleanupGame() {
@@ -89,7 +93,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       gameRef.current = null;
       EventBus.removeListener(GameEvent.gameVis);
       EventBus.removeListener(GameEvent.chatFocus);
-      EventBus.removeListener(GameEvent.gameMenu); 
+      EventBus.removeListener(GameEvent.gameMenu);
       setGameMenuVis(false);
     }
 

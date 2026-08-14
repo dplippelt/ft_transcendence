@@ -1,8 +1,7 @@
-import { Core, Scene } from "phaser";
+import { Scene } from "phaser";
 import { EventBus } from "../EventBus";
 import { Dungeon } from "../gameobjects/dungeon/Dungeon.ts";
 import { Direction, type DungeonConfig } from "../map/procedural";
-import { GameEvent } from "../../utils/utils";
 import { WallType, FloorType, PassageType, FoilageType } from "../map/TileSetMap.ts";
 import Player from "../gameobjects/Player.ts";
 
@@ -74,8 +73,6 @@ const dungeonConfig: DungeonConfig = {
 
 // TODO: GameSession structure (local / network) -> thruth sayer; player hp, position etc, syncs up with the game itself
 export default class GameScene extends Scene {
-  private isGameVisible = true;
-  private isChatFocused = false;
   private _dungeon!: Dungeon;
 
   constructor() {
@@ -88,18 +85,6 @@ export default class GameScene extends Scene {
 
   create() {
     this._dungeon = new Dungeon(this, dungeonConfig, 1.5);
-
-    EventBus.on(GameEvent.gameVis, (visible: boolean) => {
-      this.isGameVisible = visible;
-      this.updateGlobalCapture();
-    });
-
-    EventBus.on(GameEvent.chatFocus, (focused: boolean) => {
-      this.isChatFocused = focused;
-      this.updateGlobalCapture();
-      if ( focused )
-        this.game.events.emit(Core.Events.BLUR);
-    });
     this.cameras.main.startFollow(this.getPlayerOne());
 
     // Temporarily mouse event for map generation
@@ -110,18 +95,6 @@ export default class GameScene extends Scene {
     });
 
     EventBus.emit("current-scene-ready", this);
-  }
-
-  private updateGlobalCapture() {
-    const shouldCapture = this.isGameVisible && !this.isChatFocused;
-
-    if ( this.input.keyboard )
-      this.input.keyboard.enabled = shouldCapture;
-
-    if ( shouldCapture )
-      this.input.keyboard?.enableGlobalCapture();
-    else
-      this.input.keyboard?.disableGlobalCapture();
   }
 
   getPlayerOne(): Player {

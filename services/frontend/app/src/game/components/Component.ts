@@ -25,7 +25,7 @@ export default abstract class Component {
 
   destroy() {
     if (this.update) {
-      this.gameObject.scene.events.off(Scenes.Events.UPDATE, this.update, this);
+      this.gameObject.scene.events.off(Scenes.Events.UPDATE, this.preUpdate, this);
     }
   }
 }
