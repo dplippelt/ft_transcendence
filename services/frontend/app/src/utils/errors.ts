@@ -61,6 +61,7 @@ export enum ErrorType
     currentPasswordRequired,
     invalidCurrentPassword,
     passwordEmailUnavailable,
+    passwordEmailConflict,
     passwordUpdateFailed,
     passwordSameAsCurrent,
 
@@ -198,6 +199,8 @@ export function errorMsg(error: ErrorType): string
             return "Current password is incorrect.";
         case ErrorType.passwordEmailUnavailable:
             return "No verified email is available for this account.";
+        case ErrorType.passwordEmailConflict:
+            return "This email is already used by another password account.";
         case ErrorType.passwordUpdateFailed:
             return "Failed to update password.";
         case ErrorType.passwordSameAsCurrent:
@@ -254,6 +257,8 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.invalidCurrentPassword;
         case "PASSWORD_EMAIL_UNAVAILABLE":
             return ErrorType.passwordEmailUnavailable;
+        case "PASSWORD_EMAIL_CONFLICT":
+            return ErrorType.passwordEmailConflict;
         case "PASSWORD_UPDATE_FAILED":
             return ErrorType.passwordUpdateFailed;
         case "PASSWORD_SAME_AS_CURRENT":

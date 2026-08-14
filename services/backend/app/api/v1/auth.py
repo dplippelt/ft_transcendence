@@ -341,7 +341,7 @@ def set_or_change_password(db: Session, user: User, password_data: PasswordUpdat
     if existing_password_account:
         raise conflict(
             "This email is already used by another password account",
-            code=ErrorCode.PASSWORD_EMAIL_UNAVAILABLE,
+            code=ErrorCode.PASSWORD_EMAIL_CONFLICT,
         )
 
     password_account = AuthAccount(
