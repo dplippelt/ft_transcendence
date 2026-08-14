@@ -247,7 +247,6 @@ def get_google_account_by_email(db: Session, email: str,) -> AuthAccount | None:
         .first()
     )
 
-    
 def raise_google_email_conflict_if_present(db: Session, email: str,) -> None:
     google_account = get_google_account_by_email(db, email,)
 
@@ -341,7 +340,7 @@ def set_or_change_password(db: Session, user: User, password_data: PasswordUpdat
     if existing_password_account:
         raise conflict(
             "This email is already used by another password account",
-            code=ErrorCode.PASSWORD_EMAIL_UNAVAILABLE,
+            code=ErrorCode.PASSWORD_EMAIL_CONFLICT,
         )
 
     password_account = AuthAccount(
@@ -364,7 +363,18 @@ def set_or_change_password(db: Session, user: User, password_data: PasswordUpdat
         password_account = get_password_account_for_user(db, user.id,)
 
         if password_account:
-            return
+            if (
+                password_account.password_hash
+                and verify_password(
+                    password_data.new_password,
+                    password_account.password_hash,
+                )
+            ):
+                return
+            raise conflict(
+                "A password was set by another request",
+                code=ErrorCode.PASSWORD_ALREADY_SET,
+            )
 
         raise conflict(
             "A password account could not be created",
@@ -378,7 +388,7 @@ def unlink_google_from_user(db: Session, user: User) -> None:
     if not google_account:
         raise bad_request(
             "No Google account is linked to this user",
-            code=ErrorCode.GOOGLE_ACCOUNT_NOT_LINKED,
+            code=ErrorCode.GOOGLE_NOT_LINKED_TO_UNLINK,
         )
 
     password_account = get_password_account_for_user(db, user.id,)
@@ -585,11 +595,4 @@ def unlink_google_account(db: DbSession,
 
     db.refresh(current_user)
 
-    return current_user
-
-
-@router.put("/password", response_model=UserResponse,)
-def update_password(password_data: PasswordUpdate, db: DbSession, current_user: CurrentUser, ):
-    set_or_change_password(db, current_user, password_data,)
-    db.refresh(current_user)
     return current_user

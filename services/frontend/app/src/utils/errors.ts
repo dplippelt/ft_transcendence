@@ -22,6 +22,7 @@ export enum ErrorType
     passwordsDontMatch,
     passwordCannotBeEmpty,
     passwordTooShort,
+    passwordAlreadySet,
 
     emailCannotBeEmpty,
     invalidEmail,
@@ -33,6 +34,7 @@ export enum ErrorType
     googleLoginFailed,
     googleLoginUnavailable,
     googleAccountNotLinked,
+    googleNotLinkedToUnlink,
     googleAccountAlreadyLinked,
     googleProviderAlreadyLinked,
     googleLinkFailed,
@@ -62,6 +64,7 @@ export enum ErrorType
     currentPasswordRequired,
     invalidCurrentPassword,
     passwordEmailUnavailable,
+    passwordEmailConflict,
     passwordUpdateFailed,
     passwordSameAsCurrent,
 
@@ -109,6 +112,8 @@ export function errorMsg(error: ErrorType): string
             return "Password cannot be empty!";
         case ErrorType.passwordTooShort:
             return "Password must be at least 8 characters long!";
+        case ErrorType.passwordAlreadySet:
+            return "A password was already set. Please try again.";
         case ErrorType.emailCannotBeEmpty:
             return "Email cannot be empty!";
         case ErrorType.invalidEmail:
@@ -130,7 +135,9 @@ export function errorMsg(error: ErrorType): string
                 "Google is not linked to this account. " +
                 "Sign in with your email and password, then " +
                 "link Google again from your profile."
-        );
+            );
+        case ErrorType.googleNotLinkedToUnlink:
+            return "No Google account is linked to this account.";
         case ErrorType.googleAccountAlreadyLinked:
             return (
                 "This Google account is already linked " +
@@ -201,6 +208,8 @@ export function errorMsg(error: ErrorType): string
             return "Current password is incorrect.";
         case ErrorType.passwordEmailUnavailable:
             return "No verified email is available for this account.";
+        case ErrorType.passwordEmailConflict:
+            return "This email is already used by another password account.";
         case ErrorType.passwordUpdateFailed:
             return "Failed to update password.";
         case ErrorType.passwordSameAsCurrent:
@@ -241,6 +250,8 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.googleLoginFailed;
         case "GOOGLE_ACCOUNT_NOT_LINKED":
             return ErrorType.googleAccountNotLinked;
+        case "GOOGLE_NOT_LINKED_TO_UNLINK":
+            return ErrorType.googleNotLinkedToUnlink;
         case "GOOGLE_ACCOUNT_ALREADY_LINKED":
             return ErrorType.googleAccountAlreadyLinked;
         case "GOOGLE_PROVIDER_ALREADY_LINKED":
@@ -262,10 +273,14 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.invalidCurrentPassword;
         case "PASSWORD_EMAIL_UNAVAILABLE":
             return ErrorType.passwordEmailUnavailable;
+        case "PASSWORD_EMAIL_CONFLICT":
+            return ErrorType.passwordEmailConflict;
         case "PASSWORD_UPDATE_FAILED":
             return ErrorType.passwordUpdateFailed;
         case "PASSWORD_SAME_AS_CURRENT":
             return ErrorType.passwordSameAsCurrent;
+        case "PASSWORD_ALREADY_SET":
+            return ErrorType.passwordAlreadySet;
     }
     if (error.status === 422 && error.validationErrors)
     {
