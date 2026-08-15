@@ -2,26 +2,26 @@ import { Direction } from "./procedural";
 import { type weight } from "./math";
 
 export enum WallType {
-	Moss,
-	MoreMoss,
-	ThinA,
-	ThinB,
-	Thick,
+  Moss,
+  MoreMoss,
+  ThinA,
+  ThinB,
+  Thick,
 }
 
 export enum FloorType {
- 	Clean,
-	SmallCracksA,
-	SmallCracksB,
-	Cracked,
-	Damaged,
-	Broken,
+  Clean,
+  SmallCracksA,
+  SmallCracksB,
+  Cracked,
+  Damaged,
+  Broken,
 }
 
 export enum Foilage {
   RedMushroom,
   PurpleMushroom,
-  Weeds
+  Weeds,
 }
 
 export enum Props {
@@ -45,7 +45,7 @@ export enum PassageType {
 export enum FoilageType {
   Grass,
   RedMushroom,
-  PurpleMushroom
+  PurpleMushroom,
 }
 
 type CornerDirection = Direction.TopLeft | Direction.TopRight | Direction.DownLeft | Direction.DownRight;
@@ -57,5 +57,5 @@ export interface TileSetMap {
   walls: Record<WallDirection, Partial<Record<WallType, number>>>;
   floor: Record<FloorType, weight>;
   passages: Record<PassageType, number>;
-  foilage: Record<FoilageType, weight>
+  foilage: Record<FoilageType, weight>;
 }
