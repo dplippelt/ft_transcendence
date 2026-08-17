@@ -104,7 +104,8 @@ export default class CombatLayoutManager {
     this.scene = combatManger.scene;
     this.layoutFromCenter = layoutFromCenter;
     this.layoutBase = combatLayoutBase;
-    this.cardManager.cardHand.setFocusDiff(0, 50);
+    // Needs to fix hard cord.
+    this.cardManager.cardHand.setFocusDiff(0, 30);
     this.align();
   }
 
@@ -145,8 +146,9 @@ export default class CombatLayoutManager {
 
     const focusedCard = handCards.getFirst("isFocused", true) as CardBase;
     if (focusedCard?.input?.hitArea instanceof Geom.Rectangle) {
+      // Needs to fix hard cord.
       focusedCard.x -= 0;
-      focusedCard.y -= 50;
+      focusedCard.y -= 30;
     }
   }
 
