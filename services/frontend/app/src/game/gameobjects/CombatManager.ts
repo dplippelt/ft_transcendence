@@ -24,19 +24,16 @@ export enum CombatEvents {
 export default class CombatManager {
   readonly scene: Scene;
   readonly player: CombatPlayer;
-//   readonly playerStatus: PlayerStatus;
   readonly enemy: CombatEnemy;
   readonly cardManager: CardManager;
   readonly turnManager: CombatTurnManager;
   readonly events: Phaser.Events.EventEmitter;
   readonly executeButton: Button;
   readonly layoutManager: CombatLayoutManager;
-  // show player's hit point and enemy's hitpoint -> to be rendered with React
   readonly hitpointsText: Phaser.GameObjects.Text;
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
-    // this.playerStatus = playerStatus;
     this.player = new CombatPlayer(scene, playerStatus);
     this.enemy = new CombatEnemy(scene, enemyData);
     this.cardManager = new CardManager(scene, playerStatus, cardManagerConfig);
@@ -95,7 +92,6 @@ export default class CombatManager {
       // TODO
     } else {
       this.player.attack(this.enemy, result);
-    //   this.enemy.takeDamage(result);
       this.playerAttackEffect();
     }
     if (this.player.isDead()) {
