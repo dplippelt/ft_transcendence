@@ -3,8 +3,9 @@ import CardBase from "./CardBase";
 import StyledBox, { type StyledBoxConfig } from "../utils/StyledBox";
 
 export const cardSlotStyleConfig: StyledBoxConfig = {
-  width: 70,
-  height: 95,
+  // Needs to align with the card size.
+  width: 64,
+  height: 96,
   bgColorRed: 255,
   bgColorBlue: 255,
   bgColorGreen: 255,

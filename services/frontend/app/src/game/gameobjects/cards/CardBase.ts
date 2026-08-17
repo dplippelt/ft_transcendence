@@ -1,6 +1,7 @@
-import { Scene } from "phaser";
-import BoxedText from "../utils/BoxedText";
+import Phaser, { Scene } from "phaser";
 import { cardConfig, type CardConfig } from "../utils/cardConfig";
+import StyledText from "../utils/StyledText";
+import { AssetsKey } from "../../Assets";
 
 export enum Operator {
   Plus = "+",
@@ -20,17 +21,27 @@ export enum CardEvents {
   SELECTION = "selection",
 }
 
-export default class CardBase extends BoxedText {
+export default class CardBase extends Phaser.GameObjects.Container {
   readonly cardBaseConfig!: CardConfig;
   private isFocused!: boolean;
   private isSelected!: boolean;
   private value!: CardValue;
 
   constructor(scene: Scene, value: CardValue) {
-    const text: string = typeof value === "number" ? value.toString() : value;
-    super(scene, text, cardConfig.cardContentConfig, cardConfig.cardStyleConfig);
-
+    super(scene);
     this.cardBaseConfig = cardConfig;
+
+    const text: string = typeof value === "number" ? value.toString() : value;
+    const frame: number = typeof value === "number" ? 9 : 10;
+
+    const content = new StyledText(scene, 0, 0, text, cardConfig.cardContentConfig);
+    const { x, y } = content.getCenter();
+    content.setOrigin(x / content.width, y / content.height);
+
+    const style = new Phaser.GameObjects.Sprite(scene, 0, 0, AssetsKey.Cards, frame);
+
+    this.add([style, content]);
+    this.setSize(64, 96);
 
     this.isFocused = false;
     this.isSelected = false;
