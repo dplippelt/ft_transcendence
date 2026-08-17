@@ -588,6 +588,7 @@ def link_google_account(user_data: GoogleLogin,db: DbSession, current_user: Curr
     return current_user
 
 
+<<<<<<< HEAD
 @router.delete("/google/link", response_model=UserResponse,)
 def unlink_google_account(db: DbSession,
     current_user: CurrentUser,):
@@ -595,4 +596,10 @@ def unlink_google_account(db: DbSession,
 
     db.refresh(current_user)
 
+=======
+@router.put("/password", response_model=UserResponse,)
+def update_password(password_data: PasswordUpdate, db: DbSession, current_user: CurrentUser, ):
+    set_or_change_password(db, current_user, password_data,)
+    db.refresh(current_user)
+>>>>>>> master
     return current_user

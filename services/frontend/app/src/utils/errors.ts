@@ -132,12 +132,12 @@ export function errorMsg(error: ErrorType): string
             return "Google login is currently unavailable.";
         case ErrorType.googleAccountNotLinked:
             return (
-                "Google is not linked to this account. " +
-                "Sign in with your email and password, then " +
-                "link Google again from your profile."
+                "An account with this email already exists. " +
+                "Sign in with email and password, then link " +
+                "Google from your profile."
             );
         case ErrorType.googleNotLinkedToUnlink:
-            return "No Google account is linked to this account.";
+            return "Google is not linked to this account.";
         case ErrorType.googleAccountAlreadyLinked:
             return (
                 "This Google account is already linked " +
