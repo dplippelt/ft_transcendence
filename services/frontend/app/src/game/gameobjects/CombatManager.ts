@@ -8,7 +8,7 @@ import { buttonContentConfig, buttonStyleConfig } from "./utils/buttonConfig";
 import CombatTurnManager, { TurnEvents } from "./CombatTurnManager";
 import type { PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
-import CombatLayoutManager, { combatLayoutConfig } from "./CombatLayoutManager";
+import CombatLayoutManager from "./CombatLayoutManager";
 
 const executeButtonConfig: ButtonConfig = {
   styleConfig: buttonStyleConfig,
@@ -43,7 +43,7 @@ export default class CombatManager {
     this.events = new Phaser.Events.EventEmitter();
     this.executeButton = new Button(scene, "Execute", executeButtonConfig);
     this.executeButton.on("pointerdown", this.execute, this);
-    this.layoutManager = new CombatLayoutManager(this, combatLayoutConfig);
+    this.layoutManager = new CombatLayoutManager(this);
     this.initPlayerTurn();
     // show player's hit point and enemy's hitpoint -> to be rendered with React
     this.hitpointsText = this.scene.add.text(500, 100, "hitpoints");
