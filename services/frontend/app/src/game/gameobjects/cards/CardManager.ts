@@ -1,6 +1,6 @@
 import type { Scene } from "phaser";
 import CardDeck, { cardDeckConfig } from "./CardDeck";
-import CardHand, { cardHandConfig } from "./CardHand";
+import CardHand from "./CardHand";
 import CardSelection, { cardSelectionConfig } from "./CardSelection";
 import CardBase, { CardEvents } from "./CardBase";
 import Button, { type ButtonConfig } from "../utils/Button";
@@ -40,12 +40,10 @@ export default class CardManager {
     this.playerStatus = playerStatus;
     this.config = config;
     this.cardDeck = new CardDeck(this.scene, cardDeckConfig);
-    this.cardHand = new CardHand(this.scene, cardHandConfig);
+    this.cardHand = new CardHand(this.scene);
     this.cardSelection = new CardSelection(this.scene, cardSelectionConfig);
     this.drawButton = new Button(scene, "draw", drawButtonConfig);
-    this.drawButton.setPosition(100, 100);
     this.selectionResetButton = new Button(scene, "reset", selectionResetButtonConfig);
-    this.selectionResetButton.setPosition(100, 200);
 
     scene.input.setTopOnly(true);
     this.drawButton.on("pointerdown", this.drawExtraCard, this);
@@ -102,10 +100,5 @@ export default class CardManager {
       card.setIsSelected(true);
       return;
     }
-  }
-
-  alignAllCards() {
-    this.cardHand.align();
-    this.cardSelection.align();
   }
 }

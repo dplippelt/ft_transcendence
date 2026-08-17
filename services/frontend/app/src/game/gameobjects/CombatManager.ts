@@ -8,6 +8,7 @@ import { buttonContentConfig, buttonStyleConfig } from "./utils/buttonConfig";
 import CombatTurnManager, { TurnEvents } from "./CombatTurnManager";
 import type { PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
+import CombatLayoutManager, { combatLayoutConfig } from "./CombatLayoutManager";
 
 const executeButtonConfig: ButtonConfig = {
   styleConfig: buttonStyleConfig,
@@ -27,6 +28,7 @@ export default class CombatManager {
   readonly turnManager: CombatTurnManager;
   readonly events: Phaser.Events.EventEmitter;
   readonly executeButton: Button;
+  readonly layoutManager: CombatLayoutManager;
   // show player's hit point and enemy's hitpoint -> to be rendered with React
   readonly hitpointsText: Phaser.GameObjects.Text;
 
@@ -40,15 +42,15 @@ export default class CombatManager {
     this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.executeEnemyEffect, this);
     this.events = new Phaser.Events.EventEmitter();
     this.executeButton = new Button(scene, "Execute", executeButtonConfig);
-    this.executeButton.setPosition(100, 50);
     this.executeButton.on("pointerdown", this.execute, this);
+    this.layoutManager = new CombatLayoutManager(this, combatLayoutConfig);
     this.initPlayerTurn();
     // show player's hit point and enemy's hitpoint -> to be rendered with React
     this.hitpointsText = this.scene.add.text(500, 100, "hitpoints");
   }
 
   update() {
-    this.cardManager.alignAllCards();
+    this.layoutManager.align();
 
     // show a timer
     this.turnManager.displayTimer();
@@ -69,6 +71,7 @@ export default class CombatManager {
   executeEnemyEffect() {
     console.log("attack damage");
     this.enemy.attack(this.playerStatus);
+    this.playerTakeDamageEffect();
     if (this.playerStatus.hitPoint <= 0) {
       this.endGame();
     }
@@ -89,6 +92,7 @@ export default class CombatManager {
       // TODO
     } else {
       this.enemy.takeDamage(result);
+      this.playerAttackEffect();
     }
     if (this.playerStatus.hitPoint <= 0) {
       this.endGame();
@@ -109,6 +113,14 @@ export default class CombatManager {
   endGame() {
     this.turnManager.clock.removeAllEvents();
     this.events.emit(CombatEvents.ENDGAME);
+  }
+
+  playerAttackEffect() {
+    this.scene.cameras.main.shake(500);
+  }
+
+  playerTakeDamageEffect() {
+    this.scene.cameras.main.shake(500);
   }
 
   evaluateSelectedCards(selectedCards: CardBase[]) {
