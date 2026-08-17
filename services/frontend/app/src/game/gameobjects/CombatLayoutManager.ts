@@ -2,8 +2,18 @@ import Phaser, { Actions, Geom, Scene } from "phaser";
 import CombatManager from "./CombatManager";
 import type CardBase from "./cards/CardBase";
 import type CardManager from "./cards/CardManager";
+import type CombatPlayer from "./CombatPlayer";
+import type CombatEnemy from "./CombatEnemy";
 
 interface CombatLayoutConfig {
+  player: {
+    x: number;
+    y: number;
+  };
+  enemy: {
+    x: number;
+    y: number;
+  };
   cards: {
     hand: {
       startX: number;
@@ -38,6 +48,8 @@ interface CombatLayoutConfig {
 export default class CombatLayoutManager {
   private readonly combatManger: CombatManager;
   private readonly cardManager: CardManager;
+  private readonly player: CombatPlayer;
+  private readonly enemy: CombatEnemy;
   private readonly scene: Scene;
   private width: number;
   private height: number;
@@ -49,6 +61,8 @@ export default class CombatLayoutManager {
   constructor(combatManger: CombatManager) {
     this.combatManger = combatManger;
     this.cardManager = this.combatManger.cardManager;
+    this.player = this.combatManger.player;
+    this.enemy = this.combatManger.enemy;
     this.scene = combatManger.scene;
     this.width = 0;
     this.height = 0;
@@ -58,11 +72,19 @@ export default class CombatLayoutManager {
 
   generateConfig() {
     const config: CombatLayoutConfig = {
+      player: {
+        x: this.centerX / 2,
+        y: this.centerY,
+      },
+      enemy: {
+        x: this.width - this.centerX / 2,
+        y: this.centerY,
+      },
       cards: {
         hand: {
           startX: this.centerX / 3,
           startY: this.height - this.centerY / 3,
-          endX: this.width - this.centerX / 3,
+          endX: this.width - this.centerX / 4,
           endY: this.height - this.centerY / 3,
           focus: {
             diffX: 0,
@@ -114,6 +136,7 @@ export default class CombatLayoutManager {
     this.cardManager.cardHand.setFocusDiff(focus.diffX, focus.diffY);
     this.alignCardHand();
     this.alignSelectionSlots();
+    this.alignPlayerAndEnemy();
   }
 
   alignCardHand() {
@@ -139,6 +162,11 @@ export default class CombatLayoutManager {
     for (const slot of selectionSlots) {
       slot.setCardPosition();
     }
+  }
+
+  alignPlayerAndEnemy() {
+    this.player.setPosition(this.config.player.x, this.config.player.y);
+    this.enemy.setPosition(this.config.enemy.x, this.config.enemy.y);
   }
 
   setButtonPositions() {

@@ -9,6 +9,7 @@ import CombatTurnManager, { TurnEvents } from "./CombatTurnManager";
 import type { PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 import CombatLayoutManager from "./CombatLayoutManager";
+import CombatPlayer from "./CombatPlayer";
 
 const executeButtonConfig: ButtonConfig = {
   styleConfig: buttonStyleConfig,
@@ -22,7 +23,8 @@ export enum CombatEvents {
 
 export default class CombatManager {
   readonly scene: Scene;
-  readonly playerStatus: PlayerStatus;
+  readonly player: CombatPlayer;
+//   readonly playerStatus: PlayerStatus;
   readonly enemy: CombatEnemy;
   readonly cardManager: CardManager;
   readonly turnManager: CombatTurnManager;
@@ -34,7 +36,8 @@ export default class CombatManager {
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
-    this.playerStatus = playerStatus;
+    // this.playerStatus = playerStatus;
+    this.player = new CombatPlayer(scene, playerStatus);
     this.enemy = new CombatEnemy(scene, enemyData);
     this.cardManager = new CardManager(scene, playerStatus, cardManagerConfig);
     this.turnManager = new CombatTurnManager(this);
@@ -57,7 +60,7 @@ export default class CombatManager {
 
     // show player's hit point and enemy's hitpoint -> to be rendered with React
     const output: string[] = [];
-    output.push("player hitPoint = " + this.playerStatus.hitPoint + " player mana: " + this.playerStatus.mana);
+    output.push("player hitPoint = " + this.player.status.hitPoint + " player mana: " + this.player.status.mana);
     output.push("enemy hitPoint = " + this.enemy.hitPoint);
     this.hitpointsText.setText(output);
   }
@@ -70,9 +73,9 @@ export default class CombatManager {
 
   executeEnemyEffect() {
     console.log("attack damage");
-    this.enemy.attack(this.playerStatus);
+    this.enemy.attack(this.player);
     this.playerTakeDamageEffect();
-    if (this.playerStatus.hitPoint <= 0) {
+    if (this.player.isDead()) {
       this.endGame();
     }
   }
@@ -91,14 +94,15 @@ export default class CombatManager {
       // dealPenalty(this.playerStatus);
       // TODO
     } else {
-      this.enemy.takeDamage(result);
+      this.player.attack(this.enemy, result);
+    //   this.enemy.takeDamage(result);
       this.playerAttackEffect();
     }
-    if (this.playerStatus.hitPoint <= 0) {
+    if (this.player.isDead()) {
       this.endGame();
       return;
     }
-    if (this.enemy.hitPoint <= 0) {
+    if (this.enemy.isDead()) {
       this.endCombat();
       return;
     }

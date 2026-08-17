@@ -1,6 +1,6 @@
 import Phaser, { Scene } from "phaser";
-import type { PlayerStatus } from "../scenes/CombatScene";
 import { AssetsKey } from "../Assets";
+import CombatPlayer from "./CombatPlayer";
 
 export enum EnemyLevel {
   EASY,
@@ -46,7 +46,11 @@ export default class CombatEnemy extends Phaser.GameObjects.Sprite {
     this.hitPoint -= damage;
   }
 
-  attack(playerStatus: PlayerStatus) {
-    playerStatus.hitPoint -= this.enemyData.attackDamage;
+  attack(player: CombatPlayer) {
+    player.takeDamage(this.enemyData.attackDamage);
+  }
+
+  isDead() {
+    return this.hitPoint <= 0;
   }
 }
