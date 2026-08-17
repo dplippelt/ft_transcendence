@@ -37,6 +37,12 @@ export interface UpdateUserRequest
     avatar_url?: string | null;
 }
 
+export interface PasswordUpdateRequest
+{
+    current_password?: string;
+    new_password: string;
+}
+
 export function loginUser(credentials: LoginRequest): Promise<TokenResponse>
 {
     return apiRequest<TokenResponse>(
@@ -98,6 +104,18 @@ export function linkGoogleAccount(credential: string, accessToken: string,): Pro
         {
             method: "POST",
             body: JSON.stringify({ credential }),
+        },
+        accessToken,
+    );
+}
+
+export function updatePassword(data: PasswordUpdateRequest, accessToken: string,): Promise<AuthUser>
+{
+    return apiRequest<AuthUser>(
+        "/auth/password",
+        {
+            method: "PUT",
+            body: JSON.stringify(data),
         },
         accessToken,
     );

@@ -22,6 +22,7 @@ export enum ErrorType
     passwordsDontMatch,
     passwordCannotBeEmpty,
     passwordTooShort,
+    passwordAlreadySet,
 
     emailCannotBeEmpty,
     invalidEmail,
@@ -56,6 +57,13 @@ export enum ErrorType
     lobbyNameAlreadyExists,
     lobbyDoesNotExist,
     lobbyFull,
+
+    currentPasswordRequired,
+    invalidCurrentPassword,
+    passwordEmailUnavailable,
+    passwordEmailConflict,
+    passwordUpdateFailed,
+    passwordSameAsCurrent,
 
     unknown,
 }
@@ -101,6 +109,8 @@ export function errorMsg(error: ErrorType): string
             return "Password cannot be empty!";
         case ErrorType.passwordTooShort:
             return "Password must be at least 8 characters long!";
+        case ErrorType.passwordAlreadySet:
+            return "A password was already set. Please try again.";
         case ErrorType.emailCannotBeEmpty:
             return "Email cannot be empty!";
         case ErrorType.invalidEmail:
@@ -183,6 +193,18 @@ export function errorMsg(error: ErrorType): string
             return "Failed to join because the lobby does not exist";
         case ErrorType.lobbyFull:
             return "Failed to join because the lobby is full";
+        case ErrorType.currentPasswordRequired:
+            return "Current password is required.";
+        case ErrorType.invalidCurrentPassword:
+            return "Current password is incorrect.";
+        case ErrorType.passwordEmailUnavailable:
+            return "No verified email is available for this account.";
+        case ErrorType.passwordEmailConflict:
+            return "This email is already used by another password account.";
+        case ErrorType.passwordUpdateFailed:
+            return "Failed to update password.";
+        case ErrorType.passwordSameAsCurrent:
+            return "New password must be different from your current password.";
         case ErrorType.unknown:
             return "Something went wrong!";
         default:
@@ -229,6 +251,20 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.googleRegistrationFailed;
         case "GOOGLE_EMAIL_CONFLICT":
             return ErrorType.googleEmailConflict;
+        case "PASSWORD_REQUIRED":
+            return ErrorType.currentPasswordRequired;
+        case "INVALID_CURRENT_PASSWORD":
+            return ErrorType.invalidCurrentPassword;
+        case "PASSWORD_EMAIL_UNAVAILABLE":
+            return ErrorType.passwordEmailUnavailable;
+        case "PASSWORD_EMAIL_CONFLICT":
+            return ErrorType.passwordEmailConflict;
+        case "PASSWORD_UPDATE_FAILED":
+            return ErrorType.passwordUpdateFailed;
+        case "PASSWORD_SAME_AS_CURRENT":
+            return ErrorType.passwordSameAsCurrent;
+        case "PASSWORD_ALREADY_SET":
+            return ErrorType.passwordAlreadySet;
     }
     if (error.status === 422 && error.validationErrors)
     {
@@ -241,6 +277,7 @@ export function mapAuthApiError(error: unknown): ErrorType
                 case "email":
                     return ErrorType.invalidEmail;
                 case "password":
+                case "new_password":
                     return ErrorType.passwordTooShort;
                 case "username":
                     return ErrorType.badUsernameLength;
