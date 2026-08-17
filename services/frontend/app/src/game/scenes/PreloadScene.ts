@@ -22,6 +22,10 @@ export default class PreloadScene extends Phaser.Scene {
       frameWidth: 37,
       frameHeight: 45,
     });
+    this.load.spritesheet(AssetsKey.Cards, Assets[AssetsKey.Cards], {
+        frameWidth: 64,
+        frameHeight: 96,
+    });
   }
 
   create() {

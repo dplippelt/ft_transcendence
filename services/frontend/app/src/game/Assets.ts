@@ -5,6 +5,7 @@ export enum AssetsKey {
   CombatPlayer = "combatPlayer",
   CombatPlayerJSON = "combatPlayerJSON",
   CombatEnemy = "combatEnemy",
+  Cards = "cards",
 }
 
 interface IAssetIndex {
@@ -18,4 +19,5 @@ export const Assets: IAssetIndex = {
   [AssetsKey.CombatPlayer]: new URL("./assets/combat_knight.png", import.meta.url).href,
   [AssetsKey.CombatPlayerJSON]: new URL("./assets/combat_knight.json", import.meta.url).href,
   [AssetsKey.CombatEnemy]: new URL("./assets/combat_enemy37x45.png", import.meta.url).href,
+  [AssetsKey.Cards]: new URL("./assets/cards64x96.png", import.meta.url).href,
 };
