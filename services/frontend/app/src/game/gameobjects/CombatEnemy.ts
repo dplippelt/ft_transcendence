@@ -1,7 +1,6 @@
-import type { Scene } from "phaser";
-import BoxedText from "./utils/BoxedText";
-import { cardConfig } from "./utils/cardConfig";
+import Phaser, { Scene } from "phaser";
 import type { PlayerStatus } from "../scenes/CombatScene";
+import { AssetsKey } from "../Assets";
 
 export enum EnemyLevel {
   EASY,
@@ -31,14 +30,16 @@ export const enemyTypes: EnemyTypes = {
   },
 };
 
-export default class CombatEnemy extends BoxedText {
+export default class CombatEnemy extends Phaser.GameObjects.Sprite {
   readonly enemyData: EnemyData;
   hitPoint: number;
 
   constructor(scene: Scene, enemyData: EnemyData) {
-    super(scene, "enemy", cardConfig.cardContentConfig, cardConfig.cardStyleConfig);
+    super(scene, 0, 0, AssetsKey.CombatEnemy);
     this.enemyData = enemyData;
     this.hitPoint = enemyData.hitPoint;
+    this.scene.add.existing(this);
+    this.setFlipX(true);
   }
 
   takeDamage(damage: number) {
