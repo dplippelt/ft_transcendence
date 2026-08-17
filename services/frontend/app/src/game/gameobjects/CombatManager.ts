@@ -116,11 +116,24 @@ export default class CombatManager {
   }
 
   playerAttackEffect() {
-    this.scene.cameras.main.shake(500);
+    this.scene.tweens.add({
+      targets: this.enemy,
+      x: this.enemy.x + 100,
+      duration: 50,
+      yoyo: true,
+      repeat: 2,
+      onStart: () => {
+        this.enemy.setTint(0xff0000);
+      },
+      onComplete: () => {
+        this.enemy.clearTint();
+      },
+    });
+    // this.scene.cameras.main.shake(500);
   }
 
   playerTakeDamageEffect() {
-    this.scene.cameras.main.shake(500);
+    // this.scene.cameras.main.shake(500);
   }
 
   evaluateSelectedCards(selectedCards: CardBase[]) {
