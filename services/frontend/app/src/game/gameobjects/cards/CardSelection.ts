@@ -30,7 +30,7 @@ export default class CardSelection {
     }
   }
 
-  setCardToSlot(card: CardBase): boolean {
+  setCardToSlot(card: CardBase) {
     const slots = this.slots.getAll() as CardSlot[];
 
     for (let i = 0; i < this.numSlots; ++i) {
@@ -40,10 +40,10 @@ export default class CardSelection {
 
       slot.setCard(card);
 
-      return true;
+      return slot;
     }
 
-    return false;
+    return null;
   }
 
   unsetCardFromSlot(card: CardBase): boolean {
