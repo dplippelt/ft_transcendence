@@ -7,7 +7,7 @@ import Button, { type ButtonConfig } from "../utils/Button";
 import { buttonContentConfig, buttonStyleConfig } from "../utils/buttonConfig";
 import type { PlayerStatus } from "../../scenes/CombatScene";
 
-export enum CardAnimEvents {
+export enum CardActionEvents {
   DRAW = "draw",
   DISCARD = "discard",
   SELECT = "select",
@@ -64,7 +64,7 @@ export default class CardManager {
   }
 
   clearHand() {
-    this.events.emit(CardAnimEvents.DISCARD, this.cardHand);
+    this.events.emit(CardActionEvents.DISCARD, this.cardHand);
     this.cardHand.clearHand();
   }
 
@@ -83,7 +83,7 @@ export default class CardManager {
     card.on(CardEvents.SELECTION, this.select, this);
     this.cardHand.addCard(card);
 
-    this.events.emit(CardAnimEvents.DRAW, card);
+    this.events.emit(CardActionEvents.DRAW, card);
     return true;
   }
 
@@ -104,14 +104,14 @@ export default class CardManager {
     if (card.getIsSelected()) {
       this.cardSelection.unsetCardFromSlot(card);
       card.setIsSelected(false);
-      this.events.emit(CardAnimEvents.UNSELECT, card);
+      this.events.emit(CardActionEvents.UNSELECT, card);
       return;
     }
 
     const slot = this.cardSelection.setCardToSlot(card);
     if (slot !== null) {
       card.setIsSelected(true);
-      this.events.emit(CardAnimEvents.SELECT, card, slot);
+      this.events.emit(CardActionEvents.SELECT, card, slot);
       return;
     }
   }
