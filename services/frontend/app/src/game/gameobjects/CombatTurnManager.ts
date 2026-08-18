@@ -39,7 +39,7 @@ export default class CombatTurnManager {
 
     // To display, not necessary.
     this.enemyTimer = null;
-    this.timerText = this.scene.add.text(500, 200, "timer");
+    this.timerText = this.scene.add.text(100, 200, "timer");
   }
 
   switchTurn() {
