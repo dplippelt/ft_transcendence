@@ -1,6 +1,6 @@
 import type { CardValue } from "./CardBase";
 import CardBase, { OPERATORS } from "./CardBase";
-import type { Scene } from "phaser";
+import { Scene } from "phaser";
 
 interface CardDeckConfig {
   amount: number;
@@ -17,7 +17,7 @@ interface CardDeckConfig {
 }
 
 export const cardDeckConfig: CardDeckConfig = {
-  amount: 10,
+  amount: 20,
   numberRange: {
     min: 1,
     max: 30,
@@ -46,7 +46,6 @@ export default class CardDeck {
   readonly baseWeights: CardWeight[];
   readonly weightReduction: WeightReduction;
   deck!: CardBase[];
-  numDealedCards: number = 0;
 
   constructor(scene: Scene, config: CardDeckConfig) {
     this.scene = scene;
@@ -118,7 +117,7 @@ export default class CardDeck {
       if (card.value !== targetValue) continue;
       if (target.isValueNumber()) card.weight -= reduction.number;
       else if (target.isValueOperator()) card.weight -= reduction.operator;
-      else throw Error("Unexpected CardValue")
+      else throw Error("Unexpected CardValue");
       break;
     }
   }
@@ -136,19 +135,13 @@ export default class CardDeck {
     return normalizedWeights;
   }
 
-  // TODO: reconsider if reusing cards is really necessary
   dealCard() {
-    const index = this.numDealedCards;
-
-    if (index >= this.deck.length) {
-      const newDeck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
-      if (!newDeck.length) throw Error("Could not create a new deck");
-
-      this.deck = this.deck.concat(newDeck);
+    if (!this.deck.length) {
+      this.deck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
+      if (!this.deck.length) throw Error("Could not create a new deck");
     }
 
-    this.numDealedCards++;
-    return this.deck[index];
+    return this.deck.pop()!;
   }
 }
 
