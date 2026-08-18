@@ -1,9 +1,13 @@
 import Phaser, { Actions, Geom, Scene } from "phaser";
-import CombatManager from "./CombatManager";
+import CombatManager, { CombatAnimEvents } from "./CombatManager";
 import type CardBase from "./cards/CardBase";
 import type CardManager from "./cards/CardManager";
-import type CombatPlayer from "./CombatPlayer";
+import CombatPlayer from "./CombatPlayer";
 import type CombatEnemy from "./CombatEnemy";
+import { CardAnimEvents } from "./cards/CardManager";
+import { CardEvents } from "./cards/CardBase";
+import type CardSlot from "./cards/CardSlot";
+import { AssetsKey } from "../Assets";
 
 interface LayoutFromCenter {
   player: {
@@ -87,6 +91,78 @@ const combatLayoutBase: CombatLayoutBase = {
   height: 780,
 };
 
+enum PlayerAnimation {
+  IDLE = "idle",
+  ATTACK_A = "attack_A",
+  ATTACK_B = "attack_B",
+  ATTACK_C = "attack_C",
+  GUARD_START = "guard_start",
+  GUARD = "guard",
+  GUARD_END = "guard_end",
+}
+
+interface AtlasFrame {
+    start: number,
+    end: number,
+    frameRate: number,
+    repeat: number,
+}
+
+interface AtlasFrameName {
+    prefixAfterKey: string,
+    zeroPad: number,
+}
+
+const playerAnimationFrames: Record<PlayerAnimation, AtlasFrame> = {
+  [PlayerAnimation.IDLE]: {
+    start: 0,
+    end: 5,
+    frameRate: 8,
+    repeat: -1,
+  },
+  [PlayerAnimation.ATTACK_A]: {
+    start: 0,
+    end: 13,
+    frameRate: 30,
+    repeat: 0,
+  },
+  [PlayerAnimation.ATTACK_B]: {
+    start: 0,
+    end: 12,
+    frameRate: 30,
+    repeat: 0,
+  },
+  [PlayerAnimation.ATTACK_C]: {
+    start: 0,
+    end: 13,
+    frameRate: 30,
+    repeat: 0,
+  },
+  [PlayerAnimation.GUARD_START]: {
+    start: 0,
+    end: 3,
+    frameRate: 8,
+    repeat: 0,
+  },
+  [PlayerAnimation.GUARD]: {
+    start: 0,
+    end: 5,
+    frameRate: 8,
+    repeat: 2,
+  },
+  [PlayerAnimation.GUARD_END]: {
+    start: 0,
+    end: 3,
+    frameRate: 8,
+    repeat: 0,
+  },
+};
+
+const playerAnimationFrameName: AtlasFrameName = {
+    prefixAfterKey: "frame",
+    zeroPad: 4,
+};
+
 export default class CombatLayoutManager {
   private readonly combatManger: CombatManager;
   private readonly cardManager: CardManager;
@@ -99,13 +175,110 @@ export default class CombatLayoutManager {
   constructor(combatManger: CombatManager) {
     this.combatManger = combatManger;
     this.cardManager = this.combatManger.cardManager;
+    this.cardManager.events.on(CardAnimEvents.DRAW, this.drawAnim, this);
+    this.cardManager.events.on(CardAnimEvents.SELECT, this.selectAnim, this);
+    this.cardManager.events.on(CardAnimEvents.UNSELECT, this.unselectAnim, this);
     this.player = this.combatManger.player;
+    this.registerPlayerAnimation(this.player);
     this.enemy = this.combatManger.enemy;
+    this.registerEnemyAnimation(this.enemy);
+    this.enemy.on(CombatAnimEvents.ATTACK, this.attack, this);
+    this.enemy.on(CombatAnimEvents.TAKEDAMAGE, this.takeDamage, this);
     this.scene = combatManger.scene;
     this.layoutFromCenter = layoutFromCenter;
     this.layoutBase = combatLayoutBase;
+    this.align();
+    this.scene.scale.on("resize", () => {
+      this.align();
+    });
+  }
+
+  registerPlayerAnimation(player: CombatPlayer) {
+    for (const animKey of Object.values(PlayerAnimation)) {
+        player.anims.create({
+            key: animKey,
+            frames: player.anims.generateFrameNames(AssetsKey.CombatPlayer, {
+                prefix: `${animKey}/${playerAnimationFrameName.prefixAfterKey}`,
+                start: playerAnimationFrames[animKey].start,
+                end: playerAnimationFrames[animKey].end,
+                zeroPad: playerAnimationFrameName.zeroPad,
+            }),
+            frameRate: playerAnimationFrames[animKey].frameRate,
+            repeat: playerAnimationFrames[animKey].repeat,
+        });
+    }
+    player.on(CombatAnimEvents.ATTACK, this.attack, this);
+    player.on(CombatAnimEvents.TAKEDAMAGE, this.takeDamage, this);
+    player.play(PlayerAnimation.IDLE);
+  }
+
+  registerEnemyAnimation(enemy: CombatEnemy) {
+    const anims = enemy.anims;
+    anims.create({
+      key: "idle",
+      frames: anims.generateFrameNumbers(AssetsKey.CombatEnemy),
+      frameRate: 8,
+      repeat: -1,
+    });
+    enemy.play("idle");
+  }
+
+  attack(combatant: CombatPlayer | CombatEnemy) {
+    if (combatant instanceof CombatPlayer) {
+      combatant.play(PlayerAnimation.ATTACK_B);
+      combatant.playAfterRepeat(PlayerAnimation.IDLE);
+    }
+  }
+
+  takeDamage() {}
+
+  drawAnim(card: CardBase) {
+    card.on(CardEvents.FOCUSON, this.HoverUpAnim, this);
+    card.on(CardEvents.FOCUSOFF, this.HoverDownAnim, this);
+    this.align();
+  }
+
+  HoverUpAnim(card: CardBase) {
     // Needs to fix hard cord.
-    this.cardManager.cardHand.setFocusDiff(0, 30);
+    if (card.input?.hitArea instanceof Geom.Rectangle) {
+      card.input.hitArea.right += 0;
+      card.input.hitArea.bottom += 30;
+    }
+    this.scene.tweens.add({
+      targets: card,
+      y: card.offset.y - 30,
+      duration: 50,
+      ease: "Cubic.easeOut",
+    });
+    console.log(`test 2: offset y = ${card.offset.y}, y = ${card.y}`);
+  }
+
+  HoverDownAnim(card: CardBase) {
+    if (card.input?.hitArea instanceof Geom.Rectangle) {
+      card.input.hitArea.right -= 0;
+      card.input.hitArea.bottom -= 30;
+    }
+    // Needs to fix hard cord.
+    this.scene.tweens.add({
+      targets: card,
+      y: card.offset.y,
+      duration: 200,
+      ease: "Power1",
+    });
+  }
+
+  selectAnim(card: CardBase, slot: CardSlot) {
+    // Needs to fix hard cord.
+    this.scene.tweens.add({
+      targets: card,
+      x: slot.x,
+      y: slot.y,
+      ease: "Cubic.easeOut",
+      duration: 200,
+    });
+  }
+
+  unselectAnim(card: CardBase, slot: CardSlot) {
     this.align();
   }
 
@@ -142,14 +315,10 @@ export default class CombatLayoutManager {
     const ground = centerY + diff.y * scale;
     const handLine = new Geom.Line(centerX + diff.startX * scale, ground, centerX + diff.endX * scale, ground);
 
-    Actions.PlaceOnLine(handCards.getAll("isSelected", false), handLine);
-
-    const focusedCard = handCards.getFirst("isFocused", true) as CardBase;
-    if (focusedCard?.input?.hitArea instanceof Geom.Rectangle) {
-      // Needs to fix hard cord.
-      focusedCard.x -= 0;
-      focusedCard.y -= 30;
-    }
+    Actions.PlaceOnLine(handCards.getAll(), handLine);
+    handCards.iterate((card: CardBase) => {
+      card.setOffset(card.x, card.y);
+    });
   }
 
   alignSelectionSlots(centerX: number, centerY: number, scale: number) {
