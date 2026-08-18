@@ -57,12 +57,12 @@ function Game( { currentActiveScene, gameRef, isGameURL } : IGame )
  * in the background. */
 export default function PhaserGame( { currentActiveScene } : IPhaserGame )
 {
-  const auth = useAuth();
+  const { auth } = useAuth();
   const location = useLocation();
   const isGameURL = location.pathname === RoutePath.gameDev;
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
   const gameRef = useRef<Phaser.Game | null>(null!);
-  const loggedIn = !auth.auth.guest
+  const loggedIn = auth.status === "authenticated"
 
   useEffect(() =>
   {

@@ -12,13 +12,13 @@ function Buttons()
 {
 	const navigate = useNavigate();
 	const location = useLocation();
-	const auth = useAuth();
+	const { logout, auth } = useAuth();
 	const sessionCleanup = useSessionCleanup();
-	const loggedIn = !auth.auth.guest;
+	const loggedIn = auth.status === "authenticated";
 
-	function logout()
+	function handleLogout()
 	{
-		auth.logout();
+		logout();
 		sessionCleanup();
 		navigate(RoutePath.landingPage, { replace: true });
 	}
@@ -32,7 +32,7 @@ function Buttons()
 			<GameMenuButton label="How to play" onClick={ () => {} } />
 			{ loggedIn && <GameMenuButton label="Settings" onClick={ () => navigate(RoutePath.settings, { state: { from: location.pathname } }) } /> }
 			{ loggedIn && <GameMenuButton label="Back to main menu" onClick={ () => navigate(RoutePath.mainMenu, { replace: true }) } /> }
-			<GameMenuButton label={ loggedIn ? "Logout" : "Quit" } onClick={ logout } />
+			<GameMenuButton label={ loggedIn ? "Logout" : "Quit" } onClick={ handleLogout } />
 		</MenuButtons>
 	)
 }
