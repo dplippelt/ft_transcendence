@@ -300,7 +300,7 @@ export function RefreshButton( { onClick } : IRefreshButton )
 export function PageNotFoundButton()
 {
 	const { auth } = useAuth();
-	const loggedIn = !auth.guest;
+	const loggedIn = auth.status === "authenticated";
 	const navigate = useNavigate();
 
 	const label = loggedIn
