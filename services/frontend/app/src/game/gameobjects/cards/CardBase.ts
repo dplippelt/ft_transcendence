@@ -24,6 +24,7 @@ export enum CardEvents {
 interface OffsetPosition {
     x: number,
     y: number,
+    angle: number,
 }
 
 const cardSize = {
@@ -58,7 +59,7 @@ export default class CardBase extends Phaser.GameObjects.Container {
     this.isFocused = false;
     this.isSelected = false;
     this.value = value;
-    this.offset = { x: 0, y: 0 };
+    this.offset = { x: 0, y: 0, angle: 0 };
 
     this.on("pointerover", this.focusOn, this);
     this.on("pointerout", this.focusOff, this);

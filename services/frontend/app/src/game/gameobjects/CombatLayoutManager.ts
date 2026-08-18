@@ -4,7 +4,7 @@ import type CardBase from "./cards/CardBase";
 import type CardManager from "./cards/CardManager";
 import CombatPlayer from "./CombatPlayer";
 import type CombatEnemy from "./CombatEnemy";
-import { CardAnimEvents } from "./cards/CardManager";
+import { CardActionEvents } from "./cards/CardManager";
 import { CardEvents } from "./cards/CardBase";
 import type CardSlot from "./cards/CardSlot";
 import { AssetsKey } from "../Assets";
@@ -27,6 +27,10 @@ interface LayoutFromCenter {
     selection: {
       startX: number;
       startY: number;
+    };
+    deck: {
+      x: number;
+      y: number;
     };
   };
   buttons: {
@@ -63,6 +67,10 @@ const layoutFromCenter: LayoutFromCenter = {
     selection: {
       startX: -200,
       startY: -200,
+    },
+    deck: {
+      x: 500,
+      y: 200,
     },
   },
   buttons: {
@@ -102,15 +110,15 @@ enum PlayerAnimation {
 }
 
 interface AtlasFrame {
-    start: number,
-    end: number,
-    frameRate: number,
-    repeat: number,
+  start: number;
+  end: number;
+  frameRate: number;
+  repeat: number;
 }
 
 interface AtlasFrameName {
-    prefixAfterKey: string,
-    zeroPad: number,
+  prefixAfterKey: string;
+  zeroPad: number;
 }
 
 const playerAnimationFrames: Record<PlayerAnimation, AtlasFrame> = {
@@ -159,8 +167,8 @@ const playerAnimationFrames: Record<PlayerAnimation, AtlasFrame> = {
 };
 
 const playerAnimationFrameName: AtlasFrameName = {
-    prefixAfterKey: "frame",
-    zeroPad: 4,
+  prefixAfterKey: "frame",
+  zeroPad: 4,
 };
 
 export default class CombatLayoutManager {
@@ -175,9 +183,9 @@ export default class CombatLayoutManager {
   constructor(combatManger: CombatManager) {
     this.combatManger = combatManger;
     this.cardManager = this.combatManger.cardManager;
-    this.cardManager.events.on(CardAnimEvents.DRAW, this.drawAnim, this);
-    this.cardManager.events.on(CardAnimEvents.SELECT, this.selectAnim, this);
-    this.cardManager.events.on(CardAnimEvents.UNSELECT, this.unselectAnim, this);
+    this.cardManager.events.on(CardActionEvents.DRAW, this.drawAnim, this);
+    this.cardManager.events.on(CardActionEvents.SELECT, this.selectAnim, this);
+    this.cardManager.events.on(CardActionEvents.UNSELECT, this.unselectAnim, this);
     this.player = this.combatManger.player;
     this.registerPlayerAnimation(this.player);
     this.enemy = this.combatManger.enemy;
@@ -195,17 +203,17 @@ export default class CombatLayoutManager {
 
   registerPlayerAnimation(player: CombatPlayer) {
     for (const animKey of Object.values(PlayerAnimation)) {
-        player.anims.create({
-            key: animKey,
-            frames: player.anims.generateFrameNames(AssetsKey.CombatPlayer, {
-                prefix: `${animKey}/${playerAnimationFrameName.prefixAfterKey}`,
-                start: playerAnimationFrames[animKey].start,
-                end: playerAnimationFrames[animKey].end,
-                zeroPad: playerAnimationFrameName.zeroPad,
-            }),
-            frameRate: playerAnimationFrames[animKey].frameRate,
-            repeat: playerAnimationFrames[animKey].repeat,
-        });
+      player.anims.create({
+        key: animKey,
+        frames: player.anims.generateFrameNames(AssetsKey.CombatPlayer, {
+          prefix: `${animKey}/${playerAnimationFrameName.prefixAfterKey}`,
+          start: playerAnimationFrames[animKey].start,
+          end: playerAnimationFrames[animKey].end,
+          zeroPad: playerAnimationFrameName.zeroPad,
+        }),
+        frameRate: playerAnimationFrames[animKey].frameRate,
+        repeat: playerAnimationFrames[animKey].repeat,
+      });
     }
     player.on(CombatAnimEvents.ATTACK, this.attack, this);
     player.on(CombatAnimEvents.TAKEDAMAGE, this.takeDamage, this);
@@ -292,6 +300,7 @@ export default class CombatLayoutManager {
     const baseScale = Math.min(scaleX, scaleY);
 
     this.alignButtons(centerX, centerY, baseScale);
+    this.alignDeck(centerX, centerY, baseScale);
     this.alignCardHand(centerX, centerY, baseScale);
     this.alignSelectionSlots(centerX, centerY, baseScale);
     this.alignPlayer(centerX, centerY, baseScale);
@@ -309,15 +318,48 @@ export default class CombatLayoutManager {
     resetButton.setPosition(centerX + diff.resetSelection.x * scale, centerY + diff.resetSelection.y * scale);
   }
 
+  alignDeck(centerX: number, centerY: number, scale: number) {
+    const deck = this.cardManager.cardDeck.getDeck();
+    const diff = this.layoutFromCenter.cards.deck;
+
+    deck.forEach((card: CardBase) => {
+      card.setPosition(centerX + diff.x * scale, centerY + diff.y * scale);
+      card.setOffset(card.x, card.y);
+    });
+  }
+
   alignCardHand(centerX: number, centerY: number, scale: number) {
-    const handCards = this.cardManager.cardHand.getHandCards();
+    const handCards = this.cardManager.cardHand.getHandCards().getAll("isSelected", false) as CardBase[];
+    const totalCards = handCards.length;
+    if (!totalCards) {
+      return;
+    }
+
     const diff = this.layoutFromCenter.cards.hand;
     const ground = centerY + diff.y * scale;
-    const handLine = new Geom.Line(centerX + diff.startX * scale, ground, centerX + diff.endX * scale, ground);
+    const cardSpace = Math.min(100 * scale, (centerX * 2 * 0.6) / totalCards);
+    const totalHandWidth = cardSpace * (totalCards - 1);
+    const startX = centerX - totalHandWidth / 2;
 
-    Actions.PlaceOnLine(handCards.getAll(), handLine);
-    handCards.iterate((card: CardBase) => {
-      card.setOffset(card.x, card.y);
+    handCards.forEach((card: CardBase, index: number) => {
+      const targetX = startX + index * cardSpace;
+      const offsetFromCenter = (index - (totalCards - 1) / 2) / (totalCards / 2);
+      const curveY = Math.pow(offsetFromCenter, 2) * 30 * scale;
+      const targetY = ground + curveY;
+      const targetAngle = offsetFromCenter * 10;
+      card.offset.x = targetX;
+      card.offset.y = targetY;
+      card.offset.angle = targetAngle;
+      this.scene.tweens.add({
+        targets: card,
+        x: targetX,
+        y: targetY,
+        angle: targetAngle,
+        scaleX: scale,
+        scaleY: scale,
+        duration: 300,
+        ease: "Power2",
+      });
     });
   }
 

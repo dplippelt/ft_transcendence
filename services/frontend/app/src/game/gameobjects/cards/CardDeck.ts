@@ -107,7 +107,11 @@ export default class CardDeck {
 
     const cardWeight = weightedRandom(normalizedWeights);
 
-    return new CardBase(this.scene, cardWeight.value);
+    const card = new CardBase(this.scene, cardWeight.value);
+
+    this.scene.add.existing(card);
+
+    return card;
   }
 
   adjustWeights(cardWeights: CardWeight[], target: CardBase, reduction: WeightReduction) {
@@ -136,12 +140,18 @@ export default class CardDeck {
   }
 
   dealCard() {
+    const card = this.deck.pop()!;
+
     if (!this.deck.length) {
       this.deck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
       if (!this.deck.length) throw Error("Could not create a new deck");
     }
 
-    return this.deck.pop()!;
+    return card;
+  }
+
+  getDeck() {
+    return this.deck;
   }
 }
 
