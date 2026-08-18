@@ -69,22 +69,34 @@ def create_lobby(db: Session, user: User, name: str) -> Lobby:
 
 
 def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby:
-    lobby = get_lobby_by_id(db, lobby_id)
+    # Locks the lobby row so concurrent joins serialize instead of both
+    # reading the same member count and both passing the MAX_MEMBERS check.
+    lobby = (
+        db.query(Lobby)
+        .filter(Lobby.id == lobby_id)
+        .with_for_update()
+        .first()
+    )
 
     if lobby is None:
         raise not_found("Lobby not found.", code=ErrorCode.LOBBY_NOT_FOUND)
 
-    if any(member.user_id == user.id for member in lobby.members):
-        return lobby
+    if get_member(db, lobby_id, user.id) is not None:
+        return get_lobby_by_id(db, lobby_id)
 
-    if len(lobby.members) >= MAX_MEMBERS:
+    member_count = (
+        db.query(LobbyMember)
+        .filter(LobbyMember.lobby_id == lobby_id)
+        .count()
+    )
+
+    if member_count >= MAX_MEMBERS:
         raise conflict("This lobby is full.", code=ErrorCode.LOBBY_FULL)
 
     db.add(LobbyMember(lobby=lobby, user=user, role=GUEST))
     commit_or_bad_request(db, "Could not join lobby.")
-    db.refresh(lobby)
 
-    return lobby
+    return get_lobby_by_id(db, lobby_id)
 
 
 def close_lobby(db: Session, user: User, lobby_id: int) -> None:
