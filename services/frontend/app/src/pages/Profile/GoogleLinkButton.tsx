@@ -23,6 +23,12 @@ export default function GoogleLinkButton()
     const isGoogleLinked = user.linked_providers.includes("google");
     const hasPassword = user.linked_providers.includes("password");
 
+    function handleCancelUnlink()
+    {
+        setError(ErrorType.none);
+        setShowUnlinkConfirmation(false);
+    }
+
     async function handleUnlink()
     {
         if (isSubmitting || !hasPassword)
@@ -89,9 +95,7 @@ export default function GoogleLinkButton()
                             <PopupButtons>
                                 <MossButton
                                     label="Cancel"
-                                    onClick={() =>
-                                        setShowUnlinkConfirmation(false)
-                                    }
+                                    onClick={handleCancelUnlink}
                                     disabled={isSubmitting}
                                 />
 

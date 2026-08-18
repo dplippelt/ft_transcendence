@@ -485,39 +485,6 @@ def google_login(user_data: GoogleLogin, db: DbSession):
 
         return create_token_for_user(user)
 
-    password_account = get_password_account_by_email(db, identity.email,)
-
-    if (
-        password_account
-        and password_account.email_verified
-    ):
-        user = get_active_user_from_auth_account(
-            password_account,
-        )
-
-        google_auth_account = create_google_auth_account(user, identity,)
-
-        db.add(google_auth_account)
-
-        try:
-            db.commit()
-        except IntegrityError:
-            db.rollback()
-
-            existing_google_account = get_google_account_by_sub(db, identity.sub,)
-
-            if existing_google_account:
-                user = get_active_user_from_auth_account(existing_google_account,)
-
-                return create_token_for_user(user)
-
-            raise bad_request(
-                "Google account could not be linked",
-                code=ErrorCode.GOOGLE_LINK_FAILED,
-            )
-
-        return create_token_for_user(user)
-    
     raise_google_email_conflict_if_present(
         db,
         identity.email,
@@ -589,11 +556,11 @@ def link_google_account(user_data: GoogleLogin,db: DbSession, current_user: Curr
 
 
 @router.delete("/google/link", response_model=UserResponse,)
-def unlink_google_account(db: DbSession,
-    current_user: CurrentUser,):
+def unlink_google_account(db: DbSession, current_user: CurrentUser,):
     unlink_google_from_user(db, current_user,)
 
     db.refresh(current_user)
+    return current_user
 
 @router.put("/password", response_model=UserResponse,)
 def update_password(password_data: PasswordUpdate, db: DbSession, current_user: CurrentUser, ):
