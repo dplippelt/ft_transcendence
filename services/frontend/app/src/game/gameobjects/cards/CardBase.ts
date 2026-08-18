@@ -36,23 +36,19 @@ export default class CardBase extends Phaser.GameObjects.Container {
   readonly cardBaseConfig!: CardConfig;
   private isFocused!: boolean;
   private isSelected!: boolean;
-  private value!: CardValue;
+  private value: CardValue | undefined;
   readonly offset: OffsetPosition;
 
-  constructor(scene: Scene, value: CardValue) {
+  constructor(scene: Scene, value?: CardValue) {
     super(scene);
     this.cardBaseConfig = cardConfig;
 
-    const text: string = typeof value === "number" ? value.toString() : value;
-    const frame: number = typeof value === "number" ? 9 : 10;
+    if (value === undefined) {
+        this.createCardBack(scene);
+    } else {
+        this.createCard(scene, value);
+    }
 
-    const content = new StyledText(scene, 0, 0, text, cardConfig.cardContentConfig);
-    const { x, y } = content.getCenter();
-    content.setOrigin(x / content.width, y / content.height);
-
-    const style = new Phaser.GameObjects.Sprite(scene, 0, 0, AssetsKey.Cards, frame);
-
-    this.add([style, content]);
     this.setSize(cardSize.width, cardSize.height);
     this.setInteractive();
 
@@ -64,6 +60,25 @@ export default class CardBase extends Phaser.GameObjects.Container {
     this.on("pointerover", this.focusOn, this);
     this.on("pointerout", this.focusOff, this);
     this.on("pointerdown", this.selected, this);
+  }
+
+  createCardBack(scene: Scene) {
+    const frame = 4;
+    const style = new Phaser.GameObjects.Sprite(scene, 0, 0, AssetsKey.Cards, frame);
+    this.add(style);
+  }
+
+  createCard(scene: Scene, value: CardValue) {
+    const text: string = typeof value === "number" ? value.toString() : value;
+    const frame: number = typeof value === "number" ? 9 : 11;
+
+    const content = new StyledText(scene, 0, 0, text, cardConfig.cardContentConfig);
+    const { x, y } = content.getCenter();
+    content.setOrigin(x / content.width, y / content.height);
+
+    const style = new Phaser.GameObjects.Sprite(scene, 0, 0, AssetsKey.Cards, frame);
+
+    this.add([style, content]);
   }
 
   getIsSelected() {

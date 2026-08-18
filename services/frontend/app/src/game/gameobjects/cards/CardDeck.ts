@@ -45,7 +45,8 @@ export default class CardDeck {
   readonly config: CardDeckConfig;
   readonly baseWeights: CardWeight[];
   readonly weightReduction: WeightReduction;
-  deck!: CardBase[];
+  private deck: CardBase[];
+  private cover: CardBase;
 
   constructor(scene: Scene, config: CardDeckConfig) {
     this.scene = scene;
@@ -53,6 +54,9 @@ export default class CardDeck {
     this.baseWeights = this.initBaseWeights(this.config);
     this.weightReduction = this.setWeightReductionFromConfig(this.config);
     this.deck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
+    this.cover = new CardBase(scene);
+    this.scene.add.existing(this.cover);
+    this.cover.setDepth(1); // hard cord
   }
 
   initBaseWeights(config: CardDeckConfig) {
@@ -152,6 +156,10 @@ export default class CardDeck {
 
   getDeck() {
     return this.deck;
+  }
+
+  getCover() {
+    return this.cover;
   }
 }
 

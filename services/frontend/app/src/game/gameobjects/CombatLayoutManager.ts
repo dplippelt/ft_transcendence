@@ -331,6 +331,10 @@ export default class CombatLayoutManager {
       card.setPosition(centerX + diff.x * scale, centerY + diff.y * scale);
       card.setOffset(card.x, card.y);
     });
+
+    const cover = this.cardManager.cardDeck.getCover();
+    cover.setPosition(centerX + diff.x * scale, centerY + diff.y * scale);
+    cover.setOffset(cover.x, cover.y);
   }
 
   alignCardHand(centerX: number, centerY: number, scale: number) {
