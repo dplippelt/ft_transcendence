@@ -131,7 +131,6 @@ export default function AuthProvider( { children } : {children: ReactNode} )
             throw new Error("No authenticated session");
     
         const updatedUser = await updateUser(
-            user.id,
             data,
             accessToken,
         );

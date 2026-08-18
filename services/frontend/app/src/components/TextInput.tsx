@@ -8,6 +8,7 @@ interface ITextInput
 	id: string;
     setter: (value: React.SetStateAction<string>) => void;
     type?: React.HTMLInputTypeAttribute;
+    maxLength?: number;
 }
 
 interface IPasswordInput
@@ -27,7 +28,7 @@ interface IChatInput
 	setMsg: React.Dispatch<React.SetStateAction<string>>;
 }
 
-export function TextInput( { label, placeholder, id, setter, type = "text" } : ITextInput )
+export function TextInput( { label, placeholder, id, setter, type = "text", maxLength } : ITextInput )
 {
 	function handleChange( e: React.ChangeEvent<HTMLInputElement> )
 	{
@@ -40,8 +41,10 @@ export function TextInput( { label, placeholder, id, setter, type = "text" } : I
 			<input
 				type={type}
 				id={id}
-				placeholder={placeholder}
-				onChange={handleChange}/>
+                placeholder={placeholder}
+                maxLength={maxLength}
+                onChange={handleChange}
+            />
 		</>
 	);
 }

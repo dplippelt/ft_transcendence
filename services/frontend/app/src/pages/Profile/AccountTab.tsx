@@ -65,15 +65,24 @@ function Username({ setPopupType }: IAccountInfo)
 }
 
 
-function DisplayName()
+function DisplayName({ setPopupType }: IAccountInfo)
 {
     const user = useCurrentUser();
 
     return (
         <>
-            <div className={sharedStyle.profileLabel}> Display name: </div>
-            <div className={sharedStyle.textInfo}> {user.display_name ?? "Not set"} </div>
-            <div />
+            <div className={sharedStyle.profileLabel}>
+                Display name:
+            </div>
+
+            <div className={sharedStyle.textInfo}>
+                {user.display_name ?? "Not set"}
+            </div>
+
+            <EditButton
+                popupType={PopupType.editDisplayName}
+                setPopupType={setPopupType}
+            />
         </>
     );
 }
@@ -123,7 +132,7 @@ export default function Account()
         <div className={styles.accountInfo}>
             <Avatar setPopupType={setPopupType} />
             <Username setPopupType={setPopupType} />
-            <DisplayName />
+            <DisplayName setPopupType={setPopupType} />
             <Password setPopupType={setPopupType} />
             <GoogleAccount />
 

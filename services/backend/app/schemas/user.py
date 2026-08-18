@@ -1,6 +1,6 @@
 from typing import Any
 
-from pydantic import BaseModel, EmailStr, Field, HttpUrl, model_validator
+from pydantic import BaseModel, EmailStr, Field, HttpUrl, field_validator, model_validator
 
 
 USERNAME_PATTERN = r"^[a-zA-Z0-9_.-]+$"
@@ -38,7 +38,8 @@ class UserUpdate(BaseModel):
     )
     display_name: str | None = Field(
         default=None,
-        max_length=100,
+        min_length=1,
+        max_length=50,
     )
     avatar_url: HttpUrl | None = Field(
         default=None,
@@ -56,6 +57,14 @@ class UserUpdate(BaseModel):
             raise ValueError("Username cannot be null")
 
         return data
+
+    @field_validator("display_name", mode="before")
+    @classmethod
+    def strip_display_name(cls, value: Any) -> Any:
+        if isinstance(value, str):
+            return value.strip()
+
+        return value
 
 
 class UserResponse(BaseModel):

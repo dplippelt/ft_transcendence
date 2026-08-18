@@ -18,6 +18,8 @@ export enum ErrorType
     usernameContainsInvalChars,
     usernameCannotBeTheSame,
     usernameRequired,
+    displayNameCannotBeEmpty,
+    displayNameTooLong,
 
     passwordsDontMatch,
     passwordCannotBeEmpty,
@@ -103,6 +105,11 @@ export function errorMsg(error: ErrorType): string
                 "Username must be different from " +
                 "Player 1's username"
             );
+        case ErrorType.displayNameCannotBeEmpty:
+            return "Display name cannot be empty.";
+        
+        case ErrorType.displayNameTooLong:
+            return "Display name cannot be longer than 50 characters.";
         case ErrorType.passwordsDontMatch:
             return "Passwords don't match!";
         case ErrorType.passwordCannotBeEmpty:
