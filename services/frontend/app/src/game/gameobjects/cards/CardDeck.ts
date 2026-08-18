@@ -136,6 +136,7 @@ export default class CardDeck {
     return normalizedWeights;
   }
 
+  // TODO: reconsider if reusing cards is really necessary
   dealCard() {
     const index = this.numDealedCards;
 
