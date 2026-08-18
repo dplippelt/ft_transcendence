@@ -255,6 +255,7 @@ export default class CombatLayoutManager {
     this.scene.tweens.add({
       targets: card,
       y: card.offset.y - 30,
+      angle: 0,
       duration: 50,
       ease: "Cubic.easeOut",
     });
@@ -270,6 +271,7 @@ export default class CombatLayoutManager {
     this.scene.tweens.add({
       targets: card,
       y: card.offset.y,
+      angle: card.offset.angle,
       duration: 200,
       ease: "Power1",
     });
@@ -281,6 +283,9 @@ export default class CombatLayoutManager {
       targets: card,
       x: slot.x,
       y: slot.y,
+      angle: 0,
+      displayWidth: card.width * 0.7,
+      displayHeight: card.height * 0.7,
       ease: "Cubic.easeOut",
       duration: 200,
     });
@@ -355,8 +360,10 @@ export default class CombatLayoutManager {
         x: targetX,
         y: targetY,
         angle: targetAngle,
-        scaleX: scale,
-        scaleY: scale,
+        // scaleX: scale,
+        // scaleY: scale,
+        displayWidth: card.width,
+        displayHeight: card.height,
         duration: 300,
         ease: "Power2",
       });
