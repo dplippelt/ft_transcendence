@@ -1,4 +1,5 @@
 import { Vector2, BoundingBox, random, shuffle, weightedRandom, type weight } from "./math";
+import { type TileSetMap, FloorType, WallType } from "./TileSetMap";
 
 export enum Direction {
   None = 0x0,
@@ -12,32 +13,15 @@ export enum Direction {
   DownRight = Down | Right,
 }
 
-export enum WallType {
-	Moss,
-	MoreMoss,
-	ThinA,
-	ThinB,
-	Thick,
+export enum RoomType {
+  Standard,
+  Entrance,
+  Exit,
 }
 
-export enum FloorType {
- 	Clean,
-	SmallCracksA,
-	SmallCracksB,
-	Cracked,
-	Damaged,
-	Broken,
-}
-
+export type RoomGraph = Map<Room, Set<Room>>;
 type CornerDirection = Direction.TopLeft | Direction.TopRight | Direction.DownLeft | Direction.DownRight;
 type WallDirection = Direction.Top | Direction.Right | Direction.Down | Direction.Left;
-
-interface TileMapping {
-  corners: Record<CornerDirection, number>;
-  innerCorners: Record<CornerDirection, number>;
-  walls: Record<WallDirection, Partial<Record<WallType, number>>>;
-  floor: Record<FloorType, weight>;
-}
 
 interface Door {
   position: Vector2;
@@ -48,7 +32,7 @@ interface RoomConfig {
   width: Range;
   height: Range;
   doorCount: Range;
-  tileMapping: TileMapping;
+  tileSetMap: TileSetMap;
 }
 
 interface Range {
@@ -56,8 +40,25 @@ interface Range {
   max: number;
 }
 
+export enum TileNodeType {
+  None,
+  EnterPoint,
+  SpawnPoint,
+  ExitPoint,
+}
+
+interface TileNode {
+  position: Vector2;
+  type: TileNodeType;
+}
+
 export interface Room {
   aabb: BoundingBox;
+  doors: Door[];
+  visited: boolean;
+  score: number;
+  type: RoomType;
+  tileNode: TileNode | undefined;
 }
 
 export interface MapData {
@@ -66,6 +67,7 @@ export interface MapData {
   rooms: Room[];
   width: number;
   height: number;
+  graph: RoomGraph;
 }
 
 export interface DungeonConfig {
@@ -104,6 +106,11 @@ function generateRooms(amount: number, roomConfig: RoomConfig): Room[] {
           random(roomConfig.height.min, roomConfig.height.max),
         ),
       ),
+      doors: [],
+      visited: false,
+      score: -1,
+      type: RoomType.Standard,
+      tileNode: undefined,
     });
   }
 
@@ -141,7 +148,7 @@ function tryPlaceRoom(roomToPlace: Room, currentRoom: Room, direction: Direction
   roomToPlace.aabb.place(Vector2.add(currentRoom.aabb.position, offset));
   console.assert(roomToPlace.aabb.isOverlap(currentRoom.aabb) === false, "roomToPlace is overlapping currentRoom");
 
-  return placedRooms.every(room => roomToPlace.aabb.isOverlap(room.aabb) === false);
+  return placedRooms.every((room) => roomToPlace.aabb.isOverlap(room.aabb) === false);
 }
 
 // Randomly place a doorway between two rooms
@@ -179,15 +186,18 @@ function placeDoorway(pivotRoom: Room, neighborRoom: Room, direction: Direction)
     default:
       throw new Error(`Invalid Direction value ${direction} for door placement`);
   }
+
+  pivotRoom.doors.push(door);
+  neighborRoom.doors.push(door);
   return door;
 }
 
 // Get the door corner tile based on whether the connecting wall tile is a corner or not
-function getDoorCornerTile(tile: number, wall: WallDirection, corner: CornerDirection, tileMapping: TileMapping): number {
-  if (Object.values(tileMapping.corners).includes(tile)) {
-    return getWallTile(wall, tileMapping.walls);
+function getDoorCornerTile(tile: number, wall: WallDirection, corner: CornerDirection, tileSetMap: TileSetMap): number {
+  if (Object.values(tileSetMap.corners).includes(tile)) {
+    return getWallTile(wall, tileSetMap.walls);
   }
-  return getCornerTile(corner, tileMapping.innerCorners);
+  return getCornerTile(corner, tileSetMap.innerCorners);
 }
 
 // Get the corner tile based on the corner direction
@@ -206,7 +216,7 @@ function getFloorTile(floor: Record<FloorType, weight>): number {
 }
 
 // Put the room tiles into the dungeon map
-function layoutPutRoom(map: number[][], room: Room, tileMapping: TileMapping): void {
+function layoutPutRoom(map: number[][], room: Room, tileSetMap: TileSetMap): void {
   const min = room.aabb.min.clone().floor();
   const max = room.aabb.max.clone().floor();
 
@@ -215,45 +225,49 @@ function layoutPutRoom(map: number[][], room: Room, tileMapping: TileMapping): v
       let direction = y === min.y ? Direction.Top : y === max.y - 1 ? Direction.Down : Direction.None;
       direction |= x === min.x ? Direction.Left : x === max.x - 1 ? Direction.Right : Direction.None;
 
-      if (direction === Direction.TopLeft ||
+      if (
+        direction === Direction.TopLeft ||
         direction === Direction.TopRight ||
         direction === Direction.DownLeft ||
-        direction === Direction.DownRight) {
-        map[y][x] = getCornerTile(direction, tileMapping.corners);
-      } else if (direction === Direction.Top ||
+        direction === Direction.DownRight
+      ) {
+        map[y][x] = getCornerTile(direction, tileSetMap.corners);
+      } else if (
+        direction === Direction.Top ||
         direction === Direction.Right ||
         direction === Direction.Down ||
-        direction === Direction.Left) {
-        map[y][x] = getWallTile(direction, tileMapping.walls);
+        direction === Direction.Left
+      ) {
+        map[y][x] = getWallTile(direction, tileSetMap.walls);
       } else {
-        map[y][x] = getFloorTile(tileMapping.floor);
+        map[y][x] = getFloorTile(tileSetMap.floor);
       }
     }
   }
 }
 
 // Put the door tiles into dungeon map
-function layoutPutDoor(map: number[][], door: Door, tileMapping: TileMapping): void {
+function layoutPutDoor(map: number[][], door: Door, tileSetMap: TileSetMap): void {
   const [x, y] = door.position.clone().floor().unpack();
-  map[y][x] = getFloorTile(tileMapping.floor);
+  map[y][x] = getFloorTile(tileSetMap.floor);
   if (door.direction === Direction.Top || door.direction === Direction.Down) {
-    map[y][x + 1] = getWallTile(Direction.Right, tileMapping.walls);
-    map[y][x - 1] = getWallTile(Direction.Left, tileMapping.walls);
-    map[y - 1][x - 1] = getDoorCornerTile(map[y - 1][x - 1], Direction.Left, Direction.TopRight, tileMapping);
-    map[y - 1][x + 1] = getDoorCornerTile(map[y - 1][x + 1], Direction.Right, Direction.TopLeft, tileMapping);
-    map[y + 1][x - 1] = getDoorCornerTile(map[y + 1][x - 1], Direction.Left, Direction.DownRight, tileMapping);
-    map[y + 1][x + 1] = getDoorCornerTile(map[y + 1][x + 1], Direction.Right, Direction.DownLeft, tileMapping);
-    map[y - 1][x] = getFloorTile(tileMapping.floor);
-    map[y + 1][x] = getFloorTile(tileMapping.floor);
+    map[y][x + 1] = getWallTile(Direction.Right, tileSetMap.walls);
+    map[y][x - 1] = getWallTile(Direction.Left, tileSetMap.walls);
+    map[y - 1][x - 1] = getDoorCornerTile(map[y - 1][x - 1], Direction.Left, Direction.TopRight, tileSetMap);
+    map[y - 1][x + 1] = getDoorCornerTile(map[y - 1][x + 1], Direction.Right, Direction.TopLeft, tileSetMap);
+    map[y + 1][x - 1] = getDoorCornerTile(map[y + 1][x - 1], Direction.Left, Direction.DownRight, tileSetMap);
+    map[y + 1][x + 1] = getDoorCornerTile(map[y + 1][x + 1], Direction.Right, Direction.DownLeft, tileSetMap);
+    map[y - 1][x] = getFloorTile(tileSetMap.floor);
+    map[y + 1][x] = getFloorTile(tileSetMap.floor);
   } else {
-    map[y - 1][x] = getWallTile(Direction.Top, tileMapping.walls);
-    map[y + 1][x] = getWallTile(Direction.Down, tileMapping.walls);
-    map[y - 1][x - 1] = getDoorCornerTile(map[y - 1][x - 1], Direction.Top, Direction.DownLeft, tileMapping);
-    map[y - 1][x + 1] = getDoorCornerTile(map[y - 1][x + 1], Direction.Top, Direction.DownRight, tileMapping);
-    map[y + 1][x - 1] = getDoorCornerTile(map[y + 1][x - 1], Direction.Down, Direction.TopLeft, tileMapping);
-    map[y + 1][x + 1] = getDoorCornerTile(map[y + 1][x + 1], Direction.Down, Direction.TopRight, tileMapping);
-    map[y][x + 1] = getFloorTile(tileMapping.floor);
-    map[y][x - 1] = getFloorTile(tileMapping.floor);
+    map[y - 1][x] = getWallTile(Direction.Top, tileSetMap.walls);
+    map[y + 1][x] = getWallTile(Direction.Down, tileSetMap.walls);
+    map[y - 1][x - 1] = getDoorCornerTile(map[y - 1][x - 1], Direction.Top, Direction.DownLeft, tileSetMap);
+    map[y - 1][x + 1] = getDoorCornerTile(map[y - 1][x + 1], Direction.Top, Direction.DownRight, tileSetMap);
+    map[y + 1][x - 1] = getDoorCornerTile(map[y + 1][x - 1], Direction.Down, Direction.TopLeft, tileSetMap);
+    map[y + 1][x + 1] = getDoorCornerTile(map[y + 1][x + 1], Direction.Down, Direction.TopRight, tileSetMap);
+    map[y][x + 1] = getFloorTile(tileSetMap.floor);
+    map[y][x - 1] = getFloorTile(tileSetMap.floor);
   }
 }
 
@@ -265,6 +279,11 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
   // Generated the rooms
   const roomConfig = config.emptyRoomConfig;
   const rooms: Room[] = generateRooms(random(config.roomCount.min, config.roomCount.max), roomConfig);
+  const graph: RoomGraph = new Map<Room, Set<Room>>();
+  for (const room of rooms) {
+    graph.set(room, new Set<Room>());
+  }
+
   const placedRooms: Room[] = [rooms.shift()!];
   const placedDoors: Door[] = [];
 
@@ -276,11 +295,16 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
     for (let j = 0; j < doorCount; ++j) {
       const direction: Direction = directions[j % directions.length];
       if (tryPlaceRoom(rooms[0], placedRooms[i], direction, placedRooms)) {
+        graph.get(placedRooms[i])!.add(rooms[0]);
+        graph.get(rooms[0])!.add(placedRooms[i]);
+
         placedDoors.push(placeDoorway(placedRooms[i], rooms[0], direction));
         placedRooms.push(rooms.shift()!);
       }
     }
   }
+
+  // TODO: Resolve unplaced rooms to ensure the minimum condition for room count
 
   // construct the layout
   const [mapOffset, mapSize]: [Vector2, Vector2] = mapBounds(placedRooms);
@@ -288,13 +312,19 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
 
   for (const room of placedRooms) {
     room.aabb.move(mapOffset).floor();
-    layoutPutRoom(map, room, config.emptyRoomConfig.tileMapping);
+    layoutPutRoom(map, room, config.emptyRoomConfig.tileSetMap);
   }
 
   for (const door of placedDoors) {
     door.position = Vector2.add(door.position, mapOffset).floor();
-    layoutPutDoor(map, door, config.emptyRoomConfig.tileMapping);
+    layoutPutDoor(map, door, config.emptyRoomConfig.tileSetMap);
   }
+
+  graph.forEach((value, key) => {
+    if (value.size === 0) {
+      graph.delete(key);
+    }
+  });
 
   return {
     map: map,
@@ -302,5 +332,6 @@ export function dungeonBuilder(config: DungeonConfig): MapData {
     rooms: placedRooms,
     width: mapSize.x,
     height: mapSize.y,
+    graph: graph,
   };
 }

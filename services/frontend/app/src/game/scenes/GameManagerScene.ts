@@ -1,6 +1,7 @@
 import Phaser, { Scene } from "phaser";
 import GameScene from "./GameScene";
 import CombatScene from "./CombatScene";
+import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
 
 export enum GameEvents {
@@ -9,7 +10,12 @@ export enum GameEvents {
   PlayerDefeated = "player-defeated",
   EnemyDefeated = "enemy-defeated",
   LevelComplete = "level-complete",
+  LevelExit = "level-exit",
   GameOver = "game-over",
+}
+
+export interface LevelExitEventData {
+  player: Player;
 }
 
 enum GameType {
@@ -24,17 +30,21 @@ export class GameManagerScene extends Scene {
   private _gameScene!: GameScene;
   private _combatScenes: CombatScene[];
   private _gameType: GameType;
+  private _exitedPlayers: Set<Player>;
+  private _levelCount: number = 5; // TODO: Hard-coded for now
 
   constructor() {
     super("game-manager");
 
     this._gameType = GameType.SinglePlayer;
     this._combatScenes = [];
+    this._exitedPlayers = new Set<Player>();
   }
 
   init() {
     GameManagerScene.EventsCenter.on(GameEvents.CombatInitiated, this.onCombatInitiated, this);
     GameManagerScene.EventsCenter.on(GameEvents.CombatOver, this.onCombatOver, this);
+    GameManagerScene.EventsCenter.on(GameEvents.LevelExit, this.onExitLevel, this);
 
     this.events.once(Phaser.Scenes.Events.DESTROY, () => {
       GameManagerScene.EventsCenter.off(GameEvents.CombatInitiated, this.onCombatInitiated, this);
@@ -64,7 +74,11 @@ export class GameManagerScene extends Scene {
   private onCombatOver(combatEventData: CombatEventData) {
     // TODO: player specific event, Win/Lose, progession
     if (!combatEventData.player.isAlive) {
-      combatEventData.player.destroy();
+      combatEventData.player.disableBody(true, true);
+      if (!this.anyPlayerAlive()) {
+        this.onGameOver();
+        return;
+      }
     }
 
     this.scene.moveDown(combatEventData.sceneInvoker);
@@ -72,5 +86,44 @@ export class GameManagerScene extends Scene {
     if (this._gameType === GameType.SinglePlayer) {
       this.scene.wake(this._gameScene);
     }
+
+    if (this.allEnemiesDefeated()) {
+      GameManagerScene.EventsCenter.emit(GameEvents.LevelComplete);
+    }
+  }
+
+  private onGameOver(): void {
+    // TODO: Transition to the game over screen (Victory/ Loss)
+    this._levelCount = 5;
+    console.error("Game Over!!!");
+  }
+
+  private onExitLevel(player: Player): void {
+    if (!this.anyPlayerAlive() || !this.allEnemiesDefeated()) {
+      return;
+    }
+    this._exitedPlayers.add(player);
+    player.disableBody(true, true);
+
+    if (this.allPlayersExited()) {
+      this._exitedPlayers.clear();
+      if (--this._levelCount) {
+        this._gameScene.nextLevel();
+      } else {
+        this.onGameOver();
+      }
+    }
+  }
+
+  private allPlayersExited(): boolean {
+    return this._exitedPlayers.size === this._gameScene.getAlivePlayerCount();
+  }
+
+  private allEnemiesDefeated(): boolean {
+    return this._gameScene.getEnemyCount() === 0;
+  }
+
+  private anyPlayerAlive() {
+    return this._gameScene.getAlivePlayerCount() > 0;
   }
 }

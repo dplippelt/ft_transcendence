@@ -1,7 +1,7 @@
 import Component from "../Component";
 import { GameObjects } from "phaser";
 import { type Room } from "../../map/procedural";
-import { Dungeon } from "../../gameobjects/Dungeon";
+import { Dungeon } from "../../gameobjects/dungeon/Dungeon";
 import { Vector2 } from "../../map/math";
 
 /// Debugger for the DungeonLocation class and

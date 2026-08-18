@@ -13,3 +13,9 @@ export const Assets: IAssetIndex = {
   [AssetsKey.Skeleton]: new URL("./assets/skeleton_spritesheet.png", import.meta.url).href,
   [AssetsKey.TileSet]: new URL("./assets/Tileset.png", import.meta.url).href
 };
+
+export enum DepthOrder {
+  background,
+  layer0,
+  playerAndEnemies
+}
