@@ -11,6 +11,11 @@ import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 import CombatLayoutManager from "./CombatLayoutManager";
 import CombatPlayer from "./CombatPlayer";
 
+export enum CombatAnimEvents {
+    ATTACK = "attack",
+    TAKEDAMAGE = "takeDamage",
+}
+
 const executeButtonConfig: ButtonConfig = {
   styleConfig: buttonStyleConfig,
   textConfig: buttonContentConfig,
@@ -50,8 +55,6 @@ export default class CombatManager {
   }
 
   update() {
-    this.layoutManager.align();
-
     // show a timer
     this.turnManager.displayTimer();
 
@@ -65,13 +68,13 @@ export default class CombatManager {
   initPlayerTurn() {
     this.cardManager.resetSelection();
     this.cardManager.clearHand();
+    // TODO: Fix this hard cord.
     this.cardManager.fillCardHand(5);
   }
 
   executeEnemyEffect() {
-    console.log("attack damage");
     this.enemy.attack(this.player);
-    this.playerTakeDamageEffect();
+    // this.playerTakeDamageEffect();
     if (this.player.isDead()) {
       this.endGame();
     }
