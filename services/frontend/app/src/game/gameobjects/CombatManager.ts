@@ -74,7 +74,6 @@ export default class CombatManager {
 
   executeEnemyEffect() {
     this.enemy.attack(this.player);
-    // this.playerTakeDamageEffect();
     if (this.player.isDead()) {
       this.endGame();
     }
@@ -84,7 +83,6 @@ export default class CombatManager {
     const cards = this.cardManager.cardSelection.getSelectedCards();
 
     if (!cards.length) {
-      console.log("no cards");
       return;
     }
 
@@ -94,8 +92,8 @@ export default class CombatManager {
       // dealPenalty(this.playerStatus);
       // TODO
     } else {
+	  this.events.emit(CombatAnimEvents.ATTACK, this.player, this.enemy);
       this.player.attack(this.enemy, result);
-      this.playerAttackEffect();
     }
     if (this.player.isDead()) {
       this.endGame();
@@ -116,27 +114,6 @@ export default class CombatManager {
   endGame() {
     this.turnManager.clock.removeAllEvents();
     this.events.emit(CombatEvents.ENDGAME);
-  }
-
-  playerAttackEffect() {
-    this.scene.tweens.add({
-      targets: this.enemy,
-      x: this.enemy.x + 100,
-      duration: 50,
-      yoyo: true,
-      repeat: 2,
-      onStart: () => {
-        this.enemy.setTint(0xff0000);
-      },
-      onComplete: () => {
-        this.enemy.clearTint();
-      },
-    });
-    // this.scene.cameras.main.shake(500);
-  }
-
-  playerTakeDamageEffect() {
-    // this.scene.cameras.main.shake(500);
   }
 
   evaluateSelectedCards(selectedCards: CardBase[]) {

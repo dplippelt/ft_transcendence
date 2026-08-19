@@ -2,7 +2,6 @@ import Phaser, { Scene } from "phaser";
 import type { PlayerStatus } from "../scenes/CombatScene";
 import { AssetsKey } from "../Assets";
 import type CombatEnemy from "./CombatEnemy";
-import { CombatAnimEvents } from "./CombatManager";
 
 export default class CombatPlayer extends Phaser.GameObjects.Sprite {
   readonly status: PlayerStatus;
@@ -14,12 +13,10 @@ export default class CombatPlayer extends Phaser.GameObjects.Sprite {
   }
 
   takeDamage(damage: number) {
-    this.emit(CombatAnimEvents.TAKEDAMAGE, this);
     this.status.hitPoint -= damage;
   }
 
   attack(enemy: CombatEnemy, points: number) {
-    this.emit(CombatAnimEvents.ATTACK, this);
     enemy.takeDamage(points);
   }
 
