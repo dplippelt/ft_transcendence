@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from fastapi import FastAPI
 
-from app.api.v1 import auth, cards, chat, dungeons, leaderboard, puzzles, scores, users, friends
+from app.api.v1 import auth, cards, chat, dungeons, leaderboard, lobbies, puzzles, scores, users, friends
 from app.db.database import Base, engine
 from app.core.settings import get_settings
 
@@ -43,6 +43,7 @@ app.include_router(scores.router,      prefix="/scores",       tags=["scores"])
 app.include_router(leaderboard.router, prefix="/leaderboard",  tags=["leaderboard"])
 app.include_router(friends.router,     prefix="/friends",     tags=["friends"])
 app.include_router(chat.router,        prefix="/chat",         tags=["chat"])
+app.include_router(lobbies.router,     prefix="/lobbies",      tags=["lobbies"])
 
 @app.get("/")
 def root():

@@ -5,3 +5,5 @@ from app.models.friendship import Friendship
 from app.models.chat_message import ChatMessage
 from app.models.dungeon import Dungeon
 from app.models.score import Score
+from app.models.lobby import Lobby
+from app.models.lobby_member import LobbyMember

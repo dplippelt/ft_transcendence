@@ -108,3 +108,8 @@ class User(Base):
         back_populates="user",
         passive_deletes=True,
     )
+
+    lobby_memberships: Mapped[list["LobbyMember"]] = relationship(
+        back_populates="user",
+        passive_deletes=True,
+    )
