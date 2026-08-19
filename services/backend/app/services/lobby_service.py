@@ -6,6 +6,7 @@ from app.core.exceptions import ErrorCode, conflict, forbidden, not_found
 from app.db.utils import commit_or_bad_request
 from app.models.lobby import Lobby
 from app.models.lobby_member import LobbyMember
+from app.models.lobby_message import LobbyMessage
 from app.models.user import User
 
 HOST = "host"
@@ -130,3 +131,51 @@ def leave_lobby(db: Session, user: User, lobby_id: int) -> None:
 
     db.delete(member)
     db.commit()
+
+
+def require_lobby_member(db: Session, lobby_id: int, user_id: int) -> LobbyMember:
+    if not db.query(Lobby.id).filter(Lobby.id == lobby_id).first():
+        raise not_found("Lobby not found.", code=ErrorCode.LOBBY_NOT_FOUND)
+
+    member = get_member(db, lobby_id, user_id)
+
+    if member is None:
+        raise forbidden("You are not a member of this lobby.", code=ErrorCode.NOT_LOBBY_MEMBER)
+
+    return member
+
+
+def get_other_member_ids(db: Session, lobby_id: int, user_id: int) -> list[int]:
+    return [
+        member.user_id
+        for member in db.query(LobbyMember).filter(LobbyMember.lobby_id == lobby_id).all()
+        if member.user_id != user_id
+    ]
+
+
+def get_lobby_messages(db: Session, user: User, lobby_id: int) -> list[LobbyMessage]:
+    require_lobby_member(db, lobby_id, user.id)
+
+    return (
+        db.query(LobbyMessage)
+        .options(joinedload(LobbyMessage.sender))
+        .filter(LobbyMessage.lobby_id == lobby_id)
+        .order_by(LobbyMessage.created_at, LobbyMessage.id)
+        .all()
+    )
+
+
+def send_lobby_message(db: Session, user: User, lobby_id: int, content: str) -> LobbyMessage:
+    require_lobby_member(db, lobby_id, user.id)
+
+    message = LobbyMessage(
+        lobby_id=lobby_id,
+        sender_id=user.id,
+        content=content,
+    )
+
+    db.add(message)
+    commit_or_bad_request(db, "Could not send message.")
+    db.refresh(message)
+
+    return message
