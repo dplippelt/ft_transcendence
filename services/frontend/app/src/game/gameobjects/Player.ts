@@ -3,7 +3,7 @@ import { AssetsKey } from "../Assets";
 import MovementComponent from "../components/MovementComponent";
 import KeyboardComponent, { type IKeySchema } from "../components/KeyboardComponent";
 import { DungeonLocation } from "../components/DungeonLocation";
-import { type SpawnLocation } from "./Dungeon";
+import { type SpawnLocation } from "./dungeon/Dungeon";
 
 export default class Player extends Physics.Arcade.Sprite {
   playerInput: KeyboardComponent;

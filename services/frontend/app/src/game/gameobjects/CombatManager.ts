@@ -1,27 +1,77 @@
-import type { Scene } from "phaser";
-import type CardManager from "./cards/CardManager";
+import Phaser, { type Scene } from "phaser";
+import CardManager, { cardManagerConfig } from "./cards/CardManager";
 import type CardBase from "./cards/CardBase";
 import { Operator, type CardValue } from "./cards/CardBase";
 import Button from "./utils/Button";
 import type { ButtonConfig } from "./utils/Button";
 import { buttonContentConfig, buttonStyleConfig } from "./utils/buttonConfig";
+import CombatTurnManager, { TurnEvents } from "./CombatTurnManager";
+import type { PlayerStatus } from "../scenes/CombatScene";
+import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 
 const executeButtonConfig: ButtonConfig = {
   styleConfig: buttonStyleConfig,
   textConfig: buttonContentConfig,
 };
 
+export enum CombatEvents {
+  ENDCOMBAT = "endCombat",
+  ENDGAME = "endGame",
+}
+
 export default class CombatManager {
   readonly scene: Scene;
+  readonly playerStatus: PlayerStatus;
+  readonly enemy: CombatEnemy;
   readonly cardManager: CardManager;
+  readonly turnManager: CombatTurnManager;
+  readonly events: Phaser.Events.EventEmitter;
   readonly executeButton: Button;
+  // show player's hit point and enemy's hitpoint -> to be rendered with React
+  readonly hitpointsText: Phaser.GameObjects.Text;
 
-  constructor(scene: Scene, cardManager: CardManager) {
+  constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
-    this.cardManager = cardManager;
+    this.playerStatus = playerStatus;
+    this.enemy = new CombatEnemy(scene, enemyData);
+    this.cardManager = new CardManager(scene, playerStatus, cardManagerConfig);
+    this.turnManager = new CombatTurnManager(this);
+    this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
+    this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.executeEnemyEffect, this);
+    this.events = new Phaser.Events.EventEmitter();
     this.executeButton = new Button(scene, "Execute", executeButtonConfig);
     this.executeButton.setPosition(100, 50);
     this.executeButton.on("pointerdown", this.execute, this);
+    this.initPlayerTurn();
+    // show player's hit point and enemy's hitpoint -> to be rendered with React
+    this.hitpointsText = this.scene.add.text(500, 100, "hitpoints");
+  }
+
+  update() {
+    this.cardManager.alignAllCards();
+
+    // show a timer
+    this.turnManager.displayTimer();
+
+    // show player's hit point and enemy's hitpoint -> to be rendered with React
+    const output: string[] = [];
+    output.push("player hitPoint = " + this.playerStatus.hitPoint + " player mana: " + this.playerStatus.mana);
+    output.push("enemy hitPoint = " + this.enemy.hitPoint);
+    this.hitpointsText.setText(output);
+  }
+
+  initPlayerTurn() {
+    this.cardManager.resetSelection();
+    this.cardManager.clearHand();
+    this.cardManager.fillCardHand(5);
+  }
+
+  executeEnemyEffect() {
+    console.log("attack damage");
+    this.enemy.attack(this.playerStatus);
+    if (this.playerStatus.hitPoint <= 0) {
+      this.endGame();
+    }
   }
 
   execute() {
@@ -33,14 +83,32 @@ export default class CombatManager {
     }
 
     const result = this.evaluateSelectedCards(cards);
-
     console.log(result);
-    this.cardManager.clearHandAndSelection();
-    this.cardManager.fillCardHand(5);
-    // Give the enemy damages or give the player penalty
-    // Generate new card hands
-    // Clear selected cards from slot
-    // Reset timer
+    if (result === null) {
+      // dealPenalty(this.playerStatus);
+      // TODO
+    } else {
+      this.enemy.takeDamage(result);
+    }
+    if (this.playerStatus.hitPoint <= 0) {
+      this.endGame();
+      return;
+    }
+    if (this.enemy.hitPoint <= 0) {
+      this.endCombat();
+      return;
+    }
+    this.turnManager.switchTurn();
+  }
+
+  endCombat() {
+    this.turnManager.clock.removeAllEvents();
+    this.events.emit(CombatEvents.ENDCOMBAT);
+  }
+
+  endGame() {
+    this.turnManager.clock.removeAllEvents();
+    this.events.emit(CombatEvents.ENDGAME);
   }
 
   evaluateSelectedCards(selectedCards: CardBase[]) {

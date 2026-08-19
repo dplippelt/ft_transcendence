@@ -109,7 +109,10 @@ export default class CardSelection {
     const slots = this.slots.getAll() as CardSlot[];
 
     for (const slot of slots) {
-        slot.unsetCard();
+        const card = slot.getCard();
+        if (card) {
+            card.emit("pointerdown");
+        }
     }
   }
 

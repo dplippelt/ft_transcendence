@@ -86,7 +86,7 @@ export class Vector2 {
 
   mulXY(x: number, y: number): Vector2 {
     this.x *= x;
-    this.y *= y
+    this.y *= y;
 
     return this;
   }
@@ -145,12 +145,7 @@ export class BoundingBox {
   }
 
   isPointWithin(point: Vector2) {
-    return !(
-      point.x < this.min.x ||
-      point.x > this.max.x ||
-      point.y < this.min.y ||
-      point.y > this.max.y
-    );
+    return !(point.x < this.min.x || point.x > this.max.x || point.y < this.min.y || point.y > this.max.y);
   }
 
   place(position: Vector2): BoundingBox {
@@ -177,6 +172,23 @@ export class BoundingBox {
     this.halfSize = this.size.clone().scale(0.5);
 
     return this;
+  }
+
+  shrink(): BoundingBox {
+    if (this.size.x < 2 || this.size.y < 2) {
+      throw new Error("Bounding box size is too small to shrink");
+    }
+
+    this.min.addXY(1, 1);
+    this.max.subXY(1, 1);
+    this.size.subXY(2, 2);
+    this.halfSize.subXY(1, 1);
+
+    return this;
+  }
+
+  clone(): BoundingBox {
+    return new BoundingBox(this.position.clone().sub(this.halfSize), this.size);
   }
 }
 
