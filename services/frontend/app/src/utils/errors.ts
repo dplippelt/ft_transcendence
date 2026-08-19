@@ -288,6 +288,10 @@ export function mapAuthApiError(error: unknown): ErrorType
                     return ErrorType.passwordTooShort;
                 case "username":
                     return ErrorType.badUsernameLength;
+                case "display_name":
+                    if (validationError.type === "string_too_long")
+                        return ErrorType.displayNameTooLong;
+                    return ErrorType.displayNameCannotBeEmpty;
             }
         }
     }
