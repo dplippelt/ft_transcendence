@@ -1,7 +1,7 @@
 import {createContext, useContext, useEffect, useCallback, useState,} from "react";
 import type { ReactNode } from "react";
 
-import {getCurrentUser, linkGoogleAccount, loginUser, loginWithGoogleCredentials, registerUser, updateUser, updatePassword as updatePasswordRequest} from "../api/authApi";
+import {getCurrentUser, linkGoogleAccount, unlinkGoogleAccount, loginUser, loginWithGoogleCredentials, registerUser, updateUser, updatePassword as updatePasswordRequest} from "../api/authApi";
 
 import type { AuthUser, LoginRequest, RegisterRequest, UpdateUserRequest, PasswordUpdateRequest} from "../api/authApi";
 import { ApiError } from "../api/http";
@@ -30,6 +30,7 @@ interface IAuthContext
     updateProfile: (data: UpdateUserRequest) => Promise<void>;
     updatePassword: (data: PasswordUpdateRequest) => Promise<void>;
     linkGoogle: (credential: string) => Promise<void>;
+    unlinkGoogle: () => Promise<void>;
     logout: () => void;
 }
 
@@ -150,6 +151,16 @@ export default function AuthProvider( { children } : {children: ReactNode} )
         setUser(updatedUser);
     }, [accessToken]);
 
+    const unlinkGoogle = useCallback(async () =>
+    {
+        if (!accessToken)
+            throw new Error("No authenticated session");
+        const updatedUser = await unlinkGoogleAccount(
+            accessToken,
+        );
+        setUser(updatedUser);
+    }, [accessToken]);
+
     const refreshUser = useCallback(async () =>
         {
             if (!accessToken)
@@ -191,6 +202,7 @@ export default function AuthProvider( { children } : {children: ReactNode} )
 				register,
                 loginWithGoogle,
                 linkGoogle,
+                unlinkGoogle,
 				logout,
                 updateProfile,
                 updatePassword,

@@ -247,7 +247,6 @@ def get_google_account_by_email(db: Session, email: str,) -> AuthAccount | None:
         .first()
     )
 
-
 def raise_google_email_conflict_if_present(db: Session, email: str,) -> None:
     google_account = get_google_account_by_email(db, email,)
 
@@ -382,6 +381,35 @@ def set_or_change_password(db: Session, user: User, password_data: PasswordUpdat
             code=ErrorCode.PASSWORD_UPDATE_FAILED,
         )
 
+
+def unlink_google_from_user(db: Session, user: User) -> None:
+    google_account = get_google_account_for_user(db, user.id,)
+
+    if not google_account:
+        raise bad_request(
+            "No Google account is linked to this user",
+            code=ErrorCode.GOOGLE_NOT_LINKED_TO_UNLINK,
+        )
+
+    password_account = get_password_account_for_user(db, user.id,)
+
+    if not password_account or not password_account.password_hash:
+        raise conflict(
+            "Set a password before unlinking your Google",
+            code=ErrorCode.PASSWORD_REQUIRED_TO_UNLINK_GOOGLE,
+        )
+
+    db.delete(google_account)
+
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise bad_request(
+            "Google account could not be unlinked",
+            code=ErrorCode.GOOGLE_UNLINK_FAILED,
+        )
+
 @router.post("/register", response_model=UserResponse)
 def register_user(user_data: UserRegister, db: DbSession):
     email = normalize_email(user_data.email)
@@ -457,7 +485,10 @@ def google_login(user_data: GoogleLogin, db: DbSession):
 
         return create_token_for_user(user)
 
-    raise_google_email_conflict_if_present(db, identity.email,)
+    raise_google_email_conflict_if_present(
+        db,
+        identity.email,
+    )
 
     user = User(
         username=None,
@@ -476,10 +507,11 @@ def google_login(user_data: GoogleLogin, db: DbSession):
     except IntegrityError:
         db.rollback()
 
-        existing_google_account = (get_google_account_by_sub(db, identity.sub,))
+        existing_google_account = get_google_account_by_sub(db, identity.sub,)
 
         if existing_google_account:
             user = get_active_user_from_auth_account(existing_google_account,)
+
             return create_token_for_user(user)
 
         raise_google_email_conflict_if_present(db, identity.email,)
@@ -502,6 +534,7 @@ def link_google_account(user_data: GoogleLogin,db: DbSession, current_user: Curr
         return current_user
 
     google_auth_account = create_google_auth_account(current_user, identity,)
+    db.add(google_auth_account)
     apply_google_profile_defaults(current_user, identity,)
 
     try:
@@ -521,6 +554,13 @@ def link_google_account(user_data: GoogleLogin,db: DbSession, current_user: Curr
 
     return current_user
 
+
+@router.delete("/google/link", response_model=UserResponse,)
+def unlink_google_account(db: DbSession, current_user: CurrentUser,):
+    unlink_google_from_user(db, current_user,)
+
+    db.refresh(current_user)
+    return current_user
 
 @router.put("/password", response_model=UserResponse,)
 def update_password(password_data: PasswordUpdate, db: DbSession, current_user: CurrentUser, ):

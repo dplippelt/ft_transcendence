@@ -34,11 +34,14 @@ export enum ErrorType
     googleLoginFailed,
     googleLoginUnavailable,
     googleAccountNotLinked,
+    googleNotLinkedToUnlink,
     googleAccountAlreadyLinked,
     googleProviderAlreadyLinked,
     googleLinkFailed,
     googleRegistrationFailed,
     googleEmailConflict,
+    googleUnlinkRequiresPassword,
+    googleUnlinkFailed,
 
     avatarBadFileType,
 
@@ -133,6 +136,8 @@ export function errorMsg(error: ErrorType): string
                 "Sign in with email and password, then link " +
                 "Google from your profile."
             );
+        case ErrorType.googleNotLinkedToUnlink:
+            return "Google is not linked to this account.";
         case ErrorType.googleAccountAlreadyLinked:
             return (
                 "This Google account is already linked " +
@@ -152,6 +157,10 @@ export function errorMsg(error: ErrorType): string
                 "A Google account with this email is already " +
                 "registered under a different Google identity."
             );
+        case ErrorType.googleUnlinkRequiresPassword:
+            return "Password is required to unlink Google account.";
+        case ErrorType.googleUnlinkFailed:
+            return "Failed to unlink Google account.";
         case ErrorType.avatarBadFileType:
             return "Avatar must be JPEG or PNG!";
         case ErrorType.cannotAddSelf:
@@ -241,6 +250,8 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.googleLoginFailed;
         case "GOOGLE_ACCOUNT_NOT_LINKED":
             return ErrorType.googleAccountNotLinked;
+        case "GOOGLE_NOT_LINKED_TO_UNLINK":
+            return ErrorType.googleNotLinkedToUnlink;
         case "GOOGLE_ACCOUNT_ALREADY_LINKED":
             return ErrorType.googleAccountAlreadyLinked;
         case "GOOGLE_PROVIDER_ALREADY_LINKED":
@@ -251,6 +262,11 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.googleRegistrationFailed;
         case "GOOGLE_EMAIL_CONFLICT":
             return ErrorType.googleEmailConflict;
+        case "PASSWORD_REQUIRED_TO_UNLINK_GOOGLE":
+            return ErrorType.googleUnlinkRequiresPassword;
+        
+        case "GOOGLE_UNLINK_FAILED":
+            return ErrorType.googleUnlinkFailed;
         case "PASSWORD_REQUIRED":
             return ErrorType.currentPasswordRequired;
         case "INVALID_CURRENT_PASSWORD":
