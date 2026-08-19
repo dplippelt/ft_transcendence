@@ -96,3 +96,10 @@ def deactivate_user(db: Session, user: User) -> None:
             )
 
     commit_or_bad_request(db, "Account could not be deactivated",)
+
+def update_user_avatar(db: Session, user: User, avatar_url: str) -> User:
+    user.avatar_url = avatar_url
+
+    commit_or_bad_request(db, "Avatar could not be updated",)
+
+    return user

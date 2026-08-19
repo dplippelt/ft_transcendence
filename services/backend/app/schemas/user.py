@@ -40,10 +40,6 @@ class UserUpdate(BaseModel):
         default=None,
         max_length=100,
     )
-    avatar_url: HttpUrl | None = Field(
-        default=None,
-        max_length=500,
-    )
 
     @model_validator(mode="before")
     @classmethod
