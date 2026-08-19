@@ -7,7 +7,7 @@ import CardBase from "./cards/CardBase";
 import { CardEvents } from "./cards/CardBase";
 import CardSlot from "./cards/CardSlot";
 import { AssetsKey } from "../Assets";
-import { CombatAnimEvents } from "./CombatManager";
+import CombatManager, { CombatAnimEvents } from "./CombatManager";
 import type CombatLayoutManager from "./CombatLayoutManager";
 import { LayoutData } from "./CombatLayoutManager";
 
@@ -99,9 +99,42 @@ const enemyAnimationFram: Record<EnemyAnimation, SpriteSheetFrame> = {
   },
 };
 
+interface BattleAnimTween {
+  delay: number;
+  duration: number;
+  diffX: number;
+  yoyo: boolean;
+  repeat: number;
+}
+
+const attackAnimation: Record<string, BattleAnimTween> = {
+  damageEnemy: {
+    delay: 300,
+    duration: 50,
+    diffX: 50,
+    yoyo: true,
+    repeat: 2,
+  },
+  enemyAttack: {
+    delay: 800,
+    duration: 50,
+    diffX: 50,
+    yoyo: true,
+    repeat: 0,
+  },
+  damagePlayer: {
+    delay: 900,
+    duration: 50,
+    diffX: 50,
+    yoyo: true,
+    repeat: 0,
+  },
+};
+
 export default class CombatAnimation {
   private readonly combatLayoutManager: CombatLayoutManager;
   private readonly scene: Scene;
+  private readonly combatManager: CombatManager;
   private readonly cardManager: CardManager;
   private readonly player: CombatPlayer;
   private readonly enemy: CombatEnemy;
@@ -109,6 +142,8 @@ export default class CombatAnimation {
 
   constructor(combatLayoutManager: CombatLayoutManager) {
     this.combatLayoutManager = combatLayoutManager;
+    this.combatManager = this.combatLayoutManager.combatManger;
+    this.combatManager.events.on(CombatAnimEvents.ATTACK, this.combatAttack, this);
     this.scene = this.combatLayoutManager.scene;
     this.cardManager = this.combatLayoutManager.cardManager;
     this.player = this.combatLayoutManager.player;
@@ -175,16 +210,16 @@ export default class CombatAnimation {
   }
 
   unselectAnim(card: CardBase, slot: CardSlot) {
-	this.scene.tweens.add({
-		targets: card,
-		x: card.getData(LayoutData.X),
-		y: card.getData(LayoutData.Y),
-		angle: card.getData(LayoutData.ANGLE),
-		displayWidth: card.width,
-		displayHeight: card.height,
-		ease: "Cubic.easeOut",
-		duration: 300,
-	})
+    this.scene.tweens.add({
+      targets: card,
+      x: card.getData(LayoutData.X),
+      y: card.getData(LayoutData.Y),
+      angle: card.getData(LayoutData.ANGLE),
+      displayWidth: card.width,
+      displayHeight: card.height,
+      ease: "Cubic.easeOut",
+      duration: 300,
+    });
   }
 
   registerPlayerAnim() {
@@ -202,8 +237,6 @@ export default class CombatAnimation {
         repeat: playerAnimationFrames[animKey].repeat,
       });
     }
-    this.player.on(CombatAnimEvents.ATTACK, this.attack, this);
-    this.player.on(CombatAnimEvents.TAKEDAMAGE, this.takeDamage, this);
     this.player.play(PlayerAnimation.IDLE);
   }
 
@@ -217,18 +250,46 @@ export default class CombatAnimation {
         repeat: enemyAnimationFram[animKey].repeat,
       });
     }
-    this.enemy.on(CombatAnimEvents.ATTACK, this.attack, this);
-    this.enemy.on(CombatAnimEvents.TAKEDAMAGE, this.takeDamage, this);
     this.enemy.play(EnemyAnimation.WALK);
   }
 
-  attack(combatant: CombatPlayer | CombatEnemy) {
-    if (combatant instanceof CombatPlayer) {
-      combatant.play(PlayerAnimation.ATTACK_B);
-      combatant.playAfterRepeat(PlayerAnimation.IDLE);
-    } else {
-    }
+  combatAttack(player: CombatPlayer, enemy: CombatEnemy) {
+    player.play(PlayerAnimation.ATTACK_B);
+    this.scene.tweens.add({
+      targets: enemy,
+      delay: 300,
+      x: enemy.x + 50,
+      duration: 50,
+      yoyo: true,
+      repeat: 2,
+      onStart: () => {
+        enemy.setTint(0xff0000);
+      },
+      onComplete: () => {
+        enemy.clearTint();
+      },
+    });
+    this.scene.tweens.add({
+      targets: enemy,
+      delay: 800,
+      x: enemy.x - 50,
+      duration: 50,
+      yoyo: true,
+    });
+    this.scene.tweens.add({
+      targets: player,
+      delay: 900,
+      duration: 50,
+      x: player.x - 50,
+      yoyo: true,
+      onStart: () => {
+        player.setTint(0xff0000);
+        this.scene.cameras.main.shake(500, 0.01);
+        player.playAfterRepeat(PlayerAnimation.IDLE);
+      },
+      onComplete: () => {
+        player.clearTint();
+      },
+    });
   }
-
-  takeDamage() {}
 }
