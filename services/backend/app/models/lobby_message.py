@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
@@ -8,6 +8,12 @@ from app.db.database import Base
 
 class LobbyMessage(Base):
     __tablename__ = "lobby_messages"
+    __table_args__ = (
+        # Covers get_lobby_messages' filter+sort (lobby_id, then order by
+        # created_at); the leading column also serves plain lobby_id
+        # lookups, so no separate single-column index is needed for it.
+        Index("ix_lobby_messages_lobby_id_created_at", "lobby_id", "created_at"),
+    )
 
     id: Mapped[int] = mapped_column(
         Integer,
@@ -18,7 +24,6 @@ class LobbyMessage(Base):
     lobby_id: Mapped[int] = mapped_column(
         ForeignKey("lobbies.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
 
     sender_id: Mapped[int] = mapped_column(
@@ -36,7 +41,6 @@ class LobbyMessage(Base):
         DateTime(timezone=True),
         server_default=func.now(),
         nullable=False,
-        index=True,
     )
 
     lobby: Mapped["Lobby"] = relationship(

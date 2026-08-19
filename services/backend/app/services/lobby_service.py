@@ -12,6 +12,7 @@ from app.models.user import User
 HOST = "host"
 GUEST = "guest"
 MAX_MEMBERS = 2
+MAX_MESSAGE_HISTORY = 200
 
 
 def _lobby_query(db: Session):
@@ -100,11 +101,17 @@ def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby:
     return get_lobby_by_id(db, lobby_id)
 
 
-def close_lobby(db: Session, user: User, lobby_id: int) -> None:
+def get_lobby_or_404(db: Session, lobby_id: int) -> Lobby:
     lobby = db.query(Lobby).filter(Lobby.id == lobby_id).first()
 
     if lobby is None:
         raise not_found("Lobby not found.", code=ErrorCode.LOBBY_NOT_FOUND)
+
+    return lobby
+
+
+def close_lobby(db: Session, user: User, lobby_id: int) -> None:
+    lobby = get_lobby_or_404(db, lobby_id)
 
     member = get_member(db, lobby_id, user.id)
 
@@ -119,7 +126,7 @@ def leave_lobby(db: Session, user: User, lobby_id: int) -> None:
     member = get_member(db, lobby_id, user.id)
 
     if member is None:
-        raise not_found("You are not a member of this lobby.", code=ErrorCode.LOBBY_NOT_FOUND)
+        raise forbidden("You are not a member of this lobby.", code=ErrorCode.NOT_LOBBY_MEMBER)
 
     # The host leaving ends the lobby for everyone rather than leaving it
     # ownerless; guests are expected to use this path, hosts "close" instead,
@@ -134,8 +141,7 @@ def leave_lobby(db: Session, user: User, lobby_id: int) -> None:
 
 
 def require_lobby_member(db: Session, lobby_id: int, user_id: int) -> LobbyMember:
-    if not db.query(Lobby.id).filter(Lobby.id == lobby_id).first():
-        raise not_found("Lobby not found.", code=ErrorCode.LOBBY_NOT_FOUND)
+    get_lobby_or_404(db, lobby_id)
 
     member = get_member(db, lobby_id, user_id)
 
@@ -160,9 +166,10 @@ def get_lobby_messages(db: Session, user: User, lobby_id: int) -> list[LobbyMess
         db.query(LobbyMessage)
         .options(joinedload(LobbyMessage.sender))
         .filter(LobbyMessage.lobby_id == lobby_id)
-        .order_by(LobbyMessage.created_at, LobbyMessage.id)
+        .order_by(LobbyMessage.created_at.desc(), LobbyMessage.id.desc())
+        .limit(MAX_MESSAGE_HISTORY)
         .all()
-    )
+    )[::-1]
 
 
 def send_lobby_message(db: Session, user: User, lobby_id: int, content: str) -> LobbyMessage:
@@ -170,12 +177,27 @@ def send_lobby_message(db: Session, user: User, lobby_id: int, content: str) -> 
 
     message = LobbyMessage(
         lobby_id=lobby_id,
-        sender_id=user.id,
+        # Set via the relationship (not sender_id=user.id) so message.sender
+        # is already populated from the User we have in memory, instead of
+        # a lazy-loaded query when the response/notification serialize it.
+        sender=user,
         content=content,
     )
 
     db.add(message)
-    commit_or_bad_request(db, "Could not send message.")
+
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+
+        # Most likely cause: the lobby was closed between the membership
+        # check above and this commit, so the FK to lobby_id no longer
+        # resolves -- report that instead of a generic failure.
+        get_lobby_or_404(db, lobby_id)
+
+        raise conflict("Could not send message.", code=ErrorCode.LOBBY_NOT_FOUND)
+
     db.refresh(message)
 
     return message

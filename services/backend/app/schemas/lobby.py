@@ -30,6 +30,14 @@ class LobbyMessageCreate(BaseModel):
         max_length=2000,
     )
 
+    @model_validator(mode="before")
+    @classmethod
+    def strip_content(cls, data: Any) -> Any:
+        if isinstance(data, dict) and isinstance(data.get("content"), str):
+            data["content"] = data["content"].strip()
+
+        return data
+
 
 class LobbyMessageResponse(BaseModel):
     id: int

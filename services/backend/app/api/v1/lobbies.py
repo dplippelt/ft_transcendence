@@ -1,6 +1,5 @@
 import logging
 
-import anyio.from_thread
 from fastapi import APIRouter, status
 from sqlalchemy.orm import Session
 
@@ -27,16 +26,22 @@ router = APIRouter()
 
 def notify_other_members(db: Session, lobby_id: int, sender_id: int, message: object) -> None:
     # Best-effort: the message is already persisted, so a delivery failure
-    # here must not turn a successful send into a 500. Reuses the same
-    # per-user connection registry chat.py's websocket populates -- lobby
-    # members don't need a second websocket connection for this.
-    payload = LobbyMessageResponse.model_validate(message).model_dump(mode="json")
+    # here must not turn a successful send into a 500 -- covers building the
+    # payload and looking up recipients too, not just the socket send.
+    # Reuses the same per-user connection registry chat.py's websocket
+    # populates -- lobby members don't need a second websocket connection.
+    try:
+        payload = {
+            "type": "lobby_message",
+            **LobbyMessageResponse.model_validate(message).model_dump(mode="json"),
+        }
+        member_ids = get_other_member_ids(db, lobby_id, sender_id)
+    except Exception:
+        logger.warning("Failed to prepare lobby message notification for lobby %s", lobby_id, exc_info=True)
+        return
 
-    for member_id in get_other_member_ids(db, lobby_id, sender_id):
-        try:
-            anyio.from_thread.run(connection_manager.send_to_user, member_id, payload)
-        except Exception:
-            logger.warning("Failed to notify user %s of new lobby message", member_id, exc_info=True)
+    for member_id in member_ids:
+        connection_manager.notify(member_id, payload)
 
 
 @router.get("", response_model=list[LobbyResponse])
