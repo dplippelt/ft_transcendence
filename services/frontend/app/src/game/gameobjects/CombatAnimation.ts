@@ -9,6 +9,7 @@ import CardSlot from "./cards/CardSlot";
 import { AssetsKey } from "../Assets";
 import { CombatAnimEvents } from "./CombatManager";
 import type CombatLayoutManager from "./CombatLayoutManager";
+import { LayoutData } from "./CombatLayoutManager";
 
 enum PlayerAnimation {
   IDLE = "idle",
@@ -137,7 +138,7 @@ export default class CombatAnimation {
     }
     this.scene.tweens.add({
       targets: card,
-      y: card.offset.y - 30,
+      y: card.getData(LayoutData.Y) - 30,
       angle: 0,
       duration: 50,
       ease: "Cubic.easeOut",
@@ -152,8 +153,8 @@ export default class CombatAnimation {
     // Needs to fix hard cord.
     this.scene.tweens.add({
       targets: card,
-      y: card.offset.y,
-      angle: card.offset.angle,
+      y: card.getData(LayoutData.Y),
+      angle: card.getData(LayoutData.ANGLE),
       duration: 200,
       ease: "Power1",
     });
@@ -174,7 +175,16 @@ export default class CombatAnimation {
   }
 
   unselectAnim(card: CardBase, slot: CardSlot) {
-    this.combatLayoutManager.align();
+	this.scene.tweens.add({
+		targets: card,
+		x: card.getData(LayoutData.X),
+		y: card.getData(LayoutData.Y),
+		angle: card.getData(LayoutData.ANGLE),
+		displayWidth: card.width,
+		displayHeight: card.height,
+		ease: "Cubic.easeOut",
+		duration: 300,
+	})
   }
 
   registerPlayerAnim() {

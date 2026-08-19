@@ -21,12 +21,6 @@ export enum CardEvents {
   SELECTION = "selection",
 }
 
-interface OffsetPosition {
-    x: number,
-    y: number,
-    angle: number,
-}
-
 const cardSize = {
     width: 64,
     height: 96
@@ -37,7 +31,6 @@ export default class CardBase extends Phaser.GameObjects.Container {
   private isFocused!: boolean;
   private isSelected!: boolean;
   private value: CardValue | undefined;
-  readonly offset: OffsetPosition;
 
   constructor(scene: Scene, value?: CardValue) {
     super(scene);
@@ -55,7 +48,6 @@ export default class CardBase extends Phaser.GameObjects.Container {
     this.isFocused = false;
     this.isSelected = false;
     this.value = value;
-    this.offset = { x: 0, y: 0, angle: 0 };
 
     this.on("pointerover", this.focusOn, this);
     this.on("pointerout", this.focusOff, this);
@@ -120,11 +112,6 @@ export default class CardBase extends Phaser.GameObjects.Container {
 
   getValue() {
     return this.value;
-  }
-
-  setOffset(x: number, y: number) {
-    this.offset.x = x;
-    this.offset.y = y;
   }
 
   isValueNumber() {

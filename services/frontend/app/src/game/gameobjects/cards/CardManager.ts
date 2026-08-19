@@ -81,8 +81,8 @@ export default class CardManager {
 
     const card = this.cardDeck.dealCard();
     card.on(CardEvents.SELECTION, this.select, this);
-    this.cardHand.addCard(card);
 
+	this.cardHand.addCard(card);
     this.events.emit(CardActionEvents.DRAW, card);
     return true;
   }

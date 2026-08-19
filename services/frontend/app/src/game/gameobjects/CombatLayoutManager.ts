@@ -5,6 +5,7 @@ import type CardManager from "./cards/CardManager";
 import CombatPlayer from "./CombatPlayer";
 import type CombatEnemy from "./CombatEnemy";
 import CombatAnimation from "./CombatAnimation";
+import { CardActionEvents } from "./cards/CardManager";
 
 interface CombatLayoutBase {
   width: number;
@@ -96,6 +97,12 @@ const layoutFromCenter: LayoutFromCenter = {
   },
 };
 
+export enum LayoutData {
+  X = "offsetX",
+  Y = "offsetY",
+  ANGLE = "offsetAngle",
+}
+
 export default class CombatLayoutManager {
   readonly combatManger: CombatManager;
   readonly scene: Scene;
@@ -152,19 +159,21 @@ export default class CombatLayoutManager {
   alignDeck(centerX: number, centerY: number, scale: number) {
     const deck = this.cardManager.cardDeck.getDeck();
     const diff = this.layoutFromCenter.cards.deck;
+    const targetX = centerX + diff.x * scale;
+    const targetY = centerY + diff.y * scale;
 
     deck.forEach((card: CardBase) => {
-      card.setPosition(centerX + diff.x * scale, centerY + diff.y * scale);
-      card.setOffset(card.x, card.y);
+      card.setPosition(targetX, targetY);
+      card.setData({ [LayoutData.X]: targetX, [LayoutData.Y]: targetY });
     });
 
     const cover = this.cardManager.cardDeck.getCover();
-    cover.setPosition(centerX + diff.x * scale, centerY + diff.y * scale);
-    cover.setOffset(cover.x, cover.y);
+    cover.setPosition(targetX, targetY);
+    cover.setData({ [LayoutData.X]: targetX, [LayoutData.Y]: targetY });
   }
 
   alignCardHand(centerX: number, centerY: number, scale: number) {
-    const handCards = this.cardManager.cardHand.getHandCards().getAll("isSelected", false) as CardBase[];
+    const handCards = this.cardManager.cardHand.getHandCards().getAll() as CardBase[];
     const totalCards = handCards.length;
     if (!totalCards) {
       return;
@@ -182,14 +191,15 @@ export default class CombatLayoutManager {
       const curveY = Math.pow(offsetFromCenter, 2) * 30 * scale;
       const targetY = ground + curveY;
       const targetAngle = offsetFromCenter * 10;
-      card.offset.x = targetX;
-      card.offset.y = targetY;
-      card.offset.angle = targetAngle;
+      card.setData({ [LayoutData.X]: targetX, [LayoutData.Y]: targetY, [LayoutData.ANGLE]: targetAngle });
+      if (card.getIsSelected()) {
+        return;
+      }
       this.scene.tweens.add({
         targets: card,
-        x: targetX,
-        y: targetY,
-        angle: targetAngle,
+        x: card.getData(LayoutData.X),
+        y: card.getData(LayoutData.Y),
+        angle: card.getData(LayoutData.ANGLE),
         // scaleX: scale,
         // scaleY: scale,
         displayWidth: card.width,
@@ -203,28 +213,35 @@ export default class CombatLayoutManager {
   alignSelectionSlots(centerX: number, centerY: number, scale: number) {
     const selectionSlots = this.cardManager.cardSelection.getSelectionSlots();
     const diff = this.layoutFromCenter.cards.selection;
+    const targetX = centerX + diff.startX * scale;
+    const targetY = centerY + diff.startY * scale;
     const gridOptions: Phaser.Types.Actions.GridAlignConfig = {
       width: -1,
       cellWidth: 50,
-      x: centerX + diff.startX * scale,
-      y: centerY + diff.startY * scale,
+      x: targetX,
+      y: targetY,
     };
 
     Actions.GridAlign(selectionSlots, gridOptions);
     for (const slot of selectionSlots) {
-      slot.setCardPosition();
+      const card = slot.getCard();
+      if (card !== null) {
+        this.cardManager.events.emit(CardActionEvents.SELECT, card, slot);
+      }
     }
   }
 
   alignPlayer(centerX: number, centerY: number, scale: number) {
     const diff = this.layoutFromCenter.player;
-
-    this.player.setPosition(centerX + diff.x * scale, centerY + diff.y * scale);
+    const targetX = centerX + diff.x * scale;
+    const targetY = centerY + diff.y * scale;
+    this.player.setPosition(targetX, targetY);
   }
 
   alignEnemy(centerX: number, centerY: number, scale: number) {
     const diff = this.layoutFromCenter.enemy;
-
-    this.enemy.setPosition(centerX + diff.x * scale, centerY + diff.y * scale);
+    const targetX = centerX + diff.x * scale;
+    const targetY = centerY + diff.y * scale;
+    this.enemy.setPosition(targetX, targetY);
   }
 }
