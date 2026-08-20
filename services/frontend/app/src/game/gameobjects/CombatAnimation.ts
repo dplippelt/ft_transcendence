@@ -9,7 +9,7 @@ import CardSlot from "./cards/CardSlot";
 import { AssetsKey } from "../Assets";
 import CombatManager, { CombatEvents } from "./CombatManager";
 import type CombatLayoutManager from "./CombatLayoutManager";
-import { LayoutData } from "./CombatLayoutManager";
+import { LayoutData, LayoutEvents } from "./CombatLayoutManager";
 import type CombatTurnManager from "./CombatTurnManager";
 
 enum PlayerAnimation {
@@ -147,6 +147,7 @@ export default class CombatAnimation {
     this.enemy = this.combatLayoutManager.enemy;
     this.onCardAnimation();
     this.onCombatAnimation();
+    this.onLayoutAnimation();
     this.registerPlayerAnimation();
     this.player.play(PlayerAnimation.IDLE);
     this.registerEnemyAnimation();
@@ -154,22 +155,51 @@ export default class CombatAnimation {
   }
 
   onCardAnimation() {
-    this.cardManager.events.on(CardActionEvents.DRAW, this.draw, this);
-    this.cardManager.events.on(CardActionEvents.SELECT, this.select, this);
-    this.cardManager.events.on(CardActionEvents.UNSELECT, this.unselect, this);
+    const events = this.cardManager.events;
+    events.on(CardActionEvents.DRAW, this.draw, this);
+    events.on(CardActionEvents.SELECT, this.select, this);
+    events.on(CardActionEvents.UNSELECT, this.unselect, this);
   }
 
   onCombatAnimation() {
-    this.combatManager.events.off(CombatEvents.PLAYERATTACK);
-    this.combatManager.events.on(CombatEvents.PLAYERATTACK, this.playerAttack, this);
-    this.combatManager.events.off(CombatEvents.ENEMYATTACK);
-    this.combatManager.events.on(CombatEvents.ENEMYATTACK, this.enemyAttack, this);
+    const events = this.combatManager.events;
+    events.off(CombatEvents.PLAYERATTACK);
+    events.on(CombatEvents.PLAYERATTACK, this.playerAttack, this);
+    events.off(CombatEvents.ENEMYATTACK);
+    events.on(CombatEvents.ENEMYATTACK, this.enemyAttack, this);
+  }
+
+  onLayoutAnimation() {
+    const events = this.combatLayoutManager.events;
+    events.off(LayoutEvents.SET_CARD_POS);
+    events.on(LayoutEvents.SET_CARD_POS, this.setCardPosition, this);
+    events.off(LayoutEvents.SET_CARD_TO_SLOT);
+    events.on(LayoutEvents.SET_CARD_TO_SLOT, this.setCardToSlot, this);
+  }
+
+  setCardPosition(card: CardBase) {
+      this.scene.tweens.add({
+        targets: card,
+        x: card.getData(LayoutData.X),
+        y: card.getData(LayoutData.Y),
+        angle: card.getData(LayoutData.ANGLE),
+        // scaleX: scale,
+        // scaleY: scale,
+        displayWidth: card.width,
+        displayHeight: card.height,
+        duration: 300,
+        ease: "Power2",
+      });
+  }
+
+  setCardToSlot(slot: CardSlot) {
+    this.select(slot);
   }
 
   draw(card: CardBase) {
     card.on(CardEvents.FOCUSON, this.HoverUp, this);
     card.on(CardEvents.FOCUSOFF, this.HoverDown, this);
-    this.combatLayoutManager.align();
+    this.combatLayoutManager.updateLayout(false);
   }
 
   HoverUp(card: CardBase) {
@@ -202,7 +232,8 @@ export default class CombatAnimation {
     });
   }
 
-  select(card: CardBase, slot: CardSlot) {
+  select(slot: CardSlot) {
+    const card = slot.getCard()!;
     // Needs to fix hard cord.
     this.scene.tweens.add({
       targets: card,
@@ -216,17 +247,8 @@ export default class CombatAnimation {
     });
   }
 
-  unselect(card: CardBase, slot: CardSlot) {
-    this.scene.tweens.add({
-      targets: card,
-      x: card.getData(LayoutData.X),
-      y: card.getData(LayoutData.Y),
-      angle: card.getData(LayoutData.ANGLE),
-      displayWidth: card.width,
-      displayHeight: card.height,
-      ease: "Cubic.easeOut",
-      duration: 300,
-    });
+  unselect(card: CardBase) {
+    this.setCardPosition(card);
   }
 
   playerAttack(player: CombatPlayer, enemy: CombatEnemy, points: number) {
