@@ -77,6 +77,7 @@ def _renamed_for_deactivation(value: str, user_id: int, max_length: int) -> str:
 
 def deactivate_user(db: Session, user: User) -> None:
     user.is_active = False
+    user.avatar_url = None
 
     if user.username is not None:
         user.username = _renamed_for_deactivation(
@@ -96,6 +97,7 @@ def deactivate_user(db: Session, user: User) -> None:
             )
 
     commit_or_bad_request(db, "Account could not be deactivated",)
+
 
 def update_user_avatar(db: Session, user: User, avatar_url: str) -> User:
     user.avatar_url = avatar_url

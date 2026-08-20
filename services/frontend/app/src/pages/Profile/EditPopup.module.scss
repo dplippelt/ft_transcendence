@@ -3,6 +3,7 @@
 .avatarsLabel
 {
 	text-align: center;
+	margin-bottom: 0.75rem;
 }
 
 .avatars
@@ -22,7 +23,7 @@
 
 	&:hover
 	{
-		border-color: $golden-brown
+		border-color: $golden-brown;
 	}
 }
 
@@ -30,4 +31,38 @@
 {
 	display: flex;
 	flex-wrap: wrap;
+	justify-content: center;
+	align-items: center;
+	gap: 0.75rem;
+	margin: 0.5rem 0 1.5rem;
+}
+
+.fileInput
+{
+	display: none;
+}
+
+.fileButton
+{
+	padding: 0.4rem 0.8rem;
+
+	border: 2px solid $golden-brown;
+	border-radius: 0.25rem;
+
+	cursor: pointer;
+	font-weight: bold;
+
+	&:hover
+	{
+		background-color: $golden-brown;
+	}
+}
+
+.fileName
+{
+	max-width: 12rem;
+
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }

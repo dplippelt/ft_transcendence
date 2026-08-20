@@ -126,7 +126,6 @@ export default function GoogleLinkButton()
     return (
         <div>
             { error !== ErrorType.none && <ErrorText error={error}/> }
-
             <GoogleLogin
                 theme="filled_black"
                 shape="rectangular"

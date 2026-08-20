@@ -1,18 +1,34 @@
 import {createContext, useContext, useEffect, useCallback, useState,} from "react";
 import type { ReactNode } from "react";
 
-import {getCurrentUser, linkGoogleAccount, unlinkGoogleAccount, loginUser, loginWithGoogleCredentials, registerUser, updateUser, updatePassword as updatePasswordRequest} from "../api/authApi";
+import {
+    loginUser,
+    registerUser,
+    getCurrentUser,
+    loginWithGoogleCredentials,
+    linkGoogleAccount,
+    unlinkGoogleAccount,
+    updateUser,
+    updatePassword as updatePasswordRequest,
+    updateAvatar as updateAvatarRequest,
+} from "../api/authApi";
 
-import type { AuthUser, LoginRequest, RegisterRequest, UpdateUserRequest, PasswordUpdateRequest} from "../api/authApi";
+import type {
+    AuthUser,
+    LoginRequest,
+    RegisterRequest,
+    UpdateUserRequest,
+    PasswordUpdateRequest,
+} from "../api/authApi";
 import { ApiError } from "../api/http";
 
 const ACCESS_TOKEN_KEY = "accessToken";
 
 type AuthStatus =
-	| "loading"
-	| "authenticated"
-	| "unauthenticated"
-	| "error";
+    | "loading"
+    | "authenticated"
+    | "unauthenticated"
+    | "error";
 
 export interface IAuth
 {
@@ -29,6 +45,7 @@ interface IAuthContext
 	loginWithGoogle: (credential: string) => Promise<void>;
     updateProfile: (data: UpdateUserRequest) => Promise<void>;
     updatePassword: (data: PasswordUpdateRequest) => Promise<void>;
+    updateAvatar: (avatar: File) => Promise<void>;
     linkGoogle: (credential: string) => Promise<void>;
     unlinkGoogle: () => Promise<void>;
     logout: () => void;
@@ -139,6 +156,20 @@ export default function AuthProvider( { children } : {children: ReactNode} )
     
         setUser(updatedUser);
     }, [accessToken, user]);
+
+    const updateAvatar = useCallback(async (avatar: File) =>
+    {
+        if (!accessToken || !user)
+            throw new Error("No authenticated session");
+
+        const updateUser = await updateAvatarRequest(
+            user.id,
+            avatar,
+            accessToken,
+        );
+
+        setUser(updateUser);
+    }, [accessToken, user]);
     
     const linkGoogle = useCallback(async (credential: string) =>
     {
@@ -206,6 +237,7 @@ export default function AuthProvider( { children } : {children: ReactNode} )
 				logout,
                 updateProfile,
                 updatePassword,
+                updateAvatar,
 			}}
 		>
 			{children}

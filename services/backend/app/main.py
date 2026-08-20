@@ -1,6 +1,8 @@
 
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from fastapi import FastAPI
 
@@ -13,6 +15,8 @@ import app.models  # noqa: F401
 
 
 settings = get_settings()
+AVATAR_DIR = Path("uploads/avatars")
+AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -44,6 +48,8 @@ app.include_router(leaderboard.router, prefix="/leaderboard",  tags=["leaderboar
 app.include_router(friends.router,     prefix="/friends",     tags=["friends"])
 app.include_router(chat.router,        prefix="/chat",         tags=["chat"])
 app.include_router(lobbies.router,     prefix="/lobbies",      tags=["lobbies"])
+
+app.mount("/uploads/avatars", StaticFiles(directory=AVATAR_DIR), name="avatars")
 
 @app.get("/")
 def root():

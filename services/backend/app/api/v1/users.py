@@ -12,6 +12,7 @@ from app.services.user_service import (
     update_user_avatar,
     update_user_profile,
 )
+from app.services.avatar_service import delete_local_avatar
 
 
 router = APIRouter()
@@ -48,12 +49,16 @@ def update_user(user_data: UserUpdate, self_user: SelfUser, db: DbSession):
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_user(self_user: SelfUser, db: DbSession):
+    avatar_url = self_user.avatar_url
+    
     deactivate_user(db, self_user)
+    
+    delete_local_avatar(avatar_url)
 
     return None
 
 
-@router.put(f"/{user_id}/avatar", response_model=UserResponse)
+@router.put("/{user_id}/avatar", response_model=UserResponse)
 async def update_avatar(request: Request, self_user: SelfUser, db: DbSession, avatar: UploadFile = File(...),):
     extension = ALLOWED_AVATAR_TYPES.get(avatar.content_type)
 

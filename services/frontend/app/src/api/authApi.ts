@@ -130,3 +130,18 @@ export function updatePassword(data: PasswordUpdateRequest, accessToken: string,
         accessToken,
     );
 }
+
+export function updateAvatar(userID: number, avatar: File, accessToken: string,): Promise<AuthUser>
+{
+    const formData = new FormData();
+    formData.append("avatar", avatar);
+
+    return apiRequest<AuthUser>(
+        `/users/${userID}/avatar`,
+        {
+            method: "PUT",
+            body: formData,
+        },
+        accessToken,
+    );
+}
