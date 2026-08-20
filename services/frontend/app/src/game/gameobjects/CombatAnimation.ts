@@ -156,9 +156,12 @@ export default class CombatAnimation {
 
   onCardAnimation() {
     const events = this.cardManager.events;
+    events.off(CardActionEvents.DRAW);
     events.on(CardActionEvents.DRAW, this.draw, this);
-    events.on(CardActionEvents.SELECT, this.select, this);
-    events.on(CardActionEvents.UNSELECT, this.unselect, this);
+    events.off(CardActionEvents.SELECT);
+    events.on(CardActionEvents.SELECT, this.setCardToSlot, this);
+    events.off(CardActionEvents.UNSELECT);
+    events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
   }
 
   onCombatAnimation() {
@@ -171,29 +174,41 @@ export default class CombatAnimation {
 
   onLayoutAnimation() {
     const events = this.combatLayoutManager.events;
-    events.off(LayoutEvents.SET_CARD_POS);
-    events.on(LayoutEvents.SET_CARD_POS, this.setCardPosition, this);
     events.off(LayoutEvents.SET_CARD_TO_SLOT);
     events.on(LayoutEvents.SET_CARD_TO_SLOT, this.setCardToSlot, this);
+    events.off(LayoutEvents.SET_CARD_POS);
+    events.on(LayoutEvents.SET_CARD_POS, this.setCardPosition, this);
   }
 
   setCardPosition(card: CardBase) {
-      this.scene.tweens.add({
-        targets: card,
-        x: card.getData(LayoutData.X),
-        y: card.getData(LayoutData.Y),
-        angle: card.getData(LayoutData.ANGLE),
-        // scaleX: scale,
-        // scaleY: scale,
-        displayWidth: card.width,
-        displayHeight: card.height,
-        duration: 300,
-        ease: "Power2",
-      });
+    this.scene.tweens.add({
+      targets: card,
+      x: card.getData(LayoutData.X),
+      y: card.getData(LayoutData.Y),
+      angle: card.getData(LayoutData.ANGLE),
+      // scaleX: scale,
+      // scaleY: scale,
+      displayWidth: card.width,
+      displayHeight: card.height,
+      duration: 300,
+      ease: "Power2",
+    });
   }
 
   setCardToSlot(slot: CardSlot) {
-    this.select(slot);
+    const card = slot.getCard()!;
+    // Needs to fix hard cord.
+    this.scene.tweens.add({
+      targets: card,
+      x: slot.x,
+      y: slot.y,
+      angle: 0,
+      displayWidth: card.width * 0.7,
+      displayHeight: card.height * 0.7,
+      ease: "Cubic.easeOut",
+      duration: 200,
+    });
+    // this.select(slot);
   }
 
   draw(card: CardBase) {
@@ -230,25 +245,6 @@ export default class CombatAnimation {
       duration: 200,
       ease: "Power1",
     });
-  }
-
-  select(slot: CardSlot) {
-    const card = slot.getCard()!;
-    // Needs to fix hard cord.
-    this.scene.tweens.add({
-      targets: card,
-      x: slot.x,
-      y: slot.y,
-      angle: 0,
-      displayWidth: card.width * 0.7,
-      displayHeight: card.height * 0.7,
-      ease: "Cubic.easeOut",
-      duration: 200,
-    });
-  }
-
-  unselect(card: CardBase) {
-    this.setCardPosition(card);
   }
 
   playerAttack(player: CombatPlayer, enemy: CombatEnemy, points: number) {

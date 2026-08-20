@@ -127,6 +127,16 @@ export default class CombatLayoutManager {
     this.combatManger = combatManger;
     this.scene = this.combatManger.scene;
     this.cardManager = this.combatManger.cardManager;
+    this.cardManager.events.on(
+      CardActionEvents.DRAW,
+      () => {
+        this.updateLayout(false);
+      },
+      this,
+    );
+    this.cardManager.events.on(CardActionEvents.SELECT, this.setCardToSlot, this);
+    this.cardManager.events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
+
     this.player = this.combatManger.player;
     this.enemy = this.combatManger.enemy;
     this.layoutFromCenter = layoutFromCenter;
@@ -273,12 +283,20 @@ export default class CombatLayoutManager {
     const x = card.getData(LayoutData.X);
     const y = card.getData(LayoutData.Y);
     const angle = card.getData(LayoutData.ANGLE);
+
     card.setPosition(x, y);
     card.angle = angle;
+    card.displayWidth = card.width;
+    card.displayHeight = card.height;
   }
 
   setCardToSlot(slot: CardSlot) {
-    slot.setCardPosition();
+    const card = slot.getCard()!;
+
+    card.setPosition(slot.x, slot.y);
+    card.angle = 0;
+    card.displayWidth = card.width * 0.7;
+    card.displayHeight = card.height * 0.7;
   }
 
   setCombatantPositions(combatant: CombatPlayer | CombatEnemy) {
