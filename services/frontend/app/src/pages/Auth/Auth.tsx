@@ -49,36 +49,34 @@ function GoogleAuthButton({ setError }: GoogleAuthButtonProps)
     
     return (
         <div className={styles.googleLoginButton} ref={googleButtonRef}>
-            <GoogleLogin
-                theme="filled_black"
-                shape="rectangular"
-                text="continue_with"
-                width={googleButtonWidth}
-                onSuccess={async (credentialResponse) =>
-                {
-                    if (!credentialResponse.credential)
-                        return setError(ErrorType.googleLoginFailed);
+            {googleButtonWidth > 0 &&
+                <GoogleLogin
+                    theme="filled_black"
+                    shape="rectangular"
+                    text="continue_with"
+                    width={googleButtonWidth}
+                    onSuccess={async (credentialResponse) => {
+                        if (!credentialResponse.credential)
+                            return setError(ErrorType.googleLoginFailed);
 
-                    try
-                    {
-                        setError(ErrorType.none);
+                        try {
+                            setError(ErrorType.none);
 
-                        await loginWithGoogle(
-                            credentialResponse.credential,
-                        );
+                            await loginWithGoogle(
+                                credentialResponse.credential,
+                            );
 
-                        navigate(RoutePath.mainMenu);
-                    }
-                    catch (error)
-                    {
-                        setError(mapAuthApiError(error));
-                    }
-                }}
-                onError={() =>
-                {
-                    setError(ErrorType.googleLoginFailed);
-                }}
+                            navigate(RoutePath.mainMenu);
+                        }
+                        catch (error) {
+                            setError(mapAuthApiError(error));
+                        }
+                    }}
+                    onError={() => {
+                        setError(ErrorType.googleLoginFailed);
+                    }}
             />
+            }
         </div>
     );
 }
