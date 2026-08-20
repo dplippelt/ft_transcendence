@@ -1,5 +1,5 @@
 import { Navigate, useSearchParams, useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MenuTitle } from "../../components/PageTitle";
 import styles from "./Auth.module.scss";
 import Background from "../../components/Background";
@@ -25,36 +25,61 @@ function GoogleAuthButton({ setError }: GoogleAuthButtonProps)
     const navigate = useNavigate();
     const { loginWithGoogle } = useAuth();
 
+    const googleButtonRef = useRef<HTMLDivElement>(null);
+    const [googleButtonWidth, setGoogleButtonWidth] = useState<number>(0);
+
+    useEffect(() =>
+        {
+            const element = googleButtonRef.current;
+    
+            if (!element)
+                return;
+    
+            const observer = new ResizeObserver(entries =>
+            {
+                const width = Math.floor(entries[0].contentRect.width);
+    
+                setGoogleButtonWidth(Math.min(width, 400));
+            });
+    
+            observer.observe(element);
+    
+            return () => observer.disconnect();
+    }, []);
+    
     return (
-        <GoogleLogin
-            theme="filled_black"
-            shape="rectangular"
-            text="continue_with"
-            onSuccess={async (credentialResponse) =>
-            {
-                if (!credentialResponse.credential)
-                    return setError(ErrorType.googleLoginFailed);
-
-                try
+        <div className={styles.googleLoginButton} ref={googleButtonRef}>
+            <GoogleLogin
+                theme="filled_black"
+                shape="rectangular"
+                text="continue_with"
+                width={googleButtonWidth}
+                onSuccess={async (credentialResponse) =>
                 {
-                    setError(ErrorType.none);
+                    if (!credentialResponse.credential)
+                        return setError(ErrorType.googleLoginFailed);
 
-                    await loginWithGoogle(
-                        credentialResponse.credential,
-                    );
+                    try
+                    {
+                        setError(ErrorType.none);
 
-                    navigate(RoutePath.mainMenu);
-                }
-                catch (error)
+                        await loginWithGoogle(
+                            credentialResponse.credential,
+                        );
+
+                        navigate(RoutePath.mainMenu);
+                    }
+                    catch (error)
+                    {
+                        setError(mapAuthApiError(error));
+                    }
+                }}
+                onError={() =>
                 {
-                    setError(mapAuthApiError(error));
-                }
-            }}
-            onError={() =>
-            {
-                setError(ErrorType.googleLoginFailed);
-            }}
-        />
+                    setError(ErrorType.googleLoginFailed);
+                }}
+            />
+        </div>
     );
 }
 
