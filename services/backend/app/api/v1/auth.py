@@ -129,6 +129,7 @@ def verify_google_credential(credential: str,) -> GoogleIdentity:
             credential,
             google_request,
             settings.google_client_id,
+            clock_skew_in_seconds=5,
         )
     except (ValueError, google_auth_exceptions.GoogleAuthError):
         raise unauthorized(
