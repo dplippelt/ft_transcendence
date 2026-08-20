@@ -111,7 +111,7 @@ export default class CardManager {
     const slot = this.cardSelection.setCardToSlot(card);
     if (slot !== null) {
       card.setIsSelected(true);
-      this.events.emit(CardActionEvents.SELECT, card, slot);
+      this.events.emit(CardActionEvents.SELECT, slot);
       return;
     }
   }
