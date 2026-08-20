@@ -51,18 +51,22 @@ export default class CombatTurnManager {
       if (this.playerTimer) {
         this.playerTimer.remove();
       }
+      if (this.enemyTimer) {
+        this.enemyTimer.remove();
+      }
 
       this.playerTimer = this.playTurnFor(this.turnConfig.playerDelayMs);
       this.turnEvents.emit(TurnEvents.STARTPLAYER);
     } else {
       this.scene.input.enabled = false;
 
-      if (this.playerTimer) {
-        this.playerTimer.paused = true;
-      }
+      this.pausePlayerTimer();
 
       // To display, not necessary.
-      this.enemyTimer?.remove();
+      if (this.enemyTimer) {
+        this.enemyTimer.remove();
+      }
+
       this.enemyTimer = this.playTurnFor(this.turnConfig.enemyDelayMs);
       this.turnEvents.emit(TurnEvents.STARTENEMY);
     }
@@ -77,6 +81,12 @@ export default class CombatTurnManager {
       callbackScope: this,
     };
     return this.clock.addEvent(config);
+  }
+
+  pausePlayerTimer() {
+    if (this.playerTimer) {
+      this.playerTimer.paused = true;
+    }
   }
 
   displayTimer() {

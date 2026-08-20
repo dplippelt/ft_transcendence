@@ -11,11 +11,6 @@ import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 import CombatLayoutManager from "./CombatLayoutManager";
 import CombatPlayer from "./CombatPlayer";
 
-export enum CombatAnimEvents {
-    ATTACK = "attack",
-    TAKEDAMAGE = "takeDamage",
-}
-
 const executeButtonConfig: ButtonConfig = {
   styleConfig: buttonStyleConfig,
   textConfig: buttonContentConfig,
@@ -24,6 +19,9 @@ const executeButtonConfig: ButtonConfig = {
 export enum CombatEvents {
   ENDCOMBAT = "endCombat",
   ENDGAME = "endGame",
+  PLAYERATTACK = "playerAttack",
+  ENEMYATTACK = "enemyAttack",
+  TAKEDAMAGE = "takeDamage",
 }
 
 export default class CombatManager {
@@ -46,6 +44,9 @@ export default class CombatManager {
     this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
     this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.executeEnemyEffect, this);
     this.events = new Phaser.Events.EventEmitter();
+    this.events.on(CombatEvents.PLAYERATTACK, this.playerAttack, this);
+    this.events.on(CombatEvents.ENEMYATTACK, this.enemyAttack, this);
+    this.events.on(CombatEvents.TAKEDAMAGE, this.takeDamage, this);
     this.executeButton = new Button(scene, "Execute", executeButtonConfig);
     this.executeButton.on("pointerdown", this.execute, this);
     this.layoutManager = new CombatLayoutManager(this);
@@ -73,10 +74,8 @@ export default class CombatManager {
   }
 
   executeEnemyEffect() {
-    this.enemy.attack(this.player);
-    if (this.player.isDead()) {
-      this.endGame();
-    }
+    const points = 10;
+    this.events.emit(CombatEvents.ENEMYATTACK, this.enemy, this.player, points);
   }
 
   execute() {
@@ -86,24 +85,36 @@ export default class CombatManager {
       return;
     }
 
-    const result = this.evaluateSelectedCards(cards);
-    console.log(result);
-    if (result === null) {
+    const points = this.evaluateSelectedCards(cards);
+    console.log(points);
+    if (points === null) {
       // dealPenalty(this.playerStatus);
       // TODO
     } else {
-	  this.events.emit(CombatAnimEvents.ATTACK, this.player, this.enemy);
-      this.player.attack(this.enemy, result);
+      this.events.emit(CombatEvents.PLAYERATTACK, this.player, this.enemy, points);
     }
-    if (this.player.isDead()) {
-      this.endGame();
-      return;
+  }
+
+  playerAttack(player: CombatPlayer, enemy: CombatEnemy, points: number) {
+    this.events.emit(CombatEvents.TAKEDAMAGE, enemy, points);
+  }
+
+  enemyAttack(enemy: CombatEnemy, player: CombatEnemy, points: number) {
+    this.events.emit(CombatEvents.TAKEDAMAGE, player, points);
+  }
+
+  takeDamage(combatant: CombatPlayer | CombatEnemy, points: number) {
+    combatant.takeDamage(points);
+    if (combatant.isDead()) {
+      if (combatant instanceof CombatPlayer) {
+        this.endGame();
+      } else {
+        this.endCombat();
+      }
     }
-    if (this.enemy.isDead()) {
-      this.endCombat();
-      return;
+    if (combatant instanceof CombatEnemy) {
+      this.turnManager.switchTurn();
     }
-    this.turnManager.switchTurn();
   }
 
   endCombat() {

@@ -7,9 +7,10 @@ import CardBase from "./cards/CardBase";
 import { CardEvents } from "./cards/CardBase";
 import CardSlot from "./cards/CardSlot";
 import { AssetsKey } from "../Assets";
-import CombatManager, { CombatAnimEvents } from "./CombatManager";
+import CombatManager, { CombatEvents } from "./CombatManager";
 import type CombatLayoutManager from "./CombatLayoutManager";
 import { LayoutData } from "./CombatLayoutManager";
+import type CombatTurnManager from "./CombatTurnManager";
 
 enum PlayerAnimation {
   IDLE = "idle",
@@ -100,7 +101,6 @@ const enemyAnimationFram: Record<EnemyAnimation, SpriteSheetFrame> = {
 };
 
 interface BattleAnimTween {
-  delay: number;
   duration: number;
   diffX: number;
   yoyo: boolean;
@@ -109,21 +109,18 @@ interface BattleAnimTween {
 
 const attackAnimation: Record<string, BattleAnimTween> = {
   damageEnemy: {
-    delay: 300,
     duration: 50,
     diffX: 50,
     yoyo: true,
     repeat: 2,
   },
   enemyAttack: {
-    delay: 800,
     duration: 50,
     diffX: 50,
     yoyo: true,
     repeat: 0,
   },
   damagePlayer: {
-    delay: 900,
     duration: 50,
     diffX: 50,
     yoyo: true,
@@ -136,36 +133,46 @@ export default class CombatAnimation {
   private readonly scene: Scene;
   private readonly combatManager: CombatManager;
   private readonly cardManager: CardManager;
+  private readonly turnManger: CombatTurnManager;
   private readonly player: CombatPlayer;
   private readonly enemy: CombatEnemy;
-  //   private readonly isActive: boolean;
 
   constructor(combatLayoutManager: CombatLayoutManager) {
     this.combatLayoutManager = combatLayoutManager;
     this.combatManager = this.combatLayoutManager.combatManger;
-    this.combatManager.events.on(CombatAnimEvents.ATTACK, this.combatAttack, this);
     this.scene = this.combatLayoutManager.scene;
     this.cardManager = this.combatLayoutManager.cardManager;
+    this.turnManger = this.combatManager.turnManager;
     this.player = this.combatLayoutManager.player;
     this.enemy = this.combatLayoutManager.enemy;
-    // this.isActive = false;
-    this.registerCardManagerAnim();
-    this.registerPlayerAnim();
-    this.registerEnemyAnim();
+    this.onCardAnimation();
+    this.onCombatAnimation();
+    this.registerPlayerAnimation();
+    this.player.play(PlayerAnimation.IDLE);
+    this.registerEnemyAnimation();
+    this.enemy.play(EnemyAnimation.WALK);
   }
 
-  registerCardManagerAnim() {
-    this.cardManager.events.on(CardActionEvents.DRAW, this.drawAnim, this);
-    this.cardManager.events.on(CardActionEvents.SELECT, this.selectAnim, this);
-    this.cardManager.events.on(CardActionEvents.UNSELECT, this.unselectAnim, this);
+  onCardAnimation() {
+    this.cardManager.events.on(CardActionEvents.DRAW, this.draw, this);
+    this.cardManager.events.on(CardActionEvents.SELECT, this.select, this);
+    this.cardManager.events.on(CardActionEvents.UNSELECT, this.unselect, this);
   }
-  drawAnim(card: CardBase) {
-    card.on(CardEvents.FOCUSON, this.HoverUpAnim, this);
-    card.on(CardEvents.FOCUSOFF, this.HoverDownAnim, this);
+
+  onCombatAnimation() {
+    this.combatManager.events.off(CombatEvents.PLAYERATTACK);
+    this.combatManager.events.on(CombatEvents.PLAYERATTACK, this.playerAttack, this);
+    this.combatManager.events.off(CombatEvents.ENEMYATTACK);
+    this.combatManager.events.on(CombatEvents.ENEMYATTACK, this.enemyAttack, this);
+  }
+
+  draw(card: CardBase) {
+    card.on(CardEvents.FOCUSON, this.HoverUp, this);
+    card.on(CardEvents.FOCUSOFF, this.HoverDown, this);
     this.combatLayoutManager.align();
   }
 
-  HoverUpAnim(card: CardBase) {
+  HoverUp(card: CardBase) {
     // Needs to fix hard cord.
     if (card.input?.hitArea instanceof Geom.Rectangle) {
       card.input.hitArea.right += 0;
@@ -180,7 +187,7 @@ export default class CombatAnimation {
     });
   }
 
-  HoverDownAnim(card: CardBase) {
+  HoverDown(card: CardBase) {
     if (card.input?.hitArea instanceof Geom.Rectangle) {
       card.input.hitArea.right -= 0;
       card.input.hitArea.bottom -= 30;
@@ -195,7 +202,7 @@ export default class CombatAnimation {
     });
   }
 
-  selectAnim(card: CardBase, slot: CardSlot) {
+  select(card: CardBase, slot: CardSlot) {
     // Needs to fix hard cord.
     this.scene.tweens.add({
       targets: card,
@@ -209,7 +216,7 @@ export default class CombatAnimation {
     });
   }
 
-  unselectAnim(card: CardBase, slot: CardSlot) {
+  unselect(card: CardBase, slot: CardSlot) {
     this.scene.tweens.add({
       targets: card,
       x: card.getData(LayoutData.X),
@@ -222,7 +229,54 @@ export default class CombatAnimation {
     });
   }
 
-  registerPlayerAnim() {
+  playerAttack(player: CombatPlayer, enemy: CombatEnemy, points: number) {
+    this.turnManger.pausePlayerTimer();
+    player.play(PlayerAnimation.ATTACK_B);
+    player.once("animationcomplete", () => {
+      this.scene.tweens.add({
+        targets: enemy,
+        x: enemy.x + 50,
+        duration: 50,
+        yoyo: true,
+        repeat: 2,
+        onStart: () => {
+          enemy.setTint(0xff0000);
+        },
+        onComplete: () => {
+          enemy.clearTint();
+          this.combatManager.events.emit(CombatEvents.TAKEDAMAGE, enemy, points);
+        },
+      });
+    });
+  }
+
+  enemyAttack(enemy: CombatEnemy, player: CombatPlayer, points: number) {
+    this.scene.tweens.add({
+      targets: enemy,
+      x: enemy.x - 50,
+      duration: 50,
+      yoyo: true,
+      onComplete: () => {
+        this.scene.tweens.add({
+          targets: player,
+          duration: 50,
+          x: player.x - 50,
+          yoyo: true,
+          onStart: () => {
+            player.setTint(0xff0000);
+            this.scene.cameras.main.shake(500, 0.01);
+          },
+          onComplete: () => {
+            player.clearTint();
+            this.combatManager.events.emit(CombatEvents.TAKEDAMAGE, player, points);
+            player.playAfterRepeat(PlayerAnimation.IDLE);
+          },
+        });
+      },
+    });
+  }
+
+  registerPlayerAnimation() {
     const anims = this.player.anims;
     for (const animKey of Object.values(PlayerAnimation)) {
       anims.create({
@@ -237,10 +291,9 @@ export default class CombatAnimation {
         repeat: playerAnimationFrames[animKey].repeat,
       });
     }
-    this.player.play(PlayerAnimation.IDLE);
   }
 
-  registerEnemyAnim() {
+  registerEnemyAnimation() {
     const anims = this.enemy.anims;
     for (const animKey of Object.values(EnemyAnimation)) {
       anims.create({
@@ -250,46 +303,5 @@ export default class CombatAnimation {
         repeat: enemyAnimationFram[animKey].repeat,
       });
     }
-    this.enemy.play(EnemyAnimation.WALK);
-  }
-
-  combatAttack(player: CombatPlayer, enemy: CombatEnemy) {
-    player.play(PlayerAnimation.ATTACK_B);
-    this.scene.tweens.add({
-      targets: enemy,
-      delay: 300,
-      x: enemy.x + 50,
-      duration: 50,
-      yoyo: true,
-      repeat: 2,
-      onStart: () => {
-        enemy.setTint(0xff0000);
-      },
-      onComplete: () => {
-        enemy.clearTint();
-      },
-    });
-    this.scene.tweens.add({
-      targets: enemy,
-      delay: 800,
-      x: enemy.x - 50,
-      duration: 50,
-      yoyo: true,
-    });
-    this.scene.tweens.add({
-      targets: player,
-      delay: 900,
-      duration: 50,
-      x: player.x - 50,
-      yoyo: true,
-      onStart: () => {
-        player.setTint(0xff0000);
-        this.scene.cameras.main.shake(500, 0.01);
-        player.playAfterRepeat(PlayerAnimation.IDLE);
-      },
-      onComplete: () => {
-        player.clearTint();
-      },
-    });
   }
 }

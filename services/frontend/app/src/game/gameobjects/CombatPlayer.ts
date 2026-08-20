@@ -1,7 +1,6 @@
 import Phaser, { Scene } from "phaser";
 import type { PlayerStatus } from "../scenes/CombatScene";
 import { AssetsKey } from "../Assets";
-import type CombatEnemy from "./CombatEnemy";
 
 export default class CombatPlayer extends Phaser.GameObjects.Sprite {
   readonly status: PlayerStatus;
@@ -14,10 +13,6 @@ export default class CombatPlayer extends Phaser.GameObjects.Sprite {
 
   takeDamage(damage: number) {
     this.status.hitPoint -= damage;
-  }
-
-  attack(enemy: CombatEnemy, points: number) {
-    enemy.takeDamage(points);
   }
 
   isDead() {
