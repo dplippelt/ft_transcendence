@@ -12,6 +12,7 @@ import { RouteParam, RoutePath } from "./utils/utils"
 import Multiplayer from "./pages/Multiplayer/Multiplayer"
 import Lobby from "./pages/Multiplayer/Lobby"
 import LobbiesBrowser from "./pages/Multiplayer/LobbiesBrowser"
+import PageNotFound from "./pages/PageNotFound/PageNotFound"
 import ProtectedRoute from "./components/ProtectedRoute";
 import RequireUsernameRoute from "./components/RequireUsernameRoute";
 import CompleteProfile from "./pages/Profile/CompleteProfile";
@@ -45,7 +46,8 @@ export default function App()
                         <Route path={RoutePath.gameDev} element={<PhaserGame ref={phaserRef} currentActiveScene={currentScene} />} />
                     </Route>
                 </Route>
-            </Routes>
-        </BrowserRouter>
-    )
+            <Route path="*" element={ <PageNotFound /> } />
+        </Routes>
+    </BrowserRouter>
+  )
 }

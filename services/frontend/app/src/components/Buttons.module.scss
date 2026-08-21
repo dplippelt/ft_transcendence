@@ -307,3 +307,23 @@
 		}
 	}
 }
+
+.pageNotFoundButton
+{
+	font-size: 1rem;
+	justify-self: center;
+	padding: 2rem 2rem;
+	background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, transparent 70%);
+
+	@media (max-height: 480px)
+	{
+		padding-top: 1rem;
+		padding-bottom: 1rem;
+	}
+
+	@media (max-width: 480px)
+	{
+		padding-top: 1rem;
+		padding-bottom: 1rem;
+	}
+}
