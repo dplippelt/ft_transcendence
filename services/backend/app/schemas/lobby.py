@@ -73,4 +73,8 @@ class LobbyResponse(BaseModel):
 
 
 class LobbyInviteCreate(BaseModel):
-    friend_id: int
+    friend_id: int = Field(gt=0)
+
+
+class LobbyInviteResponse(BaseModel):
+    delivered: bool

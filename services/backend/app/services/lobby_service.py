@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
@@ -8,12 +10,19 @@ from app.models.lobby import Lobby
 from app.models.lobby_member import LobbyMember
 from app.models.lobby_message import LobbyMessage
 from app.models.user import User
-from app.services.friend_service import get_friendship
+from app.services.friend_service import get_friendship, utc_now
 
 HOST = "host"
 GUEST = "guest"
 MAX_MEMBERS = 2
 MAX_MESSAGE_HISTORY = 200
+
+INVITE_COOLDOWN = timedelta(seconds=30)
+
+# In-process only, same tradeoff as ConnectionManager: fine for a
+# single-process deployment, just a spam guard rather than a source of
+# truth, so losing it on restart or missing it across workers is fine.
+_recent_invites: dict[tuple[int, int], datetime] = {}
 
 
 def _lobby_query(db: Session):
@@ -208,16 +217,47 @@ def send_lobby_message(db: Session, user: User, lobby_id: int, content: str) -> 
     return message
 
 
+def _check_invite_cooldown(lobby_id: int, friend_id: int) -> None:
+    now = utc_now()
+
+    # Opportunistic cleanup so this dict doesn't grow unboundedly.
+    for key, sent_at in list(_recent_invites.items()):
+        if now - sent_at >= INVITE_COOLDOWN:
+            del _recent_invites[key]
+
+    key = (lobby_id, friend_id)
+
+    if key in _recent_invites:
+        raise conflict("You already invited this friend recently.", code=ErrorCode.INVITE_ALREADY_SENT)
+
+    _recent_invites[key] = now
+
+
 def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: int) -> Lobby:
     if friend_id == user.id:
-        raise bad_request("You cannot invite yourself.", code=ErrorCode.CANNOT_ADD_SELF)
+        raise bad_request("You cannot invite yourself.", code=ErrorCode.CANNOT_INVITE_SELF)
 
-    member = require_lobby_member(db, lobby_id, user.id)
+    # Fetched once with members eager-loaded so the membership/capacity
+    # checks below are in-memory lookups instead of separate queries.
+    lobby = get_lobby_by_id(db, lobby_id)
+
+    if lobby is None:
+        raise not_found("Lobby not found.", code=ErrorCode.LOBBY_NOT_FOUND)
+
+    member_ids = {member.user_id for member in lobby.members}
+
+    if user.id not in member_ids:
+        raise forbidden("You are not a member of this lobby.", code=ErrorCode.NOT_LOBBY_MEMBER)
+
+    if friend_id in member_ids:
+        raise conflict("This friend is already in the lobby.", code=ErrorCode.ALREADY_LOBBY_MEMBER)
+
+    if len(member_ids) >= MAX_MEMBERS:
+        raise conflict("This lobby is full.", code=ErrorCode.LOBBY_FULL)
 
     if get_friendship(db, user.id, friend_id) is None:
         raise not_found("Friendship not found.", code=ErrorCode.FRIENDSHIP_NOT_FOUND)
 
-    if get_member(db, lobby_id, friend_id) is not None:
-        raise conflict("This friend is already in the lobby.", code=ErrorCode.ALREADY_LOBBY_MEMBER)
+    _check_invite_cooldown(lobby_id, friend_id)
 
-    return member.lobby
+    return lobby

@@ -49,6 +49,8 @@ class ErrorCode(StrEnum):
     NOT_LOBBY_HOST = "NOT_LOBBY_HOST"
     NOT_LOBBY_MEMBER = "NOT_LOBBY_MEMBER"
     ALREADY_LOBBY_MEMBER = "ALREADY_LOBBY_MEMBER"
+    CANNOT_INVITE_SELF = "CANNOT_INVITE_SELF"
+    INVITE_ALREADY_SENT = "INVITE_ALREADY_SENT"
 
 def error_detail(message: str, code: ErrorCode | None = None,) -> str | dict[str, str]:
     if code is None:

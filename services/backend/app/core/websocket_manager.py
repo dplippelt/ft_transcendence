@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from collections.abc import Callable
 
 import anyio.from_thread
 from fastapi import WebSocket
@@ -34,16 +35,21 @@ class ConnectionManager:
         if not connections:
             self.active_connections.pop(user_id, None)
 
-    async def send_to_user(self, user_id: int, payload: dict) -> None:
+    async def send_to_user(self, user_id: int, payload: dict) -> bool:
         # Catch broadly per-socket: one dead/broken connection must not stop
         # delivery to this user's other open tabs/devices. A timeout guards
         # against a socket that accepts the connection but stalls on reading
         # (never raises, just hangs) -- sends are sequential here, so one
         # stuck socket would otherwise delay every send after it, including
         # the REST response that triggered this call.
+        # Returns whether the payload reached at least one connection, so a
+        # caller can tell "nobody was listening" apart from "delivered".
+        delivered = False
+
         for websocket in list(self.active_connections.get(user_id, [])):
             try:
                 await asyncio.wait_for(websocket.send_json(payload), timeout=SEND_TIMEOUT_SECONDS)
+                delivered = True
             except Exception:
                 logger.warning("Failed to push message to user %s over websocket", user_id, exc_info=True)
 
@@ -57,16 +63,31 @@ class ConnectionManager:
                 except Exception:
                     pass
 
-    def notify(self, user_id: int, payload: dict) -> None:
+        return delivered
+
+    def notify(self, user_id: int, payload: dict) -> bool:
         # Sync-callable, best-effort wrapper for use from non-async route
         # handlers: bridges to the event loop and never raises, so a
         # delivery failure here can't turn an already-successful action
         # (the caller already persisted whatever this is announcing) into
         # a 500 for the request that triggered it.
         try:
-            anyio.from_thread.run(self.send_to_user, user_id, payload)
+            return anyio.from_thread.run(self.send_to_user, user_id, payload)
         except Exception:
             logger.warning("Failed to notify user %s over websocket", user_id, exc_info=True)
+            return False
+
+    def notify_safely(self, user_id: int, message_type: str, build_fields: Callable[[], dict]) -> bool:
+        # Shared wrapper for the "tag a payload with a type, guard building
+        # it, then notify" shape used by every websocket-push feature, so
+        # each caller isn't hand-rolling its own try/except + logging.
+        try:
+            payload = {"type": message_type, **build_fields()}
+        except Exception:
+            logger.warning("Failed to prepare %s notification for user %s", message_type, user_id, exc_info=True)
+            return False
+
+        return self.notify(user_id, payload)
 
 
 connection_manager = ConnectionManager()

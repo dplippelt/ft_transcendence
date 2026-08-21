@@ -8,7 +8,14 @@ from app.core.exceptions import ErrorCode, not_found
 from app.core.websocket_manager import connection_manager
 from app.models.lobby import Lobby
 from app.models.user import User
-from app.schemas.lobby import LobbyCreate, LobbyInviteCreate, LobbyMessageCreate, LobbyMessageResponse, LobbyResponse
+from app.schemas.lobby import (
+    LobbyCreate,
+    LobbyInviteCreate,
+    LobbyInviteResponse,
+    LobbyMessageCreate,
+    LobbyMessageResponse,
+    LobbyResponse,
+)
 from app.schemas.user import PublicUserResponse
 from app.services.lobby_service import (
     close_lobby,
@@ -48,22 +55,22 @@ def notify_other_members(db: Session, lobby_id: int, sender_id: int, message: ob
         connection_manager.notify(member_id, payload)
 
 
-def notify_invite(friend_id: int, lobby: Lobby, inviter: User) -> None:
+def notify_invite(friend_id: int, lobby: Lobby, inviter: User) -> bool:
     # No persisted model: an invite is just a real-time nudge, not a new
     # access grant -- the invited friend can already see and join any
     # public lobby via GET /lobbies + POST /lobbies/{id}/join regardless.
-    try:
-        payload = {
-            "type": "lobby_invite",
+    # Still reports whether it actually reached a connection, so the
+    # caller can tell "delivered" apart from "friend wasn't online" --
+    # the only signal that would otherwise exist for either case.
+    return connection_manager.notify_safely(
+        friend_id,
+        "lobby_invite",
+        lambda: {
             "lobby_id": lobby.id,
             "lobby_name": lobby.name,
             "inviter": PublicUserResponse.model_validate(inviter).model_dump(mode="json"),
-        }
-    except Exception:
-        logger.warning("Failed to prepare lobby invite notification for user %s", friend_id, exc_info=True)
-        return
-
-    connection_manager.notify(friend_id, payload)
+        },
+    )
 
 
 @router.get("", response_model=list[LobbyResponse])
@@ -119,10 +126,10 @@ def post_message(lobby_id: int, message_data: LobbyMessageCreate, current_user: 
     return message
 
 
-@router.post("/{lobby_id}/invite", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/{lobby_id}/invite", response_model=LobbyInviteResponse)
 def invite(lobby_id: int, invite_data: LobbyInviteCreate, current_user: CompletedUser, db: DbSession):
     lobby = invite_friend_to_lobby(db, current_user, lobby_id, invite_data.friend_id)
 
-    notify_invite(invite_data.friend_id, lobby, current_user)
+    delivered = notify_invite(invite_data.friend_id, lobby, current_user)
 
-    return None
+    return LobbyInviteResponse(delivered=delivered)
