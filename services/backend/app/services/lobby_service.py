@@ -221,13 +221,15 @@ def send_lobby_message(db: Session, user: User, lobby_id: int, content: str) -> 
     return message
 
 
-def _check_invite_cooldown(lobby_id: int, friend_id: int) -> None:
+def _check_invite_cooldown(user_id: int, friend_id: int) -> None:
+    # Keyed by the inviter (not the lobby) so cycling through fresh lobbies
+    # can't be used to bypass the cooldown for the same sender/friend pair.
     # Check-then-set happens under the lock so two concurrent requests for
     # the same pair can't both observe "not on cooldown" before either
     # records it -- route handlers are sync `def`s, so this really can race
     # across threadpool threads.
     now = utc_now()
-    key = (lobby_id, friend_id)
+    key = (user_id, friend_id)
 
     with _recent_invites_lock:
         # Opportunistic cleanup so this dict doesn't grow unboundedly. Uses
@@ -243,27 +245,25 @@ def _check_invite_cooldown(lobby_id: int, friend_id: int) -> None:
         _recent_invites[key] = now
 
 
-def release_invite_cooldown(lobby_id: int, friend_id: int) -> None:
+def release_invite_cooldown(user_id: int, friend_id: int) -> None:
     # For any case where the cooldown was reserved by _check_invite_cooldown
     # but the invite didn't actually go anywhere -- a later check in this
     # function still failed, or delivery reached no one -- so the sender
     # isn't charged a real 30s retry window for a no-op.
     with _recent_invites_lock:
-        _recent_invites.pop((lobby_id, friend_id), None)
+        _recent_invites.pop((user_id, friend_id), None)
 
 
 def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: int) -> Lobby:
-    # Locked the same way join_lobby locks it, so a concurrent join/leave
-    # can't race with the membership/capacity check below.
-    lobby = (
-        db.query(Lobby)
-        .filter(Lobby.id == lobby_id)
-        .with_for_update()
-        .first()
-    )
+    lobby = get_lobby_or_404(db, lobby_id)
 
-    if lobby is None:
-        raise not_found("Lobby not found.", code=ErrorCode.LOBBY_NOT_FOUND)
+    # invite_friend_to_lobby never writes lobby membership itself -- it only
+    # reads it to decide whether to send a notification -- so there's no
+    # data-integrity invariant here for a row lock to protect; join_lobby
+    # independently re-validates capacity under its own lock at the moment
+    # someone actually joins.
+    if get_member(db, lobby_id, user.id) is None:
+        raise forbidden("You are not a member of this lobby.", code=ErrorCode.NOT_LOBBY_MEMBER)
 
     if friend_id == user.id:
         raise bad_request("You cannot invite yourself.", code=ErrorCode.CANNOT_INVITE_SELF)
@@ -273,9 +273,6 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
         for (member_id,) in db.query(LobbyMember.user_id).filter(LobbyMember.lobby_id == lobby_id).all()
     }
 
-    if user.id not in member_ids:
-        raise forbidden("You are not a member of this lobby.", code=ErrorCode.NOT_LOBBY_MEMBER)
-
     if friend_id in member_ids:
         raise conflict("This friend is already in the lobby.", code=ErrorCode.ALREADY_LOBBY_MEMBER)
 
@@ -284,10 +281,19 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
 
     # Free, in-memory check -- run before the one remaining DB query so a
     # repeated/spam invite doesn't pay for a friendship lookup it can't use.
-    _check_invite_cooldown(lobby_id, friend_id)
+    _check_invite_cooldown(user.id, friend_id)
 
-    if get_friendship(db, user.id, friend_id) is None:
-        release_invite_cooldown(lobby_id, friend_id)
+    try:
+        friendship = get_friendship(db, user.id, friend_id)
+    except Exception:
+        # Release on ANY failure here, not just a clean "not found" -- a
+        # transient DB error shouldn't cost the sender a real retry window
+        # for an invite that was never actually sent.
+        release_invite_cooldown(user.id, friend_id)
+        raise
+
+    if friendship is None:
+        release_invite_cooldown(user.id, friend_id)
         raise not_found("Friendship not found.", code=ErrorCode.FRIENDSHIP_NOT_FOUND)
 
     return lobby

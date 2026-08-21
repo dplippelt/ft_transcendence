@@ -144,6 +144,6 @@ def invite(lobby_id: int, invite_data: LobbyInviteCreate, current_user: Complete
         # Nothing actually reached the friend (most commonly: they're just
         # not connected right now, not an error) -- don't charge the sender
         # a 30s cooldown window for a no-op.
-        release_invite_cooldown(lobby_id, invite_data.friend_id)
+        release_invite_cooldown(current_user.id, invite_data.friend_id)
 
     return LobbyInviteResponse(delivered=delivered)
