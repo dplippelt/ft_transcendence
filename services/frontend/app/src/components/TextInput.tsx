@@ -89,8 +89,14 @@ export function ChatInput( { placeholder, onSend, msg, setMsg } : IChatInput )
 				textAreaRef.current.blur();
 		}
 
+		function cleanup()
+		{
+			document.removeEventListener("pointerdown", handlePointerDown);
+			EventBus.emit(GameEvent.chatFocus, false);
+		}
+
 		document.addEventListener("pointerdown", handlePointerDown);
-		return () => document.removeEventListener("pointerdown", handlePointerDown);
+		return () => cleanup();
 	}, [])
 
 	function handleChange( e: React.ChangeEvent<HTMLTextAreaElement> )
