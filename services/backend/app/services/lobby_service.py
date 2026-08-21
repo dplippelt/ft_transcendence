@@ -123,6 +123,8 @@ def close_lobby(db: Session, user: User, lobby_id: int) -> None:
 
 
 def leave_lobby(db: Session, user: User, lobby_id: int) -> None:
+    get_lobby_or_404(db, lobby_id)
+
     member = get_member(db, lobby_id, user.id)
 
     if member is None:
@@ -193,10 +195,12 @@ def send_lobby_message(db: Session, user: User, lobby_id: int, content: str) -> 
 
         # Most likely cause: the lobby was closed between the membership
         # check above and this commit, so the FK to lobby_id no longer
-        # resolves -- report that instead of a generic failure.
+        # resolves -- report that specifically (raises LOBBY_NOT_FOUND).
         get_lobby_or_404(db, lobby_id)
 
-        raise conflict("Could not send message.", code=ErrorCode.LOBBY_NOT_FOUND)
+        # The lobby still exists, so it wasn't that -- an unexpected
+        # constraint failure with no more specific code to report.
+        raise conflict("Could not send message.")
 
     db.refresh(message)
 
