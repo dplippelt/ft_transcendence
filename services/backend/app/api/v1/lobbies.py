@@ -1,18 +1,47 @@
+import logging
+
 from fastapi import APIRouter, status
+from sqlalchemy.orm import Session
 
 from app.api.dependencies import CompletedUser, DbSession
 from app.core.exceptions import ErrorCode, not_found
-from app.schemas.lobby import LobbyCreate, LobbyResponse
+from app.core.websocket_manager import connection_manager
+from app.schemas.lobby import LobbyCreate, LobbyMessageCreate, LobbyMessageResponse, LobbyResponse
 from app.services.lobby_service import (
     close_lobby,
     create_lobby,
     get_lobby_by_id,
+    get_lobby_messages,
+    get_other_member_ids,
     join_lobby,
     leave_lobby,
     list_lobbies,
+    send_lobby_message,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
+
+
+def notify_other_members(db: Session, lobby_id: int, sender_id: int, message: object) -> None:
+    # Best-effort: the message is already persisted, so a delivery failure
+    # here must not turn a successful send into a 500 -- covers building the
+    # payload and looking up recipients too, not just the socket send.
+    # Reuses the same per-user connection registry chat.py's websocket
+    # populates -- lobby members don't need a second websocket connection.
+    try:
+        payload = {
+            "type": "lobby_message",
+            **LobbyMessageResponse.model_validate(message).model_dump(mode="json"),
+        }
+        member_ids = get_other_member_ids(db, lobby_id, sender_id)
+    except Exception:
+        logger.warning("Failed to prepare lobby message notification for lobby %s", lobby_id, exc_info=True)
+        return
+
+    for member_id in member_ids:
+        connection_manager.notify(member_id, payload)
 
 
 @router.get("", response_model=list[LobbyResponse])
@@ -52,3 +81,17 @@ def close(lobby_id: int, current_user: CompletedUser, db: DbSession):
     close_lobby(db, current_user, lobby_id)
 
     return None
+
+
+@router.get("/{lobby_id}/messages", response_model=list[LobbyMessageResponse])
+def get_messages(lobby_id: int, current_user: CompletedUser, db: DbSession):
+    return get_lobby_messages(db, current_user, lobby_id)
+
+
+@router.post("/{lobby_id}/messages", response_model=LobbyMessageResponse, status_code=status.HTTP_201_CREATED)
+def post_message(lobby_id: int, message_data: LobbyMessageCreate, current_user: CompletedUser, db: DbSession):
+    message = send_lobby_message(db, current_user, lobby_id, message_data.content)
+
+    notify_other_members(db, lobby_id, current_user.id, message)
+
+    return message

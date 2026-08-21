@@ -1,6 +1,5 @@
 import logging
 
-import anyio.from_thread
 from fastapi import APIRouter, WebSocket, status
 
 from app.api.dependencies import CompletedUser, CurrentUserIdWS, DbSession
@@ -22,15 +21,18 @@ router = APIRouter()
 def notify_receiver(receiver_id: int, message: object) -> None:
     # Best-effort: the message is already persisted, so a delivery failure
     # here (e.g. a dead connection anyio couldn't clean up in time) must not
-    # turn a successful send into a 500.
+    # turn a successful send into a 500 -- covers payload construction too,
+    # not just the socket send.
     try:
-        anyio.from_thread.run(
-            connection_manager.send_to_user,
-            receiver_id,
-            ChatMessageResponse.model_validate(message).model_dump(mode="json"),
-        )
+        payload = {
+            "type": "chat_message",
+            **ChatMessageResponse.model_validate(message).model_dump(mode="json"),
+        }
     except Exception:
-        logger.warning("Failed to notify user %s of new message", receiver_id, exc_info=True)
+        logger.warning("Failed to prepare chat message notification for user %s", receiver_id, exc_info=True)
+        return
+
+    connection_manager.notify(receiver_id, payload)
 
 
 @router.get("/{friend_id}/messages", response_model=list[ChatMessageResponse])
