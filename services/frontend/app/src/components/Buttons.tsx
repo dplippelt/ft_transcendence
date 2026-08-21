@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
 import { PopupType, AvatarSize, MobilePosition, RoutePath, SortBy } from "../utils/utils";
@@ -133,8 +133,10 @@ export function BottomButton( { label, onClick, disabled=false, mobilePosition="
 export function BackButton( { path } : IBackButton )
 {
 	const navigate = useNavigate();
+	const location = useLocation();
+	const fromGameMenu = location.state?.gameMenu ?? false;
 
-	return <BottomButton label="Back" onClick={ () => navigate(path) } mobilePosition={MobilePosition.bottom} />;
+	return <BottomButton label="Back" onClick={ () => navigate(path, { state: { gameMenu: fromGameMenu } }) } mobilePosition={MobilePosition.bottom} />;
 }
 
 export function EditButton( { popupType, setPopupType } : IEditButton )

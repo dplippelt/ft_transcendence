@@ -187,7 +187,6 @@ function GuestButtons( { lobbyID } : IGuestButtons )
 	);
 }
 
-// TODO: if not logged in redirect to landing page
 export default function Lobby()
 {
 	const { setError } = useError();

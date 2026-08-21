@@ -77,7 +77,6 @@ function FriendsContainer( { mobileView, setMobileView, setPopupType } : IFriend
 	);
 }
 
-// TODO: if not logged in redirect to landing page
 export default function Friends()
 {
 	const [mobileView, setMobileView] = useState<MobileView>(MobileView.friends);

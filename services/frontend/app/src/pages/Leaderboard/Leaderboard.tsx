@@ -156,7 +156,6 @@ function Buttons()
 	);
 }
 
-// TODO: if not logged in redirect to landing page
 export default function Leaderboard()
 {
 	const { auth } = useAuth();

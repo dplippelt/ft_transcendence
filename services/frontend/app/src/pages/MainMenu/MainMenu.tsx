@@ -41,7 +41,6 @@ function Buttons()
 	)
 }
 
-// TODO: if not logged in redirect to landing page
 export default function MainMenu()
 {
 	const { error } = useError();

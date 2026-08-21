@@ -44,17 +44,28 @@ function Buttons()
 {
 	const navigate = useNavigate();
 	const location = useLocation();
-	const path = location.state?.from ?? RoutePath.mainMenu;
+	const fromGameMenu = location.state?.gameMenu ?? false;
+
+	// Makes sure it goes back to the game / game menu instead of main menu
+	// when the user navigates from:
+	// game menu -> profile -> leaderboard -> back to profile -> back to game menu
+	function getPath()
+	{
+		if ( location.state?.gameMenu )
+			return RoutePath.game;
+		if ( location.state?.from )
+			return location.state.from;
+		return RoutePath.mainMenu;
+	}
 
 	return (
 		<BottomButtons>
-			<BackButton path={path} />
-			<BottomButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname } }) } />
+			<BackButton path={getPath()} />
+			<BottomButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname, gameMenu: fromGameMenu } }) } />
 		</BottomButtons>
 	);
 }
 
-// TODO: if not logged in redirect to landing page
 export default function Profile()
 {
 	return (

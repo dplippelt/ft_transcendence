@@ -31,7 +31,6 @@ function Buttons( { setPopupType } : IButtons )
 	);
 }
 
-// TODO: if not logged in redirect to landing page
 export default function Multiplayer()
 {
 	const [ popupType, setPopupType ] = useState<PopupType>(PopupType.none);

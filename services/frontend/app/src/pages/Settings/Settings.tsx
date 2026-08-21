@@ -86,7 +86,6 @@ function Buttons( { setResetKey, settingRefs } : IButtons )
 	);
 }
 
-// TODO: if not logged in redirect to landing page
 export default function Settings()
 {
 	const [resetKey, setResetKey] = useState(0);

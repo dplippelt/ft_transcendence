@@ -26,11 +26,11 @@ function Buttons()
 	return (
 		<MenuButtons extraStyling={styles.gameMenuButtons}>
 			<GameMenuButton label="Continue" onClick={ () => EventBus.emit(GameEvent.gameMenu) } />
-			{ loggedIn && <GameMenuButton label="Friends" onClick={ () => navigate(RoutePath.friends, { state: { from: location.pathname } }) } /> }
-			{ loggedIn && <GameMenuButton label="Profile" onClick={ () => navigate(RoutePath.profile, { state: { from: location.pathname } }) } /> }
-			{ loggedIn && <GameMenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname } }) } /> }
+			{ loggedIn && <GameMenuButton label="Friends" onClick={ () => navigate(RoutePath.friends, { state: { from: location.pathname, gameMenu: true } }) } /> }
+			{ loggedIn && <GameMenuButton label="Profile" onClick={ () => navigate(RoutePath.profile, { state: { from: location.pathname, gameMenu: true } }) } /> }
+			{ loggedIn && <GameMenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname, gameMenu: true } }) } /> }
 			<GameMenuButton label="How to play" onClick={ () => {} } />
-			{ loggedIn && <GameMenuButton label="Settings" onClick={ () => navigate(RoutePath.settings, { state: { from: location.pathname } }) } /> }
+			{ loggedIn && <GameMenuButton label="Settings" onClick={ () => navigate(RoutePath.settings, { state: { from: location.pathname, gameMenu: true } }) } /> }
 			{ loggedIn && <GameMenuButton label="Back to main menu" onClick={ () => navigate(RoutePath.mainMenu, { replace: true }) } /> }
 			<GameMenuButton label={ loggedIn ? "Logout" : "Quit" } onClick={ handleLogout } />
 		</MenuButtons>
