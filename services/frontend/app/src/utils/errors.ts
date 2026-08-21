@@ -18,6 +18,8 @@ export enum ErrorType
     usernameContainsInvalChars,
     usernameCannotBeTheSame,
     usernameRequired,
+    displayNameCannotBeEmpty,
+    displayNameTooLong,
 
     passwordsDontMatch,
     passwordCannotBeEmpty,
@@ -106,6 +108,11 @@ export function errorMsg(error: ErrorType): string
                 "Username must be different from " +
                 "Player 1's username"
             );
+        case ErrorType.displayNameCannotBeEmpty:
+            return "Display name cannot be empty.";
+        
+        case ErrorType.displayNameTooLong:
+            return "Display name cannot be longer than 50 characters.";
         case ErrorType.passwordsDontMatch:
             return "Passwords don't match!";
         case ErrorType.passwordCannotBeEmpty:
@@ -297,6 +304,10 @@ export function mapAuthApiError(error: unknown): ErrorType
                     return ErrorType.passwordTooShort;
                 case "username":
                     return ErrorType.badUsernameLength;
+                case "display_name":
+                    if (validationError.type === "string_too_long")
+                        return ErrorType.displayNameTooLong;
+                    return ErrorType.displayNameCannotBeEmpty;
             }
         }
     }

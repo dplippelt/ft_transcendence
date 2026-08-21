@@ -174,6 +174,74 @@ function EditUsernameContent( { setPopupType } : IEditContent )
 	);
 }
 
+function EditDisplayNameContent({ setPopupType }: IEditContent)
+{
+    const { updateProfile } = useAuth();
+
+    const [displayName, setDisplayName] = useState<string>("");
+    const [error, setError] = useState<ErrorType>(ErrorType.none);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+    async function displayNameCheck()
+    {
+        if (isSubmitting)
+            return;
+        
+        setError(ErrorType.none);
+
+        const trimmedDisplayName = displayName.trim();
+
+        if (!trimmedDisplayName)
+        {
+            setError(ErrorType.displayNameCannotBeEmpty);
+            return;
+        }
+
+        setIsSubmitting(true);
+        
+        try
+        {
+            await updateProfile({
+                display_name: trimmedDisplayName,
+            });
+            setPopupType(PopupType.none);
+        }
+        catch (error)
+        {
+            setError(mapAuthApiError(error));
+        }
+        finally
+        {
+            setIsSubmitting(false);
+        }
+    }
+
+    return (
+        <>
+            {error !== ErrorType.none && <ErrorText error={error} />}
+            <TextInput
+                label="Edit display name:"
+                placeholder="Enter new display name"
+                setter={setDisplayName}
+                id="newDisplayName"
+                maxLength={50}
+            />
+            <PopupButtons>
+                <MossButton
+                    label="Ok"
+                    onClick={() => void displayNameCheck()}
+                    disabled={isSubmitting}
+                />
+                <MossButton
+                    label="Back"
+                    onClick={() => setPopupType(PopupType.none)}
+                    disabled={isSubmitting}
+                />
+            </PopupButtons>
+        </>
+    );
+}
+
 function EditPasswordContent( { setPopupType } : IEditContent )
 {
     const user = useCurrentUser();
@@ -305,7 +373,14 @@ export default function EditPopup(
 				<EditUsernameContent
 					setPopupType={setPopupType}
 				/>
-			);
+            );
+        
+        case PopupType.editDisplayName:
+            return (
+                <EditDisplayNameContent
+                    setPopupType={setPopupType}
+                />
+            );
 
 		case PopupType.editPassword:
 			return (
