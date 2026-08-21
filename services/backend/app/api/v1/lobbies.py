@@ -27,6 +27,7 @@ from app.services.lobby_service import (
     join_lobby,
     leave_lobby,
     list_lobbies,
+    release_invite_cooldown,
     send_lobby_message,
 )
 
@@ -41,14 +42,21 @@ def notify_other_members(db: Session, lobby_id: int, sender_id: int, message: ob
     # payload and looking up recipients too, not just the socket send.
     # Reuses the same per-user connection registry chat.py's websocket
     # populates -- lobby members don't need a second websocket connection.
+    # Builds the payload once via the shared helper (same guard notify_safely
+    # uses) since this fans out to N recipients -- notify_safely itself is
+    # 1:1 and would rebuild/re-log per recipient instead of once.
+    payload = connection_manager.build_payload_safely(
+        "lobby_message",
+        lambda: LobbyMessageResponse.model_validate(message).model_dump(mode="json"),
+    )
+
+    if payload is None:
+        return
+
     try:
-        payload = {
-            "type": "lobby_message",
-            **LobbyMessageResponse.model_validate(message).model_dump(mode="json"),
-        }
         member_ids = get_other_member_ids(db, lobby_id, sender_id)
     except Exception:
-        logger.warning("Failed to prepare lobby message notification for lobby %s", lobby_id, exc_info=True)
+        logger.warning("Failed to look up lobby members to notify for lobby %s", lobby_id, exc_info=True)
         return
 
     for member_id in member_ids:
@@ -131,5 +139,11 @@ def invite(lobby_id: int, invite_data: LobbyInviteCreate, current_user: Complete
     lobby = invite_friend_to_lobby(db, current_user, lobby_id, invite_data.friend_id)
 
     delivered = notify_invite(invite_data.friend_id, lobby, current_user)
+
+    if not delivered:
+        # Nothing actually reached the friend (most commonly: they're just
+        # not connected right now, not an error) -- don't charge the sender
+        # a 30s cooldown window for a no-op.
+        release_invite_cooldown(lobby_id, invite_data.friend_id)
 
     return LobbyInviteResponse(delivered=delivered)

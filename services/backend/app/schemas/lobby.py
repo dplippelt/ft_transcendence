@@ -77,4 +77,8 @@ class LobbyInviteCreate(BaseModel):
 
 
 class LobbyInviteResponse(BaseModel):
+    # Whether the invite reached an active websocket connection on this
+    # backend process specifically -- not a durable delivery receipt. A
+    # friend connected to a different worker/instance in a multi-process
+    # deployment would show False here despite being online elsewhere.
     delivered: bool

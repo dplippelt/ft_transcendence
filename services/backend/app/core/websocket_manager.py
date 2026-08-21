@@ -77,14 +77,24 @@ class ConnectionManager:
             logger.warning("Failed to notify user %s over websocket", user_id, exc_info=True)
             return False
 
-    def notify_safely(self, user_id: int, message_type: str, build_fields: Callable[[], dict]) -> bool:
-        # Shared wrapper for the "tag a payload with a type, guard building
-        # it, then notify" shape used by every websocket-push feature, so
-        # each caller isn't hand-rolling its own try/except + logging.
+    def build_payload_safely(self, message_type: str, build_fields: Callable[[], dict]) -> dict | None:
+        # Shared "tag a payload with a type, guard building it" step, split
+        # out from notify_safely so a caller that fans one payload out to
+        # multiple recipients can build it once instead of once per
+        # recipient (see notify_other_members in lobbies.py).
         try:
-            payload = {"type": message_type, **build_fields()}
+            return {"type": message_type, **build_fields()}
         except Exception:
-            logger.warning("Failed to prepare %s notification for user %s", message_type, user_id, exc_info=True)
+            logger.warning("Failed to prepare %s notification payload", message_type, exc_info=True)
+            return None
+
+    def notify_safely(self, user_id: int, message_type: str, build_fields: Callable[[], dict]) -> bool:
+        # Shared wrapper for the common 1:1 "build a payload, guard it, then
+        # notify one user" shape, so each caller isn't hand-rolling its own
+        # try/except + logging.
+        payload = self.build_payload_safely(message_type, build_fields)
+
+        if payload is None:
             return False
 
         return self.notify(user_id, payload)
