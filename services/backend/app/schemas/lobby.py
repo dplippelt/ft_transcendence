@@ -70,3 +70,7 @@ class LobbyResponse(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+
+class LobbyInviteCreate(BaseModel):
+    friend_id: int

@@ -2,12 +2,13 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.exceptions import ErrorCode, conflict, forbidden, not_found
+from app.core.exceptions import ErrorCode, bad_request, conflict, forbidden, not_found
 from app.db.utils import commit_or_bad_request
 from app.models.lobby import Lobby
 from app.models.lobby_member import LobbyMember
 from app.models.lobby_message import LobbyMessage
 from app.models.user import User
+from app.services.friend_service import get_friendship
 
 HOST = "host"
 GUEST = "guest"
@@ -205,3 +206,18 @@ def send_lobby_message(db: Session, user: User, lobby_id: int, content: str) -> 
     db.refresh(message)
 
     return message
+
+
+def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: int) -> Lobby:
+    if friend_id == user.id:
+        raise bad_request("You cannot invite yourself.", code=ErrorCode.CANNOT_ADD_SELF)
+
+    member = require_lobby_member(db, lobby_id, user.id)
+
+    if get_friendship(db, user.id, friend_id) is None:
+        raise not_found("Friendship not found.", code=ErrorCode.FRIENDSHIP_NOT_FOUND)
+
+    if get_member(db, lobby_id, friend_id) is not None:
+        raise conflict("This friend is already in the lobby.", code=ErrorCode.ALREADY_LOBBY_MEMBER)
+
+    return member.lobby

@@ -6,13 +6,17 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import CompletedUser, DbSession
 from app.core.exceptions import ErrorCode, not_found
 from app.core.websocket_manager import connection_manager
-from app.schemas.lobby import LobbyCreate, LobbyMessageCreate, LobbyMessageResponse, LobbyResponse
+from app.models.lobby import Lobby
+from app.models.user import User
+from app.schemas.lobby import LobbyCreate, LobbyInviteCreate, LobbyMessageCreate, LobbyMessageResponse, LobbyResponse
+from app.schemas.user import PublicUserResponse
 from app.services.lobby_service import (
     close_lobby,
     create_lobby,
     get_lobby_by_id,
     get_lobby_messages,
     get_other_member_ids,
+    invite_friend_to_lobby,
     join_lobby,
     leave_lobby,
     list_lobbies,
@@ -42,6 +46,24 @@ def notify_other_members(db: Session, lobby_id: int, sender_id: int, message: ob
 
     for member_id in member_ids:
         connection_manager.notify(member_id, payload)
+
+
+def notify_invite(friend_id: int, lobby: Lobby, inviter: User) -> None:
+    # No persisted model: an invite is just a real-time nudge, not a new
+    # access grant -- the invited friend can already see and join any
+    # public lobby via GET /lobbies + POST /lobbies/{id}/join regardless.
+    try:
+        payload = {
+            "type": "lobby_invite",
+            "lobby_id": lobby.id,
+            "lobby_name": lobby.name,
+            "inviter": PublicUserResponse.model_validate(inviter).model_dump(mode="json"),
+        }
+    except Exception:
+        logger.warning("Failed to prepare lobby invite notification for user %s", friend_id, exc_info=True)
+        return
+
+    connection_manager.notify(friend_id, payload)
 
 
 @router.get("", response_model=list[LobbyResponse])
@@ -95,3 +117,12 @@ def post_message(lobby_id: int, message_data: LobbyMessageCreate, current_user: 
     notify_other_members(db, lobby_id, current_user.id, message)
 
     return message
+
+
+@router.post("/{lobby_id}/invite", status_code=status.HTTP_204_NO_CONTENT)
+def invite(lobby_id: int, invite_data: LobbyInviteCreate, current_user: CompletedUser, db: DbSession):
+    lobby = invite_friend_to_lobby(db, current_user, lobby_id, invite_data.friend_id)
+
+    notify_invite(invite_data.friend_id, lobby, current_user)
+
+    return None
