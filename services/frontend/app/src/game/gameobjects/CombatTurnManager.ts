@@ -58,9 +58,7 @@ export default class CombatTurnManager {
       this.playerTimer = this.playTurnFor(this.turnConfig.playerDelayMs);
       this.turnEvents.emit(TurnEvents.STARTPLAYER);
     } else {
-      this.scene.input.enabled = false;
-
-      this.pausePlayerTimer();
+      this.pausePlayerTurn();
 
       // To display, not necessary.
       if (this.enemyTimer) {
@@ -83,7 +81,8 @@ export default class CombatTurnManager {
     return this.clock.addEvent(config);
   }
 
-  pausePlayerTimer() {
+  pausePlayerTurn() {
+    this.scene.input.enabled = false;
     if (this.playerTimer) {
       this.playerTimer.paused = true;
     }

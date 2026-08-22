@@ -214,7 +214,16 @@ export default class CombatAnimation {
   draw(card: CardBase) {
     card.on(CardEvents.FOCUSON, this.HoverUp, this);
     card.on(CardEvents.FOCUSOFF, this.HoverDown, this);
-    this.combatLayoutManager.updateLayout(false);
+    // this.combatLayoutManager.updateLayout(false);
+    const width = this.scene.scale.width;
+    const height = this.scene.scale.height;
+    const centerX = width / 2;
+    const centerY = height / 2;
+    const scaleX = width / this.combatLayoutManager.layoutBase.width;
+    const scaleY = height / this.combatLayoutManager.layoutBase.height;
+    const baseScale = Math.min(scaleX, scaleY);
+
+    this.combatLayoutManager.updateCardHand(centerX, centerY, baseScale, false);
   }
 
   HoverUp(card: CardBase) {
@@ -248,7 +257,7 @@ export default class CombatAnimation {
   }
 
   playerAttack(player: CombatPlayer, enemy: CombatEnemy, points: number) {
-    this.turnManger.pausePlayerTimer();
+    this.turnManger.pausePlayerTurn();
     player.play(PlayerAnimation.ATTACK_B);
     player.once("animationcomplete", () => {
       this.scene.tweens.add({
@@ -272,6 +281,7 @@ export default class CombatAnimation {
     this.scene.tweens.add({
       targets: enemy,
       x: enemy.x - 50,
+      delay: 500,
       duration: 50,
       yoyo: true,
       onComplete: () => {
