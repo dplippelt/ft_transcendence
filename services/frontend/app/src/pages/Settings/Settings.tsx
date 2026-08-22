@@ -12,6 +12,7 @@ import Slider from "../../components/Slider";
 import Dropdown from "../../components/Dropdown";
 import { MobilePosition, RoutePath } from "../../utils/utils";
 import SideBar from "../../components/SideBar";
+import { useLocation } from "react-router-dom";
 
 interface ISettingsWindow
 {
@@ -47,6 +48,8 @@ function SettingsWindow( { settingRefs } : ISettingsWindow )
 function Buttons( { setResetKey, settingRefs } : IButtons )
 {
 	const settings = useSettings();
+	const location = useLocation();
+	const path = location.state?.from ?? RoutePath.mainMenu;
 
 	function saveSettingsToDB(settings: ISettings)
 	{
@@ -76,7 +79,7 @@ function Buttons( { setResetKey, settingRefs } : IButtons )
 
 	return (
 		<BottomButtons>
-			<BackButton path={RoutePath.mainMenu} />
+			<BackButton path={path} />
 			<BottomButton label="Reset Defaults" onClick={resetSettings} mobilePosition={MobilePosition.top} />
 			<BottomButton label="Apply" onClick={applySettings} />
 		</BottomButtons>

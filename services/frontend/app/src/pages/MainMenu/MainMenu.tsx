@@ -29,13 +29,13 @@ function Buttons()
 
 	return (
 		<MenuButtons>
-			<MenuButton label="New game" onClick={ () => {} } />
+			<MenuButton label="New game" onClick={ () => navigate(RoutePath.gameDev) } />
 			<MenuButton label="Multiplayer" onClick={ () => navigate(RoutePath.multiplayer) } />
-			<MenuButton label="Friends" onClick={ () => navigate(RoutePath.friends) } />
-			<MenuButton label="Profile" onClick={ () => navigate(RoutePath.profile) } />
+			<MenuButton label="Friends" onClick={ () => navigate(RoutePath.friends, { state: { from: location.pathname } }) } />
+			<MenuButton label="Profile" onClick={ () => navigate(RoutePath.profile, { state: { from: location.pathname } }) } />
 			<MenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname } }) } />
 			<MenuButton label="How to play" onClick={ () => {} } />
-			<MenuButton label="Settings" onClick={ () => navigate(RoutePath.settings) } />
+			<MenuButton label="Settings" onClick={ () => navigate(RoutePath.settings, { state: { from: location.pathname } }) } />
 			<MenuButton label="Logout" onClick={ handleLogout } />
 		</MenuButtons>
 	)

@@ -58,6 +58,7 @@ export default class KeyboardComponent
     this.direction = new Math.Vector2(0, 0);
     this.interact = false;
     this.scene.game.events.on(Core.Events.BLUR, this.resetKeys, this);
+    this.scene.game.events.on(Core.Events.FOCUS, this.resetBlockedKeys, this);
 
     // Note: This is affects all scenes
     this.scene.input.keyboard?.enableGlobalCapture();
@@ -83,6 +84,11 @@ export default class KeyboardComponent
 
     this.direction.set(0, 0);
     this.interact = false;
+  }
+
+  resetBlockedKeys() {
+    for (const key of this.blockedKeys)
+      key.reset();
   }
 
   getInputDirection(): Math.Vector2 {
@@ -118,7 +124,9 @@ export default class KeyboardComponent
   }
 
   destroy(): void {
+    super.destroy();
     this.scene.game.events.off(Core.Events.BLUR, this.resetKeys, this);
+    this.scene.game.events.off(Core.Events.FOCUS, this.resetBlockedKeys, this);
     this.scene.input.keyboard?.disableGlobalCapture();
   }
 }
