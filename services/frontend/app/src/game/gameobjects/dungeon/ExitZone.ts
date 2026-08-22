@@ -20,8 +20,9 @@ export class ExitZone extends GameObjects.Zone {
   }
 
   destroy(fromScene?: boolean): void {
+    if ( !fromScene )
+      this.collider?.destroy();
     super.destroy(fromScene);
-    this.collider?.destroy();
   }
 
   overlapWithGroup(group: Physics.Arcade.Group) {

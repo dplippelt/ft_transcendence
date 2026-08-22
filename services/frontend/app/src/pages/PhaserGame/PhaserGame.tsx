@@ -3,8 +3,8 @@ import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
 import Background from "../../components/Background";
 import GameMenu from "../../components/GameMenu";
-import { useLocation } from "react-router-dom";
-import { GameEvent, RoutePath } from "../../utils/utils";
+import { useLocation, useNavigate } from "react-router-dom";
+import { GameEvent, GameResult, RoutePath } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import SideBar from "../../components/SideBar";
 import { OpenGameMenuButton } from "../../components/Buttons";
@@ -58,11 +58,12 @@ function Game( { currentActiveScene, gameRef, isGameURL } : IGame )
 export default function PhaserGame( { currentActiveScene } : IPhaserGame )
 {
   const { auth } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const isGameURL = location.pathname === RoutePath.gameDev;
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
   const gameRef = useRef<Phaser.Game | null>(null!);
-  const loggedIn = auth.status === "authenticated"
+  const loggedIn = auth.status === "authenticated";
 
   useEffect(() =>
   {
@@ -94,6 +95,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       EventBus.removeListener(GameEvent.gameVis);
       EventBus.removeListener(GameEvent.chatFocus);
       EventBus.removeListener(GameEvent.gameMenu);
+      EventBus.removeListener(GameEvent.gameOver);
       setGameMenuVis(false);
     }
 
@@ -105,7 +107,16 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
 
     function toggleGameMenu() { setGameMenuVis(prev => !prev); }
     EventBus.addListener(GameEvent.gameMenu, toggleGameMenu);
-    return () => { EventBus.removeListener(GameEvent.gameMenu, toggleGameMenu); };
+
+    function gameOver( result: GameResult ) { navigate(RoutePath.gameOver + "/" + result); }
+    EventBus.addListener(GameEvent.gameOver, gameOver);
+
+    function cleanup() {
+      EventBus.removeListener(GameEvent.gameMenu, toggleGameMenu);
+      EventBus.removeListener(GameEvent.gameOver, gameOver);
+    }
+
+    return () => cleanup();
   }, [location.pathname, isGameURL])
 
   return (
