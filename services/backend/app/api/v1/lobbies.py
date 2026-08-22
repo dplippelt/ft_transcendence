@@ -27,7 +27,6 @@ from app.services.lobby_service import (
     join_lobby,
     leave_lobby,
     list_lobbies,
-    release_invite_cooldown,
     send_lobby_message,
 )
 
@@ -138,12 +137,10 @@ def post_message(lobby_id: int, message_data: LobbyMessageCreate, current_user: 
 def invite(lobby_id: int, invite_data: LobbyInviteCreate, current_user: CompletedUser, db: DbSession):
     lobby = invite_friend_to_lobby(db, current_user, lobby_id, invite_data.friend_id)
 
+    # The cooldown stays reserved even when nothing was delivered (friend
+    # just not connected right now, the common case) -- releasing it here
+    # made the spam guard a no-op for most real invites, since most friends
+    # aren't actively connected at the moment they're invited.
     delivered = notify_invite(invite_data.friend_id, lobby, current_user)
-
-    if not delivered:
-        # Nothing actually reached the friend (most commonly: they're just
-        # not connected right now, not an error) -- don't charge the sender
-        # a 30s cooldown window for a no-op.
-        release_invite_cooldown(current_user.id, invite_data.friend_id)
 
     return LobbyInviteResponse(delivered=delivered)
