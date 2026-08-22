@@ -45,7 +45,7 @@ export default class CardDeck {
   readonly config: CardDeckConfig;
   readonly baseWeights: CardWeight[];
   readonly weightReduction: WeightReduction;
-  private deck: CardBase[];
+  private deck!: CardBase[];
   private cover: CardBase;
 
   constructor(scene: Scene, config: CardDeckConfig) {
@@ -53,7 +53,7 @@ export default class CardDeck {
     this.config = config;
     this.baseWeights = this.initBaseWeights(this.config);
     this.weightReduction = this.setWeightReductionFromConfig(this.config);
-    this.deck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
+    this.initDeck();
     this.cover = new CardBase(scene);
     this.scene.add.existing(this.cover);
     this.cover.setDepth(1); // hard cord
@@ -85,7 +85,11 @@ export default class CardDeck {
     return { number: numberWeight * factor, operator: operatorWeight * factor } as WeightReduction;
   }
 
-  generateCards(amount: number, baseWeights: CardWeight[], weightReduction: WeightReduction) {
+  initDeck() {
+    const amount = this.config.amount;
+    const baseWeights = this.baseWeights;
+    const weightReduction = this.weightReduction;
+
     if (amount < 0) throw Error("Amount for generating cards should be positive");
 
     const cards: CardBase[] = [];
@@ -99,7 +103,10 @@ export default class CardDeck {
 
     shuffle(cards);
 
-    return cards;
+    this.deck = cards;
+    if (!this.deck.length) {
+      throw Error("Could not create a new deck");
+    }
   }
 
   generateCard(cardWeights: readonly CardWeight[]) {
@@ -144,14 +151,7 @@ export default class CardDeck {
   }
 
   dealCard() {
-    const card = this.deck.pop()!;
-
-    if (!this.deck.length) {
-      this.deck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
-      if (!this.deck.length) throw Error("Could not create a new deck");
-    }
-
-    return card;
+    return this.deck.pop();
   }
 
   getDeck() {
@@ -160,6 +160,10 @@ export default class CardDeck {
 
   getCover() {
     return this.cover;
+  }
+
+  isEmpty() {
+    return !this.deck.length;
   }
 }
 

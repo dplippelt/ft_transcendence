@@ -136,6 +136,13 @@ export default class CombatLayoutManager {
     );
     this.cardManager.events.on(CardActionEvents.SELECT, this.setCardToSlot, this);
     this.cardManager.events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
+    this.cardManager.events.on(
+      CardActionEvents.GENERATE_DECK,
+      () => {
+        this.updateLayout(true);
+      },
+      this,
+    );
 
     this.player = this.combatManger.player;
     this.enemy = this.combatManger.enemy;

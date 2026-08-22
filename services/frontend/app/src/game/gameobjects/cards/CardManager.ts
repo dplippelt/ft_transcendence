@@ -12,6 +12,7 @@ export enum CardActionEvents {
   DISCARD = "discard",
   SELECT = "select",
   UNSELECT = "unselect",
+  GENERATE_DECK = "generateDeck",
 }
 
 const drawButtonConfig: ButtonConfig = {
@@ -79,7 +80,11 @@ export default class CardManager {
       return false;
     }
 
-    const card = this.cardDeck.dealCard();
+    if (this.cardDeck.isEmpty()) {
+        this.cardDeck.initDeck();
+        this.events.emit(CardActionEvents.GENERATE_DECK);
+    }
+    const card = this.cardDeck.dealCard()!;
     card.on(CardEvents.SELECTION, this.select, this);
 
 	this.cardHand.addCard(card);
