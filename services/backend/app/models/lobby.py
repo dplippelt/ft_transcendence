@@ -33,6 +33,12 @@ class Lobby(Base):
         passive_deletes=True,
     )
 
+    messages: Mapped[list["LobbyMessage"]] = relationship(
+        back_populates="lobby",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+
     __table_args__ = (
         # Lookups treat lobby names as case-insensitive, so uniqueness has
         # to be enforced on lower(name) too, not just the raw column.

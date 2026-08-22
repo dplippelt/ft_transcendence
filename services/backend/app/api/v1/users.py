@@ -32,6 +32,11 @@ def get_me(current_user: CurrentUser):
     return current_user
 
 
+@router.patch("/me", response_model=UserResponse)
+def update_me(user_update: UserUpdate, current_user: CurrentUser, db: DbSession,):
+    return update_user_profile(db, current_user, user_update)
+
+
 @router.get("/{user_id}", response_model=PublicUserResponse)
 def get_user(user_id: int, _current_user: CompletedUser, db: DbSession):
     user = get_active_user_by_id(db, user_id)
@@ -40,11 +45,6 @@ def get_user(user_id: int, _current_user: CompletedUser, db: DbSession):
         raise not_found("User not found")
 
     return user
-
-
-@router.put("/{user_id}", response_model=UserResponse)
-def update_user(user_data: UserUpdate, self_user: SelfUser, db: DbSession):
-    return update_user_profile(db, self_user, user_data)
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

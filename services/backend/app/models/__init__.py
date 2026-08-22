@@ -7,3 +7,4 @@ from app.models.dungeon import Dungeon
 from app.models.score import Score
 from app.models.lobby import Lobby
 from app.models.lobby_member import LobbyMember
+from app.models.lobby_message import LobbyMessage

@@ -5,7 +5,8 @@ const API_BASE_URL =
 interface ValidationError
 {
 	loc?: (string | number)[];
-	msg?: string;
+    msg?: string;
+    type?: string;
 }
 
 interface ApiErrorDetail

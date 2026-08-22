@@ -84,12 +84,12 @@ export function loginWithGoogleCredentials(credential: string,): Promise<TokenRe
     );
 }
 
-export function updateUser(userID: number, data: UpdateUserRequest, accessToken: string,): Promise<AuthUser>
+export function updateUser(data: UpdateUserRequest, accessToken: string,): Promise<AuthUser>
 {
     return apiRequest<AuthUser>(
-        `/users/${userID}`,
+        `/users/me`,
         {
-            method: "PUT",
+            method: "PATCH",
             body: JSON.stringify(data),
         },
         accessToken,

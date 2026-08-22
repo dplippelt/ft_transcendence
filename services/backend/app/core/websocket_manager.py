@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+import anyio.from_thread
 from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
@@ -55,6 +56,17 @@ class ConnectionManager:
                     await websocket.close()
                 except Exception:
                     pass
+
+    def notify(self, user_id: int, payload: dict) -> None:
+        # Sync-callable, best-effort wrapper for use from non-async route
+        # handlers: bridges to the event loop and never raises, so a
+        # delivery failure here can't turn an already-successful action
+        # (the caller already persisted whatever this is announcing) into
+        # a 500 for the request that triggered it.
+        try:
+            anyio.from_thread.run(self.send_to_user, user_id, payload)
+        except Exception:
+            logger.warning("Failed to notify user %s over websocket", user_id, exc_info=True)
 
 
 connection_manager = ConnectionManager()
