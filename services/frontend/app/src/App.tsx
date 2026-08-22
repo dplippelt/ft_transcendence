@@ -1,9 +1,8 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom"
-import { useRef } from "react"
 import LandingPage from "./pages/LandingPage/LandingPage"
 import MainMenu from "./pages/MainMenu/MainMenu"
 import Settings from "./pages/Settings/Settings"
-import PhaserGame, { type IRefPhaserGame } from "./pages/PhaserGame/PhaserGame"
+import PhaserGame from "./pages/PhaserGame/PhaserGame"
 import Leaderboard from "./pages/Leaderboard/Leaderboard"
 import Profile from "./pages/Profile/Profile"
 import Auth from "./pages/Auth/Auth"
@@ -20,7 +19,7 @@ import CompleteProfile from "./pages/Profile/CompleteProfile";
 export default function App()
 {
 	//  References to the PhaserGame component (game and scene are exposed)
-	const phaserRef = useRef<IRefPhaserGame | null>(null);
+	// const phaserRef = useRef<IRefPhaserGame | null>(null);
 
 	// Event emitted from the PhaserGame component
 	const currentScene = (scene: Phaser.Scene) => {
@@ -29,6 +28,7 @@ export default function App()
 
 	return (
 		<BrowserRouter>
+			<PhaserGame currentActiveScene={currentScene} />
 			<Routes>
 				<Route path={RoutePath.landingPage} element={ <LandingPage/> } />
                 <Route path={RoutePath.auth} element={<Auth />} />
@@ -43,7 +43,7 @@ export default function App()
                         <Route path={RoutePath.profile} element={ <Profile/> } />
                         <Route path={RoutePath.leaderboard} element={ <Leaderboard/> } />
                         <Route path={RoutePath.settings} element={ <Settings/> } />
-                        <Route path={RoutePath.gameDev} element={<PhaserGame ref={phaserRef} currentActiveScene={currentScene} />} />
+                        <Route path={RoutePath.gameDev} element={null} />
                     </Route>
                 </Route>
             <Route path="*" element={ <PageNotFound /> } />

@@ -1,8 +1,10 @@
-import Phaser, { Scene } from "phaser";
+import Phaser, { Core, Scene } from "phaser";
 import GameScene from "./GameScene";
 import CombatScene from "./CombatScene";
 import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
+import { EventBus } from "../EventBus";
+import { GameEvent } from "../../utils/utils";
 
 export enum GameEvents {
   CombatInitiated = "combat-initiated",
@@ -27,9 +29,12 @@ enum GameType {
 export class GameManagerScene extends Scene {
   static readonly EventsCenter = new Phaser.Events.EventEmitter();
 
+  private _isGameVisible = true;
+  private _isChatFocused = false;
   private _gameScene!: GameScene;
   private _combatScenes: CombatScene[];
   private _gameType: GameType;
+  private _pendingCombatScene: Phaser.Scene | null = null;
   private _exitedPlayers: Set<Player>;
   private _levelCount: number = 5; // TODO: Hard-coded for now
 
@@ -55,6 +60,40 @@ export class GameManagerScene extends Scene {
     this.scene.add("GameScene", this._gameScene, true);
   }
 
+  create() {
+    this.input.keyboard?.on("keydown-ESC", () => EventBus.emit(GameEvent.gameMenu));
+
+    EventBus.on(GameEvent.gameVis, (visible: boolean) => {
+      this._isGameVisible = visible;
+      this.updateGlobalCapture();
+    });
+
+    EventBus.on(GameEvent.chatFocus, (focused: boolean) => {
+      this._isChatFocused = focused;
+      this.updateGlobalCapture();
+      if ( focused )
+        this.game.events.emit(Core.Events.BLUR);
+    });
+
+    EventBus.on(GameEvent.gameMenu, () => {
+      if (this._gameType === GameType.OnlineCoop)
+        return; // Do not pause game for online multiplayer games when game menu is opened.
+
+      this.togglePause();
+    });
+  }
+
+  /* Update global capture for the (re-)launched combat scene.
+   * Namely this should prevent capture from re-enabling if
+   * the chat window happened to be open during combat initiation.
+   * Note: _pendingCombatScene is set inside onCombatInitiated() */
+  update() {
+    if ( this._pendingCombatScene && this.scene.isActive(this._pendingCombatScene) ) {
+      this.updateGlobalCapture();
+      this._pendingCombatScene = null;
+    }
+  }
+
   private onCombatInitiated(combatEventData: CombatEventData) {
     let combatScene = this._combatScenes.find((scene) => !this.scene.isActive(scene));
     if (combatScene !== undefined) {
@@ -65,6 +104,9 @@ export class GameManagerScene extends Scene {
       this.scene.add(scenekey, combatScene, true, combatEventData);
       this._combatScenes.push(combatScene);
     }
+
+    this._pendingCombatScene = combatScene;
+
     this.scene.moveUp(combatScene);
     if (this._gameType === GameType.SinglePlayer) {
       this.scene.sleep(this._gameScene);
@@ -86,6 +128,39 @@ export class GameManagerScene extends Scene {
     if (this._gameType === GameType.SinglePlayer) {
       this.scene.wake(this._gameScene);
     }
+
+    /* Update global capture for game scene
+     * No need for an event as the game scene is never stopped */
+    this.updateGlobalCapture();
+  }
+
+  private updateGlobalCapture() {
+    const shouldCapture = this._isGameVisible && !this._isChatFocused;
+
+    for ( const scene of this.getActiveScenes() )
+    {
+      if ( scene.input.keyboard )
+        scene.input.keyboard.enabled = shouldCapture;
+
+      if ( shouldCapture )
+        scene.input.keyboard?.enableGlobalCapture();
+      else
+        scene.input.keyboard?.disableGlobalCapture();
+    }
+  }
+
+  private togglePause() {
+    for ( const scene of this.getActiveScenes() ) {
+      if (this.scene.isPaused(scene))
+        this.scene.resume(scene);
+      else
+        this.scene.pause(scene);
+    }
+  }
+
+  private getActiveScenes() : Phaser.Scene[] {
+    return [this._gameScene, ...this._combatScenes]
+      .filter((scene) => this.scene.isActive(scene) || this.scene.isPaused(scene));
 
     if (this.allEnemiesDefeated()) {
       GameManagerScene.EventsCenter.emit(GameEvents.LevelComplete);
