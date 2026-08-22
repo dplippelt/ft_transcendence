@@ -4,7 +4,7 @@ import CombatScene from "./CombatScene";
 import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
 import { EventBus } from "../EventBus";
-import { GameEvent } from "../../utils/utils";
+import { GameEvent, GameResult } from "../../utils/utils";
 
 export enum GameEvents {
   CombatInitiated = "combat-initiated",
@@ -36,7 +36,8 @@ export class GameManagerScene extends Scene {
   private _gameType: GameType;
   private _pendingCombatScene: Phaser.Scene | null = null;
   private _exitedPlayers: Set<Player>;
-  private _levelCount: number = 5; // TODO: Hard-coded for now
+  private _levelCount: number = 1; // TODO: Hard-coded for now
+                                    // // TODO: change back to intended max level count (was 5)
 
   constructor() {
     super("game-manager");
@@ -114,13 +115,16 @@ export class GameManagerScene extends Scene {
   }
 
   private onCombatOver(combatEventData: CombatEventData) {
-    // TODO: player specific event, Win/Lose, progession
     if (!combatEventData.player.isAlive) {
       combatEventData.player.disableBody(true, true);
       if (!this.anyPlayerAlive()) {
-        this.onGameOver();
+        this.onGameOver(GameResult.lost);
         return;
       }
+    }
+
+    if (this.allEnemiesDefeated()) {
+      GameManagerScene.EventsCenter.emit(GameEvents.LevelComplete);
     }
 
     this.scene.moveDown(combatEventData.sceneInvoker);
@@ -161,16 +165,11 @@ export class GameManagerScene extends Scene {
   private getActiveScenes() : Phaser.Scene[] {
     return [this._gameScene, ...this._combatScenes]
       .filter((scene) => this.scene.isActive(scene) || this.scene.isPaused(scene));
-
-    if (this.allEnemiesDefeated()) {
-      GameManagerScene.EventsCenter.emit(GameEvents.LevelComplete);
-    }
   }
 
-  private onGameOver(): void {
-    // TODO: Transition to the game over screen (Victory/ Loss)
-    this._levelCount = 5;
-    console.error("Game Over!!!");
+  private onGameOver( result: GameResult ): void {
+    this._levelCount = 1; // TODO: change back to intended max level count (was 5)
+    EventBus.emit(GameEvent.gameOver, result);
   }
 
   private onExitLevel(player: Player): void {
@@ -185,7 +184,7 @@ export class GameManagerScene extends Scene {
       if (--this._levelCount) {
         this._gameScene.nextLevel();
       } else {
-        this.onGameOver();
+        this.onGameOver(GameResult.won);
       }
     }
   }
