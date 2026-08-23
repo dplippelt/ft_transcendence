@@ -134,7 +134,6 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     return () => cleanup();
   }, [location.pathname, isGameURL])
 
-  // TODO: <CombatBackground /> is a temporary preview of the combat background - remove before merging with master
   return (
     <div className={`${styles.gameWrapper} ${ isGameURL ? "" : styles.hidden }`}>
       <CombatBackground />
