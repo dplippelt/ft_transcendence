@@ -19,8 +19,10 @@ export enum CombatEvents {
   ENDCOMBAT = "endCombat",
   ENDGAME = "endGame",
   PLAYERATTACK = "playerAttack",
+  PLAYERGUARD = "PlayerGuard",
   ENEMYATTACK = "enemyAttack",
   TAKEDAMAGE = "takeDamage",
+  ENDTURN = "endTurn",
 }
 
 export default class CombatManager {
@@ -46,8 +48,10 @@ export default class CombatManager {
     this.executeManager = new CombatExecuteManager();
     this.events = new Phaser.Events.EventEmitter();
     this.events.on(CombatEvents.PLAYERATTACK, this.playerAttack, this);
+    this.events.on(CombatEvents.PLAYERGUARD, this.playerGuard, this);
     this.events.on(CombatEvents.ENEMYATTACK, this.enemyAttack, this);
     this.events.on(CombatEvents.TAKEDAMAGE, this.takeDamage, this);
+    this.events.on(CombatEvents.ENDTURN, this.endTurn, this);
     this.executeButton = new Button(scene, "Execute", executeButtonConfig);
     this.executeButton.on("pointerdown", this.execute, this);
     this.layoutManager = new CombatLayoutManager(this);
@@ -75,13 +79,18 @@ export default class CombatManager {
   }
 
   initEnemyTurn() {
-    this.events.emit(CombatEvents.ENEMYATTACK);
+    if (this.executeManager.getResult() !== null) {
+      this.events.emit(CombatEvents.PLAYERGUARD);
+    } else {
+      this.events.emit(CombatEvents.ENEMYATTACK);
+    }
   }
 
   execute() {
     const cards = this.cardManager.cardSelection.getSelectedCards();
 
     this.executeManager.evaluateSelectedCards(cards);
+    // TODO: make the logic to determine the value of combo in the executeManager
     this.executeManager.setCombo(ExecuteCombo.THREE);
     const points = this.executeManager.getResult();
     if (points !== null) {
@@ -94,6 +103,10 @@ export default class CombatManager {
 
   playerAttack() {
     this.events.emit(CombatEvents.TAKEDAMAGE, this.enemy);
+  }
+
+  playerGuard() {
+    this.events.emit(CombatEvents.ENDTURN);
   }
 
   enemyAttack() {
@@ -119,13 +132,15 @@ export default class CombatManager {
         this.endCombat();
       }
     } else {
-      if (this.executeManager.getResult() === null) {
-        combatant.takeDamage(1);
-        if (combatant.isDead()) {
-          this.endGame();
-        }
+      combatant.takeDamage(1);
+      if (combatant.isDead()) {
+        this.endGame();
       }
     }
+    this.events.emit(CombatEvents.ENDTURN);
+  }
+
+  endTurn() {
     this.turnManager.switchTurn();
   }
 
