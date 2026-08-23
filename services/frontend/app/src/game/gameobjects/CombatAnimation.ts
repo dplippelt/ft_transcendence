@@ -108,34 +108,6 @@ const enemyAnimationFram: Record<EnemyAnimation, SpriteSheetFrame> = {
   },
 };
 
-interface BattleAnimTween {
-  duration: number;
-  diffX: number;
-  yoyo: boolean;
-  repeat: number;
-}
-
-const attackAnimation: Record<string, BattleAnimTween> = {
-  damageEnemy: {
-    duration: 50,
-    diffX: 50,
-    yoyo: true,
-    repeat: 2,
-  },
-  enemyAttack: {
-    duration: 50,
-    diffX: 50,
-    yoyo: true,
-    repeat: 0,
-  },
-  damagePlayer: {
-    duration: 50,
-    diffX: 50,
-    yoyo: true,
-    repeat: 0,
-  },
-};
-
 export default class CombatAnimation {
   private readonly combatLayoutManager: CombatLayoutManager;
   private readonly scene: Scene;
@@ -196,12 +168,9 @@ export default class CombatAnimation {
       x: card.getData(TransformInLayout.X),
       y: card.getData(TransformInLayout.Y),
       angle: card.getData(TransformInLayout.ANGLE),
-      // scaleX: scale,
-      // scaleY: scale,
-      displayWidth: card.width,
-      displayHeight: card.height,
+      scale: card.getData(TransformInLayout.SCALE),
       duration: 300,
-      ease: "Power2",
+      ease: "Cubic.easeOut",
     });
   }
 
@@ -213,8 +182,7 @@ export default class CombatAnimation {
       x: slot.x,
       y: slot.y,
       angle: 0,
-      displayWidth: card.width * 0.7,
-      displayHeight: card.height * 0.7,
+      scale: card.getData(TransformInLayout.SCALE) * 0.7,
       ease: "Cubic.easeOut",
       duration: 200,
     });
@@ -227,7 +195,6 @@ export default class CombatAnimation {
   }
 
   HoverUp(card: CardBase) {
-    // Needs to fix hard cord.
     if (card.input?.hitArea instanceof Geom.Rectangle) {
       card.input.hitArea.right += 0;
       card.input.hitArea.bottom += 30;
@@ -246,13 +213,12 @@ export default class CombatAnimation {
       card.input.hitArea.right -= 0;
       card.input.hitArea.bottom -= 30;
     }
-    // Needs to fix hard cord.
     this.scene.tweens.add({
       targets: card,
       y: card.getData(TransformInLayout.Y),
       angle: card.getData(TransformInLayout.ANGLE),
       duration: 200,
-      ease: "Power1",
+      ease: "Cubic.easeOut",
     });
   }
 
