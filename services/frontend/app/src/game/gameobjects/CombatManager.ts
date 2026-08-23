@@ -1,7 +1,5 @@
 import Phaser, { type Scene } from "phaser";
 import CardManager, { cardManagerConfig } from "./cards/CardManager";
-import type CardBase from "./cards/CardBase";
-import { Operator, type CardValue } from "./cards/CardBase";
 import Button from "./utils/Button";
 import type { ButtonConfig } from "./utils/Button";
 import { buttonContentConfig, buttonStyleConfig } from "./utils/buttonConfig";
@@ -10,6 +8,7 @@ import type { PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 import CombatLayoutManager from "./CombatLayoutManager";
 import CombatPlayer from "./CombatPlayer";
+import CombatExecuteManager, { ExecuteCombo } from "./CombatExecuteManager";
 
 const executeButtonConfig: ButtonConfig = {
   styleConfig: buttonStyleConfig,
@@ -30,6 +29,7 @@ export default class CombatManager {
   readonly enemy: CombatEnemy;
   readonly cardManager: CardManager;
   readonly turnManager: CombatTurnManager;
+  readonly executeManager: CombatExecuteManager;
   readonly events: Phaser.Events.EventEmitter;
   readonly executeButton: Button;
   readonly layoutManager: CombatLayoutManager;
@@ -43,6 +43,7 @@ export default class CombatManager {
     this.turnManager = new CombatTurnManager(this);
     this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
     this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.executeEnemyEffect, this);
+    this.executeManager = new CombatExecuteManager();
     this.events = new Phaser.Events.EventEmitter();
     this.events.on(CombatEvents.PLAYERATTACK, this.playerAttack, this);
     this.events.on(CombatEvents.ENEMYATTACK, this.enemyAttack, this);
@@ -69,52 +70,63 @@ export default class CombatManager {
   initPlayerTurn() {
     this.cardManager.resetSelection();
     this.cardManager.clearHand();
-    // TODO: Fix this hard cord.
-    this.cardManager.fillCardHand(5);
+    this.cardManager.fillCardHand(this.cardManager.config.maxNumCardsInHand);
+    this.executeManager.reset();
   }
 
   executeEnemyEffect() {
-    const points = 10;
-    this.events.emit(CombatEvents.ENEMYATTACK, this.enemy, this.player, points);
+    this.events.emit(CombatEvents.ENEMYATTACK);
   }
 
   execute() {
     const cards = this.cardManager.cardSelection.getSelectedCards();
 
-    if (!cards.length) {
-      return;
-    }
-
-    const points = this.evaluateSelectedCards(cards);
-    console.log(points);
-    if (points === null) {
+    this.executeManager.evaluateSelectedCards(cards);
+    this.executeManager.setCombo(ExecuteCombo.THREE);
+    const points = this.executeManager.getResult();
+    if (points !== null) {
+      this.events.emit(CombatEvents.PLAYERATTACK);
+    } else {
       // dealPenalty(this.playerStatus);
       // TODO
-    } else {
-      this.events.emit(CombatEvents.PLAYERATTACK, this.player, this.enemy, points);
     }
   }
 
-  playerAttack(player: CombatPlayer, enemy: CombatEnemy, points: number) {
-    this.events.emit(CombatEvents.TAKEDAMAGE, enemy, points);
+  playerAttack() {
+    this.events.emit(CombatEvents.TAKEDAMAGE, this.enemy);
   }
 
-  enemyAttack(enemy: CombatEnemy, player: CombatEnemy, points: number) {
-    this.events.emit(CombatEvents.TAKEDAMAGE, player, points);
+  enemyAttack() {
+    this.events.emit(CombatEvents.TAKEDAMAGE, this.player);
   }
 
-  takeDamage(combatant: CombatPlayer | CombatEnemy, points: number) {
-    combatant.takeDamage(points);
-    if (combatant.isDead()) {
-      if (combatant instanceof CombatPlayer) {
-        this.endGame();
-      } else {
+  takeDamage(combatant: CombatPlayer | CombatEnemy) {
+    if (combatant instanceof CombatEnemy) {
+      switch (this.executeManager.getCombo()) {
+        case ExecuteCombo.ONE:
+          combatant.takeDamage(1);
+          break;
+        case ExecuteCombo.TWO:
+          combatant.takeDamage(2);
+          break;
+        case ExecuteCombo.THREE:
+          combatant.takeDamage(3);
+          break;
+        default:
+          throw Error("Execution combo animation is not implemented.");
+      }
+      if (combatant.isDead()) {
         this.endCombat();
       }
+    } else {
+      if (this.executeManager.getResult() === null) {
+        combatant.takeDamage(1);
+        if (combatant.isDead()) {
+          this.endGame();
+        }
+      }
     }
-    if (combatant instanceof CombatEnemy) {
-      this.turnManager.switchTurn();
-    }
+    this.turnManager.switchTurn();
   }
 
   endCombat() {
@@ -125,101 +137,5 @@ export default class CombatManager {
   endGame() {
     this.turnManager.clock.removeAllEvents();
     this.events.emit(CombatEvents.ENDGAME);
-  }
-
-  evaluateSelectedCards(selectedCards: CardBase[]) {
-    if (!this.isValidSelection(selectedCards)) return null;
-
-    const values = this.evaluateHighPrecedenceOperations(selectedCards);
-    if (!values) return null;
-
-    const result = this.evaluateLowPrecedenceOperations(values);
-    return result;
-  }
-
-  evaluateHighPrecedenceOperations(selectedCards: CardBase[]) {
-    const values: CardValue[] = [];
-
-    for (let i = 0; i < selectedCards.length; ++i) {
-      const card = selectedCards[i];
-
-      if (i % 2 === 0) {
-        const currNum = card.getValue() as number;
-
-        if (!values.length) {
-          values.push(currNum);
-          continue;
-        }
-
-        const operator = values.pop() as Operator;
-        const preNum = values.pop() as number;
-
-        switch (operator) {
-          case Operator.Multiply:
-            values.push(preNum * currNum);
-            break;
-
-          case Operator.Divide:
-            if (currNum === 0) return null;
-            values.push(preNum / currNum);
-            break;
-
-          case Operator.Modulo:
-            if (currNum === 0) return null;
-            values.push(preNum % currNum);
-            break;
-
-          default:
-            values.push(preNum);
-            values.push(operator);
-            values.push(currNum);
-            break;
-        }
-      } else {
-        const operator = card.getValue() as Operator;
-        values.push(operator);
-      }
-    }
-
-    return values;
-  }
-
-  evaluateLowPrecedenceOperations(values: CardValue[]) {
-    let num = values[0] as number;
-
-    for (let i = 2; i < values.length; i += 2) {
-      const currNum = values[i] as number;
-      const operator = values[i - 1] as Operator;
-
-      switch (operator) {
-        case Operator.Plus:
-          num += currNum;
-          break;
-
-        case Operator.Minus:
-          num -= currNum;
-          break;
-
-        default:
-          break;
-      }
-    }
-
-    return num;
-  }
-
-  isValidSelection(selectedCard: CardBase[]) {
-    if (selectedCard.length % 2 === 0) return false;
-
-    for (let i = 0; i < selectedCard.length; ++i) {
-      const card = selectedCard[i];
-
-      if (i % 2 === 0) {
-        if (!card.isValueNumber()) return false;
-      } else {
-        if (!card.isValueOperator()) return false;
-      }
-    }
-    return true;
   }
 }
