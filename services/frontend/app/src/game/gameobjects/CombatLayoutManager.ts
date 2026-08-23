@@ -7,107 +7,107 @@ import type CombatEnemy from "./CombatEnemy";
 import CombatAnimation from "./CombatAnimation";
 import { CardActionEvents } from "./cards/CardManager";
 import type CardSlot from "./cards/CardSlot";
+import Button from "./utils/Button";
 
-interface CombatLayoutBase {
+interface CombatLayout {
   width: number;
   height: number;
-}
-
-const combatLayoutBase: CombatLayoutBase = {
-  width: 1280,
-  height: 780,
-};
-
-interface LayoutFromCenter {
+  cardSize: {
+    width: number;
+    height: number;
+  };
   player: {
-    x: number;
-    y: number;
+    xFromCenter: number;
+    yFromCenter: number;
+    width: number;
+    height: number;
   };
   enemy: {
-    x: number;
-    y: number;
+    xFromCenter: number;
+    yFromCenter: number;
+    width: number;
+    height: number;
+  };
+  button: {
+    width: number;
+    height: number;
   };
   cards: {
     hand: {
-      startX: number;
-      endX: number;
-      y: number;
+      width: number,
+      yFromBottom: number;
     };
     selection: {
-      startX: number;
-      startY: number;
+      startXFromCenter: number;
+      endXFromCenter: number,
+      cellWidth: number,
+      yFromTop: number;
     };
     deck: {
-      x: number;
-      y: number;
-    };
-  };
-  buttons: {
-    execute: {
-      x: number;
-      y: number;
-    };
-    drawCard: {
-      x: number;
-      y: number;
-    };
-    resetSelection: {
-      x: number;
-      y: number;
+      xFromCenter: number;
+      yFromBottom: number;
     };
   };
 }
 
-const layoutFromCenter: LayoutFromCenter = {
+const combatLayout: CombatLayout = {
+  width: 960,
+  height: 540,
+  cardSize: {
+    width: 64,
+    height: 96,
+  },
   player: {
-    x: -300,
-    y: 100,
+    xFromCenter: -220,
+    yFromCenter: 100,
+    width: 79,
+    height: 63,
   },
   enemy: {
-    x: 300,
-    y: 100,
+    xFromCenter: 220,
+    yFromCenter: 100,
+    width: 37,
+    height: 43,
+  },
+  button: {
+    width: 100,
+    height: 50,
   },
   cards: {
     hand: {
-      startX: -400,
-      endX: 400,
-      y: 200,
+      width: 500,
+      yFromBottom: -50,
     },
     selection: {
-      startX: -200,
-      startY: -200,
+      startXFromCenter: -175,
+      endXFromCenter: 175,
+      cellWidth: 50,
+      yFromTop: 100,
     },
     deck: {
-      x: 500,
-      y: 200,
-    },
-  },
-  buttons: {
-    execute: {
-      x: -100,
-      y: -300,
-    },
-    drawCard: {
-      x: 0,
-      y: -300,
-    },
-    resetSelection: {
-      x: 100,
-      y: -300,
+      xFromCenter: -400,
+      yFromBottom: -150,
     },
   },
 };
 
-export enum LayoutData {
-  X = "offsetX",
-  Y = "offsetY",
-  ANGLE = "offsetAngle",
+interface Display {
+  width: number;
+  height: number;
+  centerX: number;
+  centerY: number;
+  scale: number;
+}
+
+export enum TransformInLayout {
+  X = "LayoutX",
+  Y = "LayoutY",
+  ANGLE = "LayoutAngle",
+  SCALE = "LayoutScale",
 }
 
 export enum LayoutEvents {
   SET_CARD_POS = "setCardPos",
-  // SET_DECK_CARD_POS = "setDeckCardPos",
-  // SET_HAND_CARD_POS = "setHandCardPos",
   SET_CARD_TO_SLOT = "setSelectionSlotsPos",
   SET_COMBATANT_POS = "setCombatantPos",
 }
@@ -118,85 +118,96 @@ export default class CombatLayoutManager {
   readonly cardManager: CardManager;
   readonly player: CombatPlayer;
   readonly enemy: CombatEnemy;
-  readonly layoutFromCenter: LayoutFromCenter;
-  readonly layoutBase: CombatLayoutBase;
   readonly events: Phaser.Events.EventEmitter;
   readonly anims: CombatAnimation;
+  readonly layout: CombatLayout;
+  readonly display!: Display;
 
   constructor(combatManger: CombatManager) {
     this.combatManger = combatManger;
     this.scene = this.combatManger.scene;
     this.cardManager = this.combatManger.cardManager;
-    this.cardManager.events.on(
-      CardActionEvents.DRAW,
-      () => {
-        this.updateLayout(false);
-      },
-      this,
-    );
-    this.cardManager.events.on(CardActionEvents.SELECT, this.setCardToSlot, this);
-    this.cardManager.events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
-    this.cardManager.events.on(
-      CardActionEvents.GENERATE_DECK,
-      () => {
-        this.updateLayout(true);
-      },
-      this,
-    );
-
+    this.onCardActions();
     this.player = this.combatManger.player;
     this.enemy = this.combatManger.enemy;
-    this.layoutFromCenter = layoutFromCenter;
-    this.layoutBase = combatLayoutBase;
     this.events = new Phaser.Events.EventEmitter();
+    this.onLayoutActions();
+    this.anims = new CombatAnimation(this);
+    this.layout = combatLayout;
+    this.display = { width: 0, height: 0, centerX: 0, centerY: 0, scale: 0 };
+    this.updateDisplay();
+    this.updateLayout();
+    this.scene.scale.on("resize", this.updateLayout, this);
+  }
+
+  onCardActions() {
+    this.cardManager.events.on(CardActionEvents.DRAW, this.updateCardHand, this);
+    this.cardManager.events.on(CardActionEvents.SELECT, this.setCardToSlot, this);
+    this.cardManager.events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
+    this.cardManager.events.on(CardActionEvents.GENERATE_DECK, this.updateDeck, this);
+  }
+
+  onLayoutActions() {
     this.events.on(LayoutEvents.SET_CARD_POS, this.setCardPosition, this);
     this.events.on(LayoutEvents.SET_CARD_TO_SLOT, this.setCardToSlot, this);
     this.events.on(LayoutEvents.SET_COMBATANT_POS, this.setCombatantPositions, this);
+  }
 
-    this.anims = new CombatAnimation(this);
-    this.updateLayout();
-    this.scene.scale.on("resize", () => {
-      this.updateLayout();
-    });
+  updateDisplay() {
+    this.display.width = this.scene.scale.width;
+    this.display.height = this.scene.scale.height;
+    this.display.centerX = this.display.width / 2;
+    this.display.centerY = this.display.height / 2;
+    const scaleX = this.display.width / this.layout.width;
+    const scaleY = this.display.height / this.layout.height;
+    this.display.scale = Math.min(scaleX, scaleY);
   }
 
   updateLayout(isResize: boolean = true) {
-    const width = this.scene.scale.width;
-    const height = this.scene.scale.height;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const scaleX = width / this.layoutBase.width;
-    const scaleY = height / this.layoutBase.height;
-    const baseScale = Math.min(scaleX, scaleY);
+    if (isResize) {
+      this.updateDisplay();
+    }
 
-    this.updateButtons(centerX, centerY, baseScale);
-    this.updateDeck(centerX, centerY, baseScale, isResize);
-    this.updateCardHand(centerX, centerY, baseScale, isResize);
-    this.updateSelectionSlots(centerX, centerY, baseScale, isResize);
-    this.updatePlayer(centerX, centerY, baseScale);
-    this.updateEnemy(centerX, centerY, baseScale);
+    this.updateButtons();
+    this.updateDeck(isResize);
+    this.updateCardHand(isResize);
+    this.updateSelectionSlots(isResize);
+    this.updatePlayer();
+    this.updateEnemy();
   }
 
-  updateButtons(centerX: number, centerY: number, scale: number) {
-    const executeButton = this.combatManger.executeButton;
-    const drawButton = this.cardManager.drawButton;
-    const resetButton = this.cardManager.selectionResetButton;
-    const diff = this.layoutFromCenter.buttons;
+  updateButtons() {
+    const buttons: Button[] = [];
+    buttons.push(this.combatManger.executeButton);
+    buttons.push(this.cardManager.drawButton);
+    buttons.push(this.cardManager.selectionResetButton);
 
-    executeButton.setPosition(centerX + diff.execute.x * scale, centerY + diff.execute.y * scale);
-    drawButton.setPosition(centerX + diff.drawCard.x * scale, centerY + diff.drawCard.y * scale);
-    resetButton.setPosition(centerX + diff.resetSelection.x * scale, centerY + diff.resetSelection.y * scale);
+    const targetY = 200;
+    const length = buttons.length;
+    const buttonSpace = buttons[0].width;
+    const totalButtonWidth = buttonSpace * (length - 1);
+    const startX = this.display.centerX - totalButtonWidth / 2;
+    for (let i = 0; i < length; ++i) {
+      const targetX = startX + i * buttonSpace;
+      buttons[i].setPosition(targetX, targetY);
+    }
   }
 
-  updateDeck(centerX: number, centerY: number, scale: number, isResize: boolean) {
+  updateDeck(isResize: boolean = true) {
+    const display = this.display;
     const deck = this.cardManager.cardDeck.getDeck();
-    const diff = this.layoutFromCenter.cards.deck;
-    const targetX = centerX + diff.x * scale;
-    const targetY = centerY + diff.y * scale;
+    const deckLayout = this.layout.cards.deck;
+    const targetX = display.centerX + deckLayout.xFromCenter * display.scale;
+    const targetY = display.height + deckLayout.yFromBottom * display.scale;
     const angle = 0;
 
     deck.forEach((card: CardBase) => {
-      card.setData({ [LayoutData.X]: targetX, [LayoutData.Y]: targetY, [LayoutData.ANGLE]: angle });
+      card.setData({
+        [TransformInLayout.X]: targetX,
+        [TransformInLayout.Y]: targetY,
+        [TransformInLayout.ANGLE]: angle,
+        [TransformInLayout.SCALE]: display.scale,
+      });
       if (isResize) {
         this.setCardPosition(card);
       } else {
@@ -205,7 +216,12 @@ export default class CombatLayoutManager {
     });
 
     const cover = this.cardManager.cardDeck.getCover();
-    cover.setData({ [LayoutData.X]: targetX, [LayoutData.Y]: targetY, [LayoutData.ANGLE]: angle });
+    cover.setData({
+      [TransformInLayout.X]: targetX,
+      [TransformInLayout.Y]: targetY,
+      [TransformInLayout.ANGLE]: angle,
+      [TransformInLayout.SCALE]: display.scale,
+    });
     if (isResize) {
       this.setCardPosition(cover);
     } else {
@@ -213,26 +229,31 @@ export default class CombatLayoutManager {
     }
   }
 
-  updateCardHand(centerX: number, centerY: number, scale: number, isResize: boolean) {
+  updateCardHand(isResize: boolean = true) {
     const handCards = this.cardManager.cardHand.getHandCards().getAll() as CardBase[];
     const totalCards = handCards.length;
     if (!totalCards) {
       return;
     }
-
-    const diff = this.layoutFromCenter.cards.hand;
-    const ground = centerY + diff.y * scale;
-    const cardSpace = Math.min(100 * scale, (centerX * 2 * 0.6) / totalCards);
+    const display = this.display;
+    const handLayout = this.layout.cards.hand;
+    const ground = display.height + handLayout.yFromBottom * display.scale;
+    const cardSpace = Math.min(100 * display.scale, (handLayout.width) * display.scale / totalCards);
     const totalHandWidth = cardSpace * (totalCards - 1);
-    const startX = centerX - totalHandWidth / 2;
+    const startX = this.display.centerX - totalHandWidth / 2;
 
     handCards.forEach((card: CardBase, index: number) => {
       const targetX = startX + index * cardSpace;
       const offsetFromCenter = (index - (totalCards - 1) / 2) / (totalCards / 2);
-      const curveY = Math.pow(offsetFromCenter, 2) * 30 * scale;
+      const curveY = Math.pow(offsetFromCenter, 2) * 30 * this.display.scale;
       const targetY = ground + curveY;
       const targetAngle = offsetFromCenter * 10;
-      card.setData({ [LayoutData.X]: targetX, [LayoutData.Y]: targetY, [LayoutData.ANGLE]: targetAngle });
+      card.setData({
+        [TransformInLayout.X]: targetX,
+        [TransformInLayout.Y]: targetY,
+        [TransformInLayout.ANGLE]: targetAngle,
+        [TransformInLayout.SCALE]: this.display.scale,
+      });
       if (card.getIsSelected()) {
         return;
       }
@@ -244,14 +265,15 @@ export default class CombatLayoutManager {
     });
   }
 
-  updateSelectionSlots(centerX: number, centerY: number, scale: number, isResize: boolean) {
+  updateSelectionSlots(isResize: boolean = true) {
     const selectionSlots = this.cardManager.cardSelection.getSelectionSlots();
-    const diff = this.layoutFromCenter.cards.selection;
-    const targetX = centerX + diff.startX * scale;
-    const targetY = centerY + diff.startY * scale;
+    const display = this.display;
+    const selectionLayout = this.layout.cards.selection;
+    const targetX = display.centerX + selectionLayout.startXFromCenter * display.scale;
+    const targetY = selectionLayout.yFromTop * display.scale;
     const gridOptions: Phaser.Types.Actions.GridAlignConfig = {
       width: -1,
-      cellWidth: 50,
+      cellWidth: selectionLayout.cellWidth * display.scale,
       x: targetX,
       y: targetY,
     };
@@ -270,46 +292,61 @@ export default class CombatLayoutManager {
     }
   }
 
-  updatePlayer(centerX: number, centerY: number, scale: number) {
-    const diff = this.layoutFromCenter.player;
-    const targetX = centerX + diff.x * scale;
-    const targetY = centerY + diff.y * scale;
-    this.player.setData({ [LayoutData.X]: targetX, [LayoutData.Y]: targetY });
+  updatePlayer() {
+    const display = this.display;
+    const playerLayout = this.layout.player;
+    const targetX = display.centerX + playerLayout.xFromCenter * display.scale;
+    const targetY = display.centerY + playerLayout.yFromCenter * display.scale;
+    this.player.setData({
+      [TransformInLayout.X]: targetX,
+      [TransformInLayout.Y]: targetY,
+      [TransformInLayout.SCALE]: this.display.scale,
+    });
     this.events.emit(LayoutEvents.SET_COMBATANT_POS, this.player);
   }
 
-  updateEnemy(centerX: number, centerY: number, scale: number) {
-    const diff = this.layoutFromCenter.enemy;
-    const targetX = centerX + diff.x * scale;
-    const targetY = centerY + diff.y * scale;
-    this.enemy.setData({ [LayoutData.X]: targetX, [LayoutData.Y]: targetY });
+  updateEnemy() {
+    const display = this.display;
+    const enemyLayout = this.layout.enemy;
+    const targetX = display.centerX + enemyLayout.xFromCenter * display.scale;
+    const targetY = display.centerY + enemyLayout.yFromCenter * display.scale;
+    this.enemy.setData({
+      [TransformInLayout.X]: targetX,
+      [TransformInLayout.Y]: targetY,
+      [TransformInLayout.SCALE]: this.display.scale,
+    });
     this.events.emit(LayoutEvents.SET_COMBATANT_POS, this.enemy);
   }
 
   setCardPosition(card: CardBase) {
-    const x = card.getData(LayoutData.X);
-    const y = card.getData(LayoutData.Y);
-    const angle = card.getData(LayoutData.ANGLE);
+    const x = card.getData(TransformInLayout.X);
+    const y = card.getData(TransformInLayout.Y);
+    const angle = card.getData(TransformInLayout.ANGLE);
+    const scale = card.getData(TransformInLayout.SCALE);
 
     card.setPosition(x, y);
     card.angle = angle;
-    card.displayWidth = card.width;
-    card.displayHeight = card.height;
+    card.scale = scale;
   }
 
   setCardToSlot(slot: CardSlot) {
     const card = slot.getCard()!;
+    const x = slot.x;
+    const y = slot.y;
+    const angle = 0;
+    const scale = card.getData(TransformInLayout.SCALE) * 0.7;
 
-    card.setPosition(slot.x, slot.y);
-    card.angle = 0;
-    card.displayWidth = card.width * 0.7;
-    card.displayHeight = card.height * 0.7;
+    card.setPosition(x, y);
+    card.angle = angle;
+    card.scale = scale;
   }
 
   setCombatantPositions(combatant: CombatPlayer | CombatEnemy) {
-    const targetX = combatant.getData(LayoutData.X);
-    const targetY = combatant.getData(LayoutData.Y);
+    const targetX = combatant.getData(TransformInLayout.X);
+    const targetY = combatant.getData(TransformInLayout.Y);
+    const scale = combatant.getData(TransformInLayout.SCALE);
 
     combatant.setPosition(targetX, targetY);
+    combatant.scale = scale;
   }
 }
