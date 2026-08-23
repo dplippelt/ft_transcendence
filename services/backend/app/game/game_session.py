@@ -1,41 +1,19 @@
 import asyncio
 from enum import Enum, StrEnum, auto
-from random import getrandbits
 from time import monotonic
+
+from fastapi import WebSocket
 
 from app.core.websocket_manager import ConnectionManager
 from app.schemas.game import PlayerAction
 
 from .game_simulation import GameSimulation
 
-# Session state (Initialize Session -> Waiting For Players -> Running -> Session Over)
-# Session state: Running -> all players left -> Session Over
-# Session state: Running -> GS Game Over -> Session Over
-#
-# Game State: Running -> Level Complete -> Next Level
-# Game State: Running -> All lifes lost -> Game Over (Lose)
-# Game State: Running -> All levels complete -> Game Over (Win)
-#
-# Player state, Alive, InCombat, Dead, Disconnected
-# Enemy state Idle, Wander, Chase, Combat, Recall
-#
-# Player entities: user_id/player_id, player state
-# Dynamic enities: xy, tileXY, movement speed, body size, is alive, in combat
-# Map: 2D tile map; tile size
-#
-# clients need to know; dungeon_seed and tile size
-# 64px per tile
-
-
-# GameSessionManager and its responsibilities
-# GameSession and its responsibilities
-# Allow Players to join a game Session !
-#
-# Translate the map generation code into python
+SESSION_TIMEOUT = 140.0
+CLIENT_TIMEOUT = 10.0
 
 
 class SessionState(Enum):
-    INITIALIZE = auto()
     WAITING_FOR_PLAYERS = auto()
     RUNNING = auto()
     SESSION_OVER = auto()
@@ -48,7 +26,6 @@ class JoinStatus(StrEnum):
     GAME_NOT_FOUND = "Game not found"
 
 
-# TODO: async start game loop
 class GameSession:
     def __init__(
         self,
@@ -57,62 +34,93 @@ class GameSession:
         allowed_user_list: set[int] | None = None,
     ):
         self.id: int = id
-        self.dungeon_seed: int = getrandbits(32)
-        self.state: SessionState = SessionState.INITIALIZE
-        self.game: GameSimulation = GameSimulation()
         self.connection_manager: ConnectionManager = connection_manager
         self.allowed_user_list: set[int] | None = allowed_user_list
+        self.game: GameSimulation = GameSimulation(self.id)
+        self.state: SessionState = SessionState.WAITING_FOR_PLAYERS
         self.connected_users: set[int] = set()
+        self.task: asyncio.Task[None] = asyncio.create_task(self.game_loop())
+        self.time_since_last_action: float = monotonic()
+        self.time_last_player_action: dict[int, float] = {}
 
-    def join_session(self, user_id: int) -> JoinStatus:
+    # TODO: Support spectators
+    async def join(self, user_id: int, socket: WebSocket) -> JoinStatus:
         if self.allowed_user_list is not None and user_id not in self.allowed_user_list:
             return JoinStatus.GAME_NOT_JOINED
 
         if user_id in self.connected_users:
+            await self.connection_manager.connect(user_id, socket)
             return JoinStatus.GAME_JOINED
 
-        # TODO: Support spectators
         if len(self.connected_users) == 2:
             return JoinStatus.GAME_FULL
 
+        await self.connection_manager.connect(user_id, socket)
         self.connected_users.add(user_id)
         self.game.connect_player(user_id)
-        # TODO: all players joined? change state to running
+
+        if len(self.connected_users) == 2:
+            self.state = SessionState.RUNNING
 
         return JoinStatus.GAME_JOINED
 
-    def leave_session(self, user_id: int) -> None:
+    def leave(self, user_id: int) -> None:
         if user_id not in self.connected_users:
             return
 
+        self.connection_manager.disconnect_user(user_id)
         self.connected_users.remove(user_id)
         self.game.disconnect_player(user_id)
 
         if not self.connected_users:
-            self.state = SessionState.SESSION_OVER
+            self.state = SessionState.WAITING_FOR_PLAYERS
 
     async def broadcast(self) -> None:
         for user_id in self.connected_users:
             await self.connection_manager.send_to_user(
-                user_id, self.game.get_snapshot()
+                user_id, self.game.get_snapshot(user_id).model_dump(mode="json")
             )
 
-    async def game_loop(self) -> None:
+    def check_user_activity(self):
+        current_time = monotonic()
+        for user_id in self.connected_users:
+            if user_id in self.time_last_player_action and (
+                current_time - self.time_last_player_action[user_id] > CLIENT_TIMEOUT
+            ):
+                self.leave(user_id)
+
+        if not self.connected_users:
+            self.state = SessionState.WAITING_FOR_PLAYERS
+
+    async def game_loop(self):
         FIXED_TIME_STEP: float = 1.0 / 20.0
 
-        while self.state == SessionState.RUNNING:
+        while True:
             start_time = monotonic()
-            self.game.tick(FIXED_TIME_STEP)
-            await self.broadcast()
+            if self.is_over():
+                break
+
+            self.check_user_activity()
+            if self.state == SessionState.RUNNING:
+                self.game.tick(FIXED_TIME_STEP)
+                await self.broadcast()
 
             elapsed_time = monotonic() - start_time
             await asyncio.sleep(delay=max(0, FIXED_TIME_STEP - elapsed_time))
 
-    def queue_player_action(self, user_id: int, player_action: PlayerAction) -> None:
-        pass
+    def enqueue_player_action(self, user_id: int, player_action: PlayerAction) -> None:
+        self.time_since_last_action = monotonic()
+        self.time_last_player_action[user_id] = monotonic()
+        self.game.enqueue_player_action(user_id, player_action)
 
-    def get_json_snapshot(self) -> str:
-        return self.game.get_snapshot().model_dump_json()
+    def get_json_snapshot(self, user_id: int) -> str:
+        return self.game.get_snapshot(user_id).model_dump_json()
 
-    def is_session_over(self) -> bool:
+    def is_over(self) -> bool:
+        if (
+            self.state == SessionState.WAITING_FOR_PLAYERS
+            and (monotonic() - self.time_since_last_action) > SESSION_TIMEOUT
+        ):
+            return True
+
         return self.state == SessionState.SESSION_OVER

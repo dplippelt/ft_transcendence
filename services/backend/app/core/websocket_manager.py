@@ -33,7 +33,12 @@ class ConnectionManager:
             connections.remove(websocket)
 
         if not connections:
-            self.active_connections.pop(user_id, None)
+            _ = self.active_connections.pop(user_id, None)
+
+    def disconnect_user(self, user_id: int) -> None:
+        if user_id not in self.active_connections:
+            return
+        del self.active_connections[user_id]
 
     async def send_to_user(self, user_id: int, payload: dict) -> bool:
         # Catch broadly per-socket: one dead/broken connection must not stop

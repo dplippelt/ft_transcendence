@@ -17,6 +17,7 @@ class ActionType(IntEnum):
     PICK_CARD = auto()
     DRAW_CARD = auto()
     PLAY_CARDS = auto()
+    LEAVE = auto()
 
 
 class Direction(Flag):
@@ -28,9 +29,11 @@ class Direction(Flag):
 
 class PlayerState(Flag):
     NONE = auto()
+    WAITING = auto()
     ALIVE = auto()
     IN_COMBAT = auto()
     CONNECTED = auto()
+    LEAVE = auto()
 
 
 class EnemyFSMState(IntEnum):
@@ -49,9 +52,8 @@ class Action(BaseModel):
 
 
 class PlayerAction(BaseModel):
-    type: Literal["player_action"]
+    type: Literal["game.player.action"]
     game_id: int
-    player_id: int
     sequence: int
     action: Action
 
@@ -74,11 +76,18 @@ class Enemy(Entity):
     fsm_state: EnemyFSMState
 
 
+class Combat(BaseModel):
+    player_id: int
+    enemy_id: int
+
+
 class GameSnapshot(BaseModel):
-    type: Literal["game_snapshot"]
+    type: Literal["game.snapshot"]
     game_id: int
     tick_id: int
     state: GameState
     dungeon_seed: int
+    user_player_id: int
     players: list[Player]
     enemies: list[Enemy]
+    combat: list[Combat]
