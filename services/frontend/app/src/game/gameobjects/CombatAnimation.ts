@@ -176,7 +176,6 @@ export default class CombatAnimation {
 
   setCardToSlot(slot: CardSlot) {
     const card = slot.getCard()!;
-    // Needs to fix hard cord.
     this.scene.tweens.add({
       targets: card,
       x: slot.x,
