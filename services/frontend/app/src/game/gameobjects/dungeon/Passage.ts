@@ -29,6 +29,7 @@ export class Passage extends Physics.Arcade.Sprite {
   }
 
   destroy(fromScene?: boolean): void {
+    GameManagerScene.EventsCenter.off(GameEvents.LevelComplete, this.unlock, this);
     if ( !fromScene )
       this.collider?.destroy();
     super.destroy(fromScene);
