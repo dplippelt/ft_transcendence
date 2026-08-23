@@ -1,4 +1,4 @@
-import { Geom, type Scene } from "phaser";
+import Phaser, { Geom, Scene } from "phaser";
 import CardManager from "./cards/CardManager";
 import CombatPlayer from "./CombatPlayer";
 import CombatEnemy from "./CombatEnemy";
@@ -9,8 +9,9 @@ import CardSlot from "./cards/CardSlot";
 import { AssetsKey } from "../Assets";
 import CombatManager, { CombatEvents } from "./CombatManager";
 import type CombatLayoutManager from "./CombatLayoutManager";
-import { LayoutData, LayoutEvents } from "./CombatLayoutManager";
+import { TransformInLayout, LayoutEvents } from "./CombatLayoutManager";
 import type CombatTurnManager from "./CombatTurnManager";
+import { ExecuteCombo } from "./CombatExecuteManager";
 
 enum PlayerAnimation {
   IDLE = "idle",
@@ -20,6 +21,7 @@ enum PlayerAnimation {
   GUARD_START = "guard_start",
   GUARD = "guard",
   GUARD_END = "guard_end",
+  GET_HIT = "get_hit",
 }
 
 interface AtlasFrame {
@@ -68,13 +70,19 @@ const playerAnimationFrames: Record<PlayerAnimation, AtlasFrame> = {
   [PlayerAnimation.GUARD]: {
     start: 0,
     end: 5,
-    frameRate: 8,
-    repeat: 2,
+    frameRate: 10,
+    repeat: 5,
   },
   [PlayerAnimation.GUARD_END]: {
     start: 0,
     end: 3,
-    frameRate: 8,
+    frameRate: 10,
+    repeat: 0,
+  },
+  [PlayerAnimation.GET_HIT]: {
+    start: 0,
+    end: 4,
+    frameRate: 20,
     repeat: 0,
   },
 };
@@ -168,6 +176,8 @@ export default class CombatAnimation {
     const events = this.combatManager.events;
     events.off(CombatEvents.PLAYERATTACK);
     events.on(CombatEvents.PLAYERATTACK, this.playerAttack, this);
+    events.off(CombatEvents.PLAYERGUARD);
+    events.on(CombatEvents.PLAYERGUARD, this.playerGuard, this);
     events.off(CombatEvents.ENEMYATTACK);
     events.on(CombatEvents.ENEMYATTACK, this.enemyAttack, this);
   }
@@ -183,9 +193,9 @@ export default class CombatAnimation {
   setCardPosition(card: CardBase) {
     this.scene.tweens.add({
       targets: card,
-      x: card.getData(LayoutData.X),
-      y: card.getData(LayoutData.Y),
-      angle: card.getData(LayoutData.ANGLE),
+      x: card.getData(TransformInLayout.X),
+      y: card.getData(TransformInLayout.Y),
+      angle: card.getData(TransformInLayout.ANGLE),
       // scaleX: scale,
       // scaleY: scale,
       displayWidth: card.width,
@@ -208,22 +218,12 @@ export default class CombatAnimation {
       ease: "Cubic.easeOut",
       duration: 200,
     });
-    // this.select(slot);
   }
 
   draw(card: CardBase) {
     card.on(CardEvents.FOCUSON, this.HoverUp, this);
     card.on(CardEvents.FOCUSOFF, this.HoverDown, this);
-    // this.combatLayoutManager.updateLayout(false);
-    const width = this.scene.scale.width;
-    const height = this.scene.scale.height;
-    const centerX = width / 2;
-    const centerY = height / 2;
-    const scaleX = width / this.combatLayoutManager.layoutBase.width;
-    const scaleY = height / this.combatLayoutManager.layoutBase.height;
-    const baseScale = Math.min(scaleX, scaleY);
-
-    this.combatLayoutManager.updateCardHand(centerX, centerY, baseScale, false);
+    this.combatLayoutManager.updateCardHand(false);
   }
 
   HoverUp(card: CardBase) {
@@ -234,7 +234,7 @@ export default class CombatAnimation {
     }
     this.scene.tweens.add({
       targets: card,
-      y: card.getData(LayoutData.Y) - 30,
+      y: card.getData(TransformInLayout.Y) - 30,
       angle: 0,
       duration: 50,
       ease: "Cubic.easeOut",
@@ -249,57 +249,95 @@ export default class CombatAnimation {
     // Needs to fix hard cord.
     this.scene.tweens.add({
       targets: card,
-      y: card.getData(LayoutData.Y),
-      angle: card.getData(LayoutData.ANGLE),
+      y: card.getData(TransformInLayout.Y),
+      angle: card.getData(TransformInLayout.ANGLE),
       duration: 200,
       ease: "Power1",
     });
   }
 
-  playerAttack(player: CombatPlayer, enemy: CombatEnemy, points: number) {
+  playerAttack() {
     this.turnManger.pausePlayerTurn();
-    player.play(PlayerAnimation.ATTACK_B);
-    player.once("animationcomplete", () => {
-      this.scene.tweens.add({
-        targets: enemy,
-        x: enemy.x + 50,
-        duration: 50,
-        yoyo: true,
-        repeat: 2,
-        onStart: () => {
-          enemy.setTint(0xff0000);
-        },
-        onComplete: () => {
-          enemy.clearTint();
-          this.combatManager.events.emit(CombatEvents.TAKEDAMAGE, enemy, points);
-        },
+    const execute = this.combatManager.executeManager;
+    switch (execute.getCombo()) {
+      case ExecuteCombo.ONE:
+        this.player.play(PlayerAnimation.ATTACK_A);
+        break;
+      case ExecuteCombo.TWO:
+        this.player.play(PlayerAnimation.ATTACK_B);
+        break;
+      case ExecuteCombo.THREE:
+        this.player.play(PlayerAnimation.ATTACK_C);
+        break;
+      default:
+        throw Error("Execution combo animation is not implemented.");
+    }
+    this.player.once("animationcomplete", () => {
+      this.enemyTakeDamage();
+    });
+  }
+
+  playerGuard() {
+    this.player.play(PlayerAnimation.GUARD_START);
+    this.player.playAfterRepeat(PlayerAnimation.GUARD);
+    this.player.once("animationcomplete", () => {
+      this.enemyAttackBefore(() => {
+        this.player.play(PlayerAnimation.GUARD_END);
+        this.player.playAfterRepeat(PlayerAnimation.IDLE);
+        this.combatManager.events.emit(CombatEvents.ENDTURN);
       });
     });
   }
 
-  enemyAttack(enemy: CombatEnemy, player: CombatPlayer, points: number) {
+  enemyAttack() {
+    this.enemyAttackBefore(() => {
+      this.playerTakeDamage();
+    });
+  }
+
+  enemyTakeDamage() {
     this.scene.tweens.add({
-      targets: enemy,
-      x: enemy.x - 50,
+      targets: this.enemy,
+      x: this.enemy.x + 50,
+      duration: 50,
+      yoyo: true,
+      repeat: 2,
+      onStart: () => {
+        this.enemy.setTint(0xff0000);
+      },
+      onComplete: () => {
+        this.enemy.clearTint();
+        this.combatManager.events.emit(CombatEvents.TAKEDAMAGE, this.enemy);
+      },
+    });
+  }
+
+  enemyAttackBefore(fn: Phaser.Types.Tweens.TweenOnCompleteCallback) {
+    this.scene.tweens.add({
+      targets: this.enemy,
+      x: this.enemy.x - 50,
       delay: 500,
       duration: 50,
       yoyo: true,
+      onComplete: fn,
+    });
+  }
+
+  playerTakeDamage() {
+    this.scene.tweens.add({
+      targets: this.player,
+      duration: 50,
+      x: this.player.x - 50,
+      yoyo: true,
+      onStart: () => {
+        this.player.setTint(0xff0000);
+        this.player.play(PlayerAnimation.GET_HIT);
+        this.scene.cameras.main.shake(500, 0.01);
+      },
       onComplete: () => {
-        this.scene.tweens.add({
-          targets: player,
-          duration: 50,
-          x: player.x - 50,
-          yoyo: true,
-          onStart: () => {
-            player.setTint(0xff0000);
-            this.scene.cameras.main.shake(500, 0.01);
-          },
-          onComplete: () => {
-            player.clearTint();
-            this.combatManager.events.emit(CombatEvents.TAKEDAMAGE, player, points);
-            player.playAfterRepeat(PlayerAnimation.IDLE);
-          },
-        });
+        this.player.clearTint();
+        this.player.playAfterRepeat(PlayerAnimation.IDLE);
+        this.combatManager.events.emit(CombatEvents.TAKEDAMAGE, this.player);
       },
     });
   }
