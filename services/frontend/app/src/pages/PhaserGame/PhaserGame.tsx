@@ -7,7 +7,7 @@ import styles from "./PhaserGame.module.scss";
 import { useAuth } from "../../contexts/AuthContext";
 import GameUI from "../../components/Game/GameUI";
 import CombatUI from "../../components/Game/CombatUI";
-import CombatBackground from "../../components/Game/CombatBackground";
+import GameBackground from "../../components/Game/GameBackground";
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -136,7 +136,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
 
   return (
     <div className={`${styles.gameWrapper} ${ isGameURL ? "" : styles.hidden }`}>
-      <CombatBackground />
+      <GameBackground inCombat={inCombat} />
       <Game currentActiveScene={currentActiveScene} gameRef={gameRef} isGameURL={isGameURL} />
       <CombatUI inCombat={inCombat} />
       <GameUI gameMenuVis={gameMenuVis} loggedIn={loggedIn} />
