@@ -55,6 +55,7 @@ export class GameManagerScene extends Scene {
     this.events.once(Phaser.Scenes.Events.DESTROY, () => {
       GameManagerScene.EventsCenter.off(GameEvents.CombatInitiated, this.onCombatInitiated, this);
       GameManagerScene.EventsCenter.off(GameEvents.CombatOver, this.onCombatOver, this);
+      GameManagerScene.EventsCenter.off(GameEvents.LevelExit, this.onExitLevel, this);
     });
 
     this._gameScene = new GameScene();
