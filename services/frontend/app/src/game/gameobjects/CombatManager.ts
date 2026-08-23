@@ -42,7 +42,7 @@ export default class CombatManager {
     this.cardManager = new CardManager(scene, playerStatus, cardManagerConfig);
     this.turnManager = new CombatTurnManager(this);
     this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
-    this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.executeEnemyEffect, this);
+    this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.initEnemyTurn, this);
     this.executeManager = new CombatExecuteManager();
     this.events = new Phaser.Events.EventEmitter();
     this.events.on(CombatEvents.PLAYERATTACK, this.playerAttack, this);
@@ -74,7 +74,7 @@ export default class CombatManager {
     this.executeManager.reset();
   }
 
-  executeEnemyEffect() {
+  initEnemyTurn() {
     this.events.emit(CombatEvents.ENEMYATTACK);
   }
 
