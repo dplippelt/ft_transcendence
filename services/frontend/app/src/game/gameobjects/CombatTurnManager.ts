@@ -8,7 +8,7 @@ interface TurnConfig {
 
 const turnConfig: TurnConfig = {
   playerDelayMs: 10000,
-  enemyDelayMs: 1500,
+  enemyDelayMs: 5000,
 };
 
 export enum TurnEvents {
@@ -60,7 +60,6 @@ export default class CombatTurnManager {
     } else {
       this.pausePlayerTurn();
 
-      // To display, not necessary.
       if (this.enemyTimer) {
         this.enemyTimer.remove();
       }
