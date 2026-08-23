@@ -27,10 +27,6 @@ export default class CombatScene extends Phaser.Scene {
   }
 
   preload() {
-    // load images for the combat scene
-    // needs to know which enemy the player is going to fight
-    // needs to know the status such as health point or the items (?) it has
-
     this.input.on("pointerdown", () => {
       if (this.input.activePointer.rightButtonDown()) {
         console.assert(this.eventData !== undefined, "this.eventData is undefined");
