@@ -1,14 +1,13 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
-import Background from "../../components/Background";
-import GameMenu from "../../components/GameMenu";
 import { useLocation, useNavigate } from "react-router-dom";
-import { GameEvent, GameResult, RoutePath } from "../../utils/utils";
+import { CombatEvent, GameEvent, GameResult, RoutePath } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
-import SideBar from "../../components/SideBar";
-import { OpenGameMenuButton } from "../../components/Buttons";
 import { useAuth } from "../../contexts/AuthContext";
+import GameUI from "../../components/Game/GameUI";
+import CombatUI from "../../components/Game/CombatUI";
+import CombatBackground from "../../components/Game/CombatBackground";
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -62,6 +61,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
   const location = useLocation();
   const isGameURL = location.pathname === RoutePath.gameDev;
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
+  const [inCombat, setInCombat] = useState<boolean>(false);
   const gameRef = useRef<Phaser.Game | null>(null!);
   const loggedIn = auth.status === "authenticated";
 
@@ -95,8 +95,19 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       EventBus.removeListener(GameEvent.gameVis);
       EventBus.removeListener(GameEvent.chatFocus);
       EventBus.removeListener(GameEvent.gameMenu);
+      EventBus.removeListener(GameEvent.inCombat);
       EventBus.removeListener(GameEvent.gameOver);
+      EventBus.removeListener(CombatEvent.initPlayerHP);
+      EventBus.removeListener(CombatEvent.updatePlayerHP);
+      EventBus.removeListener(CombatEvent.initEnemyHP);
+      EventBus.removeListener(CombatEvent.updateEnemyHP);
+      EventBus.removeListener(CombatEvent.initPlayerMP);
+      EventBus.removeListener(CombatEvent.updatePlayerMP);
+      EventBus.removeListener(CombatEvent.attack);
+      EventBus.removeListener(CombatEvent.draw);
+      EventBus.removeListener(CombatEvent.reset);
       setGameMenuVis(false);
+      setInCombat(false);
     }
 
     if ( gameRef.current && !preserveGame() )
@@ -108,24 +119,28 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     function toggleGameMenu() { setGameMenuVis(prev => !prev); }
     EventBus.addListener(GameEvent.gameMenu, toggleGameMenu);
 
+    function updateInCombat( inCombat: boolean ) { setInCombat(inCombat); }
+    EventBus.addListener(GameEvent.inCombat, updateInCombat);
+
     function gameOver( result: GameResult ) { navigate(RoutePath.gameOver + "/" + result); }
     EventBus.addListener(GameEvent.gameOver, gameOver);
 
     function cleanup() {
       EventBus.removeListener(GameEvent.gameMenu, toggleGameMenu);
+      EventBus.removeListener(GameEvent.inCombat, updateInCombat);
       EventBus.removeListener(GameEvent.gameOver, gameOver);
     }
 
     return () => cleanup();
   }, [location.pathname, isGameURL])
 
+  // TODO: <CombatBackground /> is a temporary preview of the combat background - remove before merging with master
   return (
     <div className={`${styles.gameWrapper} ${ isGameURL ? "" : styles.hidden }`}>
-      <Background />
+      <CombatBackground />
       <Game currentActiveScene={currentActiveScene} gameRef={gameRef} isGameURL={isGameURL} />
-      { gameMenuVis && <GameMenu />}
-      { loggedIn && <SideBar /> }
-      <OpenGameMenuButton onClick={ () => EventBus.emit(GameEvent.gameMenu) } />
+      <CombatUI inCombat={inCombat} />
+      <GameUI gameMenuVis={gameMenuVis} loggedIn={loggedIn} />
     </div>
   );
 }

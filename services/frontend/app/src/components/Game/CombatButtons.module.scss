@@ -1,0 +1,50 @@
+@use '../../variables' as *;
+
+.combatButton
+{
+	position: absolute;
+	width: 5rem;
+	height: 3rem;
+	font-size: 1rem;
+	background-color: $button-v1-bg-color;
+	padding: 0.4rem;
+	padding-top: 0.45rem;
+	text-align: center;
+
+	@media ( max-height: 420px )
+	{
+		width: 3rem;
+		height: 2rem;
+		font-size: 0.7rem;
+	}
+
+	&:hover
+	{
+		background-color: $button-v1-hover-bg-color;
+		color: $button-v1-hover-color;
+	}
+
+	&:disabled
+	{
+		opacity: 50%;
+		pointer-events: none;
+	}
+}
+
+.attackButton
+{
+	bottom: 30%;
+	right: 3.5%;
+}
+
+.drawButton
+{
+	bottom: 30%;
+	left: 3.5%;
+}
+
+.resetButton
+{
+	top: 20%;
+	left: 3.5%;
+}

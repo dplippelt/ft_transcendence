@@ -6,6 +6,7 @@ import { GameManagerScene } from "./scenes/GameManagerScene";
 const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   disableContextMenu: true,
+  transparent: true, // TODO: temporarily added this field so combat background preview is visible - remove before merging with master
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,

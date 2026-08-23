@@ -1,19 +1,13 @@
 import Phaser, { type Scene } from "phaser";
 import CardManager from "./cards/CardManager";
-import Button from "./utils/Button";
-import type { ButtonConfig } from "./utils/Button";
-import { buttonContentConfig, buttonStyleConfig } from "./utils/buttonConfig";
 import CombatTurnManager, { TurnEvents } from "./CombatTurnManager";
 import type { PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 import CombatLayoutManager from "./CombatLayoutManager";
 import CombatPlayer from "./CombatPlayer";
 import CombatExecuteManager, { ExecuteCombo } from "./CombatExecuteManager";
-
-const executeButtonConfig: ButtonConfig = {
-  styleConfig: buttonStyleConfig,
-  textConfig: buttonContentConfig,
-};
+import { EventBus } from "../EventBus";
+import { CombatEvent } from "../../utils/utils";
 
 export enum CombatEvents {
   ENDCOMBAT = "endCombat",
@@ -35,7 +29,6 @@ export default class CombatManager {
   readonly turnManager: CombatTurnManager;
   readonly executeManager: CombatExecuteManager;
   readonly events: Phaser.Events.EventEmitter;
-  readonly executeButton: Button;
   readonly layoutManager: CombatLayoutManager;
   readonly hitpointsText: Phaser.GameObjects.Text;
   readonly damageToEnemyOn: DamageToEnemy = {
@@ -59,12 +52,15 @@ export default class CombatManager {
     this.events.on(CombatEvents.ENEMYATTACK, this.enemyAttack, this);
     this.events.on(CombatEvents.TAKEDAMAGE, this.takeDamage, this);
     this.events.on(CombatEvents.ENDTURN, this.endTurn, this);
-    this.executeButton = new Button(scene, "Execute", executeButtonConfig);
-    this.executeButton.on("pointerdown", this.execute, this);
     this.layoutManager = new CombatLayoutManager(this);
     this.turnManager.turnEvents.emit(TurnEvents.STARTPLAYER);
     // show player's hit point and enemy's hitpoint -> to be rendered with React
     this.hitpointsText = this.scene.add.text(500, 100, "hitpoints");
+    this.initPlayerTurn();
+    EventBus.emit(CombatEvent.initPlayerHP, this.player.status.hitPoint);
+    EventBus.emit(CombatEvent.initPlayerMP, this.player.status.mana);
+    EventBus.emit(CombatEvent.initEnemyHP, this.enemy.hitPoint);
+    EventBus.addListener(CombatEvent.attack, this.execute, this);
   }
 
   update() {

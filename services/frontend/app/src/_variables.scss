@@ -20,6 +20,11 @@ $muddy-gold-lighter: #a9a183;
 $muddy-gold-light: #938d79;
 $muddy-gold-dark: #4f4728;
 $orange: #ff6600;
+$red-dark: #ab0f0f;
+$red-darker: #370808;
+$blue-dark: #0f14ab;
+$blue-darker: #080937;
+$near-black: #101010;
 
 $primary-text-color: $creme-beige;
 $button-bg-color: $grey-dark;
@@ -58,3 +63,15 @@ $input-font: 'Lato', sans-serif;
 
 $window-border: 5px solid $window-border-color;
 $window-border-radius: 4px;
+
+$bar-border: 2px solid;
+$bar-border-color: $near-black;
+$bar-width: min(10rem, 40%);
+$bar-height: 0.8rem;
+$bar-color-hp-middle: $red-dark;
+$bar-color-hp-sides: $red-darker;
+$bar-color-hp: linear-gradient(to bottom, $bar-color-hp-sides, $bar-color-hp-middle, $bar-color-hp-middle, $bar-color-hp-sides);
+$bar-color-mp-middle: $blue-dark;
+$bar-color-mp-sides: $blue-darker;
+$bar-color-mp: linear-gradient(to bottom, $bar-color-mp-sides, $bar-color-mp-middle, $bar-color-mp-middle, $bar-color-mp-sides);
+$bar-font: 'Lato', sans-serif;

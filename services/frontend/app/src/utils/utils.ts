@@ -87,6 +87,20 @@ export enum GameEvent
 	gameVis = "game-visibility",
 	chatFocus = "chat-focused",
 	gameOver = "game-over",
+	inCombat = "in-combat",
+}
+
+export enum CombatEvent
+{
+	initPlayerHP = "init-player-hp",
+	updatePlayerHP = "update-player-hp",
+	initEnemyHP = "init-enemy-hp",
+	updateEnemyHP = "update-enemy-hp",
+	initPlayerMP = "init-player-mp",
+	updatePlayerMP = "update-player-mp",
+	attack = "attack",
+	draw = "draw",
+	reset = "reset",
 }
 
 export enum GameResult

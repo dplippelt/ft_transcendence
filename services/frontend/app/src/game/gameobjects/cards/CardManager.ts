@@ -3,9 +3,9 @@ import CardDeck, { cardDeckConfig } from "./CardDeck";
 import CardHand from "./CardHand";
 import CardSelection from "./CardSelection";
 import CardBase, { CardEvents } from "./CardBase";
-import Button, { type ButtonConfig } from "../utils/Button";
-import { buttonContentConfig, buttonStyleConfig } from "../utils/buttonConfig";
 import type { PlayerStatus } from "../../scenes/CombatScene";
+import { EventBus } from "../../EventBus";
+import { CombatEvent } from "../../../utils/utils";
 
 export enum CardActionEvents {
   DRAW = "draw",
@@ -14,24 +14,12 @@ export enum CardActionEvents {
   GENERATE_DECK = "generateDeck",
 }
 
-const drawButtonConfig: ButtonConfig = {
-  styleConfig: buttonStyleConfig,
-  textConfig: buttonContentConfig,
-};
-
-const selectionResetButtonConfig: ButtonConfig = {
-  styleConfig: buttonStyleConfig,
-  textConfig: buttonContentConfig,
-};
-
 export default class CardManager {
   readonly scene: Scene;
   readonly playerStatus: PlayerStatus;
   readonly cardDeck: CardDeck;
   readonly cardHand: CardHand;
   readonly cardSelection: CardSelection;
-  readonly drawButton: Button;
-  readonly selectionResetButton: Button;
   readonly events: Phaser.Events.EventEmitter;
   readonly maxNumCardsInHand: number;
 
@@ -41,14 +29,12 @@ export default class CardManager {
     this.cardDeck = new CardDeck(this.scene, cardDeckConfig);
     this.cardHand = new CardHand(this.scene);
     this.cardSelection = new CardSelection(this.scene);
-    this.drawButton = new Button(scene, "draw", drawButtonConfig);
-    this.selectionResetButton = new Button(scene, "reset", selectionResetButtonConfig);
     this.events = new Phaser.Events.EventEmitter();
     this.maxNumCardsInHand = 8;
 
     scene.input.setTopOnly(true);
-    this.drawButton.on("pointerdown", this.drawExtraCard, this);
-    this.selectionResetButton.on("pointerdown", this.resetSelection, this);
+    EventBus.addListener(CombatEvent.draw, this.drawExtraCard, this);
+    EventBus.addListener(CombatEvent.reset, this.resetSelection, this);
   }
 
   resetSelection() {
@@ -88,6 +74,7 @@ export default class CardManager {
     }
     if (this.drawCard()) {
       this.playerStatus.mana--;
+      EventBus.emit(CombatEvent.updatePlayerMP, this.playerStatus.mana);
     }
   }
 
