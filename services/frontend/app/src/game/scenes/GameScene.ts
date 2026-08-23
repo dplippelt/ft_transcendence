@@ -84,7 +84,7 @@ export default class GameScene extends Scene {
   }
 
   create() {
-    this.cameras.main.setBackgroundColor(0x000000); // TODO: temporarily added this background color so game scene background stays solid black and combat scene background becomes visible - remove before merging with master
+    this.cameras.main.setBackgroundColor(0x000000);
     this._dungeon = new Dungeon(this, dungeonConfig, 1.5);
     this.cameras.main.startFollow(this.getPlayerOne());
 
