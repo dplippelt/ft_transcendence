@@ -1,0 +1,92 @@
+@use '../../variables' as *;
+
+@mixin bar
+{
+	position: absolute;
+	width: $bar-width;
+	height: $bar-height;
+	border: $bar-border;
+	border-radius: $bar-height;
+	overflow: hidden;
+	background-color: transparent;
+}
+
+@mixin hpBar
+{
+	@include bar;
+	border-color: $bar-border-color;
+}
+
+@mixin mpBar
+{
+	@include bar;
+	border-color: $bar-border-color;
+}
+
+@mixin barFill
+{
+	height: 100%;
+	width: var(--fill-percentage);
+	transition: width 0.2s ease-out;
+}
+
+.playerHpBar
+{
+	@include hpBar;
+	bottom: 1.5rem;
+	left: 1rem;
+
+	@media ( max-height: 480px )
+	{
+		bottom: 0.5rem;
+	}
+}
+
+.enemyHpBar
+{
+	@include hpBar;
+	bottom: 1.5rem;
+	right: 1rem;
+
+	@media ( max-height: 480px )
+	{
+		bottom: 0.5rem;
+	}
+}
+
+.playerMpBar
+{
+	@include mpBar;
+	bottom: 2.7rem;
+	left: 1rem;
+
+	@media ( max-height: 480px )
+	{
+		bottom: 1.7rem;
+	}
+}
+
+.hpBarFill
+{
+	@include barFill;
+	background: $bar-color-hp;
+}
+
+.mpBarFill
+{
+	@include barFill;
+	background: $bar-color-mp;
+}
+
+.text
+{
+	position: absolute;
+	top: 50%;
+	left: 0%;
+	width: 100%;
+	transform: translateY(-50%);
+	color: $primary-text-color;
+	text-align: center;
+	font-size: 0.5rem;
+	font-family: $bar-font;
+}

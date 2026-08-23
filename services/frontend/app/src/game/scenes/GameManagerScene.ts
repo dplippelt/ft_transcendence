@@ -4,7 +4,7 @@ import CombatScene from "./CombatScene";
 import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
 import { EventBus } from "../EventBus";
-import { GameEvent, GameResult } from "../../utils/utils";
+import { CombatEvent, GameEvent, GameResult } from "../../utils/utils";
 
 export enum GameEvents {
   CombatInitiated = "combat-initiated",
@@ -112,6 +112,8 @@ export class GameManagerScene extends Scene {
     if (this._gameType === GameType.SinglePlayer) {
       this.scene.sleep(this._gameScene);
     }
+
+    EventBus.emit(GameEvent.inCombat, true);
   }
 
   private onCombatOver(combatEventData: CombatEventData) {
@@ -136,6 +138,11 @@ export class GameManagerScene extends Scene {
     /* Update global capture for game scene
      * No need for an event as the game scene is never stopped */
     this.updateGlobalCapture();
+
+    EventBus.emit(GameEvent.inCombat, false);
+    EventBus.removeListener(CombatEvent.attack);
+    EventBus.removeListener(CombatEvent.draw);
+    EventBus.removeListener(CombatEvent.reset);
   }
 
   private updateGlobalCapture() {

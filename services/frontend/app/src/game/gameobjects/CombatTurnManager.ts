@@ -7,7 +7,7 @@ interface TurnConfig {
 }
 
 const turnConfig: TurnConfig = {
-  playerDelayMs: 1000, // TODO: change back to intended player turn dur (was 10000)
+  playerDelayMs: 5000, // TODO: change back to intended player turn dur (was 10000)
   enemyDelayMs: 1000,
 };
 

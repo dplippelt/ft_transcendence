@@ -2,17 +2,11 @@ import Phaser, { type Scene } from "phaser";
 import CardManager, { cardManagerConfig } from "./cards/CardManager";
 import type CardBase from "./cards/CardBase";
 import { Operator, type CardValue } from "./cards/CardBase";
-import Button from "./utils/Button";
-import type { ButtonConfig } from "./utils/Button";
-import { buttonContentConfig, buttonStyleConfig } from "./utils/buttonConfig";
 import CombatTurnManager, { TurnEvents } from "./CombatTurnManager";
 import type { PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
-
-const executeButtonConfig: ButtonConfig = {
-  styleConfig: buttonStyleConfig,
-  textConfig: buttonContentConfig,
-};
+import { EventBus } from "../EventBus";
+import { CombatEvent } from "../../utils/utils";
 
 export enum CombatEvents {
   ENDCOMBAT = "endCombat",
@@ -26,9 +20,6 @@ export default class CombatManager {
   readonly cardManager: CardManager;
   readonly turnManager: CombatTurnManager;
   readonly events: Phaser.Events.EventEmitter;
-  readonly executeButton: Button;
-  // show player's hit point and enemy's hitpoint -> to be rendered with React
-  readonly hitpointsText: Phaser.GameObjects.Text;
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
@@ -39,12 +30,11 @@ export default class CombatManager {
     this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
     this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.executeEnemyEffect, this);
     this.events = new Phaser.Events.EventEmitter();
-    this.executeButton = new Button(scene, "Execute", executeButtonConfig);
-    this.executeButton.setPosition(100, 50);
-    this.executeButton.on("pointerdown", this.execute, this);
     this.initPlayerTurn();
-    // show player's hit point and enemy's hitpoint -> to be rendered with React
-    this.hitpointsText = this.scene.add.text(500, 100, "hitpoints");
+    EventBus.emit(CombatEvent.initPlayerHP, this.playerStatus.hitPoint);
+    EventBus.emit(CombatEvent.initPlayerMP, this.playerStatus.mana);
+    EventBus.emit(CombatEvent.initEnemyHP, this.enemy.hitPoint);
+    EventBus.addListener(CombatEvent.attack, this.execute, this);
   }
 
   update() {
@@ -52,12 +42,6 @@ export default class CombatManager {
 
     // show a timer
     this.turnManager.displayTimer();
-
-    // show player's hit point and enemy's hitpoint -> to be rendered with React
-    const output: string[] = [];
-    output.push("player hitPoint = " + this.playerStatus.hitPoint + " player mana: " + this.playerStatus.mana);
-    output.push("enemy hitPoint = " + this.enemy.hitPoint);
-    this.hitpointsText.setText(output);
   }
 
   initPlayerTurn() {

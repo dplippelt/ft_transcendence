@@ -2,6 +2,8 @@ import type { Scene } from "phaser";
 import BoxedText from "./utils/BoxedText";
 import { cardConfig } from "./utils/cardConfig";
 import type { PlayerStatus } from "../scenes/CombatScene";
+import { EventBus } from "../EventBus";
+import { CombatEvent } from "../../utils/utils";
 
 export enum EnemyLevel {
   EASY,
@@ -43,9 +45,11 @@ export default class CombatEnemy extends BoxedText {
 
   takeDamage(damage: number) {
     this.hitPoint -= damage;
+    EventBus.emit(CombatEvent.updateEnemyHP, this.hitPoint);
   }
 
   attack(playerStatus: PlayerStatus) {
     playerStatus.hitPoint -= this.enemyData.attackDamage;
+    EventBus.emit(CombatEvent.updatePlayerHP, playerStatus.hitPoint);
   }
 }
