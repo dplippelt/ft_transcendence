@@ -266,10 +266,17 @@ def _check_invite_rate_limit(user_id: int) -> datetime:
     # invited -- caps how many invites (to any mix of friends) a user can
     # send in a rolling window, since _check_invite_cooldown alone only
     # stops repeat invites to the *same* friend.
-    now = utc_now()
-    cutoff = now - INVITE_RATE_LIMIT_WINDOW
-
     with _recent_invites_lock:
+        # now is computed *inside* the lock (unlike the cooldown check,
+        # where a single dict-value overwrite makes ordering irrelevant) --
+        # this dict relies on each user's list staying sorted ascending so
+        # the sweep below can early-exit at the first non-stale entry.
+        # Computing now before acquiring the lock would let append order
+        # (decided by lock-acquisition order) diverge from timestamp order
+        # under concurrent calls, silently breaking that assumption.
+        now = utc_now()
+        cutoff = now - INVITE_RATE_LIMIT_WINDOW
+
         # Opportunistic cleanup across *all* users, not just this one --
         # mirrors _check_invite_cooldown's sweep. Pruning only user_id's own
         # entry would leave a stale, never-visited list behind forever for
@@ -338,15 +345,19 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
 
     # Free, in-memory checks -- run before the one remaining DB query so a
     # repeated/spam invite doesn't pay for a friendship lookup it can't use.
-    _check_invite_cooldown(user.id, friend_id)
+    # Rate limit is checked *before* the pair cooldown: reserving the pair
+    # cooldown first left a gap between that reservation and its release (if
+    # the rate limit then rejected the request) where a concurrent duplicate
+    # request for the same pair could see a stale "already invited" and get
+    # a misleading error instead of the real rate-limit one. Checking the
+    # rate limit first means the cooldown is only ever reserved for a
+    # request that has already cleared it.
+    rate_limit_sent_at = _check_invite_rate_limit(user.id)
 
     try:
-        rate_limit_sent_at = _check_invite_rate_limit(user.id)
+        _check_invite_cooldown(user.id, friend_id)
     except Exception:
-        # The pair cooldown was already reserved above -- being blocked by
-        # the *global* rate limit right after doesn't mean this pair's
-        # invite actually went out, so don't charge it a real retry window.
-        release_invite_cooldown(user.id, friend_id)
+        release_invite_rate_limit(user.id, rate_limit_sent_at)
         raise
 
     try:
