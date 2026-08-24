@@ -1,7 +1,7 @@
 import Phaser, { Scene } from "phaser";
 import CardDeck, { cardDeckConfig } from "./CardDeck";
 import CardHand from "./CardHand";
-import CardSelection, { cardSelectionConfig } from "./CardSelection";
+import CardSelection from "./CardSelection";
 import CardBase, { CardEvents } from "./CardBase";
 import Button, { type ButtonConfig } from "../utils/Button";
 import { buttonContentConfig, buttonStyleConfig } from "../utils/buttonConfig";
@@ -9,7 +9,6 @@ import type { PlayerStatus } from "../../scenes/CombatScene";
 
 export enum CardActionEvents {
   DRAW = "draw",
-  DISCARD = "discard",
   SELECT = "select",
   UNSELECT = "unselect",
   GENERATE_DECK = "generateDeck",
@@ -25,35 +24,27 @@ const selectionResetButtonConfig: ButtonConfig = {
   textConfig: buttonContentConfig,
 };
 
-interface CardManagerConfig {
-  maxNumCardsInHand: number;
-}
-
-export const cardManagerConfig: CardManagerConfig = {
-  maxNumCardsInHand: 8,
-};
-
 export default class CardManager {
   readonly scene: Scene;
   readonly playerStatus: PlayerStatus;
-  readonly config: CardManagerConfig;
   readonly cardDeck: CardDeck;
   readonly cardHand: CardHand;
   readonly cardSelection: CardSelection;
   readonly drawButton: Button;
   readonly selectionResetButton: Button;
   readonly events: Phaser.Events.EventEmitter;
+  readonly maxNumCardsInHand: number;
 
-  constructor(scene: Scene, playerStatus: PlayerStatus, config: CardManagerConfig) {
+  constructor(scene: Scene, playerStatus: PlayerStatus) {
     this.scene = scene;
     this.playerStatus = playerStatus;
-    this.config = config;
     this.cardDeck = new CardDeck(this.scene, cardDeckConfig);
     this.cardHand = new CardHand(this.scene);
-    this.cardSelection = new CardSelection(this.scene, cardSelectionConfig);
+    this.cardSelection = new CardSelection(this.scene);
     this.drawButton = new Button(scene, "draw", drawButtonConfig);
     this.selectionResetButton = new Button(scene, "reset", selectionResetButtonConfig);
     this.events = new Phaser.Events.EventEmitter();
+    this.maxNumCardsInHand = 8;
 
     scene.input.setTopOnly(true);
     this.drawButton.on("pointerdown", this.drawExtraCard, this);
@@ -65,7 +56,6 @@ export default class CardManager {
   }
 
   clearHand() {
-    this.events.emit(CardActionEvents.DISCARD, this.cardHand);
     this.cardHand.clearHand();
   }
 
@@ -76,7 +66,7 @@ export default class CardManager {
   }
 
   drawCard() {
-    if (!this.cardHand.isUnderHandLimit(this.config.maxNumCardsInHand)) {
+    if (!this.cardHand.isUnderHandLimit(this.maxNumCardsInHand)) {
       return false;
     }
 

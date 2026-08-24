@@ -1,5 +1,5 @@
 import Phaser, { type Scene } from "phaser";
-import CardManager, { cardManagerConfig } from "./cards/CardManager";
+import CardManager from "./cards/CardManager";
 import Button from "./utils/Button";
 import type { ButtonConfig } from "./utils/Button";
 import { buttonContentConfig, buttonStyleConfig } from "./utils/buttonConfig";
@@ -41,7 +41,7 @@ export default class CombatManager {
     this.scene = scene;
     this.player = new CombatPlayer(scene, playerStatus);
     this.enemy = new CombatEnemy(scene, enemyData);
-    this.cardManager = new CardManager(scene, playerStatus, cardManagerConfig);
+    this.cardManager = new CardManager(scene, playerStatus);
     this.turnManager = new CombatTurnManager(this);
     this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
     this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.initEnemyTurn, this);
@@ -74,7 +74,7 @@ export default class CombatManager {
   initPlayerTurn() {
     this.cardManager.resetSelection();
     this.cardManager.clearHand();
-    this.cardManager.fillCardHand(this.cardManager.config.maxNumCardsInHand);
+    this.cardManager.fillCardHand(this.cardManager.maxNumCardsInHand);
     this.executeManager.reset();
   }
 
