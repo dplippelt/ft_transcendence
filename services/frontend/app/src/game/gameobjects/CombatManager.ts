@@ -64,7 +64,7 @@ export default class CombatManager {
   }
 
   update() {
-    // show a timer
+    // TODO: for debugging/testing only - remove displayTimer() later
     this.turnManager.displayTimer();
 
     // show player's hit point and enemy's hitpoint -> to be rendered with React

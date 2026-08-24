@@ -34,7 +34,7 @@ function Buttons( { gameResult } :IButtons )
 	return (
 		<MenuButtons extraStyling={styles.buttonsOffset}>
 			<MenuButton label={againText} onClick={ () => navigate(RoutePath.game) } />
-			<MenuButton label="Back to main menu" onClick={ () => navigate(RoutePath.mainMenu) } />
+			<MenuButton label="Return to main menu" onClick={ () => navigate(RoutePath.mainMenu) } />
 		</MenuButtons>
 	);
 }

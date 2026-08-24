@@ -1,5 +1,7 @@
 import Phaser, { type Scene } from "phaser";
 import type CombatManager from "./CombatManager";
+import { EventBus } from "../EventBus";
+import { CombatEvent } from "../../utils/utils";
 
 export enum TurnEvents {
   SWITCH = "switch",
@@ -32,6 +34,7 @@ export default class CombatTurnManager {
     this.enemyDelayMs = 5000;
     this.isPlayerTurn = true;
     this.playerTimer = this.playTurnFor(this.playerDelayMs);
+    EventBus.emit(CombatEvent.initTurnTimer, this.playerDelayMs);
     this.enemyTimer = null;
     this.timerText = this.scene.add.text(100, 200, "timer");
   }
@@ -51,6 +54,7 @@ export default class CombatTurnManager {
 
       this.playerTimer = this.playTurnFor(this.playerDelayMs);
       this.turnEvents.emit(TurnEvents.STARTPLAYER);
+      EventBus.emit(CombatEvent.initTurnTimer, this.turnConfig.playerDelayMs);
     } else {
       this.pausePlayerTurn();
 
@@ -81,12 +85,9 @@ export default class CombatTurnManager {
     }
   }
 
+  // TODO: for debugging/testing only - remove later
   displayTimer() {
-    // TODO: need to align with other objects
     const output: string[] = [];
-    if (this.playerTimer) {
-      output.push("Player time: " + this.playerTimer.getRemaining().toString());
-    }
     if (this.enemyTimer) {
       output.push("Enemy time: " + this.enemyTimer.getRemaining().toString());
     }

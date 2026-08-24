@@ -1,0 +1,34 @@
+@use '../../variables' as *;
+
+@property --percentage
+{
+	syntax: '<percentage>';
+	initial-value: 100%;
+	inherits: false;
+}
+
+.turnTimer
+{
+	position: absolute;
+	top: 1rem;
+	left: 50%;
+	width: 80px;
+	height: 80px;
+	transform: translateX(-50%) scaleX(-1);
+	border-radius: 50%;
+	background: conic-gradient($muddy-gold-light var(--percentage), transparent var(--percentage));
+	pointer-events: none;
+	animation: countdown var(--turn-duration) linear forwards;
+
+	@media ( max-height: 420px )
+	{
+		width: 50px;
+		height: 50px;
+	}
+}
+
+@keyframes countdown
+{
+	from { --percentage: 100%; }
+	to { --percentage: 0%; }
+}
