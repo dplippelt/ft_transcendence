@@ -339,7 +339,15 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
     # Free, in-memory checks -- run before the one remaining DB query so a
     # repeated/spam invite doesn't pay for a friendship lookup it can't use.
     _check_invite_cooldown(user.id, friend_id)
-    rate_limit_sent_at = _check_invite_rate_limit(user.id)
+
+    try:
+        rate_limit_sent_at = _check_invite_rate_limit(user.id)
+    except Exception:
+        # The pair cooldown was already reserved above -- being blocked by
+        # the *global* rate limit right after doesn't mean this pair's
+        # invite actually went out, so don't charge it a real retry window.
+        release_invite_cooldown(user.id, friend_id)
+        raise
 
     try:
         friendship = get_friendship(db, user.id, friend_id)
