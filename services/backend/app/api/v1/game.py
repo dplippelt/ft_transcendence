@@ -6,16 +6,34 @@ from fastapi._compat.v2 import ValidationError
 from app.api.dependencies import CurrentUserIdWS
 from app.game.game_session import JoinStatus
 from app.game.game_session_manager import game_session_manager
-from app.schemas.game import PlayerAction
+from app.schemas.game import NewGameSession, PlayerAction
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
 
-@router.websocket("/ws/game/{game_session_id}")
+# TODO: temp route for creating and listing game sessions
+@router.post(
+    "/create", response_model=NewGameSession, status_code=status.HTTP_201_CREATED
+)
+async def create_game_session():
+    game_session = game_session_manager.create()
+    return NewGameSession(type="game.game-session", game_id=game_session.id)
+
+
+@router.get("/list", response_model=list[NewGameSession])
+async def list_game_sessions():
+    live_game_sessions = [
+        NewGameSession(type="game.game-session", game_id=session.id)
+        for session in game_session_manager.game_sessions.values()
+    ]
+    return live_game_sessions
+
+
+@router.websocket("/ws/join/{game_session_id}")
 async def game_websocket(
-    websocket: WebSocket, game_session_id: int, current_user_id: CurrentUserIdWS
+    websocket: WebSocket, game_session_id: str, current_user_id: CurrentUserIdWS
 ):
     joined, game_session = await game_session_manager.join_session(
         game_session_id, current_user_id, websocket

@@ -29,11 +29,11 @@ class JoinStatus(StrEnum):
 class GameSession:
     def __init__(
         self,
-        id: int,
+        id: str,
         connection_manager: ConnectionManager,
         allowed_user_list: set[int] | None = None,
     ):
-        self.id: int = id
+        self.id: str = id
         self.connection_manager: ConnectionManager = connection_manager
         self.allowed_user_list: set[int] | None = allowed_user_list
         self.game: GameSimulation = GameSimulation(self.id)

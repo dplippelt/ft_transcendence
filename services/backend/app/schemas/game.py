@@ -53,7 +53,7 @@ class Action(BaseModel):
 
 class PlayerAction(BaseModel):
     type: Literal["game.player.action"]
-    game_id: int
+    game_id: str
     sequence: int
     action: Action
 
@@ -83,7 +83,7 @@ class Combat(BaseModel):
 
 class GameSnapshot(BaseModel):
     type: Literal["game.snapshot"]
-    game_id: int
+    game_id: str
     tick_id: int
     state: GameState
     dungeon_seed: int
@@ -91,3 +91,8 @@ class GameSnapshot(BaseModel):
     players: list[Player]
     enemies: list[Enemy]
     combat: list[Combat]
+
+
+class NewGameSession(BaseModel):
+    type: Literal["game.game-session"]
+    game_id: str

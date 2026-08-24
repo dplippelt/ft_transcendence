@@ -12,8 +12,8 @@ from app.schemas.game import (
 
 
 class GameSimulation:
-    def __init__(self, game_id: int):
-        self.game_id: int = game_id
+    def __init__(self, game_id: str):
+        self.game_id: str = game_id
         self.tick_id: int = 0
         self.dungeon_seed: int = getrandbits(32)
         self.game_state: GameState = GameState.PAUSED

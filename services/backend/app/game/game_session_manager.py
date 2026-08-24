@@ -10,20 +10,21 @@ from .game_session import GameSession, JoinStatus
 
 class GameSessionManager:
     def __init__(self):
-        self.game_sessions: dict[int, GameSession] = {}
-        self.task: asyncio.Task[None] = asyncio.create_task(
-            self.validate_session_state()
-        )
+        self.game_sessions: dict[str, GameSession] = {}
+        self.task: asyncio.Task[None]
+
+    def start(self):
+        self.task = asyncio.create_task(self.validate_session_state())
 
     def create(self) -> GameSession:
         session_id = uuid.uuid4()
-        game_session = GameSession(session_id.int, ConnectionManager())
+        game_session = GameSession(str(session_id.int), ConnectionManager())
 
-        self.game_sessions[session_id.int] = game_session
+        self.game_sessions[str(session_id.int)] = game_session
         return game_session
 
     async def join_session(
-        self, session_id: int, user_id: int, socket: WebSocket
+        self, session_id: str, user_id: int, socket: WebSocket
     ) -> tuple[JoinStatus, GameSession | None]:
         game_session = self.game_sessions.get(session_id)
         if game_session is None:
@@ -39,10 +40,9 @@ class GameSessionManager:
                     self.remove_session(session.id)
             await asyncio.sleep(delay=10)
 
-    def remove_session(self, session_id: int) -> None:
+    def remove_session(self, session_id: str) -> None:
         if session_id in self.game_sessions:
             del self.game_sessions[session_id]
 
 
-# TODO: Lifespan object instead?
 game_session_manager = GameSessionManager()
