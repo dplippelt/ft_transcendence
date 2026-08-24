@@ -270,10 +270,19 @@ def _check_invite_rate_limit(user_id: int) -> datetime:
     cutoff = now - INVITE_RATE_LIMIT_WINDOW
 
     with _recent_invites_lock:
-        times = _invite_send_times.setdefault(user_id, [])
+        # Opportunistic cleanup across *all* users, not just this one --
+        # mirrors _check_invite_cooldown's sweep. Pruning only user_id's own
+        # entry would leave a stale, never-visited list behind forever for
+        # any user who sends a few invites and then stops calling this at
+        # all, since nothing else would ever revisit their key to prune it.
+        for stale_user_id, stale_times in list(_invite_send_times.items()):
+            while stale_times and stale_times[0] < cutoff:
+                stale_times.pop(0)
 
-        while times and times[0] < cutoff:
-            times.pop(0)
+            if not stale_times:
+                _invite_send_times.pop(stale_user_id, None)
+
+        times = _invite_send_times.setdefault(user_id, [])
 
         if len(times) >= INVITE_RATE_LIMIT_MAX:
             raise conflict(
