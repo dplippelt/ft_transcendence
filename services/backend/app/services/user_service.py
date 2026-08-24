@@ -104,4 +104,6 @@ def update_user_avatar(db: Session, user: User, avatar_url: str) -> User:
 
     commit_or_bad_request(db, "Avatar could not be updated",)
 
+    delete_local_avatar(old_avatar_url)
+
     return user

@@ -1,4 +1,3 @@
-from pathlib import Path
 from uuid import uuid4
 
 from fastapi import APIRouter, File, Request, UploadFile, status
@@ -7,17 +6,17 @@ from app.api.dependencies import CompletedUser, CurrentUser, DbSession, SelfUser
 from app.core.exceptions import bad_request, not_found
 from app.schemas.user import PublicUserResponse, UserResponse, UserUpdate
 from app.services.user_service import (
+    ErrorCode,
     deactivate_user,
     get_active_user_by_id,
     update_user_avatar,
     update_user_profile,
 )
-from app.services.avatar_service import delete_local_avatar
+from app.services.avatar_service import delete_local_avatar, AVATAR_DIR
 
 
 router = APIRouter()
 
-AVATAR_DIR = Path("uploads/avatars")
 
 ALLOWED_AVATAR_TYPES = {
     "image/jpeg": ".jpg",
@@ -63,12 +62,18 @@ async def update_avatar(request: Request, self_user: SelfUser, db: DbSession, av
     extension = ALLOWED_AVATAR_TYPES.get(avatar.content_type)
 
     if extension is None:
-        raise bad_request("Avatar must be a JPEG, PNG, or WebP image")
+        raise bad_request(
+            "Avatar must be a JPEG, PNG, or WebP image",
+            code=ErrorCode.AVATAR_BAD_FILE_TYPE,
+        )
 
     contents = await avatar.read(MAX_AVATAR_SIZE + 1)
 
     if len(contents) > MAX_AVATAR_SIZE:
-        raise bad_request("Avatar must be less than 2MB in size")
+        raise bad_request(
+            "Avatar must be less than 2MB in size", 
+            code=ErrorCode.AVATAR_TOO_LARGE
+        )
 
     AVATAR_DIR.mkdir(parents=True, exist_ok=True)
     filename = f"{uuid4().hex}{extension}"

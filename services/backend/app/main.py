@@ -9,13 +9,13 @@ from fastapi import FastAPI
 from app.api.v1 import auth, cards, chat, dungeons, leaderboard, lobbies, puzzles, scores, users, friends
 from app.db.database import Base, engine
 from app.core.settings import get_settings
+from app.services.avatar_service import AVATAR_DIR
 
 # Import model modules so SQLAlchemy registers their tables in Base.metadata.
 import app.models  # noqa: F401
 
 
 settings = get_settings()
-AVATAR_DIR = Path("uploads/avatars")
 AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 
 @asynccontextmanager
