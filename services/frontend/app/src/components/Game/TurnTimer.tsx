@@ -15,12 +15,12 @@ export default function TurnTimer()
 		EventBus.addListener(CombatEvent.initTurnTimer, initTurnTime);
 
 		function endTurn() { setTurnTime(0); }
-		EventBus.addListener(CombatEvent.attack, endTurn);
+		EventBus.addListener(CombatEvent.turnEnded, endTurn);
 
 		function cleanup()
 		{
 			EventBus.removeListener(CombatEvent.initTurnTimer, initTurnTime);
-			EventBus.removeListener(CombatEvent.attack, endTurn);
+			EventBus.removeListener(CombatEvent.turnEnded, endTurn);
 		}
 
 		return () => cleanup();

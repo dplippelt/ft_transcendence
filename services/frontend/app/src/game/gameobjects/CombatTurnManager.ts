@@ -69,6 +69,7 @@ export default class CombatTurnManager {
       this.enemyTimer?.remove();
       this.enemyTimer = this.playTurnFor(this.turnConfig.enemyDelayMs);
       this.turnEvents.emit(TurnEvents.STARTENEMY);
+      EventBus.emit(CombatEvent.turnEnded);
     }
   }
 

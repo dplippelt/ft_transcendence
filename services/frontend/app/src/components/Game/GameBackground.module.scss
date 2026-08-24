@@ -11,12 +11,22 @@
 	z-index: -1;
 }
 
+// .combatBackground
+// {
+// 	@include background;
+// 	background-size: cover;
+// 	background-position: center;
+// 	background-image: url("../../assets/combat_bg_preview.png");
+// }
+
 .combatBackground
 {
 	@include background;
-	background-size: cover;
-	background-position: center;
+	background-size: contain;
+	background-position: center bottom;
 	background-image: url("../../assets/combat_bg_preview.png");
+	background-repeat: no-repeat;
+	background-color: black;
 }
 
 .dungeonBackground

@@ -32,7 +32,7 @@ function Buttons( { gameResult } :IButtons )
 	const againText = gameResult === GameResult.won ? "Play again" : "Try again";
 
 	return (
-		<MenuButtons extraStyling={styles.buttonsOffset}>
+		<MenuButtons>
 			<MenuButton label={againText} onClick={ () => navigate(RoutePath.game) } />
 			<MenuButton label="Return to main menu" onClick={ () => navigate(RoutePath.mainMenu) } />
 		</MenuButtons>
@@ -56,12 +56,12 @@ export default function GameOver()
 	return (
 		<>
 			<Background />
-			<Page>
+			<div className={styles.gameOver}>
 				<MenuTitle title={title} />
 				<SubText subText={subText} />
 				<Buttons gameResult={gameResult} />
 				<SideBar />
-			</Page>
+			</div>
 		</>
 	);
 }
