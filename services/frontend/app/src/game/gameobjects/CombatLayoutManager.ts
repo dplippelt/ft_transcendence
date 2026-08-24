@@ -31,16 +31,28 @@ interface CombatLayout {
   button: {
     width: number;
     height: number;
+    execute: {
+      xFromCenter: number;
+      yFromBottom: number;
+    };
+    resetSelection: {
+      xFromCenter: number;
+      yFromBottom: number;
+    };
+    draw: {
+      xFromCenter: number;
+      yFromBottom: number;
+    };
   };
   cards: {
     hand: {
-      width: number,
+      width: number;
       yFromBottom: number;
     };
     selection: {
       startXFromCenter: number;
-      endXFromCenter: number,
-      cellWidth: number,
+      endXFromCenter: number;
+      cellWidth: number;
       yFromTop: number;
     };
     deck: {
@@ -72,6 +84,18 @@ const combatLayout: CombatLayout = {
   button: {
     width: 100,
     height: 50,
+    execute: {
+      xFromCenter: 300,
+      yFromBottom: -150,
+    },
+    resetSelection: {
+      xFromCenter: -400,
+      yFromBottom: -400,
+    },
+    draw: {
+      xFromCenter: -400,
+      yFromBottom: -300,
+    },
   },
   cards: {
     hand: {
@@ -110,6 +134,7 @@ export enum LayoutEvents {
   SET_CARD_POS = "setCardPos",
   SET_CARD_TO_SLOT = "setSelectionSlotsPos",
   SET_COMBATANT_POS = "setCombatantPos",
+  SET_BUTTON_POS = "setButtonPos",
 }
 
 export default class CombatLayoutManager {
@@ -151,6 +176,7 @@ export default class CombatLayoutManager {
     this.events.on(LayoutEvents.SET_CARD_POS, this.setCardPosition, this);
     this.events.on(LayoutEvents.SET_CARD_TO_SLOT, this.setCardToSlot, this);
     this.events.on(LayoutEvents.SET_COMBATANT_POS, this.setCombatantPositions, this);
+    this.events.on(LayoutEvents.SET_BUTTON_POS, this.setButtonPosition, this);
   }
 
   updateDisplay() {
@@ -177,20 +203,27 @@ export default class CombatLayoutManager {
   }
 
   updateButtons() {
-    const buttons: Button[] = [];
-    buttons.push(this.combatManger.executeButton);
-    buttons.push(this.cardManager.drawButton);
-    buttons.push(this.cardManager.selectionResetButton);
+    const layout = this.layout.button;
+    this.updateButton(this.combatManger.executeButton, layout.execute.xFromCenter, layout.execute.yFromBottom);
+    this.updateButton(this.cardManager.drawButton, layout.draw.xFromCenter, layout.draw.yFromBottom);
+    this.updateButton(
+      this.cardManager.selectionResetButton,
+      layout.resetSelection.xFromCenter,
+      layout.resetSelection.yFromBottom,
+    );
+  }
 
-    const targetY = 200;
-    const length = buttons.length;
-    const buttonSpace = buttons[0].width;
-    const totalButtonWidth = buttonSpace * (length - 1);
-    const startX = this.display.centerX - totalButtonWidth / 2;
-    for (let i = 0; i < length; ++i) {
-      const targetX = startX + i * buttonSpace;
-      buttons[i].setPosition(targetX, targetY);
-    }
+  updateButton(button: Button, diffX: number, diffY: number) {
+    const display = this.display;
+    const targetX = display.centerX + diffX * display.scale;
+    const targetY = display.height + diffY * display.scale;
+    const scale = display.scale;
+    button.setData({
+      [TransformInLayout.X]: targetX,
+      [TransformInLayout.Y]: targetY,
+      [TransformInLayout.SCALE]: scale,
+    });
+    this.events.emit(LayoutEvents.SET_BUTTON_POS, button);
   }
 
   updateDeck(isResize: boolean = true) {
@@ -238,7 +271,7 @@ export default class CombatLayoutManager {
     const display = this.display;
     const handLayout = this.layout.cards.hand;
     const ground = display.height + handLayout.yFromBottom * display.scale;
-    const cardSpace = Math.min(100 * display.scale, (handLayout.width) * display.scale / totalCards);
+    const cardSpace = Math.min(100 * display.scale, (handLayout.width * display.scale) / totalCards);
     const totalHandWidth = cardSpace * (totalCards - 1);
     const startX = this.display.centerX - totalHandWidth / 2;
 
@@ -345,8 +378,15 @@ export default class CombatLayoutManager {
     const targetX = combatant.getData(TransformInLayout.X);
     const targetY = combatant.getData(TransformInLayout.Y);
     const scale = combatant.getData(TransformInLayout.SCALE);
-
     combatant.setPosition(targetX, targetY);
     combatant.scale = scale;
+  }
+
+  setButtonPosition(button: Button) {
+    const x = button.getData(TransformInLayout.X);
+    const y = button.getData(TransformInLayout.Y);
+    const scale = button.getData(TransformInLayout.SCALE);
+    button.setPosition(x, y);
+    button.scale = scale;
   }
 }
