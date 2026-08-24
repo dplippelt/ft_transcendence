@@ -56,8 +56,8 @@ export default class CardBase extends Phaser.GameObjects.Container {
 
   createCardBack(scene: Scene) {
     const frame = 4;
-    const style = new Phaser.GameObjects.Sprite(scene, 0, 0, AssetsKey.Cards, frame);
-    this.add(style);
+    const sprite = new Phaser.GameObjects.Sprite(scene, 0, 0, AssetsKey.Cards, frame);
+    this.add(sprite);
   }
 
   createCard(scene: Scene, value: CardValue) {
@@ -68,9 +68,9 @@ export default class CardBase extends Phaser.GameObjects.Container {
     const { x, y } = content.getCenter();
     content.setOrigin(x / content.width, y / content.height);
 
-    const style = new Phaser.GameObjects.Sprite(scene, 0, 0, AssetsKey.Cards, frame);
+    const sprite = new Phaser.GameObjects.Sprite(scene, 0, 0, AssetsKey.Cards, frame);
 
-    this.add([style, content]);
+    this.add([sprite, content]);
   }
 
   getIsSelected() {
