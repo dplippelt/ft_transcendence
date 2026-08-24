@@ -55,7 +55,7 @@ export default class CombatManager {
     this.executeButton = new Button(scene, "Execute", executeButtonConfig);
     this.executeButton.on("pointerdown", this.execute, this);
     this.layoutManager = new CombatLayoutManager(this);
-    this.initPlayerTurn();
+    this.turnManager.turnEvents.emit(TurnEvents.STARTPLAYER);
     // show player's hit point and enemy's hitpoint -> to be rendered with React
     this.hitpointsText = this.scene.add.text(500, 100, "hitpoints");
   }
@@ -97,7 +97,7 @@ export default class CombatManager {
       this.events.emit(CombatEvents.PLAYERATTACK);
     } else {
       // dealPenalty(this.playerStatus);
-      // TODO
+      // or just to ignore like the case of no cards would be fine?
     }
   }
 
@@ -116,6 +116,7 @@ export default class CombatManager {
   takeDamage(combatant: CombatPlayer | CombatEnemy) {
     if (combatant instanceof CombatEnemy) {
       switch (this.executeManager.getCombo()) {
+        // TODO: Needs to decide how much damage is dealt accordingly.
         case ExecuteCombo.ONE:
           combatant.takeDamage(1);
           break;
