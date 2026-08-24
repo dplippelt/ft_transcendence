@@ -18,20 +18,24 @@ interface IMPBar
 
 function HPBar( { className, maxHP, currHP } : IHPBar )
 {
+	const fillPercentage = maxHP > 0 ? Math.min(100, (currHP / maxHP) * 100) : 0;
+
 	return (
 		<div className={className}>
 			<div className={styles.text}>{`${currHP} / ${maxHP}`}</div>
-			<div className={styles.hpBarFill} style={ { '--fill-percentage': `${currHP / maxHP * 100}%` } as React.CSSProperties } />
+			<div className={styles.hpBarFill} style={ { '--fill-percentage': `${fillPercentage}%` } as React.CSSProperties } />
 		</div>
 	);
 }
 
 function MPBar( { maxMP, currMP } : IMPBar )
 {
+	const fillPercentage = maxMP > 0 ? Math.min(100, (currMP / maxMP) * 100) : 0;
+
 	return (
 		<div className={styles.playerMpBar}>
 			<div className={styles.text}>{`${currMP} / ${maxMP}`}</div>
-			<div className={styles.mpBarFill} style={ { '--fill-percentage': `${currMP / maxMP * 100}%` } as React.CSSProperties } />
+			<div className={styles.mpBarFill} style={ { '--fill-percentage': `${fillPercentage}%` } as React.CSSProperties } />
 		</div>
 	);
 }
@@ -57,7 +61,7 @@ export function PlayerHPBar()
 		return () => cleanup();
 	}, []);
 
-	return <HPBar className={styles.playerHpBar} maxHP={maxHP <= 0 ? 1 : maxHP} currHP={currHP} />;
+	return <HPBar className={styles.playerHpBar} maxHP={maxHP} currHP={currHP} />;
 }
 
 export function EnemyHPBar()
@@ -81,7 +85,7 @@ export function EnemyHPBar()
 		return () => cleanup();
 	}, []);
 
-	return <HPBar className={styles.enemyHpBar} maxHP={maxHP <= 0 ? 1 : maxHP} currHP={currHP} />;
+	return <HPBar className={styles.enemyHpBar} maxHP={maxHP} currHP={currHP} />;
 }
 
 export function PlayerMPBar()
@@ -105,5 +109,5 @@ export function PlayerMPBar()
 		return () => cleanup();
 	}, []);
 
-	return <MPBar maxMP={maxMP <= 0 ? 1 : maxMP} currMP={currMP} />;
+	return <MPBar maxMP={maxMP} currMP={currMP} />;
 }
