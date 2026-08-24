@@ -43,6 +43,7 @@ class GameSimulation:
     def connect_player(self, user_id: int):
         if user_id not in self.players:
             self.players[user_id] = self.create_player()
+
         self.players[user_id].state |= PlayerState.CONNECTED
 
     def disconnect_player(self, user_id: int) -> None:
@@ -61,10 +62,10 @@ class GameSimulation:
         ):
             return
 
-        player_actions = self.player_actions[user_id]
+        player_actions = self.player_actions.setdefault(user_id, deque())
 
         # the player queue is not full and remains in order
-        if (
+        if player_actions and (
             len(player_actions) > 32
             or player_actions[-1].sequence < player_action.sequence
         ):

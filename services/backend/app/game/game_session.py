@@ -5,7 +5,7 @@ from time import monotonic
 from fastapi import WebSocket
 
 from app.core.websocket_manager import ConnectionManager
-from app.schemas.game import PlayerAction
+from app.schemas.game import GameSnapshot, PlayerAction
 
 from .game_simulation import GameSimulation
 
@@ -113,8 +113,8 @@ class GameSession:
         self.time_last_player_action[user_id] = monotonic()
         self.game.enqueue_player_action(user_id, player_action)
 
-    def get_json_snapshot(self, user_id: int) -> str:
-        return self.game.get_snapshot(user_id).model_dump_json()
+    def get_snapshot(self, user_id: int) -> GameSnapshot:
+        return self.game.get_snapshot(user_id)
 
     def is_over(self) -> bool:
         if (

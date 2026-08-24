@@ -1,4 +1,4 @@
-from enum import Flag, IntEnum, auto
+from enum import IntEnum, IntFlag, auto
 from typing import Literal
 
 from pydantic import BaseModel
@@ -20,14 +20,14 @@ class ActionType(IntEnum):
     LEAVE = auto()
 
 
-class Direction(Flag):
+class Direction(IntFlag):
     UP = auto()
     RIGHT = auto()
     DOWN = auto()
     LEFT = auto()
 
 
-class PlayerState(Flag):
+class PlayerState(IntFlag):
     NONE = auto()
     WAITING = auto()
     ALIVE = auto()
