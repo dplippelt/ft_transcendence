@@ -3,27 +3,15 @@ import CardBase from "./CardBase";
 import CardSlot, { cardSlotStyleConfig } from "./CardSlot";
 import { type StyledBoxConfig } from "../utils/StyledBox";
 
-interface CardSelectionConfig {
-  selectionLimit: number;
-}
-
-export const cardSelectionConfig: CardSelectionConfig = {
-  selectionLimit: 7,
-};
-
 export default class CardSelection {
   private readonly cardSlotStyleConfig!: StyledBoxConfig;
-  private readonly cardSelectionConfig: CardSelectionConfig;
   private readonly slots!: Phaser.GameObjects.Container;
-  private numSlots!: number;
+  private readonly numSlots: number;
 
-  constructor(scene: Scene, config: CardSelectionConfig) {
+  constructor(scene: Scene) {
     this.cardSlotStyleConfig = cardSlotStyleConfig;
-    this.cardSelectionConfig = config;
-
     this.slots = scene.add.container(0, 0);
-
-    this.numSlots = this.cardSelectionConfig.selectionLimit;
+    this.numSlots = 7;
 
     for (let i = 0; i < this.numSlots; ++i) {
       this.slots.add(new CardSlot(scene, this.cardSlotStyleConfig));
