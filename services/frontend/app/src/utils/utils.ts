@@ -102,6 +102,7 @@ export enum CombatEvent
 	attack = "attack",
 	draw = "draw",
 	reset = "reset",
+	turnEnded = "turn-ended",
 }
 
 export enum GameResult

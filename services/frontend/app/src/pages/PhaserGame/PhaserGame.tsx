@@ -107,6 +107,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       EventBus.removeListener(CombatEvent.attack);
       EventBus.removeListener(CombatEvent.draw);
       EventBus.removeListener(CombatEvent.reset);
+      EventBus.removeListener(CombatEvent.turnEnded);
       setGameMenuVis(false);
       setInCombat(false);
     }

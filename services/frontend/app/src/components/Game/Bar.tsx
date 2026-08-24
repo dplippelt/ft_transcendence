@@ -57,7 +57,7 @@ export function PlayerHPBar()
 		return () => cleanup();
 	}, []);
 
-	return <HPBar className={styles.playerHpBar} maxHP={maxHP} currHP={currHP} />;
+	return <HPBar className={styles.playerHpBar} maxHP={maxHP <= 0 ? 1 : maxHP} currHP={currHP} />;
 }
 
 export function EnemyHPBar()
@@ -81,7 +81,7 @@ export function EnemyHPBar()
 		return () => cleanup();
 	}, []);
 
-	return <HPBar className={styles.enemyHpBar} maxHP={maxHP} currHP={currHP} />;
+	return <HPBar className={styles.enemyHpBar} maxHP={maxHP <= 0 ? 1 : maxHP} currHP={currHP} />;
 }
 
 export function PlayerMPBar()
@@ -105,5 +105,5 @@ export function PlayerMPBar()
 		return () => cleanup();
 	}, []);
 
-	return <MPBar maxMP={maxMP} currMP={currMP} />;
+	return <MPBar maxMP={maxMP <= 0 ? 1 : maxMP} currMP={currMP} />;
 }
