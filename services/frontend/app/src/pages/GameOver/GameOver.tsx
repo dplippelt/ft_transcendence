@@ -59,8 +59,8 @@ export default function GameOver()
 				<MenuTitle title={title} />
 				<SubText subText={subText} />
 				<Buttons gameResult={gameResult} />
-				<SideBar />
 			</div>
+			<SideBar />
 		</>
 	);
 }
