@@ -26,6 +26,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       SECRET_KEY: ${SECRET_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      FRONTEND_ORIGIN: "http://localhost:${FE_PORT}"
 
   db:
     image: postgres:16

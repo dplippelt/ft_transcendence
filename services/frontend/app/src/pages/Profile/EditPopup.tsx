@@ -1,153 +1,401 @@
-import { useRef, useState } from "react";
+import { useState } from "react";
 import type React from "react";
-import { ErrorType, MobilePosition } from "../../utils/utils";
+import { PopupType, AvatarSize } from "../../utils/utils";
+import { ErrorType, isErrorType, mapAuthApiError } from "../../utils/errors";
 import styles from "./EditPopup.module.scss";
 import { PopupButtons } from "../../components/ButtonContainers";
 import ErrorText from "../../components/ErrorText";
 import { MossButton } from "../../components/Buttons";
-import { useUser } from "../../contexts/UserContext";
-import guestAvatar from  "../../assets/guest_avatar_test.jpg";
+import guestAvatar from "../../assets/guest_avatar_test.jpg";
 import testAvatar from "../../assets/mesca_avatar_test.png";
-import { PasswordInput, TextInput } from "../../components/TextInput";
-import { EditWindowType } from "./enums";
-import Avatar, { AvatarSize } from "../../components/Avatar";
-import { getValidUsername, isErrorType } from "../../utils/usernameCheck";
+import { TextInput, PasswordInput } from "../../components/TextInput";
+import Avatar from "../../components/Avatar";
+import { getValidUsername } from "../../utils/usernameCheck";
+import { useAuth, useCurrentUser } from "../../contexts/AuthContext";
 
 interface IEditPopup
 {
-	editWindowType: EditWindowType;
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>;
+	popupType: PopupType;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 interface IEditContent
 {
-	setEditWindowType: React.Dispatch<React.SetStateAction<EditWindowType>>;
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-function EditAvatarContent( { setEditWindowType } : IEditContent )
+function EditAvatarContent( { setPopupType } : IEditContent )
 {
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
-	const fileInputRef = useRef<HTMLInputElement>(null);
-	const user = useUser();
+	const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+	const { updateProfile } = useAuth();
 
-	function handleUpload(e: React.ChangeEvent<HTMLInputElement>)
-	{
-		const file = e.target.files?.[0];
-		if ( !file )
-			return;
-		if ( file.type !== "image/png" && file.type !== "image/jpeg" )
-			return setError(ErrorType.avatarBadFileType);
-		const uploadedAvatar = URL.createObjectURL(file); // upload to database later and fetch from there (and revoke object URL after upload to DB and get real URL).
-		avatarCheck(uploadedAvatar);
-	}
-
-	function avatarCheck(newAvatar: string)
-	{
-		user.updateAvatar(newAvatar); //also update database
-		setEditWindowType(EditWindowType.none);
-	}
-
-	// start temp list of example avatars
+	// Temporary local presets until avatar upload/storage is implemented.
 	const avatars =
 	[
 		guestAvatar,
 		testAvatar,
-	]
-	// end temp list of example avatars
+	];
+
+	async function avatarCheck(avatar: string)
+	{
+		if (isSubmitting)
+			return;
+
+		setError(ErrorType.none);
+		setIsSubmitting(true);
+
+		try
+		{
+			// Vite asset imports may be relative paths. The backend requires
+			// avatar_url to be an absolute HTTP(S) URL.
+			const avatarUrl = new URL(
+				avatar,
+				window.location.origin,
+			).href;
+
+			await updateProfile({
+				avatar_url: avatarUrl,
+			});
+
+			setPopupType(PopupType.none);
+		}
+		catch (error)
+		{
+			setError(mapAuthApiError(error));
+		}
+		finally
+		{
+			setIsSubmitting(false);
+		}
+	}
 
 	return (
 		<>
-			{ error !== ErrorType.none && <ErrorText error={error}/> }
-			<label className={styles.avatarsLabel}>Pick an avatar</label>
+			{ error !== ErrorType.none &&
+				<ErrorText error={error}/>
+			}
+
+			<label className={styles.avatarsLabel}>
+				Pick an avatar
+			</label>
+
 			<div className={styles.avatars}>
 				{ avatars.map((avatar, idx) => (
-					<Avatar key={avatar} src={avatar} alt={`Avatar ${idx + 1}`} size={AvatarSize.medium} onClick={ () => avatarCheck(avatar) } extraStyling={styles.avatar} />
+					<Avatar
+						key={avatar}
+						src={avatar}
+						alt={`Avatar ${idx + 1}`}
+						size={AvatarSize.medium}
+						onClick={() => void avatarCheck(avatar)}
+						extraStyling={styles.avatar}
+					/>
 				))}
 			</div>
+
 			<PopupButtons>
-				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } mobilePosition={MobilePosition.bottom} />
-				<MossButton label="Upload" onClick={ () => fileInputRef.current?.click() } mobilePosition={MobilePosition.top} />
-				<input type="file" ref={fileInputRef} style={{ display: "none" }} onChange={ handleUpload } />
+				<MossButton
+					label="Back"
+					onClick={() => setPopupType(PopupType.none)}
+					disabled={isSubmitting}
+				/>
 			</PopupButtons>
 		</>
-	)
+	);
 }
 
-function EditUsernameContent( { setEditWindowType } : IEditContent )
+function EditUsernameContent( { setPopupType } : IEditContent )
 {
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [username, setUsername] = useState<string>("");
-	const user = useUser();
+	const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-	function usernameCheck()
+	const { updateProfile } = useAuth();
+
+	async function usernameCheck()
 	{
-		const result: string | ErrorType = getValidUsername(username);
-		if ( isErrorType(result) )
+		if (isSubmitting)
+			return;
+
+		setError(ErrorType.none);
+
+		const result = getValidUsername(username);
+
+		if (isErrorType(result))
 			return setError(result);
 
-		const validUsername = result;
+		setIsSubmitting(true);
 
-		// Mock username check
-		if ( validUsername.length === 1 )
-			return setError(ErrorType.usernameAlreadyTaken);
+		try
+		{
+			await updateProfile({
+				username: result,
+			});
 
-		user.updateUsername(validUsername); //also update database
-		setEditWindowType(EditWindowType.none);
+			setPopupType(PopupType.none);
+		}
+		catch (error)
+		{
+			setError(mapAuthApiError(error));
+		}
+		finally
+		{
+			setIsSubmitting(false);
+		}
 	}
 
 	return (
 		<>
-			{ error !== ErrorType.none && <ErrorText error={error}/> }
-			<TextInput label="Edit username:" placeholder="Enter new username" setter={setUsername} id="newUsername" />
+			{ error !== ErrorType.none &&
+				<ErrorText error={error}/>
+			}
+
+			<TextInput
+				label="Edit username:"
+				placeholder="Enter new username"
+				setter={setUsername}
+				id="newUsername"
+			/>
+
 			<PopupButtons>
-				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } />
-				<MossButton label="Ok" onClick={ usernameCheck } />
+				<MossButton
+					label="Ok"
+					onClick={() => void usernameCheck()}
+					disabled={isSubmitting}
+				/>
+
+				<MossButton
+					label="Back"
+					onClick={() => setPopupType(PopupType.none)}
+					disabled={isSubmitting}
+				/>
 			</PopupButtons>
 		</>
-	)
+	);
 }
 
-function EditPasswordContent( { setEditWindowType } : IEditContent )
+function EditDisplayNameContent({ setPopupType }: IEditContent)
 {
-	const [error, setError] = useState<ErrorType>(ErrorType.none);
-	const [password, setPassword] = useState<string>("");
-	const [confirmPassword, setConfirmPassword] = useState<string>("");
+    const { updateProfile } = useAuth();
 
-	function passwordCheck()
-	{
-		// Mock username check
-		if ( password.length === 0 )
-			return setError(ErrorType.passwordCannotBeEmpty);
-		if ( password !== confirmPassword )
-			return setError(ErrorType.passwordsDontMatch);
+    const [displayName, setDisplayName] = useState<string>("");
+    const [error, setError] = useState<ErrorType>(ErrorType.none);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-		// update password in database
-		setEditWindowType(EditWindowType.none);
-	}
+    async function displayNameCheck()
+    {
+        if (isSubmitting)
+            return;
+        
+        setError(ErrorType.none);
 
-	return (
-		<>
-			{ error !== ErrorType.none && <ErrorText error={error}/> }
-			<PasswordInput label="Edit password:" placeholder="Enter new password" isNewPassword={true} setter={setPassword} id="newPassword" />
-			<PasswordInput label="Confirm password:" placeholder="Confirm new password" isNewPassword={true} setter={setConfirmPassword} id="confirmPassword" />
-			<PopupButtons>
-				<MossButton label="Back" onClick={ () => setEditWindowType(EditWindowType.none) } />
-				<MossButton label="Ok" onClick={ passwordCheck } />
-			</PopupButtons>
-		</>
-	)
+        const trimmedDisplayName = displayName.trim();
+
+        if (!trimmedDisplayName)
+        {
+            setError(ErrorType.displayNameCannotBeEmpty);
+            return;
+        }
+
+        setIsSubmitting(true);
+        
+        try
+        {
+            await updateProfile({
+                display_name: trimmedDisplayName,
+            });
+            setPopupType(PopupType.none);
+        }
+        catch (error)
+        {
+            setError(mapAuthApiError(error));
+        }
+        finally
+        {
+            setIsSubmitting(false);
+        }
+    }
+
+    return (
+        <>
+            {error !== ErrorType.none && <ErrorText error={error} />}
+            <TextInput
+                label="Edit display name:"
+                placeholder="Enter new display name"
+                setter={setDisplayName}
+                id="newDisplayName"
+                maxLength={50}
+            />
+            <PopupButtons>
+                <MossButton
+                    label="Ok"
+                    onClick={() => void displayNameCheck()}
+                    disabled={isSubmitting}
+                />
+                <MossButton
+                    label="Back"
+                    onClick={() => setPopupType(PopupType.none)}
+                    disabled={isSubmitting}
+                />
+            </PopupButtons>
+        </>
+    );
 }
 
-export default function EditPopup( { editWindowType, setEditWindowType } : IEditPopup )
+function EditPasswordContent( { setPopupType } : IEditContent )
 {
-	switch (editWindowType)
+    const user = useCurrentUser();
+    const { updatePassword } = useAuth();
+
+    const hasPassword = user.linked_providers.includes("password");
+    const [currentPassword, setCurrentPassword] = useState<string>("");
+    const [newPassword, setNewPassword] = useState<string>("");
+    const [confirmPassword, setConfirmPassword] = useState<string>("");
+    const [error, setError] = useState<ErrorType>(ErrorType.none);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+    async function passwordCheck()
+    {
+        if (isSubmitting)
+            return;
+        
+        setError(ErrorType.none);
+
+        if (hasPassword && !currentPassword)
+        {
+            setError(ErrorType.currentPasswordRequired);
+            return;
+        }
+
+        if (!newPassword)
+        {
+            setError(ErrorType.passwordCannotBeEmpty);
+            return;
+        }
+        
+        if (newPassword.length < 8)
+        {
+            setError(ErrorType.passwordTooShort);
+            return;
+        }
+
+        if (newPassword !== confirmPassword)
+        {
+            setError(ErrorType.passwordsDontMatch);
+            return;
+        }
+
+        if (hasPassword && newPassword === currentPassword)
+        {
+            setError(ErrorType.passwordSameAsCurrent);
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try
+        {
+            await updatePassword({
+                new_password: newPassword,
+                ...(hasPassword &&
+                {
+                    current_password: currentPassword,
+                }),
+            });
+
+            setPopupType(PopupType.none);
+        }
+        catch (error)
+        {
+            setError(mapAuthApiError(error));
+        }
+        finally
+        {
+            setIsSubmitting(false);
+        }
+    }
+
+    return (
+        <>
+            { error !== ErrorType.none && <ErrorText error={error}/> }
+
+            {hasPassword &&
+                <PasswordInput
+                    label="Current password:"
+                    placeholder="Enter current password"
+                    isNewPassword={false}
+                    setter={setCurrentPassword}
+                    id="currentPassword"
+                />
+            }
+
+            <PasswordInput
+                label={ hasPassword ? "New password:" : "Set password:" }
+                placeholder="Enter new password"
+                isNewPassword={true}
+                setter={setNewPassword}
+                id="newPassword"
+            />
+
+            <PasswordInput
+                label="Confirm password:"
+                placeholder="Confirm new password"
+                isNewPassword={true}
+                setter={setConfirmPassword}
+                id="confirmPassword"
+            />
+
+            <PopupButtons>
+                <MossButton
+                    label={ hasPassword ? "Change password" : "Set password" }
+                    onClick={() => void passwordCheck()}
+                    disabled={isSubmitting}
+                />
+
+                <MossButton
+                    label="Back"
+                    onClick={ () => setPopupType(PopupType.none) }
+                    disabled={isSubmitting}
+                />
+            </PopupButtons>
+        </>
+    );
+}
+
+export default function EditPopup(
+	{ popupType, setPopupType } : IEditPopup
+)
+{
+	switch (popupType)
 	{
-		case EditWindowType.username:
-			return <EditUsernameContent setEditWindowType={setEditWindowType} />
-		case EditWindowType.password:
-			return <EditPasswordContent setEditWindowType={setEditWindowType} />
-		case EditWindowType.avatar:
-			return <EditAvatarContent setEditWindowType={setEditWindowType} />
+		case PopupType.editUsername:
+			return (
+				<EditUsernameContent
+					setPopupType={setPopupType}
+				/>
+            );
+        
+        case PopupType.editDisplayName:
+            return (
+                <EditDisplayNameContent
+                    setPopupType={setPopupType}
+                />
+            );
+
+		case PopupType.editPassword:
+			return (
+				<EditPasswordContent
+					setPopupType={setPopupType}
+				/>
+			);
+
+		case PopupType.editAvatar:
+			return (
+				<EditAvatarContent
+					setPopupType={setPopupType}
+				/>
+			);
+
 		default:
 			return null;
 	}

@@ -1,10 +1,16 @@
 import React from "react";
 import styles from "./ButtonContainers.module.scss";
 
-export function MenuButtons( { children } : { children : React.ReactNode } )
+interface IMenuButtons
+{
+	children : React.ReactNode;
+	extraStyling?: string;
+}
+
+export function MenuButtons( { children, extraStyling="" } : IMenuButtons )
 {
 	return (
-		<div className={styles.menuButtons}>
+		<div className={`${styles.menuButtons} ${extraStyling}`}>
 			{children}
 		</div>
 	);

@@ -6,6 +6,7 @@
 	object-fit: cover;
 	border: $window-border;
 	border-color: $profile-avatar-border-color;
+	flex-shrink: 0;
 }
 
 .smaller
@@ -35,8 +36,8 @@
 
 .large
 {
-	width: 128px;
-	height: 128px;
+	width: 108px;
+	height: 108px;
 	border-radius: 128px;
 	border-width: 4px;
 }

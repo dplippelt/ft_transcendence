@@ -1,5 +1,5 @@
 import type { GameObjects, Physics } from "phaser";
-import type { Dungeon } from "../gameobjects/Dungeon";
+import type { Dungeon } from "../gameobjects/dungeon/Dungeon";
 import type { Room } from "../map/procedural";
 import { Vector2, randomPoint } from "../map/math";
 import Component from "./Component";

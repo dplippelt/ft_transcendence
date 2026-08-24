@@ -2,14 +2,23 @@ DCOMP =			./docker-compose.yml
 
 VOLUME_DIRS =	$(HOME)/ft_transcendence
 
-# use setup only on a freshly cloned repo
 setup:
-	cd services/frontend/app && npm install
 	$(MAKE) build
 
 build:
 	@mkdir -p $(VOLUME_DIRS)/frontend_data
 	docker compose -f $(DCOMP) build
+
+check-frontend:
+	docker compose -f $(DCOMP) run --rm frontend npm run build
+
+check-backend:
+	docker compose -f $(DCOMP) run --rm backend \
+		python -m compileall -q /app/app
+	docker compose -f $(DCOMP) run --rm backend \
+		python -c "import app.main"
+
+check: check-frontend check-backend
 
 up:
 	docker compose -f $(DCOMP) up -d
@@ -29,6 +38,7 @@ restart:
 re:
 	$(MAKE) down || true
 	$(MAKE) build
+	$(MAKE) check
 	$(MAKE) up
 
 clean:
@@ -40,6 +50,6 @@ fclean: clean
 	sudo rm -rf $(VOLUME_DIRS)
 	sudo rm -rf services/frontend/app/node_modules
 
-fre: fclean setup up
+fre: fclean setup check up
 
-.PHONY: setup build up down start stop restart re clean fclean fre
+.PHONY: setup build check check-frontend check-backend up down start stop restart re clean fclean fre

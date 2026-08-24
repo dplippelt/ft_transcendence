@@ -55,6 +55,14 @@ class User(Base):
         cascade="all, delete-orphan",
     )
 
+    # This doesnt create a database column. It calculates the list from the exisiting auth_accounts rows
+    @property
+    def linked_providers(self) -> list[str]:
+        return sorted({
+            account.provider
+            for account in self.auth_accounts
+        })
+
     sent_friend_requests: Mapped[list["FriendRequest"]] = relationship(
         back_populates="requester",
         foreign_keys="FriendRequest.requester_id",
@@ -93,5 +101,15 @@ class User(Base):
     received_messages: Mapped[list["ChatMessage"]] = relationship(
         back_populates="receiver",
         foreign_keys="ChatMessage.receiver_id",
+        passive_deletes=True,
+    )
+
+    scores: Mapped[list["Score"]] = relationship(
+        back_populates="user",
+        passive_deletes=True,
+    )
+
+    lobby_memberships: Mapped[list["LobbyMember"]] = relationship(
+        back_populates="user",
         passive_deletes=True,
     )

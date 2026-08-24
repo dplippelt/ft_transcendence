@@ -2,8 +2,9 @@ from datetime import datetime, timezone
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from app.core.exceptions import bad_request, forbidden, not_found
+from app.core.exceptions import ErrorCode, bad_request, forbidden, not_found
 
+from app.db.utils import commit_or_bad_request
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
 from app.models.user import User
@@ -16,15 +17,6 @@ REJECTED = "rejected"
 
 def utc_now() -> datetime:
     return datetime.now(timezone.utc)
-
-
-def commit_or_bad_request(db: Session, detail: str) -> None:
-    # Used for writes that may hit DB uniqueness constraints.
-    try:
-        db.commit()
-    except IntegrityError:
-        db.rollback()
-        raise bad_request(detail)
 
 
 def normalize_friend_pair(user_a_id: int, user_b_id: int,) -> tuple[int, int]:
@@ -49,13 +41,13 @@ def get_existing_friend_request(db: Session, user_a_id: int, user_b_id: int,) ->
 
 def handle_existing_friend_request(db: Session, existing_request: FriendRequest, current_user: User, recipient: User,) -> FriendRequest:
     if existing_request.status == ACCEPTED:
-        raise bad_request("Users are already friends.")
+        raise bad_request("Users are already friends.", code=ErrorCode.ALREADY_FRIENDS)
 
     if existing_request.status == PENDING:
         if existing_request.recipient_id == current_user.id:
             return accept_pending_friend_request(db, existing_request)
 
-        raise bad_request("Friend request already sent.")
+        raise bad_request("Friend request already sent.", code=ErrorCode.FRIEND_REQUEST_ALREADY_SENT)
 
     if existing_request.status == REJECTED:
         pair_user_a_id, pair_user_b_id = normalize_friend_pair(
@@ -122,13 +114,13 @@ def require_pending_received_request(db: Session, request_id: int, current_user_
     )
 
     if friend_request is None:
-        raise not_found("Friend request not found.")
+        raise not_found("Friend request not found.", code=ErrorCode.FRIEND_REQUEST_NOT_FOUND)
 
     if friend_request.recipient_id != current_user_id:
         raise forbidden(f"You cannot {action} this friend request.")
 
     if friend_request.status != PENDING:
-        raise bad_request("Friend request is not pending.")
+        raise bad_request("Friend request is not pending.", code=ErrorCode.FRIEND_REQUEST_NOT_PENDING)
 
     return friend_request
 
@@ -155,10 +147,10 @@ def accept_pending_friend_request(db: Session, friend_request: FriendRequest,) -
 
 def send_friend_request(db: Session, current_user: User, recipient: User,) -> FriendRequest:
     if recipient.id == current_user.id:
-        raise bad_request("You cannot send a friend request to yourself.")
+        raise bad_request("You cannot send a friend request to yourself.", code=ErrorCode.CANNOT_ADD_SELF)
 
     if get_friendship(db, current_user.id, recipient.id):
-        raise bad_request("Users are already friends.")
+        raise bad_request("Users are already friends.", code=ErrorCode.ALREADY_FRIENDS)
 
     existing_request = get_existing_friend_request(
         db,
@@ -254,13 +246,13 @@ def cancel_friend_request(db: Session, request_id: int, current_user: User,) -> 
     )
 
     if friend_request is None:
-        raise not_found("Friend request not found.")
+        raise not_found("Friend request not found.", code=ErrorCode.FRIEND_REQUEST_NOT_FOUND)
 
     if friend_request.requester_id != current_user.id:
         raise forbidden("You cannot cancel this friend request.")
 
     if friend_request.status != PENDING:
-        raise bad_request("Friend request is not pending.")
+        raise bad_request("Friend request is not pending.", code=ErrorCode.FRIEND_REQUEST_NOT_PENDING)
 
     db.delete(friend_request)
     db.commit()
@@ -268,7 +260,7 @@ def cancel_friend_request(db: Session, request_id: int, current_user: User,) -> 
 
 def remove_friend(db: Session, current_user: User, friend_id: int) -> None:
     if friend_id == current_user.id:
-        raise bad_request("You cannot remove yourself as a friend.")
+        raise bad_request("You cannot remove yourself as a friend.", code=ErrorCode.CANNOT_REMOVE_SELF)
 
     friendship = get_friendship(
         db,
@@ -277,7 +269,7 @@ def remove_friend(db: Session, current_user: User, friend_id: int) -> None:
     )
 
     if friendship is None:
-        raise not_found("Friendship not found.")
+        raise not_found("Friendship not found.", code=ErrorCode.FRIENDSHIP_NOT_FOUND)
 
     existing_request = get_existing_friend_request(
         db,

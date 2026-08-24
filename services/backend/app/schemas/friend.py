@@ -3,6 +3,8 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
+from app.schemas.user import PublicUserResponse
+
 
 class FriendRequestStatus(str, Enum):
     pending = "pending"
@@ -10,16 +12,9 @@ class FriendRequestStatus(str, Enum):
     rejected = "rejected"
 
 
-# It is a small public user object for friend related responses, so that we don't expose sensitive user information
-class FriendUserResponse(BaseModel):
-    id: int
-    username: str | None = None
-    display_name: str | None = None
-    avatar_url: str | None = None
-
-    model_config = {
-        "from_attributes": True
-    }
+# A small public user object for friend related responses, so that we don't
+# expose sensitive user information -- same shape as PublicUserResponse.
+FriendUserResponse = PublicUserResponse
 
 
 # schemas for sending a friend request

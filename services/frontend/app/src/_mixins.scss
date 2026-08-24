@@ -25,7 +25,7 @@
 @mixin menuWindow
 {
 	max-width: min(800px, 90%);
-	min-height: min(800px, 60vh);
+	height: max(500px, 60vh);
 	display: grid;
 	overflow: hidden;
 	row-gap: 1rem;

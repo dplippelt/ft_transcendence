@@ -21,3 +21,9 @@ export const Assets: IAssetIndex = {
   [AssetsKey.CombatEnemy]: new URL("./assets/combat_enemy37x45.png", import.meta.url).href,
   [AssetsKey.Cards]: new URL("./assets/cards64x96.png", import.meta.url).href,
 };
+
+export enum DepthOrder {
+  background,
+  layer0,
+  playerAndEnemies
+}

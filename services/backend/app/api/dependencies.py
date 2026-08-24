@@ -4,7 +4,7 @@ from fastapi import Depends, Query, WebSocket, WebSocketException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import forbidden, unauthorized
+from app.core.exceptions import ErrorCode, forbidden, unauthorized
 from app.core.security import decode_access_token
 from app.db.database import SessionLocal, get_db
 from app.models.user import User
@@ -54,6 +54,29 @@ def get_current_user(token: BearerToken, db: DbSession) -> User:
 CurrentUser = Annotated[User, Depends(get_current_user)]
 
 
+def get_completed_user(current_user: CurrentUser,) -> User:
+    if current_user.username is None:
+        raise forbidden(
+            "Choose a username before using this feature",
+            code=ErrorCode.USERNAME_REQUIRED,
+        )
+
+    return current_user
+
+
+CompletedUser = Annotated[User, Depends(get_completed_user),]
+
+
+def get_current_user_matching_path(user_id: int, current_user: CurrentUser) -> User:
+    if user_id != current_user.id:
+        raise forbidden("You can only modify your own account")
+
+    return current_user
+
+
+SelfUser = Annotated[User, Depends(get_current_user_matching_path)]
+
+
 def get_current_user_id_ws(
     websocket: WebSocket,
     # Browsers can't set custom headers on the WS handshake, so the token
@@ -80,7 +103,7 @@ def get_current_user_id_ws(
     finally:
         db.close()
 
-    if user is None or not user.is_active:
+    if user is None or not user.is_active or user.username is None:
         raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
 
     return user.id

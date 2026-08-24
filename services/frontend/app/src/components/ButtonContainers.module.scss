@@ -43,8 +43,7 @@
 	max-width: min(900px, 90%);
 	justify-content: center;
 	margin: 0 auto;
-	// margin-top: 0.75rem;
-	gap: clamp(1rem, 5vw, 5rem);
+	gap: 1rem;
 
 	@media (max-width: 480px)
 	{

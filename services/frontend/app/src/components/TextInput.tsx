@@ -1,12 +1,17 @@
 import type React from "react";
 import styles from "./TextInput.module.scss";
+import { EventBus } from "../game/EventBus";
+import { GameEvent } from "../utils/utils";
+import { useEffect, useRef } from "react";
 
 interface ITextInput
 {
 	label: string;
 	placeholder: string;
 	id: string;
-	setter: (value: React.SetStateAction<string>) => void;
+    setter: (value: React.SetStateAction<string>) => void;
+    type?: React.HTMLInputTypeAttribute;
+    maxLength?: number;
 }
 
 interface IPasswordInput
@@ -26,7 +31,7 @@ interface IChatInput
 	setMsg: React.Dispatch<React.SetStateAction<string>>;
 }
 
-export function TextInput( { label, placeholder, id, setter } : ITextInput )
+export function TextInput( { label, placeholder, id, setter, type = "text", maxLength } : ITextInput )
 {
 	function handleChange( e: React.ChangeEvent<HTMLInputElement> )
 	{
@@ -37,10 +42,12 @@ export function TextInput( { label, placeholder, id, setter } : ITextInput )
 		<>
 			<label htmlFor={id}>{label}</label>
 			<input
-				type="text"
+				type={type}
 				id={id}
-				placeholder={placeholder}
-				onChange={handleChange}/>
+                placeholder={placeholder}
+                maxLength={maxLength}
+                onChange={handleChange}
+            />
 		</>
 	);
 }
@@ -67,6 +74,31 @@ export function PasswordInput( { label, placeholder, isNewPassword, id, setter }
 
 export function ChatInput( { placeholder, onSend, msg, setMsg } : IChatInput )
 {
+	const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
+
+	/* When on the game page chat input focus / unfocus toggles whether keyboard
+	 * input is enabled for the game. This useEffect makes sure that clicking anywhere
+	 * outside of a Side Bar that contains a ChatInput also unfocuses the textarea
+	 * element. Without it, only clicking somewhere inside the Side Bar, but outside
+	 * the textarea element would unfocus it. */
+	useEffect(() =>
+	{
+		function handlePointerDown( e: PointerEvent )
+		{
+			if ( textAreaRef.current && !textAreaRef.current.contains(e.target as Node) )
+				textAreaRef.current.blur();
+		}
+
+		function cleanup()
+		{
+			document.removeEventListener("pointerdown", handlePointerDown);
+			EventBus.emit(GameEvent.chatFocus, false);
+		}
+
+		document.addEventListener("pointerdown", handlePointerDown);
+		return () => cleanup();
+	}, [])
+
 	function handleChange( e: React.ChangeEvent<HTMLTextAreaElement> )
 	{
 		setMsg(e.target.value);
@@ -82,10 +114,13 @@ export function ChatInput( { placeholder, onSend, msg, setMsg } : IChatInput )
 	}
 
 	return <textarea
+				ref={textAreaRef}
 				className={styles.chatInput}
 				rows={2}
 				placeholder={placeholder}
 				value={msg}
 				onChange={handleChange}
-				onKeyDown={handleKeyDown} />;
+				onKeyDown={handleKeyDown}
+				onFocus={ () => EventBus.emit(GameEvent.chatFocus, true) }
+				onBlur={ () => EventBus.emit(GameEvent.chatFocus, false) } />;
 }
