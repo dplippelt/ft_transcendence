@@ -7,11 +7,7 @@ interface IGameBackground
 
 export default function GameBackground( { inCombat } : IGameBackground )
 {
-	return (
-		<>
-			{ inCombat
-			? <div className={styles.combatBackground} />
-			: <div className={styles.dungeonBackground} /> }
-		</>
-	);
+	if ( inCombat )
+		return <div className={styles.combatBackground} />;
+	return <div className={styles.dungeonBackground} />;
 }

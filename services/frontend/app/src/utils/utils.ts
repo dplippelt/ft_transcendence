@@ -98,6 +98,7 @@ export enum CombatEvent
 	updateEnemyHP = "update-enemy-hp",
 	initPlayerMP = "init-player-mp",
 	updatePlayerMP = "update-player-mp",
+	initTurnTimer = "init-turn-timer",
 	attack = "attack",
 	draw = "draw",
 	reset = "reset",

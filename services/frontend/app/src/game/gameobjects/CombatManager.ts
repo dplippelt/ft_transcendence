@@ -40,7 +40,7 @@ export default class CombatManager {
   update() {
     this.cardManager.alignAllCards();
 
-    // show a timer
+    // TODO: for debugging/testing only - remove displayTimer() later
     this.turnManager.displayTimer();
   }
 
