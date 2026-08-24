@@ -176,7 +176,6 @@ export class GameManagerScene extends Scene {
   }
 
   private onGameOver( result: GameResult ): void {
-    this._levelCount = 1; // TODO: change back to intended max level count (was 5)
     EventBus.emit(GameEvent.gameOver, result);
   }
 
