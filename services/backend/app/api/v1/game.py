@@ -6,8 +6,13 @@ from fastapi._compat.v2 import ValidationError
 from app.api.dependencies import CurrentUserIdWS
 from app.game.game_session import JoinStatus
 from app.game.game_session_manager import game_session_manager
-from app.schemas.game import ActionType, NewGameSession, Player, PlayerAction
+from app.schemas.game import NewGameSession, PlayerAction
 
+# TODO: temp setting for debugging
+logging.basicConfig(
+    level=logging.DEBUG,
+    format="%(asctime)s [%(name)s] %(levelname)s: %(message)s",
+)
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -31,6 +36,7 @@ async def list_game_sessions():
     return live_game_sessions
 
 
+# TODO: re-enable current_user_id: CurrentUserIdWS
 @router.websocket("/ws/join/{game_session_id}")
 async def game_websocket(
     websocket: WebSocket,
@@ -49,8 +55,9 @@ async def game_websocket(
     try:
         while True:
             message = await websocket.receive()
+            logger.debug(f"raw message: {message}")
             if message["type"] == "websocket.disconnect":
-                break;
+                break
 
             if message.get("text") is None:
                 continue
