@@ -1,6 +1,5 @@
 import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import Background from "../../components/Background";
-import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
 import { MenuButtons } from "../../components/ButtonContainers";
 import styles from "./GameOver.module.scss";
