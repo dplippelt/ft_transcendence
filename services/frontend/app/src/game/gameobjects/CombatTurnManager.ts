@@ -1,16 +1,6 @@
 import Phaser, { type Scene } from "phaser";
 import type CombatManager from "./CombatManager";
 
-interface TurnConfig {
-  playerDelayMs: number;
-  enemyDelayMs: number;
-}
-
-const turnConfig: TurnConfig = {
-  playerDelayMs: 10000,
-  enemyDelayMs: 5000,
-};
-
 export enum TurnEvents {
   SWITCH = "switch",
   STARTPLAYER = "startPlayer",
@@ -21,8 +11,9 @@ export default class CombatTurnManager {
   readonly combatManager: CombatManager;
   readonly scene: Scene;
   readonly clock: Phaser.Time.Clock;
-  readonly turnConfig: TurnConfig = turnConfig;
   readonly turnEvents: Phaser.Events.EventEmitter;
+  readonly playerDelayMs: number;
+  readonly enemyDelayMs: number;
   private isPlayerTurn: boolean;
   private playerTimer: Phaser.Time.TimerEvent | null;
   private enemyTimer: Phaser.Time.TimerEvent | null;
@@ -34,10 +25,10 @@ export default class CombatTurnManager {
     this.clock = this.scene.time;
     this.turnEvents = new Phaser.Events.EventEmitter();
     this.turnEvents.on(TurnEvents.SWITCH, this.switchTurn, this);
+    this.playerDelayMs = 10000,
+    this.enemyDelayMs = 5000,
     this.isPlayerTurn = true;
-    this.playerTimer = this.playTurnFor(this.turnConfig.playerDelayMs);
-
-    // To display, not necessary.
+    this.playerTimer = this.playTurnFor(this.playerDelayMs);
     this.enemyTimer = null;
     this.timerText = this.scene.add.text(100, 200, "timer");
   }
@@ -55,7 +46,7 @@ export default class CombatTurnManager {
         this.enemyTimer.remove();
       }
 
-      this.playerTimer = this.playTurnFor(this.turnConfig.playerDelayMs);
+      this.playerTimer = this.playTurnFor(this.playerDelayMs);
       this.turnEvents.emit(TurnEvents.STARTPLAYER);
     } else {
       this.pausePlayerTurn();
@@ -64,7 +55,7 @@ export default class CombatTurnManager {
         this.enemyTimer.remove();
       }
 
-      this.enemyTimer = this.playTurnFor(this.turnConfig.enemyDelayMs);
+      this.enemyTimer = this.playTurnFor(this.enemyDelayMs);
       this.turnEvents.emit(TurnEvents.STARTENEMY);
     }
   }
