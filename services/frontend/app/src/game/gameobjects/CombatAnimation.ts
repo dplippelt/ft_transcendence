@@ -281,7 +281,7 @@ export default class CombatAnimation {
     this.scene.tweens.add({
       targets: this.enemy,
       x: this.enemy.x - 50,
-      delay: 500,
+      delay: 100,
       duration: 50,
       yoyo: true,
       onComplete: fn,
