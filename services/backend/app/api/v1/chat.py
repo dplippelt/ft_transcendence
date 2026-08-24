@@ -1,5 +1,3 @@
-import logging
-
 from fastapi import APIRouter, WebSocket, status
 
 from app.api.dependencies import CompletedUser, CurrentUserIdWS, DbSession
@@ -13,8 +11,6 @@ from app.services.chat_service import (
 )
 from app.services.user_service import get_active_user_by_id
 
-logger = logging.getLogger(__name__)
-
 router = APIRouter()
 
 
@@ -23,16 +19,11 @@ def notify_receiver(receiver_id: int, message: object) -> None:
     # here (e.g. a dead connection anyio couldn't clean up in time) must not
     # turn a successful send into a 500 -- covers payload construction too,
     # not just the socket send.
-    try:
-        payload = {
-            "type": "chat_message",
-            **ChatMessageResponse.model_validate(message).model_dump(mode="json"),
-        }
-    except Exception:
-        logger.warning("Failed to prepare chat message notification for user %s", receiver_id, exc_info=True)
-        return
-
-    connection_manager.notify(receiver_id, payload)
+    connection_manager.notify_safely(
+        receiver_id,
+        "chat_message",
+        lambda: ChatMessageResponse.model_validate(message).model_dump(mode="json"),
+    )
 
 
 @router.get("/{friend_id}/messages", response_model=list[ChatMessageResponse])
