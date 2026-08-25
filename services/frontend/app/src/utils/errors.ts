@@ -249,6 +249,10 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.usernameRequired;
         case "ACCOUNT_INACTIVE":
             return ErrorType.accountInactive;
+        case "AVATAR_BAD_FILE_TYPE":
+            return ErrorType.avatarBadFileType;
+        case "AVATAR_TOO_LARGE":
+            return ErrorType.avatarTooLarge;
         case "REGISTRATION_FAILED":
             return ErrorType.registrationFailed;
         case "GOOGLE_NOT_CONFIGURED":

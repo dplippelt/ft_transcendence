@@ -100,6 +100,7 @@ def deactivate_user(db: Session, user: User) -> None:
 
 
 def update_user_avatar(db: Session, user: User, avatar_url: str) -> User:
+    old_avatar_url = user.avatar_url
     user.avatar_url = avatar_url
 
     commit_or_bad_request(db, "Avatar could not be updated",)
