@@ -16,16 +16,16 @@ export type EnemyTypes = Record<EnemyLevel, EnemyData>;
 
 export const enemyTypes: EnemyTypes = {
   [EnemyLevel.EASY]: {
-    hitPoint: 100,
-    attackDamage: 10,
+    hitPoint: 5,
+    attackDamage: 2,
   },
   [EnemyLevel.NORMAL]: {
-    hitPoint: 200,
-    attackDamage: 30,
+    hitPoint: 16,
+    attackDamage: 4,
   },
   [EnemyLevel.HARD]: {
-    hitPoint: 300,
-    attackDamage: 50,
+    hitPoint: 25,
+    attackDamage: 5,
   },
 };
 
