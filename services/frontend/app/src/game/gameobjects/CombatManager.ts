@@ -25,6 +25,8 @@ export enum CombatEvents {
   ENDTURN = "endTurn",
 }
 
+type DamageToEnemy = Record<ExecuteCombo, number>;
+
 export default class CombatManager {
   readonly scene: Scene;
   readonly player: CombatPlayer;
@@ -36,6 +38,11 @@ export default class CombatManager {
   readonly executeButton: Button;
   readonly layoutManager: CombatLayoutManager;
   readonly hitpointsText: Phaser.GameObjects.Text;
+  readonly damageToEnemyOn: DamageToEnemy = {
+    [ExecuteCombo.ONE]: 2,
+    [ExecuteCombo.TWO]: 4,
+    [ExecuteCombo.THREE]: 8,
+  };
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
@@ -91,7 +98,7 @@ export default class CombatManager {
 
     this.executeManager.evaluateSelectedCards(cards);
     // TODO: make the logic to determine the value of combo in the executeManager
-    this.executeManager.setCombo(ExecuteCombo.THREE);
+    this.executeManager.setCombo(ExecuteCombo.TWO);
     const points = this.executeManager.getResult();
     if (points !== null) {
       this.events.emit(CombatEvents.PLAYERATTACK);
@@ -115,25 +122,13 @@ export default class CombatManager {
 
   takeDamage(combatant: CombatPlayer | CombatEnemy) {
     if (combatant instanceof CombatEnemy) {
-      switch (this.executeManager.getCombo()) {
-        // TODO: Needs to decide how much damage is dealt accordingly.
-        case ExecuteCombo.ONE:
-          combatant.takeDamage(1);
-          break;
-        case ExecuteCombo.TWO:
-          combatant.takeDamage(2);
-          break;
-        case ExecuteCombo.THREE:
-          combatant.takeDamage(3);
-          break;
-        default:
-          throw Error("Execution combo animation is not implemented.");
-      }
+      const combo = this.executeManager.getCombo()!;
+      combatant.takeDamage(this.damageToEnemyOn[combo]);
       if (combatant.isDead()) {
         this.endCombat();
       }
     } else {
-      combatant.takeDamage(1);
+      combatant.takeDamage(this.enemy.enemyData.attackDamage);
       if (combatant.isDead()) {
         this.endGame();
       }
