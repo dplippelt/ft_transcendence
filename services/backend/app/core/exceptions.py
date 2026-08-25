@@ -59,6 +59,9 @@ class ErrorCode(StrEnum):
     INVITE_RATE_LIMIT_EXCEEDED = "INVITE_RATE_LIMIT_EXCEEDED"
     LOBBY_MESSAGE_SEND_FAILED = "LOBBY_MESSAGE_SEND_FAILED"
 
+    LOGIN_RATE_LIMIT_EXCEEDED = "LOGIN_RATE_LIMIT_EXCEEDED"
+    REGISTRATION_RATE_LIMIT_EXCEEDED = "REGISTRATION_RATE_LIMIT_EXCEEDED"
+
 def error_detail(message: str, code: ErrorCode | None = None,) -> str | dict[str, str]:
     if code is None:
         return message
@@ -108,5 +111,12 @@ def service_unavailable(detail: str, code: ErrorCode | None = None,) -> HTTPExce
 def conflict(detail: str, code: ErrorCode | None = None,) -> HTTPException:
     return HTTPException(
         status_code=status.HTTP_409_CONFLICT,
+        detail=error_detail(detail, code),
+    )
+
+
+def too_many_requests(detail: str, code: ErrorCode | None = None,) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         detail=error_detail(detail, code),
     )
