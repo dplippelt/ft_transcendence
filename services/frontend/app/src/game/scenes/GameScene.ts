@@ -71,6 +71,7 @@ const dungeonConfig: DungeonConfig = {
   roomCount: { min: 8, max: 16 },
 };
 
+// Websocket testing code
 let socket: WebSocket;
 
 function call_create_session() {
@@ -98,6 +99,7 @@ type GameSnapshot = {
   combat: [unknown];
 }
 
+// @ts-expect-error TS7006: ssssh...;
 function connect_to_session(json) {
   console.log(json);
   socket = new WebSocket(`ws://localhost:8000/game/ws/join/${json.game_id}`);
@@ -124,6 +126,7 @@ function connect_to_session(json) {
     socket.close(1000, "Done");
   }, { once: true });
 }
+// End of websocket testing code
 
 // TODO: GameSession structure (local / network) -> thruth sayer; player hp, position etc, syncs up with the game itself
 export default class GameScene extends Scene {
