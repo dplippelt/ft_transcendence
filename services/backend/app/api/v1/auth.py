@@ -1,9 +1,10 @@
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Annotated
 
 import cachecontrol
 import requests
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from google.auth import exceptions as google_auth_exceptions
 from google.auth.transport import requests as google_requests
@@ -12,7 +13,10 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.api.dependencies import CurrentUser, DbSession
-from app.core.exceptions import (ErrorCode, bad_request, conflict, forbidden, service_unavailable, unauthorized,)
+from app.core.exceptions import (
+    ErrorCode, bad_request, conflict, forbidden, service_unavailable, too_many_requests, unauthorized,
+)
+from app.core.rate_limit import SlidingWindowLimiter
 from app.core.security import (DUMMY_PASSWORD_HASH, create_access_token, get_password_hash, verify_password,)
 from app.core.settings import get_settings
 from app.models.auth_account import AuthAccount
@@ -30,6 +34,38 @@ PASSWORD_PROVIDER = "password"
 
 google_session = cachecontrol.CacheControl(requests.Session())
 google_request = google_requests.Request(session=google_session)
+
+# Keyed by client IP rather than the attempted email/username, so a single
+# source can't just cycle through target accounts to dodge the limit --
+# /login and /token share one limiter since they're both just different
+# entry points to the same password check.
+LOGIN_RATE_LIMIT_WINDOW = timedelta(minutes=1)
+LOGIN_RATE_LIMIT_MAX = 10
+_login_rate_limiter = SlidingWindowLimiter(LOGIN_RATE_LIMIT_WINDOW, LOGIN_RATE_LIMIT_MAX)
+
+REGISTER_RATE_LIMIT_WINDOW = timedelta(minutes=1)
+REGISTER_RATE_LIMIT_MAX = 5
+_register_rate_limiter = SlidingWindowLimiter(REGISTER_RATE_LIMIT_WINDOW, REGISTER_RATE_LIMIT_MAX)
+
+
+def _client_ip(request: Request) -> str:
+    return request.client.host if request.client else "unknown"
+
+
+def _check_login_rate_limit(request: Request) -> None:
+    if not _login_rate_limiter.allow(_client_ip(request)):
+        raise too_many_requests(
+            "Too many login attempts. Try again shortly.",
+            code=ErrorCode.LOGIN_RATE_LIMIT_EXCEEDED,
+        )
+
+
+def _check_register_rate_limit(request: Request) -> None:
+    if not _register_rate_limiter.allow(_client_ip(request)):
+        raise too_many_requests(
+            "Too many registration attempts. Try again shortly.",
+            code=ErrorCode.REGISTRATION_RATE_LIMIT_EXCEEDED,
+        )
 
 
 @dataclass(frozen=True)
@@ -412,7 +448,9 @@ def unlink_google_from_user(db: Session, user: User) -> None:
         )
 
 @router.post("/register", response_model=UserResponse)
-def register_user(user_data: UserRegister, db: DbSession):
+def register_user(user_data: UserRegister, db: DbSession, request: Request):
+    _check_register_rate_limit(request)
+
     email = normalize_email(user_data.email)
 
     existing_auth_account = get_auth_account_by_email(db, email)
@@ -455,7 +493,9 @@ def register_user(user_data: UserRegister, db: DbSession):
 
 
 @router.post("/login", response_model=Token)
-def login_user(user_data: UserLogin, db: DbSession):
+def login_user(user_data: UserLogin, db: DbSession, request: Request):
+    _check_login_rate_limit(request)
+
     user = authenticate_password_user(
         db,
         user_data.email,
@@ -466,7 +506,9 @@ def login_user(user_data: UserLogin, db: DbSession):
 
 
 @router.post("/token", response_model=Token)
-def login_for_access_token(form_data: OAuth2Form, db: DbSession):
+def login_for_access_token(form_data: OAuth2Form, db: DbSession, request: Request):
+    _check_login_rate_limit(request)
+
     user = authenticate_password_user(
         db,
         form_data.username,
