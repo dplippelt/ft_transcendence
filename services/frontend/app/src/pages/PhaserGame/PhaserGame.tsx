@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
-import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { CombatEvent, GameEvent, GameMode, GameState, RouteParam, RoutePath } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import { useAuth } from "../../contexts/AuthContext";

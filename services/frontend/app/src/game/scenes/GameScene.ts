@@ -103,15 +103,7 @@ export default class GameScene extends Scene {
 
   update(): void {
     if ( this._gameMode === GameMode.coop ) {
-      const player_1 = this._dungeon.getPlayer(0);
-      const player_2 = this._dungeon.getPlayer(1);
-      if ( !player_1 || !player_2 )
-        throw new Error("Player missing!");
-
-      this._cameraTarget.setPosition(
-        (player_1.x + player_2.x) / 2,
-        (player_1.y + player_2.y) / 2,
-      )
+      this.updateCoopCamera();
     }
   }
 
@@ -135,6 +127,23 @@ export default class GameScene extends Scene {
     this._gameMode = this._dungeon.scene.registry.get(RegistryKey.mode);
     this._cameraTarget = this._gameMode === GameMode.sp ? this.getPlayerOne() : this.add.zone(0, 0, 1, 1);
     this.cameras.main.startFollow(this._cameraTarget);
+  }
+
+  updateCoopCamera(): void {
+    const player_1 = this._dungeon.getPlayer(0);
+    const player_2 = this._dungeon.getPlayer(1);
+    if ( !player_1 && !player_2 )
+      return;
+    if ( !player_1 )
+      this._cameraTarget = player_2!;
+    else if ( !player_2 )
+      this._cameraTarget = player_1!;
+    else {
+      this._cameraTarget.setPosition(
+        (player_1.x + player_2.x) / 2,
+        (player_1.y + player_2.y) / 2,
+      )
+    }
   }
 
   nextLevel(): void {

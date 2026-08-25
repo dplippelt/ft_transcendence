@@ -1,4 +1,4 @@
-import { type Types } from "phaser";
+import { Math as PhaserMath, type Types } from "phaser";
 import { TileNodeType, type RoomGraph, type Room, Direction } from "../../map/procedural";
 import { Dungeon } from "./Dungeon";
 import { PlayerFactory, EnemyFactory, PassageFactory } from "./factories";
@@ -54,22 +54,21 @@ export class DungeonSpawner {
 
   private spawnPlayers(room: Room) {
     const gameMode = this._dungeon.scene.registry.get(RegistryKey.mode);
-    const player_1 = this._playerFactory.createPlayer(0, {
+    const spawnLocation = {
       dungeon: this._dungeon,
       startingRoom: room,
       spawnPoint: this.tileToWorldPosition(room.tileNode!.position),
-    });
+    }
+
+    const player_1 = this._playerFactory.createPlayer(0, spawnLocation);
     this._dungeon.addPlayer(player_1);
 
     if ( gameMode === GameMode.coop ) {
-      const player_2 = this._playerFactory.createPlayer(1, {
-        dungeon: this._dungeon,
-        startingRoom: room,
-        spawnPoint: this.tileToWorldPosition(room.tileNode!.position),
-      });
+      const player_2 = this._playerFactory.createPlayer(1, spawnLocation);
       this._dungeon.addPlayer(player_2);
+      player_1.movement.setTetherTarget(() => new PhaserMath.Vector2(player_2.x, player_2.y));
+      player_2.movement.setTetherTarget(() => new PhaserMath.Vector2(player_1.x, player_1.y));
     }
-
   }
 
   private spawnEnemy(room: Room) {
