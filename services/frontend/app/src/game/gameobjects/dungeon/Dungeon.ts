@@ -1,16 +1,18 @@
 import { Physics, Scene, Tilemaps, type Types } from "phaser";
 import { AssetsKey, DepthOrder } from "../../Assets";
-import { dungeonBuilder, type DungeonConfig, type MapData, type Room } from "../../map/procedural";
 import { Vector2 } from "../../map/math";
 import Player from "../Player";
 import { type TileSetMap } from "../../map/TileSetMap";
-import { RoomSetup } from "./RoomSetup";
+import { RoomSetup } from "../../map/RoomSetup";
 import { DungeonSpawner } from "./DungeonSpawner";
 import type { Enemy } from "../Enemy";
 import { Passage } from "./Passage";
 import type { ExitZone } from "./ExitZone";
 import { EnemyFactory, PassageFactory, PlayerFactory } from "./factories";
 import { DungeonDecorator } from "./DungeonDecorator";
+import { type Map, MapBuilder } from "../../map/MapBuilder";
+import { TileMapper } from "../../map/TileMapper";
+import type { DungeonConfig, Room } from "../../map/DungeonModels";
 
 type Vector2Like = Types.Math.Vector2Like;
 
@@ -35,8 +37,6 @@ interface MapTransform {
 
 export class Dungeon extends Tilemaps.Tilemap {
   private _mapTransform!: MapTransform;
-  private mapData!: MapData;
-  private tileSetMap: TileSetMap;
   private tileSet: Tilemaps.Tileset;
   private roomSetup: RoomSetup;
   private spawner: DungeonSpawner;
@@ -48,7 +48,12 @@ export class Dungeon extends Tilemaps.Tilemap {
   private exitPoint: ExitZone | undefined;
   private passage: Passage | undefined;
 
-  constructor(scene: Scene, dungeonConfig: DungeonConfig, scale: number = 1.0, tileSize: number = 16) {
+  private map: Map;
+  private tiledMap: number[][]; // TODO: store this elsewhere
+  private mapBuilder: MapBuilder;
+  private tileMapper: TileMapper;
+
+  constructor(scene: Scene, tileSize: number = 16) {
     super(scene, new Tilemaps.MapData({ tileWidth: tileSize, tileHeight: tileSize }));
 
     const tileSet = this.addTilesetImage(AssetsKey.TileSet);
@@ -57,18 +62,17 @@ export class Dungeon extends Tilemaps.Tilemap {
     }
     this.tileSet = tileSet;
 
+    this.mapBuilder = new MapBuilder();
+    this.tileMapper = new TileMapper();
     this.roomSetup = new RoomSetup();
     this.spawner = new DungeonSpawner(this, new PlayerFactory(), new EnemyFactory(), new PassageFactory());
     this.decorator = new DungeonDecorator();
 
-    this.tileSetMap = dungeonConfig.emptyRoomConfig.tileSetMap;
     this.mapColliders = [];
     this.enemies = [];
     this.playerGroup = scene.physics.add.group();
     this.exitPoint = undefined;
     this.passage = undefined;
-
-    this.build(dungeonConfig, scale);
   }
 
   getTileSize(): Readonly<Vector2Like> {
@@ -95,14 +99,15 @@ export class Dungeon extends Tilemaps.Tilemap {
     return this.tileSet;
   }
 
-  build(dungeonConfig: DungeonConfig, scale: number = 1.0) {
+  build(dungeonConfig: DungeonConfig, tileSetMap: TileSetMap, scale: number = 1.0) {
     this.clear();
 
     this.constructMap(dungeonConfig);
     this.constuctMapTransform(scale);
-    this.roomSetup.apply(this.mapData.graph);
-    this.decorator.apply(this, this.mapData, this.tileSetMap);
-    this.spawner.apply(this.mapData.graph);
+    this.roomSetup.apply(this.map);
+    this.tiledMap = this.tileMapper.create(this.map, tileSetMap);
+    this.decorator.apply(this, this.tiledMap, tileSetMap, this.map.roomGraph);
+    this.spawner.apply(this.map.roomGraph);
   }
 
   private clear() {
@@ -121,8 +126,8 @@ export class Dungeon extends Tilemaps.Tilemap {
   }
 
   private constructMap(dungeonConfig: DungeonConfig) {
-    this.mapData = dungeonBuilder(dungeonConfig);
-    if (this.mapData.rooms.length < 3) {
+    this.map = this.mapBuilder.create(dungeonConfig);
+    if (this.map.rooms.length < 3) {
       throw new Error("Invalid Dungeon layout. Not Enough rooms");
     }
   }
@@ -130,16 +135,16 @@ export class Dungeon extends Tilemaps.Tilemap {
   private constuctMapTransform(scale: number) {
     this._mapTransform = {
       origin: new Vector2(
-        this.mapData.width * this.tileWidth * scale * 0.5,
-        this.mapData.height * this.tileHeight * scale * 0.5,
+        this.map.width * this.tileWidth * scale * 0.5,
+        this.map.height * this.tileHeight * scale * 0.5,
       ),
       tileSize: {
         size: new Vector2(this.tileWidth * scale, this.tileHeight * scale),
         invSize: new Vector2(1.0 / (this.tileWidth * scale), 1.0 / (this.tileHeight * scale)),
       },
       scale: scale,
-      tileWidth: this.mapData.width,
-      tileHeight: this.mapData.height,
+      tileWidth: this.map.width,
+      tileHeight: this.map.height,
     };
   }
 
@@ -161,7 +166,7 @@ export class Dungeon extends Tilemaps.Tilemap {
   }
 
   findRoom(localPoint: Vector2): Room | undefined {
-    return this.mapData.rooms.find((room) => room.aabb.isPointWithin(localPoint));
+    return this.map.rooms.find((room) => room.aabb.isPointWithin(localPoint));
   }
 
   getPlayer(index: number): Player | undefined {

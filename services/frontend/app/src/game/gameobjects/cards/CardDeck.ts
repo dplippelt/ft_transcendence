@@ -1,3 +1,4 @@
+import { gRandom } from "../../map/random";
 import type { CardValue } from "./CardBase";
 import CardBase, { OPERATORS } from "./CardBase";
 import { Scene } from "phaser";
@@ -170,7 +171,7 @@ export default class CardDeck {
 // temporarily copied from services/frontend/app/src/game/map/math.ts
 /// source: https://blog.bruce-hill.com/a-faster-weighted-random-choice
 export function weightedRandom(weights: CardWeight[]) {
-  let remaining: number = Math.random() * weights.reduce((sum: number, curr: CardWeight) => sum + curr.weight, 0);
+  let remaining: number = gRandom.random_value() * weights.reduce((sum: number, curr: CardWeight) => sum + curr.weight, 0);
 
   for (const element of weights) {
     remaining -= element.weight;
@@ -183,7 +184,7 @@ export function weightedRandom(weights: CardWeight[]) {
 
 // min inclusive and max exclusive => [min, max)
 export function random(min: number, max: number): number {
-  return Math.floor(min + Math.random() * (max - min));
+  return Math.floor(min + gRandom.random_value() * (max - min));
 }
 
 export function shuffle(arr: Array<any>): void {

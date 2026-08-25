@@ -1,8 +1,8 @@
 import Component from "../Component";
 import { GameObjects } from "phaser";
-import { type Room } from "../../map/procedural";
 import { Dungeon } from "../../gameobjects/dungeon/Dungeon";
 import { Vector2 } from "../../map/math";
+import type { Room } from "../../map/DungeonModels";
 
 /// Debugger for the DungeonLocation class and
 /// requires drawCursor and drawRoom to be called within the DungeonLocation.update call

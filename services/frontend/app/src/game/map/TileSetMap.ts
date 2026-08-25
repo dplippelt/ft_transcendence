@@ -1,4 +1,4 @@
-import { Direction } from "./procedural";
+import type { Direction } from "./DungeonModels";
 import { type weight } from "./math";
 
 export enum WallType {
@@ -48,8 +48,8 @@ export enum FoilageType {
   PurpleMushroom,
 }
 
-type CornerDirection = Direction.TopLeft | Direction.TopRight | Direction.DownLeft | Direction.DownRight;
-type WallDirection = Direction.Top | Direction.Right | Direction.Down | Direction.Left;
+export type CornerDirection = Direction.TopLeft | Direction.TopRight | Direction.DownLeft | Direction.DownRight;
+export type WallDirection = Direction.Top | Direction.Right | Direction.Down | Direction.Left;
 
 export interface TileSetMap {
   corners: Record<CornerDirection, number>;
