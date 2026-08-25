@@ -20,12 +20,19 @@ MAX_MESSAGE_HISTORY = 200
 
 INVITE_COOLDOWN = timedelta(seconds=30)
 
+# Separate from INVITE_COOLDOWN: the cooldown only blocks re-inviting the
+# *same* friend, so without this a host could still fan out invites to many
+# different friends back-to-back with no throttling at all.
+INVITE_RATE_LIMIT_WINDOW = timedelta(seconds=10)
+INVITE_RATE_LIMIT_MAX = 5
+
 # In-process only, same tradeoff as ConnectionManager: fine for a
 # single-process deployment, just a spam guard rather than a source of
 # truth, so losing it on restart or missing it across workers is fine.
 # Guarded by _recent_invites_lock since route handlers are sync `def`s and
 # run on real threadpool threads, not serialized coroutines.
 _recent_invites: dict[tuple[int, int], datetime] = {}
+_invite_send_times: dict[int, list[datetime]] = {}
 _recent_invites_lock = threading.Lock()
 
 
@@ -214,14 +221,14 @@ def send_lobby_message(db: Session, user: User, lobby_id: int, content: str) -> 
 
         # The lobby still exists, so it wasn't that -- an unexpected
         # constraint failure with no more specific code to report.
-        raise conflict("Could not send message.")
+        raise conflict("Could not send message.", code=ErrorCode.LOBBY_MESSAGE_SEND_FAILED)
 
     db.refresh(message)
 
     return message
 
 
-def _check_invite_cooldown(user_id: int, friend_id: int) -> None:
+def _check_invite_cooldown(user_id: int, friend_id: int) -> datetime:
     # Keyed by the inviter (not the lobby) so cycling through fresh lobbies
     # can't be used to bypass the cooldown for the same sender/friend pair.
     # Check-then-set happens under the lock so two concurrent requests for
@@ -244,14 +251,87 @@ def _check_invite_cooldown(user_id: int, friend_id: int) -> None:
 
         _recent_invites[key] = now
 
+    return now
 
-def release_invite_cooldown(user_id: int, friend_id: int) -> None:
+
+def release_invite_cooldown(user_id: int, friend_id: int, sent_at: datetime) -> None:
     # For any case where the cooldown was reserved by _check_invite_cooldown
     # but the invite didn't actually go anywhere -- a later check in this
     # function still failed, or delivery reached no one -- so the sender
-    # isn't charged a real 30s retry window for a no-op.
+    # isn't charged a real 30s retry window for a no-op. Only removes the
+    # entry if it still matches the timestamp *this* call reserved -- by the
+    # time a slow request gets here, the opportunistic sweep elsewhere may
+    # have already aged out this reservation and a newer request may have
+    # reserved the same (user_id, friend_id) key again, and an unconditional
+    # pop() would wrongly clear that newer reservation instead of a no-op.
     with _recent_invites_lock:
-        _recent_invites.pop((user_id, friend_id), None)
+        key = (user_id, friend_id)
+
+        if _recent_invites.get(key) == sent_at:
+            _recent_invites.pop(key, None)
+
+
+def _check_invite_rate_limit(user_id: int) -> datetime:
+    # Global per-sender throttle, independent of which friend is being
+    # invited -- caps how many invites (to any mix of friends) a user can
+    # send in a rolling window, since _check_invite_cooldown alone only
+    # stops repeat invites to the *same* friend.
+    with _recent_invites_lock:
+        # now is computed *inside* the lock (unlike the cooldown check,
+        # where a single dict-value overwrite makes ordering irrelevant) --
+        # this dict relies on each user's list staying sorted ascending so
+        # the sweep below can early-exit at the first non-stale entry.
+        # Computing now before acquiring the lock would let append order
+        # (decided by lock-acquisition order) diverge from timestamp order
+        # under concurrent calls, silently breaking that assumption.
+        now = utc_now()
+        cutoff = now - INVITE_RATE_LIMIT_WINDOW
+
+        # Opportunistic cleanup across *all* users, not just this one --
+        # mirrors _check_invite_cooldown's sweep. Pruning only user_id's own
+        # entry would leave a stale, never-visited list behind forever for
+        # any user who sends a few invites and then stops calling this at
+        # all, since nothing else would ever revisit their key to prune it.
+        # This is still lazy cleanup, not a hard bound: an inactive user's
+        # empty/stale entry lingers until *some* invite request (from any
+        # user) triggers the next sweep, not on a fixed schedule. Fine for
+        # the same reason the rest of this dict's tradeoffs are (see the
+        # module-level comment above) -- no TTL/background sweep for what's
+        # ultimately a best-effort spam guard.
+        for stale_user_id, stale_times in list(_invite_send_times.items()):
+            while stale_times and stale_times[0] < cutoff:
+                stale_times.pop(0)
+
+            if not stale_times:
+                _invite_send_times.pop(stale_user_id, None)
+
+        times = _invite_send_times.setdefault(user_id, [])
+
+        if len(times) >= INVITE_RATE_LIMIT_MAX:
+            raise conflict(
+                "You're sending invites too quickly. Try again shortly.",
+                code=ErrorCode.INVITE_RATE_LIMIT_EXCEEDED,
+            )
+
+        times.append(now)
+
+    return now
+
+
+def release_invite_rate_limit(user_id: int, sent_at: datetime) -> None:
+    # Mirrors release_invite_cooldown: an invite reserved here but that
+    # failed for some other reason (friendship not found, transient error)
+    # shouldn't cost the sender a slot in their rate-limit window. Removes
+    # the exact timestamp this call reserved rather than popping blindly, so
+    # a concurrent invite from the same user in between isn't dropped.
+    with _recent_invites_lock:
+        times = _invite_send_times.get(user_id)
+
+        if times:
+            try:
+                times.remove(sent_at)
+            except ValueError:
+                pass
 
 
 def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: int) -> Lobby:
@@ -279,9 +359,22 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
     if len(member_ids) >= MAX_MEMBERS:
         raise conflict("This lobby is full.", code=ErrorCode.LOBBY_FULL)
 
-    # Free, in-memory check -- run before the one remaining DB query so a
+    # Free, in-memory checks -- run before the one remaining DB query so a
     # repeated/spam invite doesn't pay for a friendship lookup it can't use.
-    _check_invite_cooldown(user.id, friend_id)
+    # Rate limit is checked *before* the pair cooldown: reserving the pair
+    # cooldown first left a gap between that reservation and its release (if
+    # the rate limit then rejected the request) where a concurrent duplicate
+    # request for the same pair could see a stale "already invited" and get
+    # a misleading error instead of the real rate-limit one. Checking the
+    # rate limit first means the cooldown is only ever reserved for a
+    # request that has already cleared it.
+    rate_limit_sent_at = _check_invite_rate_limit(user.id)
+
+    try:
+        cooldown_sent_at = _check_invite_cooldown(user.id, friend_id)
+    except Exception:
+        release_invite_rate_limit(user.id, rate_limit_sent_at)
+        raise
 
     try:
         friendship = get_friendship(db, user.id, friend_id)
@@ -289,11 +382,13 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
         # Release on ANY failure here, not just a clean "not found" -- a
         # transient DB error shouldn't cost the sender a real retry window
         # for an invite that was never actually sent.
-        release_invite_cooldown(user.id, friend_id)
+        release_invite_cooldown(user.id, friend_id, cooldown_sent_at)
+        release_invite_rate_limit(user.id, rate_limit_sent_at)
         raise
 
     if friendship is None:
-        release_invite_cooldown(user.id, friend_id)
+        release_invite_cooldown(user.id, friend_id, cooldown_sent_at)
+        release_invite_rate_limit(user.id, rate_limit_sent_at)
         raise not_found("Friendship not found.", code=ErrorCode.FRIENDSHIP_NOT_FOUND)
 
     return lobby
