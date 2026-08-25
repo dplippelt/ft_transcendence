@@ -228,7 +228,7 @@ def send_lobby_message(db: Session, user: User, lobby_id: int, content: str) -> 
     return message
 
 
-def _check_invite_cooldown(user_id: int, friend_id: int) -> None:
+def _check_invite_cooldown(user_id: int, friend_id: int) -> datetime:
     # Keyed by the inviter (not the lobby) so cycling through fresh lobbies
     # can't be used to bypass the cooldown for the same sender/friend pair.
     # Check-then-set happens under the lock so two concurrent requests for
@@ -251,14 +251,24 @@ def _check_invite_cooldown(user_id: int, friend_id: int) -> None:
 
         _recent_invites[key] = now
 
+    return now
 
-def release_invite_cooldown(user_id: int, friend_id: int) -> None:
+
+def release_invite_cooldown(user_id: int, friend_id: int, sent_at: datetime) -> None:
     # For any case where the cooldown was reserved by _check_invite_cooldown
     # but the invite didn't actually go anywhere -- a later check in this
     # function still failed, or delivery reached no one -- so the sender
-    # isn't charged a real 30s retry window for a no-op.
+    # isn't charged a real 30s retry window for a no-op. Only removes the
+    # entry if it still matches the timestamp *this* call reserved -- by the
+    # time a slow request gets here, the opportunistic sweep elsewhere may
+    # have already aged out this reservation and a newer request may have
+    # reserved the same (user_id, friend_id) key again, and an unconditional
+    # pop() would wrongly clear that newer reservation instead of a no-op.
     with _recent_invites_lock:
-        _recent_invites.pop((user_id, friend_id), None)
+        key = (user_id, friend_id)
+
+        if _recent_invites.get(key) == sent_at:
+            _recent_invites.pop(key, None)
 
 
 def _check_invite_rate_limit(user_id: int) -> datetime:
@@ -282,6 +292,12 @@ def _check_invite_rate_limit(user_id: int) -> datetime:
         # entry would leave a stale, never-visited list behind forever for
         # any user who sends a few invites and then stops calling this at
         # all, since nothing else would ever revisit their key to prune it.
+        # This is still lazy cleanup, not a hard bound: an inactive user's
+        # empty/stale entry lingers until *some* invite request (from any
+        # user) triggers the next sweep, not on a fixed schedule. Fine for
+        # the same reason the rest of this dict's tradeoffs are (see the
+        # module-level comment above) -- no TTL/background sweep for what's
+        # ultimately a best-effort spam guard.
         for stale_user_id, stale_times in list(_invite_send_times.items()):
             while stale_times and stale_times[0] < cutoff:
                 stale_times.pop(0)
@@ -355,7 +371,7 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
     rate_limit_sent_at = _check_invite_rate_limit(user.id)
 
     try:
-        _check_invite_cooldown(user.id, friend_id)
+        cooldown_sent_at = _check_invite_cooldown(user.id, friend_id)
     except Exception:
         release_invite_rate_limit(user.id, rate_limit_sent_at)
         raise
@@ -366,12 +382,12 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
         # Release on ANY failure here, not just a clean "not found" -- a
         # transient DB error shouldn't cost the sender a real retry window
         # for an invite that was never actually sent.
-        release_invite_cooldown(user.id, friend_id)
+        release_invite_cooldown(user.id, friend_id, cooldown_sent_at)
         release_invite_rate_limit(user.id, rate_limit_sent_at)
         raise
 
     if friendship is None:
-        release_invite_cooldown(user.id, friend_id)
+        release_invite_cooldown(user.id, friend_id, cooldown_sent_at)
         release_invite_rate_limit(user.id, rate_limit_sent_at)
         raise not_found("Friendship not found.", code=ErrorCode.FRIENDSHIP_NOT_FOUND)
 
