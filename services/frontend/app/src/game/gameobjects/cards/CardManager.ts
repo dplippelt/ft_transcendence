@@ -1,11 +1,18 @@
-import type { Scene } from "phaser";
+import Phaser, { Scene } from "phaser";
 import CardDeck, { cardDeckConfig } from "./CardDeck";
-import CardHand, { cardHandConfig } from "./CardHand";
-import CardSelection, { cardSelectionConfig } from "./CardSelection";
+import CardHand from "./CardHand";
+import CardSelection from "./CardSelection";
 import CardBase, { CardEvents } from "./CardBase";
 import Button, { type ButtonConfig } from "../utils/Button";
 import { buttonContentConfig, buttonStyleConfig } from "../utils/buttonConfig";
 import type { PlayerStatus } from "../../scenes/CombatScene";
+
+export enum CardActionEvents {
+  DRAW = "draw",
+  SELECT = "select",
+  UNSELECT = "unselect",
+  GENERATE_DECK = "generateDeck",
+}
 
 const drawButtonConfig: ButtonConfig = {
   styleConfig: buttonStyleConfig,
@@ -17,35 +24,27 @@ const selectionResetButtonConfig: ButtonConfig = {
   textConfig: buttonContentConfig,
 };
 
-interface CardManagerConfig {
-  maxNumCardsInHand: number;
-}
-
-export const cardManagerConfig: CardManagerConfig = {
-  maxNumCardsInHand: 8,
-};
-
 export default class CardManager {
   readonly scene: Scene;
   readonly playerStatus: PlayerStatus;
-  readonly config: CardManagerConfig;
   readonly cardDeck: CardDeck;
   readonly cardHand: CardHand;
   readonly cardSelection: CardSelection;
   readonly drawButton: Button;
   readonly selectionResetButton: Button;
+  readonly events: Phaser.Events.EventEmitter;
+  readonly maxNumCardsInHand: number;
 
-  constructor(scene: Scene, playerStatus: PlayerStatus, config: CardManagerConfig) {
+  constructor(scene: Scene, playerStatus: PlayerStatus) {
     this.scene = scene;
     this.playerStatus = playerStatus;
-    this.config = config;
     this.cardDeck = new CardDeck(this.scene, cardDeckConfig);
-    this.cardHand = new CardHand(this.scene, cardHandConfig);
-    this.cardSelection = new CardSelection(this.scene, cardSelectionConfig);
+    this.cardHand = new CardHand(this.scene);
+    this.cardSelection = new CardSelection(this.scene);
     this.drawButton = new Button(scene, "draw", drawButtonConfig);
-    this.drawButton.setPosition(100, 100);
     this.selectionResetButton = new Button(scene, "reset", selectionResetButtonConfig);
-    this.selectionResetButton.setPosition(100, 200);
+    this.events = new Phaser.Events.EventEmitter();
+    this.maxNumCardsInHand = 8;
 
     scene.input.setTopOnly(true);
     this.drawButton.on("pointerdown", this.drawExtraCard, this);
@@ -67,13 +66,19 @@ export default class CardManager {
   }
 
   drawCard() {
-    if (this.cardHand.numCards >= this.config.maxNumCardsInHand) {
+    if (!this.cardHand.isUnderHandLimit(this.maxNumCardsInHand)) {
       return false;
     }
 
-    const card = this.cardDeck.dealCard();
+    if (this.cardDeck.isEmpty()) {
+        this.cardDeck.initDeck();
+        this.events.emit(CardActionEvents.GENERATE_DECK);
+    }
+    const card = this.cardDeck.dealCard()!;
     card.on(CardEvents.SELECTION, this.select, this);
-    this.cardHand.addCard(card);
+
+	this.cardHand.addCard(card);
+    this.events.emit(CardActionEvents.DRAW, card);
     return true;
   }
 
@@ -88,24 +93,21 @@ export default class CardManager {
 
   select(card: CardBase) {
     if (card.getIsFocused()) {
-      this.cardHand.focusOff(card);
+      card.focusOff();
     }
 
     if (card.getIsSelected()) {
       this.cardSelection.unsetCardFromSlot(card);
-
       card.setIsSelected(false);
+      this.events.emit(CardActionEvents.UNSELECT, card);
       return;
     }
 
-    if (this.cardSelection.setCardToSlot(card)) {
+    const slot = this.cardSelection.setCardToSlot(card);
+    if (slot !== null) {
       card.setIsSelected(true);
+      this.events.emit(CardActionEvents.SELECT, slot);
       return;
     }
-  }
-
-  alignAllCards() {
-    this.cardHand.align();
-    this.cardSelection.align();
   }
 }

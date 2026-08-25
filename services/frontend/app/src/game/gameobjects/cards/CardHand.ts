@@ -1,98 +1,30 @@
-import { Scene, Actions, GameObjects, Geom } from "phaser";
-import CardBase, { CardEvents } from "./CardBase";
-
-interface CardHandConfig {
-  firstCardCenterX: number;
-  firstCardCenterY: number;
-  handStartX: number;
-  handStartY: number;
-  handEndX: number;
-  handEndY: number;
-  focus: {
-    diffX: number;
-    diffY: number;
-  };
-}
-
-export const cardHandConfig: CardHandConfig = {
-  firstCardCenterX: 0,
-  firstCardCenterY: 0,
-  handStartX: 100,
-  handStartY: 400,
-  handEndX: 800,
-  handEndY: 400,
-  focus: {
-    diffX: 0,
-    diffY: 30,
-  },
-};
+import { Scene, GameObjects } from "phaser";
+import CardBase from "./CardBase";
 
 export default class CardHand {
-  private readonly cardHandConfig!: CardHandConfig;
-  private readonly cards!: GameObjects.Container;
-  private readonly handLine!: Geom.Line;
-  numCards: number;
+  private readonly cards: GameObjects.Container;
+  private numCards: number;
 
-  constructor(scene: Scene, config: CardHandConfig) {
-    this.cardHandConfig = config;
-    this.cards = scene.add.container(this.cardHandConfig.firstCardCenterX, this.cardHandConfig.firstCardCenterY);
+  constructor(scene: Scene) {
+    this.cards = scene.add.container(0, 0);
     this.numCards = 0;
-
-    this.handLine = new Geom.Line(
-      this.cardHandConfig.handStartX,
-      this.cardHandConfig.handStartY,
-      this.cardHandConfig.handEndX,
-      this.cardHandConfig.handEndY,
-    );
   }
 
   addCard(card: CardBase) {
-    card.on(CardEvents.FOCUSON, this.focusOn, this);
-    card.on(CardEvents.FOCUSOFF, this.focusOff, this);
     this.cards.add(card);
     this.numCards++;
   }
 
-  // TODO: reconsider if reusing cards is really necessary
   clearHand() {
-    const cards = this.cards.getAll() as CardBase[];
-    for (const card of cards) {
-      card.setVisible(false);
-    }
-    this.cards.removeAll(false);
+    this.cards.removeAll(true);
     this.numCards = 0;
   }
 
-  align() {
-    Actions.PlaceOnLine(this.cards.getAll("isSelected", false), this.handLine);
-
-    const focusedCard = this.cards.getFirst("isFocused", true) as CardBase;
-    if (focusedCard?.input?.hitArea instanceof Geom.Rectangle) {
-      const focus = this.cardHandConfig.focus;
-      focusedCard.x -= focus.diffX;
-      focusedCard.y -= focus.diffY;
-    }
+  getHandCards() {
+    return this.cards;
   }
 
-  focusOn(card: CardBase) {
-    if (card.getIsSelected()) return;
-
-    card.setIsFocused(true);
-
-    const focus = this.cardHandConfig.focus;
-    if (card.input?.hitArea instanceof Geom.Rectangle) {
-      card.input.hitArea.right += focus.diffX;
-      card.input.hitArea.bottom += focus.diffY;
-    }
-  }
-
-  focusOff(card: CardBase) {
-    card.setIsFocused(false);
-
-    const focus = this.cardHandConfig.focus;
-    if (card.input?.hitArea instanceof Geom.Rectangle) {
-      card.input.hitArea.right -= focus.diffX;
-      card.input.hitArea.bottom -= focus.diffY;
-    }
+  isUnderHandLimit(limit: number) {
+    return this.numCards < limit;
   }
 }

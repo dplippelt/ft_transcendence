@@ -19,11 +19,14 @@ export const cardTextConfig: StyledTextConfig = {
   textColorBlue: 20,
   textStyle: {
     fontFamily: "Arial Black",
-    fontSize: "50px",
+    fontSize: "15px",
     align: "center",
+    fixedWidth: 34,
+    fixedHeight: 42,
   },
 };
 
+// Needs to review
 export interface CardConfig {
   cardStyleConfig: StyledBoxConfig;
   cardContentConfig: StyledTextConfig;
