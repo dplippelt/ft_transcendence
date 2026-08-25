@@ -16,6 +16,9 @@ export default class CombatTurnManager {
   readonly enemyDelayMs: number;
   private isPlayerTurn: boolean;
   private playerTimer: Phaser.Time.TimerEvent | null;
+  // The enemy timer allows CombatTurnManager to switch turns by itself, without relying on CombatManager to explicitly trigger the switch.
+  // Currently, CombatManager normally triggers the switch before the enemy timer runs out,
+  // but the timer is kept to minimize the dependency between the two components.
   private enemyTimer: Phaser.Time.TimerEvent | null;
   readonly timerText: Phaser.GameObjects.Text;
 
