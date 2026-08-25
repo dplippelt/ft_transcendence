@@ -1,18 +1,22 @@
 
 from contextlib import asynccontextmanager
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from pathlib import Path
 
 from fastapi import FastAPI
 
 from app.api.v1 import auth, cards, chat, dungeons, leaderboard, lobbies, puzzles, scores, users, friends
 from app.db.database import Base, engine
 from app.core.settings import get_settings
+from app.services.avatar_service import AVATAR_DIR
 
 # Import model modules so SQLAlchemy registers their tables in Base.metadata.
 import app.models  # noqa: F401
 
 
 settings = get_settings()
+AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -44,6 +48,8 @@ app.include_router(leaderboard.router, prefix="/leaderboard",  tags=["leaderboar
 app.include_router(friends.router,     prefix="/friends",     tags=["friends"])
 app.include_router(chat.router,        prefix="/chat",         tags=["chat"])
 app.include_router(lobbies.router,     prefix="/lobbies",      tags=["lobbies"])
+
+app.mount("/uploads/avatars", StaticFiles(directory=AVATAR_DIR), name="avatars")
 
 @app.get("/")
 def root():

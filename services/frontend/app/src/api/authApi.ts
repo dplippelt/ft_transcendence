@@ -34,7 +34,6 @@ export interface UpdateUserRequest
 {
     username?: string;
     display_name?: string | null;
-    avatar_url?: string | null;
 }
 
 export interface PasswordUpdateRequest
@@ -127,6 +126,21 @@ export function updatePassword(data: PasswordUpdateRequest, accessToken: string,
         {
             method: "PUT",
             body: JSON.stringify(data),
+        },
+        accessToken,
+    );
+}
+
+export function updateAvatar(userID: number, avatar: File, accessToken: string,): Promise<AuthUser>
+{
+    const formData = new FormData();
+    formData.append("avatar", avatar);
+
+    return apiRequest<AuthUser>(
+        `/users/${userID}/avatar`,
+        {
+            method: "PUT",
+            body: formData,
         },
         accessToken,
     );

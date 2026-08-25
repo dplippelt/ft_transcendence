@@ -1,15 +1,12 @@
 import { useState } from "react";
 import type React from "react";
-import { PopupType, AvatarSize } from "../../utils/utils";
+import { PopupType, } from "../../utils/utils";
 import { ErrorType, isErrorType, mapAuthApiError } from "../../utils/errors";
 import styles from "./EditPopup.module.scss";
 import { PopupButtons } from "../../components/ButtonContainers";
 import ErrorText from "../../components/ErrorText";
 import { MossButton } from "../../components/Buttons";
-import guestAvatar from "../../assets/guest_avatar_test.jpg";
-import testAvatar from "../../assets/mesca_avatar_test.png";
 import { TextInput, PasswordInput } from "../../components/TextInput";
-import Avatar from "../../components/Avatar";
 import { getValidUsername } from "../../utils/usernameCheck";
 import { useAuth, useCurrentUser } from "../../contexts/AuthContext";
 
@@ -26,49 +23,56 @@ interface IEditContent
 
 function EditAvatarContent( { setPopupType } : IEditContent )
 {
-	const [error, setError] = useState<ErrorType>(ErrorType.none);
+    const [error, setError] = useState<ErrorType>(ErrorType.none);
+    const [avatar, setAvatar] = useState<File | null>(null);
 	const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-	const { updateProfile } = useAuth();
+	const { updateAvatar } = useAuth();
 
-	// Temporary local presets until avatar upload/storage is implemented.
-	const avatars =
-	[
-		guestAvatar,
-		testAvatar,
-	];
+    function handleAvatarChange(event: React.ChangeEvent<HTMLInputElement>,)
+    {
+        const file = event.target.files?.[0];
 
-	async function avatarCheck(avatar: string)
-	{
-		if (isSubmitting)
-			return;
+        setError(ErrorType.none);
 
-		setError(ErrorType.none);
-		setIsSubmitting(true);
+        if (!file)
+        {
+            setAvatar(null);
+            return;
+        }
 
-		try
-		{
-			// Vite asset imports may be relative paths. The backend requires
-			// avatar_url to be an absolute HTTP(S) URL.
-			const avatarUrl = new URL(
-				avatar,
-				window.location.origin,
-			).href;
+        const validTypes = ["image/jpeg", "image/png", "image/webp"];
 
-			await updateProfile({
-				avatar_url: avatarUrl,
-			});
+        if (!validTypes.includes(file.type))
+        {
+            setAvatar(null);
+            setError(ErrorType.avatarBadFileType);
+            return;
+        }
+        setAvatar(file);
+    }
 
-			setPopupType(PopupType.none);
-		}
-		catch (error)
-		{
-			setError(mapAuthApiError(error));
-		}
-		finally
-		{
-			setIsSubmitting(false);
-		}
-	}
+    async function handleUpload()
+    {
+        if (!avatar || isSubmitting)
+            return;
+
+        setError(ErrorType.none);
+        setIsSubmitting(true);
+
+        try
+        {
+            await updateAvatar(avatar);
+            setPopupType(PopupType.none);
+        }
+        catch (error)
+        {
+            setError(mapAuthApiError(error));
+        }
+        finally
+        {
+            setIsSubmitting(false);
+        }
+    }
 
 	return (
 		<>
@@ -76,30 +80,41 @@ function EditAvatarContent( { setPopupType } : IEditContent )
 				<ErrorText error={error}/>
 			}
 
-			<label className={styles.avatarsLabel}>
-				Pick an avatar
-			</label>
+            <label className={styles.avatarsLabel}>
+                Upload avatar
+            </label>
 
-			<div className={styles.avatars}>
-				{ avatars.map((avatar, idx) => (
-					<Avatar
-						key={avatar}
-						src={avatar}
-						alt={`Avatar ${idx + 1}`}
-						size={AvatarSize.medium}
-						onClick={() => void avatarCheck(avatar)}
-						extraStyling={styles.avatar}
-					/>
-				))}
-			</div>
+            <div className={styles.uploadAvatar}>
+                <label className={styles.fileButton}>
+                    Choose file
 
-			<PopupButtons>
-				<MossButton
-					label="Back"
-					onClick={() => setPopupType(PopupType.none)}
-					disabled={isSubmitting}
-				/>
-			</PopupButtons>
+                    <input
+                        className={styles.fileInput}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleAvatarChange}
+                        disabled={isSubmitting}
+                    />
+                </label>
+
+                <span className={styles.fileName}>
+                    {avatar ? avatar.name : "No file chosen"}
+                </span>
+            </div>
+
+            <PopupButtons>
+                <MossButton
+                    label={isSubmitting ? "Uploading..." : "Upload"}
+                    onClick={() => void handleUpload()}
+                    disabled={!avatar || isSubmitting}
+                />
+
+                <MossButton
+                    label="Back"
+                    onClick={() => setPopupType(PopupType.none)}
+                    disabled={isSubmitting}
+                />
+            </PopupButtons>
 		</>
 	);
 }

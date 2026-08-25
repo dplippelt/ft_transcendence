@@ -46,6 +46,7 @@ export enum ErrorType
     googleUnlinkFailed,
 
     avatarBadFileType,
+    avatarTooLarge,
 
     cannotAddSelf,
     cannotRemoveSelf,
@@ -169,7 +170,9 @@ export function errorMsg(error: ErrorType): string
         case ErrorType.googleUnlinkFailed:
             return "Failed to unlink Google account.";
         case ErrorType.avatarBadFileType:
-            return "Avatar must be JPEG or PNG!";
+            return "Avatar must be JPEG, PNG, or WebP!";
+        case ErrorType.avatarTooLarge:
+            return "Avatar must be smaller than 2MB!";
         case ErrorType.cannotAddSelf:
             return "You cannot add yourself as a friend!";
         case ErrorType.cannotRemoveSelf:
@@ -246,6 +249,10 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.usernameRequired;
         case "ACCOUNT_INACTIVE":
             return ErrorType.accountInactive;
+        case "AVATAR_BAD_FILE_TYPE":
+            return ErrorType.avatarBadFileType;
+        case "AVATAR_TOO_LARGE":
+            return ErrorType.avatarTooLarge;
         case "REGISTRATION_FAILED":
             return ErrorType.registrationFailed;
         case "GOOGLE_NOT_CONFIGURED":

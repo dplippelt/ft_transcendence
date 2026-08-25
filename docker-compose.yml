@@ -20,6 +20,7 @@ services:
       - "8000:8000"
     volumes:
       - ./services/backend/app:/app/app
+      - avatar_data:/app/uploads
     depends_on:
       - db
     environment:
@@ -41,3 +42,4 @@ services:
 
 volumes:
   postgres_data:
+  avatar_data:
