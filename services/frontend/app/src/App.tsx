@@ -33,6 +33,7 @@ export default function App()
       <Routes>
         <Route path={RoutePath.landingPage} element={ <LandingPage/> } />
         <Route path={RoutePath.auth} element={<Auth />} />
+        <Route path={RoutePath.gameDev} element={null} />
         <Route element={<ProtectedRoute />}>
             <Route path={RoutePath.completeProfile} element={<CompleteProfile />} />
             <Route element={<RequireUsernameRoute />}>
@@ -44,7 +45,6 @@ export default function App()
                 <Route path={RoutePath.profile} element={ <Profile/> } />
                 <Route path={RoutePath.leaderboard} element={ <Leaderboard/> } />
                 <Route path={RoutePath.settings} element={ <Settings/> } />
-                <Route path={RoutePath.gameDev} element={null} />
             </Route>
         </Route>
         <Route path="*" element={ <PageNotFound /> } />
