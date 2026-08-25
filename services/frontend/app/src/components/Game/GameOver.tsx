@@ -14,6 +14,7 @@ interface ISubText
 
 interface IButtons
 {
+	loggedIn: boolean;
 	gameResult: GameState;
 	cleanupGame: () => void;
 }
@@ -32,18 +33,19 @@ function SubText( { subText } : ISubText )
 	)
 }
 
-function Buttons( { gameResult, cleanupGame } :IButtons )
+function Buttons( { loggedIn, gameResult, cleanupGame } :IButtons )
 {
 	const navigate = useNavigate();
 
 	const againText = gameResult === GameState.won ? "Play again" : "Try again";
 
 	function startNewGame() { cleanupGame(); }
+	function exitGame() { navigate( loggedIn ? RoutePath.mainMenu : RoutePath.landingPage ); }
 
 	return (
 		<MenuButtons>
 			<MenuButton label={againText} onClick={startNewGame} />
-			<MenuButton label="Return to main menu" onClick={ () => navigate(RoutePath.mainMenu) } />
+			<MenuButton label="Exit game" onClick={exitGame} />
 		</MenuButtons>
 	);
 }
@@ -59,7 +61,7 @@ export default function GameOver( { loggedIn, gameResult, cleanupGame } : IGameO
 			<div className={styles.gameOver}>
 				<MenuTitle title={title} />
 				<SubText subText={subText} />
-				<Buttons gameResult={gameResult} cleanupGame={cleanupGame} />
+				<Buttons loggedIn={loggedIn} gameResult={gameResult} cleanupGame={cleanupGame} />
 			</div>
 			{ loggedIn && <SideBar /> }
 		</>
