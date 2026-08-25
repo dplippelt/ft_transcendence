@@ -15,7 +15,7 @@ import PageNotFound from "./pages/PageNotFound/PageNotFound"
 import ProtectedRoute from "./components/ProtectedRoute";
 import RequireUsernameRoute from "./components/RequireUsernameRoute";
 import CompleteProfile from "./pages/Profile/CompleteProfile";
-import GameOver from "./pages/GameOver/GameOver"
+// import GameOver from "./pages/GameOver/GameOver"
 
 export default function App()
 {
@@ -33,7 +33,6 @@ export default function App()
       <Routes>
         <Route path={RoutePath.landingPage} element={ <LandingPage/> } />
         <Route path={RoutePath.auth} element={<Auth />} />
-        <Route path={RoutePath.gameOver + RouteParam.gameResult} element={<GameOver />} />
         <Route element={<ProtectedRoute />}>
             <Route path={RoutePath.completeProfile} element={<CompleteProfile />} />
             <Route element={<RequireUsernameRoute />}>

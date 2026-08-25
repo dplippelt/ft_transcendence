@@ -1,13 +1,14 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
-import { useLocation, useNavigate } from "react-router-dom";
-import { CombatEvent, GameEvent, GameResult, RoutePath } from "../../utils/utils";
+import { useLocation } from "react-router-dom";
+import { CombatEvent, GameEvent, GameState, RoutePath } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import { useAuth } from "../../contexts/AuthContext";
 import GameUI from "../../components/Game/GameUI";
 import CombatUI from "../../components/Game/CombatUI";
 import GameBackground from "../../components/Game/GameBackground";
+import GameOver from "../../components/Game/GameOver";
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -29,6 +30,7 @@ function Game( { currentActiveScene, gameRef, isGameURL } : IGame )
 {
     useLayoutEffect(() => {
       if (isGameURL && gameRef.current === null) {
+        EventBus.emit(GameEvent.gameState, GameState.default);
         gameRef.current = StartGame("game-container");
       }
     }, [gameRef, isGameURL]);
@@ -57,13 +59,37 @@ function Game( { currentActiveScene, gameRef, isGameURL } : IGame )
 export default function PhaserGame( { currentActiveScene } : IPhaserGame )
 {
   const { auth } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   const isGameURL = location.pathname === RoutePath.gameDev;
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
   const [inCombat, setInCombat] = useState<boolean>(false);
+  const [gameState, setGameState] = useState<GameState>(GameState.default);
   const gameRef = useRef<Phaser.Game | null>(null!);
   const loggedIn = auth.status === "authenticated";
+
+  function cleanupGame() {
+    gameRef.current!.destroy(true);
+    gameRef.current = null;
+    EventBus.removeListener(GameEvent.gameVis);
+    EventBus.removeListener(GameEvent.chatFocus);
+    EventBus.removeListener(GameEvent.gameMenu);
+    EventBus.removeListener(GameEvent.inCombat);
+    EventBus.removeListener(GameEvent.gameState);
+    EventBus.removeListener(CombatEvent.initPlayerHP);
+    EventBus.removeListener(CombatEvent.updatePlayerHP);
+    EventBus.removeListener(CombatEvent.initEnemyHP);
+    EventBus.removeListener(CombatEvent.updateEnemyHP);
+    EventBus.removeListener(CombatEvent.initPlayerMP);
+    EventBus.removeListener(CombatEvent.updatePlayerMP);
+    EventBus.removeListener(CombatEvent.initTurnTimer);
+    EventBus.removeListener(CombatEvent.attack);
+    EventBus.removeListener(CombatEvent.draw);
+    EventBus.removeListener(CombatEvent.reset);
+    EventBus.removeListener(CombatEvent.turnEnded);
+    setGameMenuVis(false);
+    setInCombat(false);
+    setGameState(GameState.default);
+  }
 
   useEffect(() =>
   {
@@ -89,29 +115,6 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       }
     }
 
-    function cleanupGame() {
-      gameRef.current!.destroy(true);
-      gameRef.current = null;
-      EventBus.removeListener(GameEvent.gameVis);
-      EventBus.removeListener(GameEvent.chatFocus);
-      EventBus.removeListener(GameEvent.gameMenu);
-      EventBus.removeListener(GameEvent.inCombat);
-      EventBus.removeListener(GameEvent.gameOver);
-      EventBus.removeListener(CombatEvent.initPlayerHP);
-      EventBus.removeListener(CombatEvent.updatePlayerHP);
-      EventBus.removeListener(CombatEvent.initEnemyHP);
-      EventBus.removeListener(CombatEvent.updateEnemyHP);
-      EventBus.removeListener(CombatEvent.initPlayerMP);
-      EventBus.removeListener(CombatEvent.updatePlayerMP);
-      EventBus.removeListener(CombatEvent.initTurnTimer);
-      EventBus.removeListener(CombatEvent.attack);
-      EventBus.removeListener(CombatEvent.draw);
-      EventBus.removeListener(CombatEvent.reset);
-      EventBus.removeListener(CombatEvent.turnEnded);
-      setGameMenuVis(false);
-      setInCombat(false);
-    }
-
     if ( gameRef.current && !preserveGame() )
       cleanupGame();
 
@@ -124,24 +127,29 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     function updateInCombat( inCombat: boolean ) { setInCombat(inCombat); }
     EventBus.addListener(GameEvent.inCombat, updateInCombat);
 
-    function gameOver( result: GameResult ) { navigate(RoutePath.gameOver + "/" + result); }
-    EventBus.addListener(GameEvent.gameOver, gameOver);
+    function updateGameState( state: GameState ) { setGameState(state); }
+    EventBus.addListener(GameEvent.gameState, updateGameState);
 
     function cleanup() {
       EventBus.removeListener(GameEvent.gameMenu, toggleGameMenu);
       EventBus.removeListener(GameEvent.inCombat, updateInCombat);
-      EventBus.removeListener(GameEvent.gameOver, gameOver);
+      EventBus.removeListener(GameEvent.gameState, updateGameState);
     }
 
     return () => cleanup();
-  }, [location.pathname, isGameURL])
+  }, [location.pathname, isGameURL, gameState])
+
+  if ( gameState !== GameState.default )
+    return <GameOver loggedIn={loggedIn} gameResult={gameState} cleanupGame={cleanupGame} />;
 
   return (
-    <div className={`${styles.gameWrapper} ${ isGameURL ? "" : styles.hidden }`}>
-      <GameBackground inCombat={inCombat} />
-      <Game currentActiveScene={currentActiveScene} gameRef={gameRef} isGameURL={isGameURL} />
-      <CombatUI inCombat={inCombat} />
-      <GameUI gameMenuVis={gameMenuVis} loggedIn={loggedIn} />
-    </div>
+    <>
+      <div className={`${styles.gameWrapper} ${ isGameURL ? "" : styles.hidden }`}>
+        <GameBackground inCombat={inCombat} />
+        <Game currentActiveScene={currentActiveScene} gameRef={gameRef} isGameURL={isGameURL} />
+        <CombatUI inCombat={inCombat} />
+        <GameUI gameMenuVis={gameMenuVis} loggedIn={loggedIn} />
+      </div>
+    </>
   );
 }
