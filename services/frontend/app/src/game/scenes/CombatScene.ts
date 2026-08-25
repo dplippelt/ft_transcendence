@@ -37,7 +37,7 @@ export default class CombatScene extends Phaser.Scene {
 
   create() {
     this.playerStatus = {
-      hitPoint: 100,
+      hitPoint: 10,
       mana: 5,
     };
 
