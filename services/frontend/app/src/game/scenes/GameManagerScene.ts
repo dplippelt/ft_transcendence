@@ -4,7 +4,7 @@ import CombatScene from "./CombatScene";
 import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
 import { EventBus } from "../EventBus";
-import { CombatEvent, GameEvent, GameResult } from "../../utils/utils";
+import { CombatEvent, GameEvent, GameState } from "../../utils/utils";
 
 export enum GameEvents {
   CombatInitiated = "combat-initiated",
@@ -121,7 +121,7 @@ export class GameManagerScene extends Scene {
     if (!combatEventData.player.isAlive) {
       combatEventData.player.disableBody(true, true);
       if (!this.anyPlayerAlive()) {
-        this.onGameOver(GameResult.lost);
+        this.onGameOver(GameState.lost);
         return;
       }
     }
@@ -175,8 +175,8 @@ export class GameManagerScene extends Scene {
       .filter((scene) => this.scene.isActive(scene) || this.scene.isPaused(scene));
   }
 
-  private onGameOver( result: GameResult ): void {
-    EventBus.emit(GameEvent.gameOver, result);
+  private onGameOver( state: GameState ): void {
+    EventBus.emit(GameEvent.gameState, state);
   }
 
   private onExitLevel(player: Player): void {
@@ -191,7 +191,7 @@ export class GameManagerScene extends Scene {
       if (--this._levelCount) {
         this._gameScene.nextLevel();
       } else {
-        this.onGameOver(GameResult.won);
+        this.onGameOver(GameState.won);
       }
     }
   }

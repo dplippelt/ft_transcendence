@@ -78,7 +78,6 @@ export enum RouteParam
 	login = "?mode=login",
 	signup = "?mode=signup",
 	lobbyID = "/:lobbyID",
-	gameResult = "/:gameResult",
 }
 
 export enum GameEvent
@@ -86,7 +85,7 @@ export enum GameEvent
 	gameMenu = "game-menu",
 	gameVis = "game-visibility",
 	chatFocus = "chat-focused",
-	gameOver = "game-over",
+	gameState = "game-state",
 	inCombat = "in-combat",
 }
 
@@ -105,8 +104,9 @@ export enum CombatEvent
 	turnEnded = "turn-ended",
 }
 
-export enum GameResult
+export enum GameState
 {
+	default = "default",
 	won = "won",
 	lost = "lost",
 }
