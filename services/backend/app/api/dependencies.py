@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ErrorCode, forbidden, unauthorized
-from app.core.security import decode_access_token
+from app.core.security import decode_token
 from app.db.database import SessionLocal, get_db
 from app.models.user import User
 
@@ -20,9 +20,12 @@ def get_user_from_token(token: str | None, db: Session) -> User | None:
     if token is None:
         return None
 
-    payload = decode_access_token(token)
+    payload = decode_token(token)
 
     if payload is None:
+        return None
+
+    if payload.get("purpose") != "access":
         return None
 
     user_id = payload.get("sub")

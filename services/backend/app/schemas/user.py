@@ -70,6 +70,7 @@ class UserResponse(BaseModel):
     avatar_url: str | None = None
     is_guest: bool
     is_active: bool
+    two_factor_enabled: bool
     linked_providers: list[str] = Field(
         default_factory=list,
     )
@@ -95,6 +96,32 @@ class PublicUserResponse(BaseModel):
 class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
+
+
+class TwoFactorSetupResponse(BaseModel):
+    provisioning_uri: str
+
+
+class TwoFactorCode(BaseModel):
+    code: str = Field(
+        min_length=6,
+        max_length=6,
+        pattern=r"^\d{6}$",
+    )
+
+
+class TwoFactorLogin(BaseModel):
+    challenge_token: str
+    code: str = Field(
+        min_length=6,
+        max_length=6,
+        pattern=r"^\d{6}$",
+    )
+
+
+class TwoFactorChallenge(BaseModel):
+    requires_two_factor: bool = True
+    challenge_token: str
 
 
 class GoogleLogin(BaseModel):

@@ -55,6 +55,17 @@ class User(Base):
         cascade="all, delete-orphan",
     )
 
+    two_factor_enabled: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        nullable=False,
+    )
+
+    two_factor_secret: Mapped[str | None] = mapped_column(
+        String(64), # 64 characters for a base32-encoded secret
+        nullable=True,
+    )
+
     # This doesnt create a database column. It calculates the list from the exisiting auth_accounts rows
     @property
     def linked_providers(self) -> list[str]:

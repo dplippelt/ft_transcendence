@@ -9,6 +9,11 @@ from fastapi.security import OAuth2PasswordRequestForm
 from google.auth import exceptions as google_auth_exceptions
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
+from app.services.two_factor_service import (
+    generate_provisioning_uri,
+    generate_two_factor_secret,
+    verify_two_factor_code,
+)
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -21,7 +26,7 @@ from app.core.security import (DUMMY_PASSWORD_HASH, create_access_token, get_pas
 from app.core.settings import get_settings
 from app.models.auth_account import AuthAccount
 from app.models.user import User
-from app.schemas.user import ( GoogleLogin, PasswordUpdate, Token, UserLogin, UserRegister, UserResponse,)
+from app.schemas.user import ( GoogleLogin, PasswordUpdate, Token, TwoFactorCode, TwoFactorSetupResponse, UserLogin, UserRegister, UserResponse,)
 from app.services.user_service import ensure_username_is_available
 
 
@@ -613,3 +618,71 @@ def update_password(password_data: PasswordUpdate, db: DbSession, current_user: 
     set_or_change_password(db, current_user, password_data,)
     db.refresh(current_user)
     return current_user
+
+
+@router.post("/2fa/setup", response_model=TwoFactorSetupResponse)
+def setup_two_factor(db: DbSession, current_user: CurrentUser,):
+    if current_user.two_factor_enabled:
+        raise conflict(
+            "Two-factor authentication is already enabled",
+            code=ErrorCode.TWO_FACTOR_ALREADY_ENABLED,
+        )
+
+    if current_user.two_factor_secret is None:
+        current_user.two_factor_secret = generate_two_factor_secret()
+
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise bad_request(
+            "Two-factor authentication setup failed",
+            code=ErrorCode.TWO_FACTOR_FAILED,
+        )
+
+    secret = current_user.two_factor_secret
+    email = get_verified_email_for_user(db, current_user.id,)
+    account_name = email or current_user.username or f"user-{current_user.id}"
+
+    return TwoFactorSetupResponse(
+        provisioning_uri=generate_provisioning_uri(secret, account_name,)
+    )
+
+@router.post("/2fa/confirm", response_model=UserResponse)
+def confirm_two_factor(data: TwoFactorCode, db: DbSession, current_user: CurrentUser,):
+    secret = current_user.two_factor_secret
+
+    if secret is None:
+        raise bad_request(
+            "Two-factor authentication is not set up for this user",
+            code=ErrorCode.TWO_FACTOR_SETUP_REQUIRED,
+        )
+
+    if current_user.two_factor_enabled:
+        raise conflict(
+            "Two-factor authentication is already enabled",
+            code=ErrorCode.TWO_FACTOR_ALREADY_ENABLED,
+        )
+
+    if not verify_two_factor_code(secret, data.code):
+        raise unauthorized(
+            "Invalid two-factor authentication code",
+            code=ErrorCode.INVALID_TWO_FACTOR_CODE,
+        )
+
+    current_user.two_factor_enabled = True
+
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise bad_request(
+            "Two-factor authentication confirmation failed",
+            code=ErrorCode.TWO_FACTOR_FAILED,
+        )
+    db.refresh(current_user)
+    return current_user
+
+# @router.post("/2fa/login", response_model=Token)
+
+# @router.delete("/2fa", response_model=UserResponse)

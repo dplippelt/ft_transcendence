@@ -11,6 +11,7 @@ settings = get_settings()
 password_hash = PasswordHash.recommended()
 
 DUMMY_PASSWORD_HASH = password_hash.hash("")
+TWO_FACTOR_CHALLENGE_EXPIRE_MINUTES = 5
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -31,7 +32,10 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
             minutes=settings.access_token_expire_minutes
         )
 
-    to_encode.update({"exp": expire})
+    to_encode.update({
+        "exp": expire,
+        "purpose": "access",
+    })
 
     return jwt.encode(
         to_encode,
@@ -40,7 +44,7 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     )
 
 
-def decode_access_token(token: str) -> dict | None:
+def decode_token(token: str) -> dict | None:
     try:
         return jwt.decode(
             token,
@@ -48,4 +52,39 @@ def decode_access_token(token: str) -> dict | None:
             algorithms=[settings.algorithm],
         )
     except (ExpiredSignatureError, InvalidTokenError):
+        return None
+
+
+def create_two_factor_challenge_token(user_id: int,) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=TWO_FACTOR_CHALLENGE_EXPIRE_MINUTES
+    )
+
+    payload = {
+        "sub": str(user_id),
+        "purpose": "two_factor",
+        "exp": expire,
+    }
+
+    return jwt.encode(
+        payload,
+        settings.secret_key,
+        algorithm=settings.algorithm,
+    )
+
+
+def decode_two_factor_challenge(token: str,) -> int | None:
+    payload = decode_token(token)
+
+    if payload is None:
+        return None
+
+    if payload.get("purpose") != "two_factor":
+        return None
+
+    user_id = payload.get("sub")
+
+    try:
+        return int(user_id)
+    except (TypeError, ValueError):
         return None

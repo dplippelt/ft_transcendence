@@ -7,3 +7,4 @@ pwdlib[argon2]
 google-auth
 requests
 CacheControl
+pyotp
