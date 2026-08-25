@@ -18,6 +18,7 @@ function Buttons()
 
 	function handleLogout()
 	{
+		EventBus.emit(GameEvent.logout);
 		logout();
 		sessionCleanup();
 		navigate(RoutePath.landingPage, { replace: true });

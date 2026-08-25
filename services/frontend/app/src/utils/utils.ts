@@ -89,6 +89,7 @@ export enum GameEvent
 	chatFocus = "chat-focused",
 	gameState = "game-state",
 	inCombat = "in-combat",
+	logout = "logout",
 }
 
 export enum CombatEvent

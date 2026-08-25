@@ -34,7 +34,7 @@ function Game( { currentActiveScene, gameRef, isGameURL, gameMode } : IGame )
         EventBus.emit(GameEvent.gameState, GameState.default);
         gameRef.current = StartGame("game-container", gameMode);
       }
-    }, [gameRef, isGameURL]);
+    }, [gameRef, isGameURL, gameMode]);
 
     useEffect(() => {
       EventBus.on("current-scene-ready", (scene_instance: Phaser.Scene) => {
@@ -70,6 +70,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
   const [gameState, setGameState] = useState<GameState>(GameState.default);
   const gameRef = useRef<Phaser.Game | null>(null!);
   const loggedIn = auth.status === "authenticated";
+  const isLoggingOutRef = useRef<boolean>(false);
 
   function cleanupGame() {
     gameRef.current!.destroy(true);
@@ -93,7 +94,15 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     setGameMenuVis(false);
     setInCombat(false);
     setGameState(GameState.default);
+    isLoggingOutRef.current = false;
   }
+
+  useEffect(() =>
+  {
+    function isLoggingOut() { isLoggingOutRef.current = true }
+    EventBus.addListener(GameEvent.logout, isLoggingOut);
+    return () => { EventBus.removeListener(GameEvent.logout, isLoggingOut) };
+  }, []);
 
   useEffect(() =>
   {
@@ -125,8 +134,15 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     if ( !isGameURL )
       return;
 
-    if ( gameMode !== GameMode.sp && gameMode !== GameMode.coop ) {
+    if ( gameMode !== GameMode.sp && gameMode !== GameMode.coop )
       navigate(RoutePath.game + RouteParam.sp, { replace: true });
+
+    if ( auth.status === "loading" )
+      return;
+
+    if ( gameMode === GameMode.coop && !loggedIn && !isLoggingOutRef.current ) {
+      navigate(RoutePath.game + RouteParam.sp, { replace: true });
+      cleanupGame();
     }
 
     function toggleGameMenu() { setGameMenuVis(prev => !prev); }
@@ -145,7 +161,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     }
 
     return () => cleanup();
-  }, [location.pathname, isGameURL, gameState])
+  }, [location.pathname, isGameURL, gameState, gameMode, loggedIn, auth.status])
 
   if ( gameState !== GameState.default )
     return <GameOver loggedIn={loggedIn} gameResult={gameState} cleanupGame={cleanupGame} />;
