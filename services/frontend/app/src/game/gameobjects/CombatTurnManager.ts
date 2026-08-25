@@ -28,8 +28,8 @@ export default class CombatTurnManager {
     this.clock = this.scene.time;
     this.turnEvents = new Phaser.Events.EventEmitter();
     this.turnEvents.on(TurnEvents.SWITCH, this.switchTurn, this);
-    this.playerDelayMs = 10000,
-    this.enemyDelayMs = 5000,
+    this.playerDelayMs = 10000;
+    this.enemyDelayMs = 5000;
     this.isPlayerTurn = true;
     this.playerTimer = this.playTurnFor(this.playerDelayMs);
     this.enemyTimer = null;
