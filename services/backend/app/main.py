@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
-from app.api.v1 import auth, cards, chat, dungeons, leaderboard, lobbies, puzzles, scores, users, friends
+from app.api.v1 import auth, chat, dungeons, leaderboard, lobbies, scores, users, friends
 from app.db.database import Base, engine
 from app.core.settings import get_settings
 from app.services.avatar_service import AVATAR_DIR
@@ -41,8 +41,6 @@ app.add_middleware(
 app.include_router(auth.router,        prefix="/auth",         tags=["auth"])
 app.include_router(users.router,       prefix="/users",        tags=["users"])
 app.include_router(dungeons.router,    prefix="/dungeons",     tags=["dungeons"])
-app.include_router(cards.router,       prefix="/cards",        tags=["cards"])
-app.include_router(puzzles.router,     prefix="/puzzles",      tags=["puzzles"])
 app.include_router(scores.router,      prefix="/scores",       tags=["scores"])
 app.include_router(leaderboard.router, prefix="/leaderboard",  tags=["leaderboard"])
 app.include_router(friends.router,     prefix="/friends",     tags=["friends"])
