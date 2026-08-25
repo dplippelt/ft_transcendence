@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
-import { useLocation } from "react-router-dom";
-import { CombatEvent, GameEvent, GameState, RoutePath } from "../../utils/utils";
+import { Navigate, useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { CombatEvent, GameEvent, GameMode, GameState, RouteParam, RoutePath } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import { useAuth } from "../../contexts/AuthContext";
 import GameUI from "../../components/Game/GameUI";
@@ -24,14 +24,15 @@ interface IGame {
   currentActiveScene?: (scene_instance: Phaser.Scene) => void;
   gameRef: React.RefObject<Phaser.Game | null>;
   isGameURL: boolean;
+  gameMode: GameMode;
 }
 
-function Game( { currentActiveScene, gameRef, isGameURL } : IGame )
+function Game( { currentActiveScene, gameRef, isGameURL, gameMode } : IGame )
 {
     useLayoutEffect(() => {
       if (isGameURL && gameRef.current === null) {
         EventBus.emit(GameEvent.gameState, GameState.default);
-        gameRef.current = StartGame("game-container");
+        gameRef.current = StartGame("game-container", gameMode);
       }
     }, [gameRef, isGameURL]);
 
@@ -60,6 +61,9 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
 {
   const { auth } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const gameMode = searchParams.get("mode");
   const isGameURL = location.pathname === RoutePath.gameDev;
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
   const [inCombat, setInCombat] = useState<boolean>(false);
@@ -121,6 +125,10 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     if ( !isGameURL )
       return;
 
+    if ( gameMode !== GameMode.sp && gameMode !== GameMode.coop ) {
+      navigate(RoutePath.game + RouteParam.sp, { replace: true });
+    }
+
     function toggleGameMenu() { setGameMenuVis(prev => !prev); }
     EventBus.addListener(GameEvent.gameMenu, toggleGameMenu);
 
@@ -146,7 +154,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     <>
       <div className={`${styles.gameWrapper} ${ isGameURL ? "" : styles.hidden }`}>
         <GameBackground inCombat={inCombat} />
-        <Game currentActiveScene={currentActiveScene} gameRef={gameRef} isGameURL={isGameURL} />
+        <Game currentActiveScene={currentActiveScene} gameRef={gameRef} isGameURL={isGameURL} gameMode={gameMode ? gameMode as GameMode : GameMode.sp} />
         <CombatUI inCombat={inCombat} />
         <GameUI gameMenuVis={gameMenuVis} loggedIn={loggedIn} />
       </div>

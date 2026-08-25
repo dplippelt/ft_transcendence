@@ -2,6 +2,7 @@ import Phaser from "phaser";
 import BootScene from "./scenes/BootScene";
 import PreloadScene from "./scenes/PreloadScene";
 import { GameManagerScene } from "./scenes/GameManagerScene";
+import { GameMode, RegistryKey } from "../utils/utils";
 
 const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -28,6 +29,8 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
   },
 };
 
-export default function StartGame(parent: string) {
-  return new Phaser.Game({ ...gameConfig, parent });
+export default function StartGame(parent: string, gameMode: GameMode) {
+  const game = new Phaser.Game({ ...gameConfig, parent });
+  game.registry.set(RegistryKey.mode, gameMode);
+  return game;
 }

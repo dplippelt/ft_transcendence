@@ -3,6 +3,7 @@ import { TileNodeType, type RoomGraph, type Room, Direction } from "../../map/pr
 import { Dungeon } from "./Dungeon";
 import { PlayerFactory, EnemyFactory, PassageFactory } from "./factories";
 import type { Passage } from "./Passage";
+import { GameMode, RegistryKey } from "../../../utils/utils";
 
 type Vector2Like = Types.Math.Vector2Like;
 
@@ -52,12 +53,23 @@ export class DungeonSpawner {
   }
 
   private spawnPlayers(room: Room) {
-    const player = this._playerFactory.createPlayer(0, {
+    const gameMode = this._dungeon.scene.registry.get(RegistryKey.mode);
+    const player_1 = this._playerFactory.createPlayer(0, {
       dungeon: this._dungeon,
       startingRoom: room,
       spawnPoint: this.tileToWorldPosition(room.tileNode!.position),
     });
-    this._dungeon.addPlayer(player);
+    this._dungeon.addPlayer(player_1);
+
+    if ( gameMode === GameMode.coop ) {
+      const player_2 = this._playerFactory.createPlayer(1, {
+        dungeon: this._dungeon,
+        startingRoom: room,
+        spawnPoint: this.tileToWorldPosition(room.tileNode!.position),
+      });
+      this._dungeon.addPlayer(player_2);
+    }
+
   }
 
   private spawnEnemy(room: Room) {

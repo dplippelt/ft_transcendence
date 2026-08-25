@@ -20,7 +20,7 @@ function Buttons()
 
 	return (
 		<MenuButtons>
-			<MenuButton label="Start game" onClick={ () => navigate(RoutePath.game) } />
+			<MenuButton label="Start game" onClick={ () => navigate(RoutePath.game + RouteParam.sp) } />
 			<MenuButton label="Login" onClick={ () => navigate(RoutePath.auth + RouteParam.login) } />
 			<MenuButton label="How to play" onClick={ () => {} } />
 			<MenuButton label="Game dev" onClick={ () => navigate(RoutePath.gameDev) } />

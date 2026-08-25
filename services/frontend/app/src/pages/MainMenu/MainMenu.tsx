@@ -5,7 +5,7 @@ import { MenuButtons } from "../../components/ButtonContainers";
 import Background from "../../components/Background";
 import { useAuth } from "../../contexts/AuthContext";
 import { MenuButton } from "../../components/Buttons";
-import { RoutePath } from "../../utils/utils";
+import { RouteParam, RoutePath } from "../../utils/utils";
 import SideBar from "../../components/SideBar";
 import useSessionCleanup from "../../hooks/useSessionCleanup";
 import { useError } from "../../contexts/ErrorContext";
@@ -29,7 +29,7 @@ function Buttons()
 
 	return (
 		<MenuButtons>
-			<MenuButton label="New game" onClick={ () => navigate(RoutePath.gameDev) } />
+			<MenuButton label="New game" onClick={ () => navigate(RoutePath.game + RouteParam.sp) } />
 			<MenuButton label="Multiplayer" onClick={ () => navigate(RoutePath.multiplayer) } />
 			<MenuButton label="Friends" onClick={ () => navigate(RoutePath.friends, { state: { from: location.pathname } }) } />
 			<MenuButton label="Profile" onClick={ () => navigate(RoutePath.profile, { state: { from: location.pathname } }) } />

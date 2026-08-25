@@ -77,6 +77,8 @@ export enum RouteParam
 {
 	login = "?mode=login",
 	signup = "?mode=signup",
+	sp = "?mode=sp",
+	coop = "?mode=coop",
 	lobbyID = "/:lobbyID",
 }
 
@@ -109,6 +111,17 @@ export enum GameState
 	default = "default",
 	won = "won",
 	lost = "lost",
+}
+
+export enum RegistryKey
+{
+	mode = "mode",
+}
+
+export enum GameMode
+{
+	sp = "sp",
+	coop = "coop",
 }
 
 export const DRAFT_STORAGE_PREFIX = "draft:";

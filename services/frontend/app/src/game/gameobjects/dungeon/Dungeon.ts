@@ -165,7 +165,7 @@ export class Dungeon extends Tilemaps.Tilemap {
   }
 
   getPlayer(index: number): Player | undefined {
-    return this.playerGroup.getFirstNth(index, true, false);
+    return this.playerGroup.getLastNth(index, true, false);
   }
 
   getAlivePlayerCount(): number {

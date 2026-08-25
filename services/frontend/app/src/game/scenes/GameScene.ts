@@ -4,6 +4,8 @@ import { Dungeon } from "../gameobjects/dungeon/Dungeon.ts";
 import { Direction, type DungeonConfig } from "../map/procedural";
 import { WallType, FloorType, PassageType, FoilageType } from "../map/TileSetMap.ts";
 import Player from "../gameobjects/Player.ts";
+import { GameMode, RegistryKey } from "../../utils/utils.ts";
+import { GameObjects } from "phaser";
 
 const dungeonConfig: DungeonConfig = {
   emptyRoomConfig: {
@@ -74,6 +76,8 @@ const dungeonConfig: DungeonConfig = {
 // TODO: GameSession structure (local / network) -> thruth sayer; player hp, position etc, syncs up with the game itself
 export default class GameScene extends Scene {
   private _dungeon!: Dungeon;
+  private _cameraTarget!: Player | GameObjects.Zone;
+  private _gameMode!: GameMode;
 
   constructor() {
     super("game");
@@ -85,7 +89,7 @@ export default class GameScene extends Scene {
 
   create() {
     this._dungeon = new Dungeon(this, dungeonConfig, 1.5);
-    this.cameras.main.startFollow(this.getPlayerOne());
+    this.setupCamera();
 
     // Temporarily mouse event for map generation
     this.input.on("pointerdown", () => {
@@ -95,6 +99,20 @@ export default class GameScene extends Scene {
     });
 
     EventBus.emit("current-scene-ready", this);
+  }
+
+  update(): void {
+    if ( this._gameMode === GameMode.coop ) {
+      const player_1 = this._dungeon.getPlayer(0);
+      const player_2 = this._dungeon.getPlayer(1);
+      if ( !player_1 || !player_2 )
+        throw new Error("Player missing!");
+
+      this._cameraTarget.setPosition(
+        (player_1.x + player_2.x) / 2,
+        (player_1.y + player_2.y) / 2,
+      )
+    }
   }
 
   getPlayerOne(): Player {
@@ -113,9 +131,15 @@ export default class GameScene extends Scene {
     return this._dungeon.getEnemyCount();
   }
 
+  setupCamera(): void {
+    this._gameMode = this._dungeon.scene.registry.get(RegistryKey.mode);
+    this._cameraTarget = this._gameMode === GameMode.sp ? this.getPlayerOne() : this.add.zone(0, 0, 1, 1);
+    this.cameras.main.startFollow(this._cameraTarget);
+  }
+
   nextLevel(): void {
     this.cameras.main.stopFollow();
     this._dungeon.build(dungeonConfig, 1.5);
-    this.cameras.main.startFollow(this.getPlayerOne());
+    this.setupCamera();
   }
 }

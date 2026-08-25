@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { PopupType } from "../../utils/utils";
+import { PopupType, RouteParam, RoutePath } from "../../utils/utils";
 import { ErrorType, isErrorType } from "../../utils/errors";
 import { useNavigate } from "react-router-dom";
 import ErrorText from "../../components/ErrorText";
@@ -37,11 +37,11 @@ export default function LocalCoopPopup( { setPopupType } : ILocalCoopPopup )
 		// Just any username - no need to check for overlap with existing usernames in backend.
 
 		// TODO: might want to add an intermediate screen showing controls for player 1 and player 2
-		
+
 		void validCoopUsername;
 		void user.username;
-		void navigate;
 
+		navigate(RoutePath.game + RouteParam.coop);
 		setPopupType(PopupType.none);
 	}
 
