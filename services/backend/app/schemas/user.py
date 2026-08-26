@@ -124,6 +124,24 @@ class TwoFactorChallenge(BaseModel):
     challenge_token: str
 
 
+class TwoFactorSetup(BaseModel):
+    current_password: str | None = None
+    google_credential: str | None = None
+    
+    @model_validator(mode="after")
+    def require_one_reauthentication_method(self):
+        provided = sum([
+            self.current_password is not None,
+            self.google_credential is not None,
+        ])
+
+        if provided != 1:
+            raise ValueError(
+                "Provide exactly one reauthentication method"
+            )
+
+        return self
+
 class GoogleLogin(BaseModel):
     credential: str
 
@@ -131,3 +149,4 @@ class GoogleLogin(BaseModel):
 class PasswordUpdate(BaseModel):
     current_password: str | None = None
     new_password: str = Field(min_length=8)
+

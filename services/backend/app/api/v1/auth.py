@@ -40,6 +40,7 @@ from app.schemas.user import (
     TwoFactorChallenge,
     TwoFactorCode,
     TwoFactorLogin,
+    TwoFactorSetup,
     TwoFactorSetupResponse,
     UserLogin,
     UserRegister,
@@ -270,6 +271,41 @@ def get_active_user_from_auth_account(auth_account: AuthAccount) -> User:
             code=ErrorCode.ACCOUNT_INACTIVE,
         )
     return user
+
+
+def reauthenticate_user(db: Session, user: User, current_password: str | None, google_credential: str | None) -> None:
+    if current_password is not None:
+        password_account = get_password_account_for_user(db, user.id,)
+        
+        if (
+            password_account is None
+            or password_account.password_hash is None
+            or not verify_password(
+                current_password,
+                password_account.password_hash,
+            )
+        ):
+            raise unauthorized(
+                "Current password is incorrect",
+                code=ErrorCode.INVALID_CURRENT_PASSWORD,
+            )
+        return
+
+    if google_credential is not None:
+        identity = verify_google_credential(google_credential,)
+        google_account = get_google_account_for_user(db, user.id,)
+
+        if google_account is None or google_account.provider_account_id != identity.sub:
+            raise unauthorized(
+                "Google reauthentication failed",
+                code=ErrorCode.INVALID_GOOGLE_CREDENTIALS,
+            )
+        return
+
+    raise bad_request(
+        "Reauthentication is required",
+        code=ErrorCode.TWO_FACTOR_REAUTH_REQUIRED,
+    )
 
 
 def apply_google_profile_defaults(user: User, identity: GoogleIdentity) -> None:
@@ -673,12 +709,21 @@ def update_password(password_data: PasswordUpdate, db: DbSession, current_user: 
 # 6th 2FA attempt within 1 min → 429
 
 @router.post("/2fa/setup", response_model=TwoFactorSetupResponse)
-def setup_two_factor(db: DbSession, current_user: CurrentUser,):
+def setup_two_factor(data: TwoFactorSetup, db: DbSession, current_user: CurrentUser, request: Request,):
     if current_user.two_factor_enabled:
         raise conflict(
             "Two-factor authentication is already enabled",
             code=ErrorCode.TWO_FACTOR_ALREADY_ENABLED,
         )
+
+    _check_login_rate_limit(request)
+
+    reauthenticate_user(
+        db,
+        current_user,
+        data.current_password,
+        data.google_credential,
+    )
 
     if current_user.two_factor_secret is None:
         current_user.two_factor_secret = generate_two_factor_secret()
@@ -780,7 +825,7 @@ def two_factor_login(data: TwoFactorLogin, db: DbSession, request: Request,):
     return create_token_for_user(user)
 
 @router.delete("/2fa", response_model=UserResponse)
-def disable_two_factor(data: TwoFactorCode, db: Dbsession, current_user: CurrentUser, request: Request,):
+def disable_two_factor(data: TwoFactorCode, db: DbSession, current_user: CurrentUser, request: Request,):
     if not current_user.two_factor_enabled:
         raise bad_request(
             "Two-factor authentication is not enabled",

@@ -77,6 +77,7 @@ class ErrorCode(StrEnum):
     TWO_FACTOR_CHALLENGE_INVALID = "TWO_FACTOR_CHALLENGE_INVALID"
     TWO_FACTOR_RATE_LIMIT_EXCEEDED = "TWO_FACTOR_RATE_LIMIT_EXCEEDED"
     TWO_FACTOR_FAILED = "TWO_FACTOR_FAILED"
+    TWO_FACTOR_REAUTH_REQUIRED = "TWO_FACTOR_REAUTH_REQUIRED"
 
 def error_detail(message: str, code: ErrorCode | None = None,) -> str | dict[str, str]:
     if code is None:
