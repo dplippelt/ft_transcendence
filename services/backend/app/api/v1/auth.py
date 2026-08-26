@@ -21,12 +21,30 @@ from app.api.dependencies import CurrentUser, DbSession
 from app.core.exceptions import (
     ErrorCode, bad_request, conflict, forbidden, service_unavailable, too_many_requests, unauthorized,
 )
-from app.core.rate_limit import FixedWindowLimiter
-from app.core.security import (DUMMY_PASSWORD_HASH, create_access_token, get_password_hash, verify_password,)
+from app.core.rate_limit import SlidingWindowLimiter
+from app.core.security import (
+    DUMMY_PASSWORD_HASH,
+    create_access_token,
+    create_two_factor_challenge_token,
+    decode_two_factor_challenge,
+    get_password_hash,
+    verify_password,
+)
 from app.core.settings import get_settings
 from app.models.auth_account import AuthAccount
 from app.models.user import User
-from app.schemas.user import ( GoogleLogin, PasswordUpdate, Token, TwoFactorCode, TwoFactorSetupResponse, UserLogin, UserRegister, UserResponse,)
+from app.schemas.user import (
+    GoogleLogin,
+    PasswordUpdate,
+    Token,
+    TwoFactorChallenge,
+    TwoFactorCode,
+    TwoFactorLogin,
+    TwoFactorSetupResponse,
+    UserLogin,
+    UserRegister,
+    UserResponse,
+)
 from app.services.user_service import ensure_username_is_available
 
 
@@ -55,6 +73,10 @@ REGISTER_RATE_LIMIT_WINDOW = timedelta(minutes=1)
 REGISTER_RATE_LIMIT_MAX = 5
 _register_rate_limiter = FixedWindowLimiter(REGISTER_RATE_LIMIT_WINDOW, REGISTER_RATE_LIMIT_MAX)
 
+TWO_FACTOR_RATE_LIMIT_WINDOW = timedelta(minutes=1)
+TWO_FACTOR_RATE_LIMIT_MAX = 5
+_two_factor_rate_limiter = SlidingWindowLimiter(TWO_FACTOR_RATE_LIMIT_WINDOW, TWO_FACTOR_RATE_LIMIT_MAX)
+
 
 def _client_ip(request: Request) -> str:
     return request.client.host if request.client else "unknown"
@@ -73,6 +95,15 @@ def _check_register_rate_limit(request: Request) -> None:
         raise too_many_requests(
             "Too many registration attempts. Try again shortly.",
             code=ErrorCode.REGISTRATION_RATE_LIMIT_EXCEEDED,
+        )
+
+
+def _check_two_factor_rate_limit(request: Request, user_id: int) -> None:
+    key = (user_id, _client_ip(request))
+    if not _two_factor_rate_limiter.allow(key):
+        raise too_many_requests(
+            "Too many two-factor authentication attempts. Try again shortly.",
+            code=ErrorCode.TWO_FACTOR_RATE_LIMIT_EXCEEDED,
         )
 
 
@@ -95,6 +126,15 @@ def create_token_for_user(user: User) -> Token:
         access_token=access_token,
         token_type="bearer",
     )
+
+
+def complete_login_for_user(user: User,) -> Token | TwoFactorChallenge:
+    if not user.two_factor_enabled:
+        return create_token_for_user(user)
+
+    challenge_token  = create_two_factor_challenge_token(user.id)
+
+    return TwoFactorChallenge(challenge_token=challenge_token,)
 
 
 def get_auth_account_by_email(db: Session, email: str) -> AuthAccount | None:
@@ -500,7 +540,7 @@ def register_user(user_data: UserRegister, db: DbSession, request: Request):
     return user
 
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=Token | TwoFactorChallenge,)
 def login_user(user_data: UserLogin, db: DbSession, request: Request):
     _check_login_rate_limit(request)
 
@@ -510,10 +550,10 @@ def login_user(user_data: UserLogin, db: DbSession, request: Request):
         user_data.password,
     )
 
-    return create_token_for_user(user)
+    return complete_login_for_user(user)
 
 
-@router.post("/token", response_model=Token)
+@router.post("/token", response_model=Token | TwoFactorChallenge,)
 def login_for_access_token(form_data: OAuth2Form, db: DbSession, request: Request):
     _check_login_rate_limit(request)
 
@@ -523,10 +563,10 @@ def login_for_access_token(form_data: OAuth2Form, db: DbSession, request: Reques
         form_data.password,
     )
 
-    return create_token_for_user(user)
+    return complete_login_for_user(user)
 
 
-@router.post("/google", response_model=Token)
+@router.post("/google", response_model=Token | TwoFactorChallenge,)
 def google_login(user_data: GoogleLogin, db: DbSession):
     identity = verify_google_credential(user_data.credential,)
     google_auth_account = get_google_account_by_sub(db, identity.sub)
@@ -534,7 +574,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
     if google_auth_account:
         user = get_active_user_from_auth_account(google_auth_account,)
 
-        return create_token_for_user(user)
+        return complete_login_for_user(user)
 
     raise_google_email_conflict_if_present(
         db,
@@ -563,7 +603,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
         if existing_google_account:
             user = get_active_user_from_auth_account(existing_google_account,)
 
-            return create_token_for_user(user)
+            return complete_login_for_user(user)
 
         raise_google_email_conflict_if_present(db, identity.email,)
 
@@ -574,7 +614,7 @@ def google_login(user_data: GoogleLogin, db: DbSession):
 
     db.refresh(user)
 
-    return create_token_for_user(user)
+    return complete_login_for_user(user)
 
 @router.post("/google/link", response_model=UserResponse)
 def link_google_account(user_data: GoogleLogin,db: DbSession, current_user: CurrentUser):
@@ -620,6 +660,18 @@ def update_password(password_data: PasswordUpdate, db: DbSession, current_user: 
     return current_user
 
 
+# 2FA off  + password → access token
+# 2FA off  + Google   → access token
+
+# 2FA on   + password → challenge token
+# 2FA on   + Google   → challenge token
+
+# challenge + wrong code   → 401
+# challenge + correct code → access token
+# expired challenge        → 401
+# normal access JWT sent as challenge → 401
+# 6th 2FA attempt within 1 min → 429
+
 @router.post("/2fa/setup", response_model=TwoFactorSetupResponse)
 def setup_two_factor(db: DbSession, current_user: CurrentUser,):
     if current_user.two_factor_enabled:
@@ -630,14 +682,14 @@ def setup_two_factor(db: DbSession, current_user: CurrentUser,):
 
     if current_user.two_factor_secret is None:
         current_user.two_factor_secret = generate_two_factor_secret()
-
-    try:
-        db.commit()
-    except SQLAlchemyError:
-        db.rollback()
-        raise bad_request(
-            "Two-factor authentication setup failed",
-            code=ErrorCode.TWO_FACTOR_FAILED,
+        
+        try:
+            db.commit()
+        except SQLAlchemyError:
+            db.rollback()
+            raise bad_request(
+                "Two-factor authentication setup failed",
+                code=ErrorCode.TWO_FACTOR_FAILED,
         )
 
     secret = current_user.two_factor_secret
@@ -648,8 +700,10 @@ def setup_two_factor(db: DbSession, current_user: CurrentUser,):
         provisioning_uri=generate_provisioning_uri(secret, account_name,)
     )
 
+
 @router.post("/2fa/confirm", response_model=UserResponse)
-def confirm_two_factor(data: TwoFactorCode, db: DbSession, current_user: CurrentUser,):
+def confirm_two_factor(data: TwoFactorCode, db: DbSession, current_user: CurrentUser, request: Request,):
+    _check_two_factor_rate_limit(request, current_user.id)
     secret = current_user.two_factor_secret
 
     if secret is None:
@@ -683,6 +737,46 @@ def confirm_two_factor(data: TwoFactorCode, db: DbSession, current_user: Current
     db.refresh(current_user)
     return current_user
 
-# @router.post("/2fa/login", response_model=Token)
+
+@router.post("/2fa/login", response_model=Token)
+def two_factor_login(data: TwoFactorLogin, db: DbSession, request: Request,):
+    user_id = decode_two_factor_challenge(data.challenge_token,)
+
+    if user_id is None:
+        raise unauthorized(
+            "Invalid or expired two-factor authentication challenge",
+            code=ErrorCode.TWO_FACTOR_CHALLENGE_INVALID,
+        )
+
+    _check_two_factor_rate_limit(request, user_id)
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if user is None or not user.is_active:
+        raise unauthorized(
+            "Invalid or expired two-factor authentication challenge",
+            code=ErrorCode.TWO_FACTOR_CHALLENGE_INVALID,
+        )
+
+    if not user.two_factor_enabled:
+        raise unauthorized(
+            "Two-factor authentication is not enabled",
+            code=ErrorCode.TWO_FACTOR_NOT_ENABLED,
+        )
+
+    secret = user.two_factor_secret
+
+    if secret is None:
+        raise unauthorized(
+            "Two-factor authentication setup is invalid",
+            code=ErrorCode.TWO_FACTOR_CHALLENGE_INVALID,
+        )
+
+    if not verify_two_factor_code(secret, data.code):
+        raise unauthorized(
+            "Invalid two-factor authentication code",
+            code=ErrorCode.INVALID_TWO_FACTOR_CODE,
+        )
+
+    return create_token_for_user(user)
 
 # @router.delete("/2fa", response_model=UserResponse)
