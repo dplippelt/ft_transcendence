@@ -22,6 +22,7 @@ interface Display {
 
 interface Background {
   scale: number;
+  topY: number;
   bottomY: number;
 }
 
@@ -58,7 +59,9 @@ interface CombatLayout {
       startXFromCenter: number;
       endXFromCenter: number;
       cellWidth: number;
-      yFromTop: number;
+      cellGap: number;
+      cellScale: number;
+      yFromBgTop: number;
     };
     deck: {
       xFromLeftPerc: number;
@@ -103,8 +106,10 @@ const combatLayout: CombatLayout = {
     selection: {
       startXFromCenter: -175,
       endXFromCenter: 175,
-      cellWidth: 50,
-      yFromTop: 100,
+      cellWidth: spriteSize.card.width,
+      cellGap: 10,
+      cellScale: 1.3,
+      yFromBgTop: 170,
     },
     deck: {
       xFromLeftPerc: 9,
@@ -152,7 +157,8 @@ export default class CombatLayoutManager {
     this.spriteSize = spriteSize;
     this.layout = combatLayout;
     this.display = { width: 0, height: 0, centerX: 0, centerY: 0, scale: 0 };
-    this.background = { scale: 0, bottomY: 0 };
+    this.background = { scale: 0, topY: 0, bottomY: 0 };
+    this.scene.scale.refresh();
     this.updateDisplay();
     this.updateLayout();
     this.scene.scale.on("resize", this.updateLayout, this);
@@ -160,8 +166,8 @@ export default class CombatLayoutManager {
 
   onCardActions() {
     this.cardManager.events.on(CardActionEvents.DRAW, this.updateCardHand, this);
-    this.cardManager.events.on(CardActionEvents.SELECT, this.setCardToSlot, this);
-    this.cardManager.events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
+    this.cardManager.events.on(CardActionEvents.SELECT, () => this.updateSelectionSlots(false), this);
+    this.cardManager.events.on(CardActionEvents.UNSELECT, () => this.updateSelectionSlots(false), this);
     this.cardManager.events.on(CardActionEvents.GENERATE_DECK, this.updateDeck, this);
   }
 
@@ -182,8 +188,8 @@ export default class CombatLayoutManager {
 
     // Calculating the horizontal and vertical inset to compensate for
     // letterboxing around the background image with regard to the Combat UI
-    // and calculating background scale and bottom Y for player and enemey
-    // sprite positioning
+    // and calculating background scale and bottom Y for player, enemey and
+    // selected cards sprite positioning
     const bgScaleX = this.display.width / BG_WIDTH;
     const bgScaleY = this.display.height / BG_HEIGHT;
     const bgScale = Math.min(bgScaleX, bgScaleY);
@@ -194,6 +200,7 @@ export default class CombatLayoutManager {
 
     this.background.scale = bgScale;
     this.background.bottomY = this.display.height - insetY;
+    this.background.topY = insetY;
 
     document.documentElement.style.setProperty("--combat-ui-inset-x", `${insetX}px`);
   }
@@ -292,27 +299,27 @@ export default class CombatLayoutManager {
 
   updateSelectionSlots(isResize: boolean = true) {
     const selectionSlots = this.cardManager.cardSelection.getSelectionSlots();
+    const occupiedSlots = selectionSlots.filter((slot) => slot.isCardSet());
     const display = this.display;
+    const background = this.background;
     const selectionLayout = this.layout.cards.selection;
-    const targetX = display.centerX + selectionLayout.startXFromCenter * display.scale;
-    const targetY = selectionLayout.yFromTop * display.scale;
+    const cellWidth = ((this.spriteSize.card.width * selectionLayout.cellScale) + selectionLayout.cellGap) * background.scale;
+    const targetX = display.centerX - ((occupiedSlots.length - 1) / 2) * cellWidth;
+    const targetY = background.topY + selectionLayout.yFromBgTop * background.scale;
     const gridOptions: Phaser.Types.Actions.GridAlignConfig = {
       width: -1,
-      cellWidth: selectionLayout.cellWidth * display.scale,
+      cellWidth: cellWidth,
       x: targetX,
       y: targetY,
     };
 
-    Actions.GridAlign(selectionSlots, gridOptions);
+    Actions.GridAlign(occupiedSlots, gridOptions);
 
-    for (const slot of selectionSlots) {
-      const card = slot.getCard();
-      if (card !== null) {
-        if (isResize) {
-          this.setCardToSlot(slot);
-        } else {
-          this.events.emit(LayoutEvents.SET_CARD_TO_SLOT, slot);
-        }
+    for (const slot of occupiedSlots) {
+      if (isResize) {
+        this.setCardToSlot(slot);
+      } else {
+        this.events.emit(LayoutEvents.SET_CARD_TO_SLOT, slot);
       }
     }
   }
@@ -358,10 +365,12 @@ export default class CombatLayoutManager {
 
   setCardToSlot(slot: CardSlot) {
     const card = slot.getCard()!;
+    const bgScale = this.background.scale;
+    const cellScale = this.layout.cards.selection.cellScale;
     const x = slot.x;
     const y = slot.y;
     const angle = 0;
-    const scale = card.getData(TransformInLayout.SCALE) * 0.7;
+    const scale = bgScale * cellScale;
 
     card.setPosition(x, y);
     card.angle = angle;

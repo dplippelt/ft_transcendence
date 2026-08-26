@@ -136,11 +136,9 @@ export default class CombatAnimation {
 
   onCardAnimation() {
     const events = this.cardManager.events;
-    events.off(CardActionEvents.DRAW);
+    events.off(CardActionEvents.DRAW, this.draw, this);
     events.on(CardActionEvents.DRAW, this.draw, this);
-    events.off(CardActionEvents.SELECT);
-    events.on(CardActionEvents.SELECT, this.setCardToSlot, this);
-    events.off(CardActionEvents.UNSELECT);
+    events.off(CardActionEvents.UNSELECT, this.setCardPosition, this);
     events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
   }
 
@@ -176,12 +174,14 @@ export default class CombatAnimation {
 
   setCardToSlot(slot: CardSlot) {
     const card = slot.getCard()!;
+    const bgScale = this.combatLayoutManager.background.scale;
+    const cellScale = this.combatLayoutManager.layout.cards.selection.cellScale;
     this.scene.tweens.add({
       targets: card,
       x: slot.x,
       y: slot.y,
       angle: 0,
-      scale: card.getData(TransformInLayout.SCALE) * 0.7,
+      scale: bgScale * cellScale,
       ease: "Cubic.easeOut",
       duration: 200,
     });

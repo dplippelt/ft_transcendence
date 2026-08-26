@@ -20,7 +20,7 @@
 	pointer-events: none;
 	animation: countdown var(--turn-duration) linear forwards;
 
-	@media ( max-height: 480px )
+	@media ( max-height: 520px )
 	{
 		width: $combat-ui-down-scale-a * $turn-timer-width;
 		height: $combat-ui-down-scale-a * $turn-timer-height;

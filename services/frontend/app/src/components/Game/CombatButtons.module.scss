@@ -53,11 +53,17 @@
 	transform: translateX(-50%) translateY(-50%);
 	background: none;
 	border: none;
+	transition: background-color 0.02s ease;
 
 	&:hover
 	{
 		background: none;
-		border: none;
+		border: 2px solid goldenrod;
+	}
+
+	&:active
+	{
+		background-color: rgba(0, 0, 0, 0.160);
 	}
 }
 

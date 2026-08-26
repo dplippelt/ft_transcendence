@@ -105,11 +105,13 @@ export default class CombatManager {
       combatant.takeDamage(this.damageToEnemyOn[combo]);
       if (combatant.isDead()) {
         this.endCombat();
+        return;
       }
     } else {
       combatant.takeDamage(this.enemy.enemyData.attackDamage);
       if (combatant.isDead()) {
         this.endGame();
+        return;
       }
     }
     this.events.emit(CombatEvents.ENDTURN);
