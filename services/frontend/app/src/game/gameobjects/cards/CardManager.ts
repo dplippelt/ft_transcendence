@@ -33,7 +33,7 @@ export default class CardManager {
     this.maxNumCardsInHand = 8;
 
     scene.input.setTopOnly(true);
-    EventBus.addListener(CombatEvent.draw, this.drawExtraCard, this);
+    EventBus.addListener(CombatEvent.draw, this.redrawCards, this);
     EventBus.addListener(CombatEvent.reset, this.resetSelection, this);
   }
 
@@ -51,6 +51,17 @@ export default class CardManager {
     }
   }
 
+  redrawCards() {
+    if (this.playerStatus.mana <= 0) {
+      return;
+    }
+
+    this.clearHand();
+    this.fillCardHand(this.maxNumCardsInHand);
+    this.playerStatus.mana--;
+    EventBus.emit(CombatEvent.updatePlayerMP, this.playerStatus.mana);
+  }
+
   drawCard() {
     if (!this.cardHand.isUnderHandLimit(this.maxNumCardsInHand)) {
       return false;
@@ -63,20 +74,20 @@ export default class CardManager {
     const card = this.cardDeck.dealCard()!;
     card.on(CardEvents.SELECTION, this.select, this);
 
-	this.cardHand.addCard(card);
+    this.cardHand.addCard(card);
     this.events.emit(CardActionEvents.DRAW, card);
     return true;
   }
 
-  drawExtraCard() {
-    if (this.playerStatus.mana <= 0) {
-      return;
-    }
-    if (this.drawCard()) {
-      this.playerStatus.mana--;
-      EventBus.emit(CombatEvent.updatePlayerMP, this.playerStatus.mana);
-    }
-  }
+  // drawExtraCard() {
+  //   if (this.playerStatus.mana <= 0) {
+  //     return;
+  //   }
+  //   if (this.drawCard()) {
+  //     this.playerStatus.mana--;
+  //     EventBus.emit(CombatEvent.updatePlayerMP, this.playerStatus.mana);
+  //   }
+  // }
 
   select(card: CardBase) {
     if (card.getIsFocused()) {
