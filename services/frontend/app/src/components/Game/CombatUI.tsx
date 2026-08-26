@@ -1,5 +1,5 @@
 import { EnemyHPBar, PlayerHPBar, PlayerMPBar } from "./Bar";
-import { AttackButton, DrawButton, ResetButton } from "./CombatButtons";
+import { AttackButton, DrawButton, /* ResetButton */ } from "./CombatButtons";
 import TurnTimer from "./TurnTimer";
 
 interface ICombatUI

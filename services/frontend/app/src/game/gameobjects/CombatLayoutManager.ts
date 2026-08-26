@@ -8,24 +8,46 @@ import CombatAnimation from "./CombatAnimation";
 import { CardActionEvents } from "./cards/CardManager";
 import type CardSlot from "./cards/CardSlot";
 
+// Must match the dimensions of the background image used in 'GameBackground.module.scss'
+const BG_WIDTH = 1774;
+const BG_HEIGHT = 887;
+
+interface Display {
+  width: number;
+  height: number;
+  centerX: number;
+  centerY: number;
+  scale: number;
+}
+
+interface Background {
+  scale: number;
+  bottomY: number;
+}
+
+interface Size {
+  width: number;
+  height: number;
+}
+
+interface SpriteSize {
+  card: Size;
+  player: Size;
+  enemy: Size;
+}
+
 interface CombatLayout {
   width: number;
   height: number;
-  cardSize: {
-    width: number;
-    height: number;
-  };
   player: {
     xFromCenter: number;
-    yFromCenter: number;
-    width: number;
-    height: number;
+    yFromBgBottom: number;
+    scale: number;
   };
   enemy: {
     xFromCenter: number;
-    yFromCenter: number;
-    width: number;
-    height: number;
+    yFromBgBottom: number;
+    scale: number;
   };
   cards: {
     hand: {
@@ -45,24 +67,33 @@ interface CombatLayout {
   };
 }
 
-const combatLayout: CombatLayout = {
-  width: 960,
-  height: 540,
-  cardSize: {
+const spriteSize: SpriteSize = {
+  card: {
     width: 64,
     height: 96,
   },
   player: {
-    xFromCenter: -220,
-    yFromCenter: 110,
     width: 79,
     height: 63,
   },
   enemy: {
-    xFromCenter: 220,
-    yFromCenter: 120,
     width: 37,
     height: 43,
+  },
+}
+
+const combatLayout: CombatLayout = {
+  width: 960,
+  height: 540,
+  player: {
+    xFromCenter: -220,
+    yFromBgBottom: -200,
+    scale: 1.8,
+  },
+  enemy: {
+    xFromCenter: 220 + 0.5 * spriteSize.enemy.width,
+    yFromBgBottom: -200,
+    scale: 1.8,
   },
   cards: {
     hand: {
@@ -81,14 +112,6 @@ const combatLayout: CombatLayout = {
     },
   },
 };
-
-interface Display {
-  width: number;
-  height: number;
-  centerX: number;
-  centerY: number;
-  scale: number;
-}
 
 export enum TransformInLayout {
   X = "LayoutX",
@@ -111,8 +134,10 @@ export default class CombatLayoutManager {
   readonly enemy: CombatEnemy;
   readonly events: Phaser.Events.EventEmitter;
   readonly anims: CombatAnimation;
+  readonly spriteSize: SpriteSize;
   readonly layout: CombatLayout;
   readonly display!: Display;
+  readonly background!: Background;
 
   constructor(combatManger: CombatManager) {
     this.combatManger = combatManger;
@@ -124,8 +149,10 @@ export default class CombatLayoutManager {
     this.events = new Phaser.Events.EventEmitter();
     this.onLayoutActions();
     this.anims = new CombatAnimation(this);
+    this.spriteSize = spriteSize;
     this.layout = combatLayout;
     this.display = { width: 0, height: 0, centerX: 0, centerY: 0, scale: 0 };
+    this.background = { scale: 0, bottomY: 0 };
     this.updateDisplay();
     this.updateLayout();
     this.scene.scale.on("resize", this.updateLayout, this);
@@ -153,19 +180,22 @@ export default class CombatLayoutManager {
     const scaleY = this.display.height / this.layout.height;
     this.display.scale = Math.min(scaleX, scaleY);
 
-    // Calculating the horizontal inset for the Combat UI
-    // to compensate for letterboxing around the background image
-    const bgAspectX = 2; // must match background image aspect ratio (currently 2:1)
-    const bgAspectY = 1;
-    const bgScaleX = this.display.width / bgAspectX;
-    const bgScaleY = this.display.height / bgAspectY;
+    // Calculating the horizontal and vertical inset to compensate for
+    // letterboxing around the background image with regard to the Combat UI
+    // and calculating background scale and bottom Y for player and enemey
+    // sprite positioning
+    const bgScaleX = this.display.width / BG_WIDTH;
+    const bgScaleY = this.display.height / BG_HEIGHT;
     const bgScale = Math.min(bgScaleX, bgScaleY);
-    const bgWidth = bgAspectX * bgScale;
-    const bgHeight = bgAspectY * bgScale;
+    const bgWidth = BG_WIDTH * bgScale;
+    const bgHeight = BG_HEIGHT * bgScale;
     const insetX = (this.display.width - bgWidth) / 2;
     const insetY = (this.display.height - bgHeight) / 2;
+
+    this.background.scale = bgScale;
+    this.background.bottomY = this.display.height - insetY;
+
     document.documentElement.style.setProperty("--combat-ui-inset-x", `${insetX}px`);
-    document.documentElement.style.setProperty("--combat-ui-prop-inset-y", `${insetY / this.display.height}`);
   }
 
   updateLayout(isResize: boolean = true) {
@@ -220,8 +250,8 @@ export default class CombatLayoutManager {
     // render an invisible button of the same size on top of it
     document.documentElement.style.setProperty("--deck-x", `${targetX}px`);
     document.documentElement.style.setProperty("--deck-y", `${targetY}px`);
-    document.documentElement.style.setProperty("--deck-width", `${this.layout.cardSize.width * display.scale}px`);
-    document.documentElement.style.setProperty("--deck-height", `${this.layout.cardSize.height * display.scale}px`);
+    document.documentElement.style.setProperty("--deck-width", `${this.spriteSize.card.width * display.scale}px`);
+    document.documentElement.style.setProperty("--deck-height", `${this.spriteSize.card.height * display.scale}px`);
   }
 
   updateCardHand(isResize: boolean = true) {
@@ -287,37 +317,30 @@ export default class CombatLayoutManager {
     }
   }
 
-  // Makes sure the player and enemy sprite stay on the floor
-  // of the background image
-  getCombatantOffsetY() {
-    const propInsetY = parseFloat(document.documentElement.style.getPropertyValue("--combat-ui-prop-inset-y"));
-    const offsetTargetY = propInsetY > 0 ? Math.min(10, propInsetY * 100) : 0;
-    console.log(offsetTargetY);
-    return offsetTargetY;
-  }
-
   updatePlayer() {
     const display = this.display;
+    const background = this.background;
     const playerLayout = this.layout.player;
     const targetX = display.centerX + playerLayout.xFromCenter * display.scale;
-    const targetY = display.centerY + playerLayout.yFromCenter * display.scale - this.getCombatantOffsetY();
+    const targetY = background.bottomY + playerLayout.yFromBgBottom * background.scale;
     this.player.setData({
       [TransformInLayout.X]: targetX,
       [TransformInLayout.Y]: targetY,
-      [TransformInLayout.SCALE]: this.display.scale,
+      [TransformInLayout.SCALE]: this.display.scale * playerLayout.scale,
     });
     this.events.emit(LayoutEvents.SET_COMBATANT_POS, this.player);
   }
 
   updateEnemy() {
     const display = this.display;
+    const background = this.background;
     const enemyLayout = this.layout.enemy;
     const targetX = display.centerX + enemyLayout.xFromCenter * display.scale;
-    const targetY = display.centerY + enemyLayout.yFromCenter * display.scale - this.getCombatantOffsetY();
+    const targetY = background.bottomY + enemyLayout.yFromBgBottom * background.scale;
     this.enemy.setData({
       [TransformInLayout.X]: targetX,
       [TransformInLayout.Y]: targetY,
-      [TransformInLayout.SCALE]: this.display.scale,
+      [TransformInLayout.SCALE]: this.display.scale * enemyLayout.scale,
     });
     this.events.emit(LayoutEvents.SET_COMBATANT_POS, this.enemy);
   }

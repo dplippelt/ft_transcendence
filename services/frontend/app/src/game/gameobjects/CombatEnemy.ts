@@ -41,6 +41,7 @@ export default class CombatEnemy extends Phaser.GameObjects.Sprite {
     this.hitPoint = enemyData.hitPoint;
     this.scene.add.existing(this);
     this.setFlipX(true);
+    this.setOrigin(0.5, 1);
   }
 
   takeDamage(damage: number) {
