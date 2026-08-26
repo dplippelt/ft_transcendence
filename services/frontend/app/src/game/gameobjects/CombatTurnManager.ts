@@ -43,6 +43,7 @@ export default class CombatTurnManager {
   }
 
   destroy() {
+    this.cleanupTimers();
     this.scene.game.events.off(Core.Events.BLUR, this.onBlur, this);
     this.scene.game.events.off(Core.Events.HIDDEN, this.onBlur, this);
     this.scene.game.events.off(Core.Events.FOCUS, this.onFocus, this);
@@ -50,29 +51,27 @@ export default class CombatTurnManager {
     EventBus.removeListener(CombatEvent.getTurnTimerState, this.sendElapsedTime, this)
   }
 
+  cleanupTimers() {
+    if (this.playerTimer) {
+      this.playerTimer.remove();
+    }
+    if (this.enemyTimer) {
+      this.enemyTimer.remove();
+    }
+  }
+
   switchTurn() {
     this.isPlayerTurn = !this.isPlayerTurn;
 
     if (this.isPlayerTurn) {
       this.scene.input.enabled = true;
-
-      if (this.playerTimer) {
-        this.playerTimer.remove();
-      }
-      if (this.enemyTimer) {
-        this.enemyTimer.remove();
-      }
-
+      this.cleanupTimers();
       this.playerTimer = this.playTurnFor(this.playerDelayMs);
       this.turnEvents.emit(TurnEvents.STARTPLAYER);
       EventBus.emit(CombatEvent.initTurnTimer, this.playerDelayMs);
     } else {
-      this.pausePlayerTurn();
-
-      if (this.enemyTimer) {
-        this.enemyTimer.remove();
-      }
-
+      this.scene.input.enabled = false;
+      this.cleanupTimers();
       this.enemyTimer = this.playTurnFor(this.enemyDelayMs);
       this.turnEvents.emit(TurnEvents.STARTENEMY);
       EventBus.emit(CombatEvent.turnEnded);

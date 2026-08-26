@@ -14,7 +14,6 @@ export default function TurnTimer()
 	useEffect(() =>
 	{
 		function initTurnTime( playerTurnTime: number, elapsedTime: number = 0 ) {
-			console.log("initTurnTime received:", { playerTurnTime, elapsedTime });
 			setTurnTime(playerTurnTime);
 			setElapsedTime(elapsedTime);
 			setTurn(prev => prev + 1)
