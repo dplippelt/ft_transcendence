@@ -9,7 +9,6 @@ import GameUI from "../../components/Game/GameUI";
 import CombatUI from "../../components/Game/CombatUI";
 import GameBackground from "../../components/Game/GameBackground";
 import GameOver from "../../components/Game/GameOver";
-import type CombatManager from "../../game/gameobjects/CombatManager";
 import type CombatTurnManager from "../../game/gameobjects/CombatTurnManager";
 
 export interface IRefPhaserGame {
