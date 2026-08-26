@@ -1,7 +1,7 @@
-import Phaser, { type Scene } from "phaser";
+import Phaser, { Core, type Scene } from "phaser";
 import type CombatManager from "./CombatManager";
 import { EventBus } from "../EventBus";
-import { CombatEvent } from "../../utils/utils";
+import { CombatEvent, GameEvent } from "../../utils/utils";
 
 export enum TurnEvents {
   SWITCH = "switch",
@@ -29,12 +29,25 @@ export default class CombatTurnManager {
     this.clock = this.scene.time;
     this.turnEvents = new Phaser.Events.EventEmitter();
     this.turnEvents.on(TurnEvents.SWITCH, this.switchTurn, this);
-    this.playerDelayMs = 30000;
+    this.playerDelayMs = 10000;
     this.enemyDelayMs = 5000;
     this.isPlayerTurn = true;
     this.playerTimer = this.playTurnFor(this.playerDelayMs);
     EventBus.emit(CombatEvent.initTurnTimer, this.playerDelayMs);
     this.enemyTimer = null;
+    this.scene.game.events.on(Core.Events.BLUR, this.onBlur, this);
+    this.scene.game.events.on(Core.Events.HIDDEN, this.onBlur, this);
+    this.scene.game.events.on(Core.Events.FOCUS, this.onFocus, this);
+    this.scene.game.events.on(Core.Events.VISIBLE, this.onFocus, this);
+    EventBus.addListener(CombatEvent.getTurnTimerState, this.sendElapsedTime, this)
+  }
+
+  destroy() {
+    this.scene.game.events.off(Core.Events.BLUR, this.onBlur, this);
+    this.scene.game.events.off(Core.Events.HIDDEN, this.onBlur, this);
+    this.scene.game.events.off(Core.Events.FOCUS, this.onFocus, this);
+    this.scene.game.events.off(Core.Events.VISIBLE, this.onFocus, this);
+    EventBus.removeListener(CombatEvent.getTurnTimerState, this.sendElapsedTime, this)
   }
 
   switchTurn() {
@@ -82,5 +95,27 @@ export default class CombatTurnManager {
     if (this.playerTimer) {
       this.playerTimer.paused = true;
     }
+  }
+
+  unpausePlayerTurn() {
+    this.scene.input.enabled = true;
+    if (this.playerTimer) {
+      this.playerTimer.paused = false;
+    }
+  }
+
+  sendElapsedTime() {
+    const timer = this.isPlayerTurn ? this.playerTimer : null;
+    if (!timer)
+      return null;
+    EventBus.emit(CombatEvent.initTurnTimer, this.playerDelayMs, timer.getElapsed());
+  }
+
+  onBlur() {
+    EventBus.emit(GameEvent.pause, this, true);
+  }
+
+  onFocus() {
+    EventBus.emit(GameEvent.pause, this, false);
   }
 }

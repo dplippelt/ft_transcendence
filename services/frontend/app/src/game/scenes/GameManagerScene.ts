@@ -163,10 +163,14 @@ export class GameManagerScene extends Scene {
 
   private togglePause() {
     for ( const scene of this.getActiveScenes() ) {
-      if (this.scene.isPaused(scene))
+      if (this.scene.isPaused(scene)) {
         this.scene.resume(scene);
-      else
+        EventBus.emit(CombatEvent.pauseTimer, false);
+      }
+      else {
         this.scene.pause(scene);
+        EventBus.emit(CombatEvent.pauseTimer, true);
+      }
     }
   }
 

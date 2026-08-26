@@ -19,6 +19,8 @@
 	background: conic-gradient($muddy-gold-light var(--percentage), transparent var(--percentage));
 	pointer-events: none;
 	animation: countdown var(--turn-duration) linear forwards;
+	animation-delay: var(--start-delay, 0ms);
+	animation-play-state: var(--timer-play-state, running);
 
 	@media ( max-height: 520px )
 	{

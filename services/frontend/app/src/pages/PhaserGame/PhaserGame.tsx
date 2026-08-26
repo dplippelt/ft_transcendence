@@ -9,6 +9,8 @@ import GameUI from "../../components/Game/GameUI";
 import CombatUI from "../../components/Game/CombatUI";
 import GameBackground from "../../components/Game/GameBackground";
 import GameOver from "../../components/Game/GameOver";
+import type CombatManager from "../../game/gameobjects/CombatManager";
+import type CombatTurnManager from "../../game/gameobjects/CombatTurnManager";
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -75,6 +77,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     EventBus.removeListener(GameEvent.gameMenu);
     EventBus.removeListener(GameEvent.inCombat);
     EventBus.removeListener(GameEvent.gameState);
+    EventBus.removeListener(GameEvent.pause);
     EventBus.removeListener(CombatEvent.initPlayerHP);
     EventBus.removeListener(CombatEvent.updatePlayerHP);
     EventBus.removeListener(CombatEvent.initEnemyHP);
@@ -86,6 +89,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     EventBus.removeListener(CombatEvent.draw);
     EventBus.removeListener(CombatEvent.reset);
     EventBus.removeListener(CombatEvent.turnEnded);
+    EventBus.removeListener(CombatEvent.pauseTimer);
     setGameMenuVis(false);
     setInCombat(false);
     setGameState(GameState.default);
@@ -130,14 +134,28 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     function updateGameState( state: GameState ) { setGameState(state); }
     EventBus.addListener(GameEvent.gameState, updateGameState);
 
+    function pauseTimer( combatTurnManager: CombatTurnManager, doPause: boolean ) {
+      if ( gameMenuVis )
+        return;
+      if ( doPause ) {
+        combatTurnManager.pausePlayerTurn();
+        EventBus.emit(CombatEvent.pauseTimer, true);
+        return;
+      }
+      combatTurnManager.unpausePlayerTurn();
+      EventBus.emit(CombatEvent.pauseTimer, false);
+    }
+    EventBus.addListener(GameEvent.pause, pauseTimer);
+
     function cleanup() {
       EventBus.removeListener(GameEvent.gameMenu, toggleGameMenu);
       EventBus.removeListener(GameEvent.inCombat, updateInCombat);
       EventBus.removeListener(GameEvent.gameState, updateGameState);
+      EventBus.removeListener(GameEvent.pause, pauseTimer);
     }
 
     return () => cleanup();
-  }, [location.pathname, isGameURL, gameState])
+  }, [location.pathname, isGameURL, gameState, gameMenuVis])
 
   if ( gameState !== GameState.default )
     return <GameOver loggedIn={loggedIn} gameResult={gameState} cleanupGame={cleanupGame} />;

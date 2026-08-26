@@ -87,6 +87,7 @@ export enum GameEvent
 	chatFocus = "chat-focused",
 	gameState = "game-state",
 	inCombat = "in-combat",
+	pause = "pause",
 }
 
 export enum CombatEvent
@@ -98,10 +99,12 @@ export enum CombatEvent
 	initPlayerMP = "init-player-mp",
 	updatePlayerMP = "update-player-mp",
 	initTurnTimer = "init-turn-timer",
+	pauseTimer = "pause-timer",
 	attack = "attack",
 	draw = "draw",
 	reset = "reset",
 	turnEnded = "turn-ended",
+	getTurnTimerState = "turn-timer-state",
 }
 
 export enum GameState

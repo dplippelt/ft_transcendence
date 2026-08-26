@@ -123,11 +123,13 @@ export default class CombatManager {
 
   endCombat() {
     this.turnManager.clock.removeAllEvents();
+    this.turnManager.destroy();
     this.events.emit(CombatEvents.ENDCOMBAT);
   }
 
   endGame() {
     this.turnManager.clock.removeAllEvents();
+    this.turnManager.destroy();
     this.events.emit(CombatEvents.ENDGAME);
   }
 }
