@@ -79,6 +79,9 @@ def deactivate_user(db: Session, user: User) -> None:
     user.is_active = False
     user.avatar_url = None
 
+    user.two_factor_enabled = False
+    user.two_factor_secret = None
+
     if user.username is not None:
         user.username = _renamed_for_deactivation(
             user.username, user.id, User.__table__.c.username.type.length

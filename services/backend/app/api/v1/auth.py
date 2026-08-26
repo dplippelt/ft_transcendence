@@ -779,4 +779,41 @@ def two_factor_login(data: TwoFactorLogin, db: DbSession, request: Request,):
 
     return create_token_for_user(user)
 
-# @router.delete("/2fa", response_model=UserResponse)
+@router.delete("/2fa", response_model=UserResponse)
+def disable_two_factor(data: TwoFactorCode, db: Dbsession, current_user: CurrentUser, request: Request,):
+    if not current_user.two_factor_enabled:
+        raise bad_request(
+            "Two-factor authentication is not enabled",
+            code=ErrorCode.TWO_FACTOR_NOT_ENABLED,
+        )
+
+    secret = current_user.two_factor_secret
+
+    if secret is None:
+        raise bad_request(
+            "Two-factor authentication setup is invalid",
+            code=ErrorCode.TWO_FACTOR_SETUP_REQUIRED,
+        )
+
+    _check_two_factor_rate_limit(request, current_user.id)
+
+    if not verify_two_factor_code(secret, data.code):
+        raise unauthorized(
+            "Invalid two-factor authentication code",
+            code=ErrorCode.INVALID_TWO_FACTOR_CODE,
+        )
+
+    current_user.two_factor_enabled = False
+    current_user.two_factor_secret = None
+
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+        raise bad_request(
+            "Two-factor authentication could not be disabled",
+            code=ErrorCode.TWO_FACTOR_FAILED,
+        )
+
+    db.refresh(current_user)
+    return current_user
