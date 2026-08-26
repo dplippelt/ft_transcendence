@@ -142,6 +142,15 @@ class TwoFactorSetup(BaseModel):
 
         return self
 
+
+class TwoFactorRecoveryLogin(BaseModel):
+    challenge_token: str
+    recovery_code: str = Field(
+        min_length=1,
+        max_length=64,
+    )
+
+
 class GoogleLogin(BaseModel):
     credential: str
 
@@ -150,3 +159,7 @@ class PasswordUpdate(BaseModel):
     current_password: str | None = None
     new_password: str = Field(min_length=8)
 
+
+class TwoFactorConfirmResponse(BaseModel):
+    user: UserResponse
+    recovery_codes: list[str]

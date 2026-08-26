@@ -5,6 +5,9 @@ from app.db.utils import commit_or_bad_request
 from app.models.auth_account import AuthAccount
 from app.models.user import User
 from app.schemas.user import UserUpdate
+from app.models.two_factor_recovery_code import (
+    TwoFactorRecoveryCode,
+)
 
 
 def get_active_user_by_id(db: Session, user_id: int) -> User | None:
@@ -16,7 +19,7 @@ def get_active_user_by_id(db: Session, user_id: int) -> User | None:
         )
         .first()
     )
-
+    
 
 def get_active_user_by_username(db: Session, username: str) -> User | None:
     return (
@@ -98,6 +101,11 @@ def deactivate_user(db: Session, user: User) -> None:
             auth_account.email = _renamed_for_deactivation(
                 auth_account.email, user.id, AuthAccount.__table__.c.email.type.length
             )
+
+    # Delete two-factor recovery codes
+    db.query(TwoFactorRecoveryCode).filter(
+        TwoFactorRecoveryCode.user_id == user.id
+    ).delete(synchronize_session=False)
 
     commit_or_bad_request(db, "Account could not be deactivated",)
 

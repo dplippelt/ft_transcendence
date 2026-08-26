@@ -9,11 +9,6 @@ from fastapi.security import OAuth2PasswordRequestForm
 from google.auth import exceptions as google_auth_exceptions
 from google.auth.transport import requests as google_requests
 from google.oauth2 import id_token
-from app.services.two_factor_service import (
-    generate_provisioning_uri,
-    generate_two_factor_secret,
-    verify_two_factor_code,
-)
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -39,7 +34,9 @@ from app.schemas.user import (
     Token,
     TwoFactorChallenge,
     TwoFactorCode,
+    TwoFactorConfirmResponse,
     TwoFactorLogin,
+    TwoFactorRecoveryLogin,
     TwoFactorSetup,
     TwoFactorSetupResponse,
     UserLogin,
@@ -47,6 +44,16 @@ from app.schemas.user import (
     UserResponse,
 )
 from app.services.user_service import ensure_username_is_available
+from app.models.two_factor_recovery_code import (
+    TwoFactorRecoveryCode,
+)
+from app.services.two_factor_service import (
+    generate_provisioning_uri,
+    generate_recovery_codes,
+    generate_two_factor_secret,
+    hash_recovery_code,
+    verify_two_factor_code,
+)
 
 
 router = APIRouter()
@@ -746,7 +753,7 @@ def setup_two_factor(data: TwoFactorSetup, db: DbSession, current_user: CurrentU
     )
 
 
-@router.post("/2fa/confirm", response_model=UserResponse)
+@router.post("/2fa/confirm", response_model=TwoFactorConfirmResponse)
 def confirm_two_factor(data: TwoFactorCode, db: DbSession, current_user: CurrentUser, request: Request,):
     _check_two_factor_rate_limit(request, current_user.id)
     secret = current_user.two_factor_secret
@@ -771,6 +778,18 @@ def confirm_two_factor(data: TwoFactorCode, db: DbSession, current_user: Current
 
     current_user.two_factor_enabled = True
 
+    recovery_codes = generate_recovery_codes()
+
+    for recovery_code in recovery_codes:
+        db.add(
+            TwoFactorRecoveryCode(
+                user_id=current_user.id,
+                code_hash=hash_recovery_code(
+                    recovery_code,
+                ),
+            )
+        )
+
     try:
         db.commit()
     except SQLAlchemyError:
@@ -779,8 +798,13 @@ def confirm_two_factor(data: TwoFactorCode, db: DbSession, current_user: Current
             "Two-factor authentication confirmation failed",
             code=ErrorCode.TWO_FACTOR_FAILED,
         )
+
     db.refresh(current_user)
-    return current_user
+
+    return TwoFactorConfirmResponse(
+        user=current_user,
+        recovery_codes=recovery_codes,
+    )
 
 
 @router.post("/2fa/login", response_model=Token)
@@ -851,6 +875,12 @@ def disable_two_factor(data: TwoFactorCode, db: DbSession, current_user: Current
     current_user.two_factor_enabled = False
     current_user.two_factor_secret = None
 
+    db.query(TwoFactorRecoveryCode).filter(
+        TwoFactorRecoveryCode.user_id == current_user.id,
+    ).delete(
+        synchronize_session=False,
+    )
+
     try:
         db.commit()
     except SQLAlchemyError:
@@ -862,3 +892,60 @@ def disable_two_factor(data: TwoFactorCode, db: DbSession, current_user: Current
 
     db.refresh(current_user)
     return current_user
+
+
+@router.post("/2fa/recovery", response_model=Token)
+def two_factor_recovery(data: TwoFactorRecoveryLogin, db: DbSession, request: Request,):
+    user_id = decode_two_factor_challenge(data.challenge_token,)
+
+    if user_id is None:
+        raise unauthorized(
+            "Invalid or expired two-factor authentication challenge",
+            code=ErrorCode.TWO_FACTOR_CHALLENGE_INVALID,
+        )
+
+    _check_two_factor_rate_limit(request, user_id)
+    user = db.query(User).filter(User.id == user_id).first()
+
+    if (
+        user is None
+        or not user.is_active
+        or not user.two_factor_enabled
+    ):
+        raise unauthorized(
+            "Invalid or expired two-factor authentication challenge",
+            code=ErrorCode.TWO_FACTOR_CHALLENGE_INVALID,
+        )
+
+    code_hash = hash_recovery_code(data.recovery_code,)
+
+    deleted = (
+        db.query(TwoFactorRecoveryCode)
+        .filter(
+            TwoFactorRecoveryCode.user_id == user.id,
+            TwoFactorRecoveryCode.code_hash == code_hash,
+        )
+        .delete(
+            synchronize_session=False,
+        )
+    )
+
+    if deleted != 1:
+        db.rollback()
+
+        raise unauthorized(
+            "Invalid two-factor recovery code",
+            code=ErrorCode.INVALID_TWO_FACTOR_RECOVERY_CODE,
+        )
+
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+
+        raise bad_request(
+            "Recovery code could not be consumed",
+            code=ErrorCode.TWO_FACTOR_FAILED,
+        )
+
+    return create_token_for_user(user)
