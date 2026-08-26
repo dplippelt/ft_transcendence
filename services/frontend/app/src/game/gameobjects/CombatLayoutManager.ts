@@ -7,7 +7,6 @@ import type CombatEnemy from "./CombatEnemy";
 import CombatAnimation from "./CombatAnimation";
 import { CardActionEvents } from "./cards/CardManager";
 import type CardSlot from "./cards/CardSlot";
-import Button from "./utils/Button";
 
 interface CombatLayout {
   width: number;
@@ -134,7 +133,6 @@ export enum LayoutEvents {
   SET_CARD_POS = "setCardPos",
   SET_CARD_TO_SLOT = "setSelectionSlotsPos",
   SET_COMBATANT_POS = "setCombatantPos",
-  SET_BUTTON_POS = "setButtonPos",
 }
 
 export default class CombatLayoutManager {
@@ -176,7 +174,6 @@ export default class CombatLayoutManager {
     this.events.on(LayoutEvents.SET_CARD_POS, this.setCardPosition, this);
     this.events.on(LayoutEvents.SET_CARD_TO_SLOT, this.setCardToSlot, this);
     this.events.on(LayoutEvents.SET_COMBATANT_POS, this.setCombatantPositions, this);
-    this.events.on(LayoutEvents.SET_BUTTON_POS, this.setButtonPosition, this);
   }
 
   updateDisplay() {
@@ -194,36 +191,11 @@ export default class CombatLayoutManager {
       this.updateDisplay();
     }
 
-    this.updateButtons();
     this.updateDeck(isResize);
     this.updateCardHand(isResize);
     this.updateSelectionSlots(isResize);
     this.updatePlayer();
     this.updateEnemy();
-  }
-
-  updateButtons() {
-    const layout = this.layout.button;
-    this.updateButton(this.combatManger.executeButton, layout.execute.xFromCenter, layout.execute.yFromBottom);
-    this.updateButton(this.cardManager.drawButton, layout.draw.xFromCenter, layout.draw.yFromBottom);
-    this.updateButton(
-      this.cardManager.selectionResetButton,
-      layout.resetSelection.xFromCenter,
-      layout.resetSelection.yFromBottom,
-    );
-  }
-
-  updateButton(button: Button, diffX: number, diffY: number) {
-    const display = this.display;
-    const targetX = display.centerX + diffX * display.scale;
-    const targetY = display.height + diffY * display.scale;
-    const scale = display.scale;
-    button.setData({
-      [TransformInLayout.X]: targetX,
-      [TransformInLayout.Y]: targetY,
-      [TransformInLayout.SCALE]: scale,
-    });
-    this.events.emit(LayoutEvents.SET_BUTTON_POS, button);
   }
 
   updateDeck(isResize: boolean = true) {
@@ -380,13 +352,5 @@ export default class CombatLayoutManager {
     const scale = combatant.getData(TransformInLayout.SCALE);
     combatant.setPosition(targetX, targetY);
     combatant.scale = scale;
-  }
-
-  setButtonPosition(button: Button) {
-    const x = button.getData(TransformInLayout.X);
-    const y = button.getData(TransformInLayout.Y);
-    const scale = button.getData(TransformInLayout.SCALE);
-    button.setPosition(x, y);
-    button.scale = scale;
   }
 }

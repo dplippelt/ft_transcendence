@@ -54,7 +54,7 @@ export default class CombatTurnManager {
 
       this.playerTimer = this.playTurnFor(this.playerDelayMs);
       this.turnEvents.emit(TurnEvents.STARTPLAYER);
-      EventBus.emit(CombatEvent.initTurnTimer, this.turnConfig.playerDelayMs);
+      EventBus.emit(CombatEvent.initTurnTimer, this.playerDelayMs);
     } else {
       this.pausePlayerTurn();
 
@@ -84,14 +84,5 @@ export default class CombatTurnManager {
     if (this.playerTimer) {
       this.playerTimer.paused = true;
     }
-  }
-
-  // TODO: for debugging/testing only - remove later
-  displayTimer() {
-    const output: string[] = [];
-    if (this.enemyTimer) {
-      output.push("Enemy time: " + this.enemyTimer.getRemaining().toString());
-    }
-    this.timerText.setText(output);
   }
 }

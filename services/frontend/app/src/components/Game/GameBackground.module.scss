@@ -16,7 +16,7 @@
 // 	@include background;
 // 	background-size: cover;
 // 	background-position: center;
-// 	background-image: url("../../assets/combat_bg_preview.png");
+// 	background-image: url("../../assets/combat_bg.png");
 // }
 
 .combatBackground
@@ -24,7 +24,7 @@
 	@include background;
 	background-size: contain;
 	background-position: center bottom;
-	background-image: url("../../assets/combat_bg_preview.png");
+	background-image: url("../../assets/combat_bg.png");
 	background-repeat: no-repeat;
 	background-color: black;
 }
