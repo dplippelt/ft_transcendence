@@ -184,6 +184,17 @@ export default class CombatLayoutManager {
     const scaleX = this.display.width / this.layout.width;
     const scaleY = this.display.height / this.layout.height;
     this.display.scale = Math.min(scaleX, scaleY);
+
+    // Calculating the horizontal inset for the Combat UI handled by react
+    // to compensate for letterboxing around the background image
+    const bgAspectX = 2; // must match background image aspect ratio (currently 2:1)
+    const bgAspectY = 1;
+    const bgScaleX = this.display.width / bgAspectX;
+    const bgScaleY = this.display.height / bgAspectY;
+    const bgScale = Math.min(bgScaleX, bgScaleY);
+    const bgWidth = bgAspectX * bgScale;
+    const insetX = (this.display.width - bgWidth) / 2;
+    document.documentElement.style.setProperty("--combat-ui-inset-x", `${insetX}px`);
   }
 
   updateLayout(isResize: boolean = true) {

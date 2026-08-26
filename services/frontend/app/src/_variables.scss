@@ -75,3 +75,13 @@ $bar-color-mp-middle: $blue-dark;
 $bar-color-mp-sides: $blue-darker;
 $bar-color-mp: linear-gradient(to bottom, $bar-color-mp-sides, $bar-color-mp-middle, $bar-color-mp-middle, $bar-color-mp-sides);
 $bar-font: 'Lato', sans-serif;
+
+$combat-button-width: 5rem;
+$combat-button-height: 3rem;
+$combat-button-font-size: 1rem;
+
+$turn-timer-width: 80px;
+$turn-timer-height: 80px;
+
+$combat-ui-down-scale-a: 0.7;
+$combat-ui-down-scale-b: 0.5;

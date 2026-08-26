@@ -22,7 +22,6 @@ export default class CombatTurnManager {
   // Currently, CombatManager normally triggers the switch before the enemy timer runs out,
   // but the timer is kept to minimize the dependency between the two components.
   private enemyTimer: Phaser.Time.TimerEvent | null;
-  readonly timerText: Phaser.GameObjects.Text;
 
   constructor(combatManager: CombatManager) {
     this.combatManager = combatManager;
@@ -30,13 +29,12 @@ export default class CombatTurnManager {
     this.clock = this.scene.time;
     this.turnEvents = new Phaser.Events.EventEmitter();
     this.turnEvents.on(TurnEvents.SWITCH, this.switchTurn, this);
-    this.playerDelayMs = 10000;
+    this.playerDelayMs = 30000;
     this.enemyDelayMs = 5000;
     this.isPlayerTurn = true;
     this.playerTimer = this.playTurnFor(this.playerDelayMs);
     EventBus.emit(CombatEvent.initTurnTimer, this.playerDelayMs);
     this.enemyTimer = null;
-    this.timerText = this.scene.add.text(100, 200, "timer");
   }
 
   switchTurn() {
