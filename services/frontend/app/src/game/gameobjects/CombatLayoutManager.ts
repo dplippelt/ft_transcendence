@@ -27,22 +27,6 @@ interface CombatLayout {
     width: number;
     height: number;
   };
-  button: {
-    width: number;
-    height: number;
-    execute: {
-      xFromCenter: number;
-      yFromBottom: number;
-    };
-    resetSelection: {
-      xFromCenter: number;
-      yFromBottom: number;
-    };
-    draw: {
-      xFromCenter: number;
-      yFromBottom: number;
-    };
-  };
   cards: {
     hand: {
       width: number;
@@ -55,8 +39,8 @@ interface CombatLayout {
       yFromTop: number;
     };
     deck: {
-      xFromCenter: number;
-      yFromBottom: number;
+      xFromLeftPerc: number;
+      yFromTopPerc: number;
     };
   };
 }
@@ -70,31 +54,15 @@ const combatLayout: CombatLayout = {
   },
   player: {
     xFromCenter: -220,
-    yFromCenter: 100,
+    yFromCenter: 110,
     width: 79,
     height: 63,
   },
   enemy: {
     xFromCenter: 220,
-    yFromCenter: 100,
+    yFromCenter: 120,
     width: 37,
     height: 43,
-  },
-  button: {
-    width: 100,
-    height: 50,
-    execute: {
-      xFromCenter: 300,
-      yFromBottom: -150,
-    },
-    resetSelection: {
-      xFromCenter: -400,
-      yFromBottom: -400,
-    },
-    draw: {
-      xFromCenter: -400,
-      yFromBottom: -300,
-    },
   },
   cards: {
     hand: {
@@ -108,8 +76,8 @@ const combatLayout: CombatLayout = {
       yFromTop: 100,
     },
     deck: {
-      xFromCenter: -400,
-      yFromBottom: -150,
+      xFromLeftPerc: 9,
+      yFromTopPerc: 69,
     },
   },
 };
@@ -185,7 +153,7 @@ export default class CombatLayoutManager {
     const scaleY = this.display.height / this.layout.height;
     this.display.scale = Math.min(scaleX, scaleY);
 
-    // Calculating the horizontal inset for the Combat UI handled by react
+    // Calculating the horizontal inset for the Combat UI
     // to compensate for letterboxing around the background image
     const bgAspectX = 2; // must match background image aspect ratio (currently 2:1)
     const bgAspectY = 1;
@@ -193,8 +161,11 @@ export default class CombatLayoutManager {
     const bgScaleY = this.display.height / bgAspectY;
     const bgScale = Math.min(bgScaleX, bgScaleY);
     const bgWidth = bgAspectX * bgScale;
+    const bgHeight = bgAspectY * bgScale;
     const insetX = (this.display.width - bgWidth) / 2;
+    const insetY = (this.display.height - bgHeight) / 2;
     document.documentElement.style.setProperty("--combat-ui-inset-x", `${insetX}px`);
+    document.documentElement.style.setProperty("--combat-ui-prop-inset-y", `${insetY / this.display.height}`);
   }
 
   updateLayout(isResize: boolean = true) {
@@ -211,10 +182,11 @@ export default class CombatLayoutManager {
 
   updateDeck(isResize: boolean = true) {
     const display = this.display;
+    const insetX = parseFloat(document.documentElement.style.getPropertyValue("--combat-ui-inset-x"));
     const deck = this.cardManager.cardDeck.getDeck();
     const deckLayout = this.layout.cards.deck;
-    const targetX = display.centerX + deckLayout.xFromCenter * display.scale;
-    const targetY = display.height + deckLayout.yFromBottom * display.scale;
+    const targetX = (deckLayout.xFromLeftPerc / 100) * display.width + insetX;
+    const targetY = (deckLayout.yFromTopPerc / 100) * display.height;
     const angle = 0;
 
     deck.forEach((card: CardBase) => {
@@ -243,6 +215,13 @@ export default class CombatLayoutManager {
     } else {
       this.events.emit(LayoutEvents.SET_CARD_POS, cover);
     }
+
+    // Setting deck position and size as properties so React can
+    // render an invisible button of the same size on top of it
+    document.documentElement.style.setProperty("--deck-x", `${targetX}px`);
+    document.documentElement.style.setProperty("--deck-y", `${targetY}px`);
+    document.documentElement.style.setProperty("--deck-width", `${this.layout.cardSize.width * display.scale}px`);
+    document.documentElement.style.setProperty("--deck-height", `${this.layout.cardSize.height * display.scale}px`);
   }
 
   updateCardHand(isResize: boolean = true) {
@@ -308,11 +287,20 @@ export default class CombatLayoutManager {
     }
   }
 
+  // Makes sure the player and enemy sprite stay on the floor
+  // of the background image
+  getCombatantOffsetY() {
+    const propInsetY = parseFloat(document.documentElement.style.getPropertyValue("--combat-ui-prop-inset-y"));
+    const offsetTargetY = propInsetY > 0 ? Math.min(10, propInsetY * 100) : 0;
+    console.log(offsetTargetY);
+    return offsetTargetY;
+  }
+
   updatePlayer() {
     const display = this.display;
     const playerLayout = this.layout.player;
     const targetX = display.centerX + playerLayout.xFromCenter * display.scale;
-    const targetY = display.centerY + playerLayout.yFromCenter * display.scale;
+    const targetY = display.centerY + playerLayout.yFromCenter * display.scale - this.getCombatantOffsetY();
     this.player.setData({
       [TransformInLayout.X]: targetX,
       [TransformInLayout.Y]: targetY,
@@ -325,7 +313,7 @@ export default class CombatLayoutManager {
     const display = this.display;
     const enemyLayout = this.layout.enemy;
     const targetX = display.centerX + enemyLayout.xFromCenter * display.scale;
-    const targetY = display.centerY + enemyLayout.yFromCenter * display.scale;
+    const targetY = display.centerY + enemyLayout.yFromCenter * display.scale - this.getCombatantOffsetY();
     this.enemy.setData({
       [TransformInLayout.X]: targetX,
       [TransformInLayout.Y]: targetY,

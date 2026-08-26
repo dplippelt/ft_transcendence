@@ -46,8 +46,19 @@
 
 .drawButton
 {
-	bottom: 30%;
-	left: calc(var(--combat-ui-inset-x, 0px) + 1rem);
+	top: var(--deck-y);
+	left: var(--deck-x);
+	width: var(--deck-width);
+	height: var(--deck-height);
+	transform: translateX(-50%) translateY(-50%);
+	background: none;
+	border: none;
+
+	&:hover
+	{
+		background: none;
+		border: none;
+	}
 }
 
 .resetButton

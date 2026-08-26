@@ -22,7 +22,8 @@ export function AttackButton()
 
 export function DrawButton()
 {
-	return <CombatButton label="Draw" extraStyling={styles.drawButton} onClick={() => EventBus.emit(CombatEvent.draw)} />
+	// TODO: remove console.log
+	return <CombatButton label="" extraStyling={styles.drawButton} onClick={() => { EventBus.emit(CombatEvent.draw); console.log("DECK CLICKED"); }} />
 }
 
 export function ResetButton()

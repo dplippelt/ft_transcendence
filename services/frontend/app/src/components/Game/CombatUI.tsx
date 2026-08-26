@@ -17,7 +17,7 @@ export default function CombatUI( { inCombat } : ICombatUI )
 			<PlayerHPBar />
 			<PlayerMPBar />
 			<EnemyHPBar />
-			<ResetButton />
+			{/* <ResetButton /> */}
 			<DrawButton />
 			<AttackButton />
 			<TurnTimer />
