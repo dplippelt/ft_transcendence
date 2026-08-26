@@ -14,7 +14,7 @@ def _utc_now() -> datetime:
 _CLEANUP_INTERVAL = 1000
 
 
-class SlidingWindowLimiter:
+class FixedWindowLimiter:
     # Fixed-window counter, not a true sliding window: each key just tracks
     # (count, window_start), and the window resets the moment it's checked
     # after expiring. The two callers this was built for (login/
