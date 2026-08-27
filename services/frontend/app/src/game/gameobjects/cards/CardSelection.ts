@@ -5,7 +5,7 @@ import { type StyledBoxConfig } from "../utils/StyledBox";
 
 export default class CardSelection {
   private readonly cardSlotStyleConfig!: StyledBoxConfig;
-  private readonly slots!: Phaser.GameObjects.Container;
+  private slots!: Phaser.GameObjects.Container;
   private readonly numSlots: number;
 
   constructor(scene: Scene) {
@@ -44,6 +44,18 @@ export default class CardSelection {
 
       slot.unsetCard();
 
+      // Shift cards left to fill the empty slot in the array
+      for (let j = i + 1; j < this.numSlots; j++) {
+        const currentSlot = slots[j - 1];
+        const nextSlot = slots[j];
+
+        if (nextSlot.isCardSet()) {
+          const nextCard = nextSlot.getCard()!;
+          nextSlot.unsetCard();
+          currentSlot.setCard(nextCard);
+        }
+      }
+
       return true;
     }
 
@@ -67,14 +79,29 @@ export default class CardSelection {
     return selectedCards;
   }
 
+  // NOTE to Takato: I had to change the unsetAllCards() approach because
+  // I implemented a feature in unsetCardFromSlot() so that the cards in
+  // the slots shift left when you remove/unselect a card from the selection
+  // slots (so that when you unselect a card and then add a new one, the new
+  // card is always added to the end of the selection slots).
+  // The old unsetAllCards() was iterating over the slots and unselecting
+  // them inside the loop (which calls unsetCardFromSlot() through the emit()),
+  // which then would shift the cards in the slots array you're currently
+  // looping over (resulting in skipping a card in your loop).
+  // The new approach first gets an array of selected cards (independent of the
+  // slots array) and loops over that array to unselect those cards specifically.
   unsetAllCards() {
     const slots = this.slots.getAll() as CardSlot[];
+    const selectedCards: CardBase[] = [];
 
     for (const slot of slots) {
       const card = slot.getCard();
-      if (card) {
-        card.emit("pointerdown");
-      }
+      if ( card !== null )
+        selectedCards.push(card);
+    }
+
+    for (const card of selectedCards) {
+      card.emit("pointerdown");
     }
   }
 
