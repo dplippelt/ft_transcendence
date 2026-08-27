@@ -143,7 +143,7 @@ export class GameManagerScene extends Scene {
     EventBus.emit(GameEvent.inCombat, false);
     EventBus.removeListener(CombatEvent.attack);
     EventBus.removeListener(CombatEvent.draw);
-    EventBus.removeListener(CombatEvent.reset);
+    // EventBus.removeListener(CombatEvent.reset);
   }
 
   private updateGlobalCapture() {

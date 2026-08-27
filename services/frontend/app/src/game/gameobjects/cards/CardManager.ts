@@ -34,7 +34,7 @@ export default class CardManager {
 
     scene.input.setTopOnly(true);
     EventBus.addListener(CombatEvent.draw, this.redrawCards, this);
-    EventBus.addListener(CombatEvent.reset, this.resetSelection, this);
+    // EventBus.addListener(CombatEvent.reset, this.resetSelection, this);
   }
 
   resetSelection() {

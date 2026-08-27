@@ -253,6 +253,11 @@ export default class CombatLayoutManager {
       this.events.emit(LayoutEvents.SET_CARD_POS, cover);
     }
 
+    // Making cards in deck and cover card invisible in favor of
+    // a new deck image used for the React button
+    deck.forEach((card) => card.setVisible(false));
+    cover.setVisible(false);
+
     // Setting deck position and size as properties so React can
     // render an invisible button of the same size on top of it
     document.documentElement.style.setProperty("--deck-x", `${targetX}px`);
@@ -263,6 +268,7 @@ export default class CombatLayoutManager {
 
   updateCardHand(isResize: boolean = true) {
     const handCards = this.cardManager.cardHand.getHandCards().getAll() as CardBase[];
+    handCards.forEach((card) => card.setVisible(true)); // need to be made visible again as they were made invisible in the deck
     const totalCards = handCards.length;
     if (!totalCards) {
       return;
@@ -297,6 +303,8 @@ export default class CombatLayoutManager {
     });
   }
 
+  // TODO: when adding cards to selection area always add to the end.
+  // TODO: related: probably need to move cards to the left in the array to fill up an empty slot when a card is removed
   updateSelectionSlots(isResize: boolean = true) {
     const selectionSlots = this.cardManager.cardSelection.getSelectionSlots();
     const occupiedSlots = selectionSlots.filter((slot) => slot.isCardSet());

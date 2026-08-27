@@ -3,72 +3,53 @@
 .combatButton
 {
 	position: absolute;
-	width: $combat-button-width;
-	height: $combat-button-height;
-	font-size: $combat-button-font-size;
-	background-color: $button-v1-bg-color;
-	padding: 0.4rem;
-	padding-top: 0.45rem;
-	text-align: center;
-
-	@media ( max-height: 480px )
-	{
-		width: $combat-ui-down-scale-a * $combat-button-width;
-		height: $combat-ui-down-scale-a * $combat-button-height;
-		font-size: $combat-ui-down-scale-a * $combat-button-font-size;
-	}
-
-	@media ( max-height: 320px )
-	{
-		width: $combat-ui-down-scale-b * $combat-button-width;
-		height: $combat-ui-down-scale-b * $combat-button-height;
-		font-size: $combat-ui-down-scale-b * $combat-button-font-size;
-	}
-
-	&:hover
-	{
-		background-color: $button-v1-hover-bg-color;
-		color: $button-v1-hover-color;
-	}
-
-	&:disabled
-	{
-		opacity: 50%;
-		pointer-events: none;
-	}
+	border: none;
+	background-color: transparent;
 }
 
 .attackButton
 {
-	bottom: 30%;
-	right: calc(var(--combat-ui-inset-x, 0px) + 1rem);
+	// using Deck positions passed by phaser to position the attack button symmetrically
+	top: var(--deck-y);
+	right: var(--deck-x);
+	height: var(--deck-height);
+	transform: translateX(50%) translateY(-50%);
+	aspect-ratio: 634 / 784; // needs to match image dimensions
+	background-image: url("../../assets/attack_button.png");
+	background-position: center;
+	background-size: cover;
+	transition: height 0.02s ease;
+
+	&:hover
+	{
+		border: 2px solid goldenrod;
+	}
+
+	&:active
+	{
+		height: calc(var(--deck-height) * 0.95);
+	}
 }
 
 .drawButton
 {
 	top: var(--deck-y);
 	left: var(--deck-x);
-	width: var(--deck-width);
 	height: var(--deck-height);
 	transform: translateX(-50%) translateY(-50%);
-	background: none;
-	border: none;
-	transition: background-color 0.02s ease;
+	aspect-ratio: 633 / 817; // needs to match image dimensions
+	background-image: url("../../assets/deck_button.png");
+	background-position: center;
+	background-size: cover;
+	transition: height 0.02s ease;
 
 	&:hover
 	{
-		background: none;
 		border: 2px solid goldenrod;
 	}
 
 	&:active
 	{
-		background-color: rgba(0, 0, 0, 0.160);
+		height: calc(var(--deck-height) * 0.95);
 	}
-}
-
-.resetButton
-{
-	top: 20%;
-	left: calc(var(--combat-ui-inset-x, 0px) + 1rem);
 }

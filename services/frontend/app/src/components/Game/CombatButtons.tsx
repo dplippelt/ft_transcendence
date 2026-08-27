@@ -17,16 +17,15 @@ function CombatButton( { label, onClick, extraStyling="", disabled=false } : ICo
 
 export function AttackButton()
 {
-	return <CombatButton label="Attack" extraStyling={styles.attackButton} onClick={() => EventBus.emit(CombatEvent.attack)} />
+	return <CombatButton label="" extraStyling={styles.attackButton} onClick={() => EventBus.emit(CombatEvent.attack)} />
 }
 
 export function DrawButton()
 {
-	// TODO: remove console.log
-	return <CombatButton label="" extraStyling={styles.drawButton} onClick={() => { EventBus.emit(CombatEvent.draw); console.log("DECK CLICKED"); }} />
+	return <CombatButton label="" extraStyling={styles.drawButton} onClick={() => EventBus.emit(CombatEvent.draw)} />
 }
 
-export function ResetButton()
-{
-	return <CombatButton label="Reset" extraStyling={styles.resetButton} onClick={() => EventBus.emit(CombatEvent.reset)} />
-}
+// export function ResetButton()
+// {
+// 	return <CombatButton label="Reset" extraStyling={styles.resetButton} onClick={() => EventBus.emit(CombatEvent.reset)} />
+// }
