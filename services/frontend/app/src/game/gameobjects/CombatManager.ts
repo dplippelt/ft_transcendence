@@ -59,7 +59,7 @@ export default class CombatManager {
 
   initPlayerTurn() {
     this.cardManager.resetSelection();
-    this.cardManager.clearHand();
+    this.cardManager.clearHand(true);
     this.cardManager.fillCardHand(this.cardManager.maxNumCardsInHand);
     this.executeManager.reset();
   }

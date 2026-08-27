@@ -158,16 +158,18 @@ export default class CombatAnimation {
     events.on(LayoutEvents.SET_CARD_TO_SLOT, this.setCardToSlot, this);
     events.off(LayoutEvents.SET_CARD_POS);
     events.on(LayoutEvents.SET_CARD_POS, this.setCardPosition, this);
+    events.off(LayoutEvents.CLEAR_HAND);
+    events.on(LayoutEvents.CLEAR_HAND, this.animateClearHand, this);
   }
 
-  setCardPosition(card: CardBase) {
+  setCardPosition(card: CardBase, animDuration: number = 300) {
     this.scene.tweens.add({
       targets: card,
       x: card.getData(TransformInLayout.X),
       y: card.getData(TransformInLayout.Y),
       angle: card.getData(TransformInLayout.ANGLE),
       scale: card.getData(TransformInLayout.SCALE),
-      duration: 300,
+      duration: animDuration,
       ease: "Cubic.easeOut",
     });
   }
@@ -332,6 +334,33 @@ export default class CombatAnimation {
         frames: anims.generateFrameNumbers(AssetsKey.CombatEnemy),
         frameRate: enemyAnimationFram[animKey].frameRate,
         repeat: enemyAnimationFram[animKey].repeat,
+      });
+    }
+  }
+
+  animateClearHand(cards: CardBase[]) {
+    if ( cards.length === 0 ) {
+      this.cardManager.events.emit(CardActionEvents.CLEAR_HAND_COMPLETE);
+      return;
+    }
+
+    let cardsCleared = 0;
+
+    for (const card of cards) {
+      this.scene.tweens.add({
+        targets: card,
+        x: card.getData(TransformInLayout.X),
+        y: card.getData(TransformInLayout.Y),
+        angle: card.getData(TransformInLayout.ANGLE),
+        scale: card.getData(TransformInLayout.SCALE),
+        duration: 200,
+        ease: "Cubic.easeIn",
+        onComplete: () => {
+          card.destroy();
+          cardsCleared++;
+          if ( cardsCleared >= cards.length )
+            this.cardManager.events.emit(CardActionEvents.CLEAR_HAND_COMPLETE);
+        },
       });
     }
   }

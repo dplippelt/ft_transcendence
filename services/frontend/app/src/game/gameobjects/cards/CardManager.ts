@@ -12,6 +12,8 @@ export enum CardActionEvents {
   SELECT = "select",
   UNSELECT = "unselect",
   GENERATE_DECK = "generateDeck",
+  CLEAR_HAND = "clearHand",
+  CLEAR_HAND_COMPLETE = "clearHandComplete",
 }
 
 export default class CardManager {
@@ -41,8 +43,15 @@ export default class CardManager {
     this.cardSelection.unsetAllCards();
   }
 
-  clearHand() {
-    this.cardHand.clearHand();
+  clearHand( isStartCombat: boolean ) {
+    if ( isStartCombat ) {
+      this.cardHand.clearHand(isStartCombat);
+      return;
+    }
+
+    const cards = this.cardHand.getHandCards().getAll() as CardBase[];
+    this.events.emit(CardActionEvents.CLEAR_HAND, cards);
+    this.cardHand.clearHand(isStartCombat);
   }
 
   fillCardHand(amount: number) {
@@ -56,8 +65,8 @@ export default class CardManager {
       return;
     }
 
-    this.clearHand();
-    this.fillCardHand(this.maxNumCardsInHand);
+    this.events.once(CardActionEvents.CLEAR_HAND_COMPLETE, () => this.fillCardHand(this.maxNumCardsInHand));
+    this.clearHand(false);
     this.playerStatus.mana--;
     EventBus.emit(CombatEvent.updatePlayerMP, this.playerStatus.mana);
   }

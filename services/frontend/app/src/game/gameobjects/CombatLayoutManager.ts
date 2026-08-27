@@ -129,6 +129,7 @@ export enum LayoutEvents {
   SET_CARD_POS = "setCardPos",
   SET_CARD_TO_SLOT = "setSelectionSlotsPos",
   SET_COMBATANT_POS = "setCombatantPos",
+  CLEAR_HAND = "clearHandCards",
 }
 
 export default class CombatLayoutManager {
@@ -165,10 +166,10 @@ export default class CombatLayoutManager {
   }
 
   onCardActions() {
-    this.cardManager.events.on(CardActionEvents.DRAW, this.updateCardHand, this);
     this.cardManager.events.on(CardActionEvents.SELECT, () => this.updateSelectionSlots(false), this);
     this.cardManager.events.on(CardActionEvents.UNSELECT, () => this.updateSelectionSlots(false), this);
     this.cardManager.events.on(CardActionEvents.GENERATE_DECK, this.updateDeck, this);
+    this.cardManager.events.on(CardActionEvents.CLEAR_HAND, this.clearHand, this);
   }
 
   onLayoutActions() {
@@ -188,8 +189,8 @@ export default class CombatLayoutManager {
 
     // Calculating the horizontal and vertical inset to compensate for
     // letterboxing around the background image with regard to the Combat UI
-    // and calculating background scale and bottom Y for player, enemey and
-    // selected cards sprite positioning
+    // and calculating background scale and bottom/top Y for player, enemey
+    // and selected cards sprite positioning
     const bgScaleX = this.display.width / BG_WIDTH;
     const bgScaleY = this.display.height / BG_HEIGHT;
     const bgScale = Math.min(bgScaleX, bgScaleY);
@@ -273,6 +274,7 @@ export default class CombatLayoutManager {
     if (!totalCards) {
       return;
     }
+
     const display = this.display;
     const handLayout = this.layout.cards.hand;
     const ground = display.height + handLayout.yFromBottom * display.scale;
@@ -298,13 +300,11 @@ export default class CombatLayoutManager {
       if (isResize) {
         this.setCardPosition(card);
       } else {
-        this.events.emit(LayoutEvents.SET_CARD_POS, card);
+        this.events.emit(LayoutEvents.SET_CARD_POS, card, 400);
       }
     });
   }
 
-  // TODO: when adding cards to selection area always add to the end.
-  // TODO: related: probably need to move cards to the left in the array to fill up an empty slot when a card is removed
   updateSelectionSlots(isResize: boolean = true) {
     const selectionSlots = this.cardManager.cardSelection.getSelectionSlots();
     const occupiedSlots = selectionSlots.filter((slot) => slot.isCardSet());
@@ -391,5 +391,21 @@ export default class CombatLayoutManager {
     const scale = combatant.getData(TransformInLayout.SCALE);
     combatant.setPosition(targetX, targetY);
     combatant.scale = scale;
+  }
+
+  clearHand(cards: CardBase[]) {
+    const targetX = this.display.centerX;
+    const targetY = this.display.height + spriteSize.card.height;
+    const targetAngle = 0;
+
+    for ( const card of cards ) {
+      card.setData({
+        [TransformInLayout.X]: targetX,
+        [TransformInLayout.Y]: targetY,
+        [TransformInLayout.ANGLE]: targetAngle,
+        [TransformInLayout.SCALE]: this.display.scale,
+      });
+    }
+    this.events.emit(LayoutEvents.CLEAR_HAND, cards);
   }
 }
