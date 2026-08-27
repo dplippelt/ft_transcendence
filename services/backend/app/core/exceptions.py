@@ -58,6 +58,8 @@ class ErrorCode(StrEnum):
     INVITE_ALREADY_SENT = "INVITE_ALREADY_SENT"
     INVITE_RATE_LIMIT_EXCEEDED = "INVITE_RATE_LIMIT_EXCEEDED"
     LOBBY_MESSAGE_SEND_FAILED = "LOBBY_MESSAGE_SEND_FAILED"
+    LOBBY_MISSING_PLAYERS = "LOBBY_MISSING_PLAYERS"
+    LOBBY_GAME_SESSION_CRASH = "LOBBY_GAME_SESSION_CRASH"
 
     LOGIN_RATE_LIMIT_EXCEEDED = "LOGIN_RATE_LIMIT_EXCEEDED"
     REGISTRATION_RATE_LIMIT_EXCEEDED = "REGISTRATION_RATE_LIMIT_EXCEEDED"
@@ -119,4 +121,10 @@ def too_many_requests(detail: str, code: ErrorCode | None = None,) -> HTTPExcept
     return HTTPException(
         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
         detail=error_detail(detail, code),
+    )
+
+def internal_server_error(detail: str, code: ErrorCode | None = None) -> HTTPException:
+    return HTTPException(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        detail=error_detail(detail, code)
     )
