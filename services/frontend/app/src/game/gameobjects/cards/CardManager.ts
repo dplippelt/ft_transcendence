@@ -43,15 +43,15 @@ export default class CardManager {
     this.cardSelection.unsetAllCards();
   }
 
-  clearHand( isStartCombat: boolean ) {
-    if ( isStartCombat ) {
-      this.cardHand.clearHand(isStartCombat);
+  clearHand( isStartTurn: boolean ) {
+    if ( isStartTurn ) {
+      this.cardHand.clearHand(isStartTurn);
       return;
     }
 
     const cards = this.cardHand.getHandCards().getAll() as CardBase[];
     this.events.emit(CardActionEvents.CLEAR_HAND, cards);
-    this.cardHand.clearHand(isStartCombat);
+    this.cardHand.clearHand(isStartTurn);
   }
 
   fillCardHand(amount: number) {
@@ -66,6 +66,7 @@ export default class CardManager {
     }
 
     this.events.once(CardActionEvents.CLEAR_HAND_COMPLETE, () => this.fillCardHand(this.maxNumCardsInHand));
+    this.resetSelection();
     this.clearHand(false);
     this.playerStatus.mana--;
     EventBus.emit(CombatEvent.updatePlayerMP, this.playerStatus.mana);
