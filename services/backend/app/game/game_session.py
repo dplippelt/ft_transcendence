@@ -12,6 +12,7 @@ from .game_simulation import GameSimulation
 
 SESSION_TIMEOUT = 140.0
 CLIENT_TIMEOUT = 10.0
+MAX_PLAYERS = 2
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +44,15 @@ class GameSession:
         self.game: GameSimulation = GameSimulation(self.id)
         self.state: SessionState = SessionState.INITIALIZE
         self.connected_users: set[int] = set()
-        self.task: asyncio.Task[None]
+        self.task: asyncio.Task[None] | None = None
+        self.lock: asyncio.Lock = asyncio.Lock()
         self.time_since_last_action: float = monotonic()
         self.time_last_player_action: dict[int, float] = {}
 
     def start(self) -> bool:
+        if self.task:
+            return True
+
         self.task = asyncio.create_task(self.game_loop())
         if self.task.exception():
             logger.error(f"start session failed: {logging.exception}")
@@ -56,63 +61,74 @@ class GameSession:
         return True
 
     async def stop(self):
-        if not self.task.cancel():
+        if self.task is None:
             return
 
+        _ = self.task.cancel()
         try:
             await self.task
         finally:
-            pass
+            self.task = None
 
-    # TODO: Support spectators | Possible data race with multiple concurrent user
+    # TODO: Support spectators
     async def join(self, user_id: int, socket: WebSocket) -> JoinStatus:
         if self.allowed_user_list is not None and user_id not in self.allowed_user_list:
             return JoinStatus.GAME_NOT_JOINED
 
-        if user_id in self.connected_users:
+        async with self.lock:
+            if user_id in self.connected_users:
+                await self.connection_manager.connect(user_id, socket)
+                self.update_time_since_action(user_id)
+                return JoinStatus.GAME_JOINED
+
+            if len(self.connected_users) == MAX_PLAYERS:
+                return JoinStatus.GAME_FULL
+
             await self.connection_manager.connect(user_id, socket)
-            return JoinStatus.GAME_JOINED
+            self.connected_users.add(user_id)
+            self.game.connect_player(user_id)
+            self.update_time_since_action(user_id)
 
-        if len(self.connected_users) == 2:
-            return JoinStatus.GAME_FULL
-
-        await self.connection_manager.connect(user_id, socket)
-        self.connected_users.add(user_id)
-        self.game.connect_player(user_id)
-
-        if len(self.connected_users) == 2:
-            self.state = SessionState.RUNNING
+            if len(self.connected_users) == MAX_PLAYERS:
+                self.state = SessionState.RUNNING
 
         return JoinStatus.GAME_JOINED
 
-    # possible data race with users
-    def leave(self, user_id: int) -> None:
-        if user_id not in self.connected_users:
-            return
-
+    def disconnect_user(self, user_id: int):
         self.connection_manager.disconnect_user(user_id)
         self.connected_users.remove(user_id)
         self.game.disconnect_player(user_id)
 
-        if not self.connected_users:
-            self.state = SessionState.WAITING_FOR_PLAYERS
+    async def leave(self, user_id: int) -> None:
+        async with self.lock:
+            if user_id not in self.connected_users:
+                return
+
+            self.disconnect_user(user_id)
+
+            if not self.connected_users:
+                self.state = SessionState.WAITING_FOR_PLAYERS
 
     async def broadcast(self) -> None:
-        for user_id in list(self.connected_users):
+        async with self.lock:
+            connected_users = list(self.connected_users)
+
+        for user_id in connected_users:
             await self.connection_manager.send_to_user(
                 user_id, self.game.get_snapshot(user_id).model_dump(mode="json")
             )
 
-    def check_user_activity(self):
-        current_time = monotonic()
-        for user_id in list(self.connected_users):
-            if user_id in self.time_last_player_action and (
-                current_time - self.time_last_player_action[user_id] > CLIENT_TIMEOUT
-            ):
-                self.leave(user_id)
+    async def check_user_activity(self):
+        async with self.lock:
+            current_time = monotonic()
+            for user_id in list(self.connected_users):
+                if user_id in self.time_last_player_action and (
+                    current_time - self.time_last_player_action[user_id] > CLIENT_TIMEOUT
+                ):
+                    self.disconnect_user(user_id)
 
-        if not self.connected_users:
-            self.state = SessionState.WAITING_FOR_PLAYERS
+            if not self.connected_users:
+                self.state = SessionState.WAITING_FOR_PLAYERS
 
     async def game_loop(self):
         FIXED_TIME_STEP: float = 1.0 / 20.0
@@ -122,7 +138,7 @@ class GameSession:
             if self.is_over():
                 break
 
-            self.check_user_activity()
+            await self.check_user_activity()
             if self.state == SessionState.RUNNING:
                 self.game.tick(FIXED_TIME_STEP)
                 await self.broadcast()
@@ -130,9 +146,12 @@ class GameSession:
             elapsed_time = monotonic() - start_time
             await asyncio.sleep(delay=max(0, FIXED_TIME_STEP - elapsed_time))
 
-    def enqueue_player_action(self, user_id: int, player_action: PlayerAction) -> None:
+    def update_time_since_action(self, user_id: int):
         self.time_since_last_action = monotonic()
         self.time_last_player_action[user_id] = monotonic()
+
+    def enqueue_player_action(self, user_id: int, player_action: PlayerAction) -> None:
+        self.update_time_since_action(user_id)
         self.game.enqueue_player_action(user_id, player_action)
 
     def get_snapshot(self, user_id: int) -> GameSnapshot:
@@ -145,7 +164,7 @@ class GameSession:
         ) and (monotonic() - self.time_since_last_action) > SESSION_TIMEOUT:
             return True
 
-        if self.task.exception():
+        if self.task is None or self.task.exception():
             return True
 
         return self.state == SessionState.SESSION_OVER

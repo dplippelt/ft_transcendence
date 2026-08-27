@@ -6,7 +6,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
-from app.api.v1 import auth, chat, dungeons, leaderboard, lobbies, scores, users, friends
+from app.api.v1 import auth, chat, dungeons, leaderboard, lobbies, scores, users, friends, game
 from app.db.database import Base, engine
 from app.core.settings import get_settings
 from app.game.game_session_manager import game_session_manager

@@ -71,4 +71,4 @@ async def game_websocket(
                 logger.warning(f"Invalid player action received! {message}")
     finally:
         logger.debug(f"player {current_user_id} disconnected from the session {game_session.id}")
-        game_session.leave(current_user_id)
+        await game_session.leave(current_user_id)

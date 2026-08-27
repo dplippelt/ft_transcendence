@@ -11,25 +11,33 @@ from .game_session import GameSession, JoinStatus
 class GameSessionManager:
     def __init__(self):
         self.game_sessions: dict[str, GameSession] = {}
-        self.task: asyncio.Task[None]
+        self.task: asyncio.Task[None] | None = None
 
     def start(self):
+        if self.task:
+            return
+
         self.task = asyncio.create_task(self.validate_session_state())
+        if self.task.exception():
+            raise self.task.exception() # pyright: ignore[reportGeneralTypeIssues]
 
     async def stop(self):
-        if self.task.cancel():
-            try:
-                await self.task
-            finally:
-                pass
+        if self.task is None:
+            return
+
+        _ = self.task.cancel()
+        try:
+            await self.task
+        finally:
+            self.task = None
 
         for game_session in self.game_sessions.values():
             await game_session.stop()
         self.game_sessions.clear()
 
-    def create(self) -> GameSession | None:
+    def create(self, allowed_user_list: set[int] | None) -> GameSession | None:
         session_id = uuid.uuid4()
-        game_session = GameSession(str(session_id.int), ConnectionManager())
+        game_session = GameSession(str(session_id.int), ConnectionManager(), allowed_user_list)
         if game_session.start():
             self.game_sessions[str(session_id.int)] = game_session
             return game_session
