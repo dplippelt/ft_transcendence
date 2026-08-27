@@ -67,7 +67,7 @@ class GameSimulation:
         # the player queue is not full and remains in order
         if player_actions and (
             len(player_actions) > 32
-            or player_actions[-1].sequence < player_action.sequence
+            or player_action.sequence <= player_actions[-1].sequence
         ):
             return
 

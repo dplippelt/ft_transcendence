@@ -16,12 +16,24 @@ class GameSessionManager:
     def start(self):
         self.task = asyncio.create_task(self.validate_session_state())
 
-    def create(self) -> GameSession:
+    async def stop(self):
+        if self.task.cancel():
+            try:
+                await self.task
+            finally:
+                pass
+
+        for game_session in self.game_sessions.values():
+            await game_session.stop()
+        self.game_sessions.clear()
+
+    def create(self) -> GameSession | None:
         session_id = uuid.uuid4()
         game_session = GameSession(str(session_id.int), ConnectionManager())
-
-        self.game_sessions[str(session_id.int)] = game_session
-        return game_session
+        if game_session.start():
+            self.game_sessions[str(session_id.int)] = game_session
+            return game_session
+        return None
 
     async def join_session(
         self, session_id: str, user_id: int, socket: WebSocket
@@ -37,11 +49,12 @@ class GameSessionManager:
         while True:
             for session in list(self.game_sessions.values()):
                 if session.is_over():
-                    self.remove_session(session.id)
+                    await self.remove_session(session.id)
             await asyncio.sleep(delay=10)
 
-    def remove_session(self, session_id: str) -> None:
+    async def remove_session(self, session_id: str) -> None:
         if session_id in self.game_sessions:
+            await self.game_sessions[session_id].stop()
             del self.game_sessions[session_id]
 
 

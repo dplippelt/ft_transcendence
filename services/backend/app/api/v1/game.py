@@ -1,7 +1,7 @@
 import logging
 
 from fastapi import APIRouter, WebSocket, status
-from fastapi._compat.v2 import ValidationError
+from pydantic import ValidationError
 
 from app.api.dependencies import CurrentUserIdWS
 from app.game.game_session import JoinStatus

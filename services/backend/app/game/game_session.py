@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from enum import Enum, StrEnum, auto
 from time import monotonic
 
@@ -12,8 +13,11 @@ from .game_simulation import GameSimulation
 SESSION_TIMEOUT = 140.0
 CLIENT_TIMEOUT = 10.0
 
+logger = logging.getLogger(__name__)
+
 
 class SessionState(Enum):
+    INITIALIZE = auto()
     WAITING_FOR_PLAYERS = auto()
     RUNNING = auto()
     SESSION_OVER = auto()
@@ -37,13 +41,30 @@ class GameSession:
         self.connection_manager: ConnectionManager = connection_manager
         self.allowed_user_list: set[int] | None = allowed_user_list
         self.game: GameSimulation = GameSimulation(self.id)
-        self.state: SessionState = SessionState.WAITING_FOR_PLAYERS
+        self.state: SessionState = SessionState.INITIALIZE
         self.connected_users: set[int] = set()
-        self.task: asyncio.Task[None] = asyncio.create_task(self.game_loop())
+        self.task: asyncio.Task[None]
         self.time_since_last_action: float = monotonic()
         self.time_last_player_action: dict[int, float] = {}
 
-    # TODO: Support spectators
+    def start(self) -> bool:
+        self.task = asyncio.create_task(self.game_loop())
+        if self.task.exception():
+            logger.error(f"start session failed: {logging.exception}")
+            return False
+        self.state = SessionState.WAITING_FOR_PLAYERS
+        return True
+
+    async def stop(self):
+        if not self.task.cancel():
+            return
+
+        try:
+            await self.task
+        finally:
+            pass
+
+    # TODO: Support spectators | Possible data race with multiple concurrent user
     async def join(self, user_id: int, socket: WebSocket) -> JoinStatus:
         if self.allowed_user_list is not None and user_id not in self.allowed_user_list:
             return JoinStatus.GAME_NOT_JOINED
@@ -64,6 +85,7 @@ class GameSession:
 
         return JoinStatus.GAME_JOINED
 
+    # possible data race with users
     def leave(self, user_id: int) -> None:
         if user_id not in self.connected_users:
             return
@@ -76,14 +98,14 @@ class GameSession:
             self.state = SessionState.WAITING_FOR_PLAYERS
 
     async def broadcast(self) -> None:
-        for user_id in self.connected_users:
+        for user_id in list(self.connected_users):
             await self.connection_manager.send_to_user(
                 user_id, self.game.get_snapshot(user_id).model_dump(mode="json")
             )
 
     def check_user_activity(self):
         current_time = monotonic()
-        for user_id in self.connected_users:
+        for user_id in list(self.connected_users):
             if user_id in self.time_last_player_action and (
                 current_time - self.time_last_player_action[user_id] > CLIENT_TIMEOUT
             ):
@@ -119,8 +141,11 @@ class GameSession:
     def is_over(self) -> bool:
         if (
             self.state == SessionState.WAITING_FOR_PLAYERS
-            and (monotonic() - self.time_since_last_action) > SESSION_TIMEOUT
-        ):
+            or self.state == SessionState.INITIALIZE
+        ) and (monotonic() - self.time_since_last_action) > SESSION_TIMEOUT:
+            return True
+
+        if self.task.exception():
             return True
 
         return self.state == SessionState.SESSION_OVER

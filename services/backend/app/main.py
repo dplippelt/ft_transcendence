@@ -24,6 +24,7 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     game_session_manager.start()
     yield
+    await game_session_manager.stop()
 
 
 app = FastAPI(
