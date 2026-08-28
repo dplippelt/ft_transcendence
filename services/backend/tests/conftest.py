@@ -111,14 +111,14 @@ def user_credentials():
     }
 
 
-@pytest.fixure()
+@pytest.fixture()
 def user(db, user_credentials):
     user = User (
         username=TEST_USERNAME,
         display_name="Test User",
         is_guest=False,
         is_active=True,
-        two_factor_login=False,
+        two_factor_enabled=False,
         two_factor_secret=None,
     )
 
