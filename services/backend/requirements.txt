@@ -8,3 +8,5 @@ google-auth
 requests
 CacheControl
 pyotp
+pytest
+httpx
