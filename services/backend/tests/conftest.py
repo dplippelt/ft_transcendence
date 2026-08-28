@@ -51,7 +51,7 @@ def db():
 
 @pytest.fixture()
 def app(db, monkeypatch):
-    test_app = FastPI()
+    test_app = FastAPI()
 
     test_app.include_router(
         auth.router,

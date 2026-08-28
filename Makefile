@@ -32,6 +32,18 @@ start:
 stop:
 	docker compose -f $(DCOMP) stop
 
+test:
+	docker compose -f $(DCOMP) run --rm backend \
+		python -m pytest tests -v --maxfail=1 --disable-warnings
+
+test-auth:
+	docker compose -f $(DCOMP) run --rm backend \
+		python -m pytest tests/test_auth.py -v --maxfail=1
+
+test-security:
+	docker compose -f $(DCOMP) run --rm backend \
+		python -m pytest tests/test_security.py -v --maxfail=1
+
 restart:
 	docker compose -f $(DCOMP) restart
 
