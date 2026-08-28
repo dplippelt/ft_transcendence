@@ -21,5 +21,5 @@ def test_login_with_valid_credentials(client, user, user_credentials):
     assert response.status_code == 200
 
     data = response.json()
-    assert "access_token" in data\
+    assert "access_token" in data
     assert data["token_type"] == "bearer"
