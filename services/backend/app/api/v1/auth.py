@@ -16,9 +16,8 @@ from app.api.dependencies import CurrentUser, DbSession
 from app.core.exceptions import (
     ErrorCode, bad_request, conflict, forbidden, service_unavailable, too_many_requests, unauthorized,
 )
-from app.core.rate_limit import SlidingWindowLimiter
+from app.core.rate_limit import FixedWindowLimiter
 from app.core.security import (
-    DUMMY_PASSWORD_HASH,
     create_access_token,
     create_two_factor_challenge_token,
     decode_two_factor_challenge,

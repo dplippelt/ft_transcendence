@@ -44,6 +44,10 @@ test-security:
 	docker compose -f $(DCOMP) run --rm backend \
 		python -m pytest tests/test_security.py -v --maxfail=1
 
+test-2FA-auth:
+	docker compose -f $(DCOMP) run --rm backend \
+		python -m pytest tests/test_two_factor_auth.py -v --maxfail=1
+
 restart:
 	docker compose -f $(DCOMP) restart
 
