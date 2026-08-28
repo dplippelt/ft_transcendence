@@ -2,8 +2,6 @@ import { EventBus } from "../../game/EventBus";
 import { CombatEvent } from "../../utils/utils";
 import styles from "./CombatButtons.module.scss";
 
-// TODO: fix bug where attacking right at the end of your turn / start of enemy turn results in invalid enemy HP and the palyer being hit twice
-
 interface ICombatButton
 {
 	label: string;

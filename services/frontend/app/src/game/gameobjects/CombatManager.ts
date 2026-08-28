@@ -73,6 +73,9 @@ export default class CombatManager {
   }
 
   execute() {
+    if ( !this.turnManager.isPlayerTurn )
+      return;
+
     const cards = this.cardManager.cardSelection.getSelectedCards();
 
     this.executeManager.evaluateSelectedCards(cards);
