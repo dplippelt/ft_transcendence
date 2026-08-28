@@ -13,7 +13,7 @@
 	top: var(--deck-y);
 	right: var(--deck-x);
 	height: var(--deck-height);
-	transform: translateX(50%) translateY(-50%);
+	transform: translateX(50%) translateY(-50%) scale(90%);
 	aspect-ratio: 634 / 784; // needs to match image dimensions
 	background-image: url("../../assets/attack_button.png");
 	background-position: center;
@@ -36,7 +36,7 @@
 	top: var(--deck-y);
 	left: var(--deck-x);
 	height: var(--deck-height);
-	transform: translateX(-50%) translateY(-50%);
+	transform: translateX(-50%) translateY(-50%) scale(90%);
 	aspect-ratio: 633 / 817; // needs to match image dimensions
 	background-image: url("../../assets/deck_button.png");
 	background-position: center;

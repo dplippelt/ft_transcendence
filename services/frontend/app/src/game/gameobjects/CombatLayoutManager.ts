@@ -21,9 +21,12 @@ interface Display {
 }
 
 interface Background {
-  scale: number;
   topY: number;
   bottomY: number;
+  leftX: number;
+  scale: number;
+  insetX: number;
+  insetY: number;
 }
 
 interface Size {
@@ -64,8 +67,8 @@ interface CombatLayout {
       yFromBgTop: number;
     };
     deck: {
-      xFromLeftPerc: number;
-      yFromTopPerc: number;
+      xFromBgLeft: number;
+      yFromBgBottom: number;
     };
   };
 }
@@ -112,8 +115,8 @@ const combatLayout: CombatLayout = {
       yFromBgTop: 170,
     },
     deck: {
-      xFromLeftPerc: 9,
-      yFromTopPerc: 69,
+      xFromBgLeft: 150,
+      yFromBgBottom: -300,
     },
   },
 };
@@ -158,7 +161,7 @@ export default class CombatLayoutManager {
     this.spriteSize = spriteSize;
     this.layout = combatLayout;
     this.display = { width: 0, height: 0, centerX: 0, centerY: 0, scale: 0 };
-    this.background = { scale: 0, topY: 0, bottomY: 0 };
+    this.background = { topY: 0, bottomY: 0, leftX: 0, scale: 0, insetX: 0, insetY: 0 };
     this.scene.scale.refresh();
     this.updateDisplay();
     this.updateLayout();
@@ -196,14 +199,15 @@ export default class CombatLayoutManager {
     const bgScale = Math.min(bgScaleX, bgScaleY);
     const bgWidth = BG_WIDTH * bgScale;
     const bgHeight = BG_HEIGHT * bgScale;
-    const insetX = (this.display.width - bgWidth) / 2;
-    const insetY = (this.display.height - bgHeight) / 2;
 
     this.background.scale = bgScale;
-    this.background.bottomY = this.display.height - insetY;
-    this.background.topY = insetY;
+    this.background.insetX = (this.display.width - bgWidth) / 2;
+    this.background.insetY = (this.display.height - bgHeight) / 2;
+    this.background.bottomY = this.display.height - this.background.insetY;
+    this.background.topY = this.background.insetY;
+    this.background.leftX = this.display.width - bgWidth - this.background.insetX;
 
-    document.documentElement.style.setProperty("--combat-ui-inset-x", `${insetX}px`);
+    document.documentElement.style.setProperty("--combat-ui-inset-x", `${this.background.insetX}px`);
   }
 
   updateLayout(isResize: boolean = true) {
@@ -220,11 +224,11 @@ export default class CombatLayoutManager {
 
   updateDeck(isResize: boolean = true) {
     const display = this.display;
-    const insetX = parseFloat(document.documentElement.style.getPropertyValue("--combat-ui-inset-x"));
+    const background = this.background;
     const deck = this.cardManager.cardDeck.getDeck();
     const deckLayout = this.layout.cards.deck;
-    const targetX = (deckLayout.xFromLeftPerc / 100) * display.width + insetX;
-    const targetY = (deckLayout.yFromTopPerc / 100) * display.height;
+    const targetX = background.leftX + deckLayout.xFromBgLeft * background.scale;
+    const targetY = background.bottomY + deckLayout.yFromBgBottom * background.scale;
     const angle = 0;
 
     deck.forEach((card: CardBase) => {
