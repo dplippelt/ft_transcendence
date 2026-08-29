@@ -77,7 +77,7 @@ export class GameManagerScene extends Scene {
       this._isChatFocused = focused;
       this.updateGlobalCapture();
       if ( focused )
-        this.game.events.emit(Core.Events.BLUR);
+        this.game.events.emit(Core.Events.BLUR, false);
     });
 
     EventBus.on(GameEvent.gameMenu, () => {
@@ -230,7 +230,8 @@ export class GameManagerScene extends Scene {
     return this._gameScene.getAlivePlayerCount() > 0;
   }
 
-  private onBlur() {
+  private onBlur( doBlur: boolean = true ) {
+    if ( !doBlur ) return; // so it doesn't blur the game and open the game menu when BLUR is emitted by a focus on the side bar chat
     EventBus.emit(GameEvent.blur);
   }
 }
