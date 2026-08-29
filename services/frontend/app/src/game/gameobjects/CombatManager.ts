@@ -34,8 +34,8 @@ export default class CombatManager {
     this.scene = scene;
     this.player = new CombatPlayer(scene, playerStatus);
     this.enemy = new CombatEnemy(scene, enemyData);
-    this.cardManager = new CardManager(scene, playerStatus);
     this.turnManager = new CombatTurnManager(this);
+    this.cardManager = new CardManager(scene, playerStatus, this.turnManager);
     this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
     this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.initEnemyTurn, this);
     this.executeManager = new CombatExecuteManager();

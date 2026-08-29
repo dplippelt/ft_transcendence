@@ -6,6 +6,7 @@ import CardBase, { CardEvents } from "./CardBase";
 import type { PlayerStatus } from "../../scenes/CombatScene";
 import { EventBus } from "../../EventBus";
 import { CombatEvent } from "../../../utils/utils";
+import type CombatTurnManager from "../CombatTurnManager";
 
 export enum CardActionEvents {
   DRAW = "draw",
@@ -19,20 +20,24 @@ export enum CardActionEvents {
 export default class CardManager {
   readonly scene: Scene;
   readonly playerStatus: PlayerStatus;
+  readonly turnManager: CombatTurnManager;
   readonly cardDeck: CardDeck;
   readonly cardHand: CardHand;
   readonly cardSelection: CardSelection;
   readonly events: Phaser.Events.EventEmitter;
   readonly maxNumCardsInHand: number;
+  private canRedraw: boolean;
 
-  constructor(scene: Scene, playerStatus: PlayerStatus) {
+  constructor(scene: Scene, playerStatus: PlayerStatus, turnManager: CombatTurnManager) {
     this.scene = scene;
     this.playerStatus = playerStatus;
+    this.turnManager = turnManager;
     this.cardDeck = new CardDeck(this.scene, cardDeckConfig);
     this.cardHand = new CardHand(this.scene);
     this.cardSelection = new CardSelection(this.scene);
     this.events = new Phaser.Events.EventEmitter();
     this.maxNumCardsInHand = 8;
+    this.canRedraw = true;
 
     scene.input.setTopOnly(true);
     this.events.on(CardActionEvents.CLEAR_HAND_COMPLETE, this.clearHandComplete, this);
@@ -47,6 +52,7 @@ export default class CardManager {
   clearHand( isStartTurn: boolean ) {
     if ( isStartTurn ) {
       this.cardHand.clearHand(isStartTurn);
+      this.canRedraw = true;
       return;
     }
 
@@ -57,6 +63,7 @@ export default class CardManager {
 
   clearHandComplete() {
     this.fillCardHand(this.maxNumCardsInHand);
+    this.canRedraw = true;
   }
 
   fillCardHand(amount: number) {
@@ -66,10 +73,11 @@ export default class CardManager {
   }
 
   redrawCards() {
-    if (this.playerStatus.mana <= 0) {
+    if (!this.turnManager.getIsPlayerTurn() || !this.canRedraw || this.playerStatus.mana <= 0) {
       return;
     }
 
+    this.canRedraw = false;
     this.resetSelection();
     this.clearHand(false);
     this.playerStatus.mana--;
