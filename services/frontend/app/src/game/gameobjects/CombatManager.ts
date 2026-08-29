@@ -47,7 +47,6 @@ export default class CombatManager {
     this.events.on(CombatEvents.ENDTURN, this.endTurn, this);
     this.layoutManager = new CombatLayoutManager(this);
     this.turnManager.turnEvents.emit(TurnEvents.STARTPLAYER);
-    this.initPlayerTurn();
     EventBus.emit(CombatEvent.initPlayerHP, this.player.status.hitPoint);
     EventBus.emit(CombatEvent.initPlayerMP, this.player.status.mana);
     EventBus.emit(CombatEvent.initEnemyHP, this.enemy.hitPoint);
@@ -62,9 +61,11 @@ export default class CombatManager {
     this.cardManager.clearHand(true);
     this.cardManager.fillCardHand(this.cardManager.maxNumCardsInHand);
     this.executeManager.reset();
+    EventBus.emit(CombatEvent.initTurnTimer, this.turnManager.getPlayerDelayMs());
   }
 
   initEnemyTurn() {
+    EventBus.emit(CombatEvent.turnEnded);
     if (this.executeManager.getResult() !== null) {
       this.events.emit(CombatEvents.PLAYERGUARD);
     } else {
@@ -73,7 +74,7 @@ export default class CombatManager {
   }
 
   execute() {
-    if ( !this.turnManager.isPlayerTurn )
+    if ( !this.turnManager.getIsPlayerTurn() )
       return;
 
     const cards = this.cardManager.cardSelection.getSelectedCards();

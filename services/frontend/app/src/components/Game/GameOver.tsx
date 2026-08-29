@@ -28,9 +28,7 @@ interface IGameOver
 
 function SubText( { subText } : ISubText )
 {
-	return (
-		<div className={styles.subText}>{subText}</div>
-	)
+	return <div className={styles.subText}>{subText}</div>;
 }
 
 function Buttons( { loggedIn, gameResult, cleanupGame } :IButtons )

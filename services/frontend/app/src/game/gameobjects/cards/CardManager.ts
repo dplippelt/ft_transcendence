@@ -35,6 +35,7 @@ export default class CardManager {
     this.maxNumCardsInHand = 8;
 
     scene.input.setTopOnly(true);
+    this.events.on(CardActionEvents.CLEAR_HAND_COMPLETE, this.clearHandComplete, this);
     EventBus.addListener(CombatEvent.draw, this.redrawCards, this);
     // EventBus.addListener(CombatEvent.reset, this.resetSelection, this);
   }
@@ -54,6 +55,10 @@ export default class CardManager {
     this.cardHand.clearHand(isStartTurn);
   }
 
+  clearHandComplete() {
+    this.fillCardHand(this.maxNumCardsInHand);
+  }
+
   fillCardHand(amount: number) {
     for (let i = 0; i < amount; ++i) {
       this.drawCard();
@@ -65,7 +70,6 @@ export default class CardManager {
       return;
     }
 
-    this.events.once(CardActionEvents.CLEAR_HAND_COMPLETE, () => this.fillCardHand(this.maxNumCardsInHand));
     this.resetSelection();
     this.clearHand(false);
     this.playerStatus.mana--;
@@ -99,6 +103,24 @@ export default class CardManager {
   //   }
   // }
 
+  shiftCards() {
+    const slots = this.cardSelection.getSelectionSlots();
+    const numSlots = this.cardSelection.getNumSlots();
+
+    for (let i = 0; i < numSlots - 1; i++) {
+      if (slots[i].isCardSet()) continue;
+
+      const currentSlot = slots[i];
+      const nextSlot = slots[i + 1];
+
+      if (nextSlot.isCardSet()) {
+        const nextCard = nextSlot.getCard()!;
+        nextSlot.unsetCard();
+        currentSlot.setCard(nextCard);
+      }
+    }
+  }
+
   select(card: CardBase) {
     if (card.getIsFocused()) {
       card.focusOff();
@@ -106,6 +128,7 @@ export default class CardManager {
 
     if (card.getIsSelected()) {
       this.cardSelection.unsetCardFromSlot(card);
+      this.shiftCards();
       card.setIsSelected(false);
       this.events.emit(CardActionEvents.UNSELECT, card);
       return;

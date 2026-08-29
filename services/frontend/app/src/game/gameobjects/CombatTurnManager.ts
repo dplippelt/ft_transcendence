@@ -16,7 +16,7 @@ export default class CombatTurnManager {
   readonly turnEvents: Phaser.Events.EventEmitter;
   readonly playerDelayMs: number;
   readonly enemyDelayMs: number;
-  public isPlayerTurn: boolean;
+  private isPlayerTurn: boolean;
   private playerTimer: Phaser.Time.TimerEvent | null;
   // The enemy timer allows CombatTurnManager to switch turns by itself, without relying on CombatManager to explicitly trigger the switch.
   // Currently, CombatManager normally triggers the switch before the enemy timer runs out,
@@ -33,7 +33,6 @@ export default class CombatTurnManager {
     this.enemyDelayMs = 5000;
     this.isPlayerTurn = true;
     this.playerTimer = this.playTurnFor(this.playerDelayMs);
-    EventBus.emit(CombatEvent.initTurnTimer, this.playerDelayMs);
     this.enemyTimer = null;
     this.scene.game.events.on(Core.Events.BLUR, this.onBlur, this);
     this.scene.game.events.on(Core.Events.HIDDEN, this.onBlur, this);
@@ -68,13 +67,11 @@ export default class CombatTurnManager {
       this.cleanupTimers();
       this.playerTimer = this.playTurnFor(this.playerDelayMs);
       this.turnEvents.emit(TurnEvents.STARTPLAYER);
-      EventBus.emit(CombatEvent.initTurnTimer, this.playerDelayMs);
     } else {
       this.scene.input.enabled = false;
       this.cleanupTimers();
       this.enemyTimer = this.playTurnFor(this.enemyDelayMs);
       this.turnEvents.emit(TurnEvents.STARTENEMY);
-      EventBus.emit(CombatEvent.turnEnded);
     }
   }
 
@@ -116,5 +113,13 @@ export default class CombatTurnManager {
 
   onFocus() {
     EventBus.emit(GameEvent.pause, this, false);
+  }
+
+  getIsPlayerTurn() {
+    return this.isPlayerTurn;
+  }
+
+  getPlayerDelayMs() {
+    return this.playerDelayMs;
   }
 }

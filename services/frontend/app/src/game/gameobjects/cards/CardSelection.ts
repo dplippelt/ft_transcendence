@@ -44,18 +44,6 @@ export default class CardSelection {
 
       slot.unsetCard();
 
-      // Shift cards left to fill the empty slot in the array
-      for (let j = i + 1; j < this.numSlots; j++) {
-        const currentSlot = slots[j - 1];
-        const nextSlot = slots[j];
-
-        if (nextSlot.isCardSet()) {
-          const nextCard = nextSlot.getCard()!;
-          nextSlot.unsetCard();
-          currentSlot.setCard(nextCard);
-        }
-      }
-
       return true;
     }
 
@@ -91,14 +79,7 @@ export default class CardSelection {
   // The new approach first gets an array of selected cards (independent of the
   // slots array) and loops over that array to unselect those cards specifically.
   unsetAllCards() {
-    const slots = this.slots.getAll() as CardSlot[];
-    const selectedCards: CardBase[] = [];
-
-    for (const slot of slots) {
-      const card = slot.getCard();
-      if ( card !== null )
-        selectedCards.push(card);
-    }
+    const selectedCards = this.getSelectedCards();
 
     for (const card of selectedCards) {
       card.emit("pointerdown");
@@ -107,5 +88,9 @@ export default class CardSelection {
 
   getSelectionSlots() {
     return this.slots.getAll() as CardSlot[];
+  }
+
+  getNumSlots() {
+    return this.numSlots;
   }
 }
