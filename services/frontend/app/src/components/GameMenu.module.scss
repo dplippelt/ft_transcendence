@@ -23,3 +23,10 @@
 	padding-top: 0.5rem;
 	padding-bottom: 0.5rem;
 }
+
+.backdrop
+{
+	background-color: rgba(0, 0, 0, 0.4);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
+}

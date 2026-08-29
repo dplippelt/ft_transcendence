@@ -83,6 +83,13 @@ export class GameManagerScene extends Scene {
 
       this.togglePause();
     });
+
+    EventBus.on(GameEvent.blur, () => {
+      if (this._gameType === GameType.OnlineCoop)
+        return;
+
+      this.pause();
+    });
   }
 
   /* Update global capture for the (re-)launched combat scene.
@@ -158,6 +165,14 @@ export class GameManagerScene extends Scene {
         scene.input.keyboard?.enableGlobalCapture();
       else
         scene.input.keyboard?.disableGlobalCapture();
+    }
+  }
+
+  private pause() {
+    for ( const scene of this.getActiveScenes() ) {
+      if ( this.scene.isPaused(scene) ) continue;
+      this.scene.pause(scene);
+      EventBus.emit(CombatEvent.pauseTimer, true);
     }
   }
 

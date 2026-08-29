@@ -36,8 +36,6 @@ export default class CombatTurnManager {
     this.enemyTimer = null;
     this.scene.game.events.on(Core.Events.BLUR, this.onBlur, this);
     this.scene.game.events.on(Core.Events.HIDDEN, this.onBlur, this);
-    this.scene.game.events.on(Core.Events.FOCUS, this.onFocus, this);
-    this.scene.game.events.on(Core.Events.VISIBLE, this.onFocus, this);
     EventBus.addListener(CombatEvent.getTurnTimerState, this.sendElapsedTime, this)
   }
 
@@ -45,8 +43,6 @@ export default class CombatTurnManager {
     this.cleanupTimers();
     this.scene.game.events.off(Core.Events.BLUR, this.onBlur, this);
     this.scene.game.events.off(Core.Events.HIDDEN, this.onBlur, this);
-    this.scene.game.events.off(Core.Events.FOCUS, this.onFocus, this);
-    this.scene.game.events.off(Core.Events.VISIBLE, this.onFocus, this);
     EventBus.removeListener(CombatEvent.getTurnTimerState, this.sendElapsedTime, this)
   }
 
@@ -108,11 +104,7 @@ export default class CombatTurnManager {
   }
 
   onBlur() {
-    EventBus.emit(GameEvent.pause, this, true);
-  }
-
-  onFocus() {
-    EventBus.emit(GameEvent.pause, this, false);
+    EventBus.emit(GameEvent.blur);
   }
 
   getIsPlayerTurn() {

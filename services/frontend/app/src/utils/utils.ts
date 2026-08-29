@@ -88,6 +88,7 @@ export enum GameEvent
 	gameState = "game-state",
 	inCombat = "in-combat",
 	pause = "pause",
+	blur = "blur",
 }
 
 export enum CombatEvent

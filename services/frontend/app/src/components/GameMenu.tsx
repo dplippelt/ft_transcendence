@@ -40,7 +40,7 @@ function Buttons()
 export default function GameMenu()
 {
 	return (
-		<Popup extraStyling={styles.gameMenu}>
+		<Popup extraStyling={styles.gameMenu} backdropStyling={styles.backdrop}>
 			<Buttons />
 		</Popup>
 	)
