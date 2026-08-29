@@ -9,7 +9,6 @@ from app.core.security import decode_token
 from app.db.database import SessionLocal, get_db
 from app.models.user import User
 
-
 DbSession = Annotated[Session, Depends(get_db)]
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")

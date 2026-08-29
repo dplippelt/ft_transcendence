@@ -1,12 +1,12 @@
 from datetime import timedelta
 
 from app.core.security import (
+    create_access_token,
+    create_two_factor_challenge_token,
+    decode_token,
+    decode_two_factor_challenge,
     get_password_hash,
     verify_password,
-    create_access_token,
-    decode_token,
-    create_two_factor_challenge_token,
-    decode_two_factor_challenge,
 )
 
 

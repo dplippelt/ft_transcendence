@@ -6,7 +6,6 @@ from pwdlib import PasswordHash
 
 from app.core.settings import get_settings
 
-
 settings = get_settings()
 password_hash = PasswordHash.recommended()
 

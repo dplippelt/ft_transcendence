@@ -3,11 +3,12 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import ErrorCode, bad_request
 from app.db.utils import commit_or_bad_request
 from app.models.auth_account import AuthAccount
-from app.models.user import User
-from app.schemas.user import UserUpdate
 from app.models.two_factor_recovery_code import (
     TwoFactorRecoveryCode,
 )
+from app.models.user import User
+from app.schemas.user import UserUpdate
+from app.services.avatar_service import delete_local_avatar
 
 
 def get_active_user_by_id(db: Session, user_id: int) -> User | None:

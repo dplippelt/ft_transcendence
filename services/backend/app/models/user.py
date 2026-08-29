@@ -1,9 +1,18 @@
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean, DateTime, Integer, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.database import Base
+
+if TYPE_CHECKING:
+    from app.models.auth_account import AuthAccount
+    from app.models.chat_message import ChatMessage
+    from app.models.friend_request import FriendRequest
+    from app.models.friendship import Friendship
+    from app.models.lobby_member import LobbyMember
+    from app.models.score import Score
 
 
 class User(Base):
@@ -62,7 +71,7 @@ class User(Base):
     )
 
     two_factor_secret: Mapped[str | None] = mapped_column(
-        String(64), # 64 characters for a base32-encoded secret
+        String(512),
         nullable=True,
     )
 

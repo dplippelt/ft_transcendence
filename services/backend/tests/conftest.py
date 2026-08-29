@@ -1,17 +1,16 @@
+import pyotp
 import pytest
-
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-import app.models # noqa: F401
-
+import app.models
 from app.api.v1 import auth
 from app.core.rate_limit import FixedWindowLimiter
+from app.core.security import create_access_token, get_password_hash
 from app.db.database import Base, get_db
-from app.core.security import get_password_hash, create_access_token
 from app.models.auth_account import AuthAccount
 from app.models.user import User
 
@@ -137,6 +136,7 @@ def user(db, user_credentials):
     db.refresh(user)
     return user
 
+
 @pytest.fixture()
 def auth_headers(user):
     access_token = create_access_token(
@@ -145,3 +145,28 @@ def auth_headers(user):
     return {
         "Authorization": f"Bearer {access_token}",
     }
+
+
+@pytest.fixture()
+def two_factor_secret_user(db, user):
+    secret = pyotp.random_base32()
+
+    user.two_factor_secret = auth.encrypt_two_factor_secret(secret)
+    user.two_factor_enabled = False
+
+    db.commit()
+    db.refresh(user)
+
+    return user, secret
+
+
+@pytest.fixture()
+def two_factor_enabled_user(db, two_factor_secret_user,):
+    user, secret = two_factor_secret_user
+
+    user.two_factor_enabled = True
+
+    db.commit()
+    db.refresh(user)
+
+    return user, secret

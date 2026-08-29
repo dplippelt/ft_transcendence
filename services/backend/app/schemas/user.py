@@ -1,7 +1,12 @@
 from typing import Any
 
-from pydantic import BaseModel, EmailStr, Field, HttpUrl, field_validator, model_validator
-
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 USERNAME_PATTERN = r"^[a-zA-Z0-9_.-]+$"
 

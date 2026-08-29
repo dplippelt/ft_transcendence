@@ -68,3 +68,24 @@ def test_generated_recovery_codes_are_unique():
 
     # Assert
     assert len(codes) == len(set(codes))
+
+
+def test_disable_two_factor_success(client, auth_headers, two_factor_enabled_user,):
+    # Arrange
+    _, secret = two_factor_enabled_user
+    valid_code = pyotp.TOTP(secret).now()
+
+    # Act
+    response = client.request(
+        "DELETE",
+        "/auth/2fa",
+        headers=auth_headers,
+        json={
+            "code": valid_code,
+        },
+    )
+
+    # Assert
+    assert response.status_code == 200
+    data = response.json()
+    assert data["two_factor_enabled"] is False

@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     google_client_id: str | None = None
     frontend_origin: str = "http://localhost:5173"
+    two_factor_encryption_key: str
 
     model_config = SettingsConfigDict(env_file=".env")
 

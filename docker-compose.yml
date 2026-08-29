@@ -28,6 +28,7 @@ services:
       SECRET_KEY: ${SECRET_KEY}
       GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
       FRONTEND_ORIGIN: "http://localhost:${FE_PORT}"
+      TWO_FACTOR_ENCRYPTION_KEY: ${TWO_FACTOR_ENCRYPTION_KEY}
 
   db:
     image: postgres:16

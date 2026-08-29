@@ -3,11 +3,13 @@ import hmac
 import secrets
 
 import pyotp
+from cryptography.fernet import Fernet
 
 from app.core.settings import get_settings
 
-
 settings = get_settings()
+
+_two_factor_fernet = Fernet(settings.two_factor_encryption_key.encode())
 
 TWO_FACTOR_ISSUER = "ft_transcendence"
 
@@ -67,3 +69,11 @@ def hash_recovery_code(code: str) -> str:
         normalized.encode(),
         hashlib.sha256,
     ).hexdigest()
+
+
+def encrypt_two_factor_secret(secret: str) -> str:
+    return _two_factor_fernet.encrypt(secret.encode()).decode()
+
+
+def decrypt_two_factor_secret(encrypted_secret: str) -> str:
+    return _two_factor_fernet.decrypt(encrypted_secret.encode()).decode()
