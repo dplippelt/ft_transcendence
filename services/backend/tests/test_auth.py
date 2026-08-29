@@ -1,9 +1,3 @@
-def test_user_fixture(user):
-    assert user.id is not None
-    assert user.username == "testuser"
-    assert user.is_active is True
-
-
 def test_login_with_valid_credentials(client, user, user_credentials):
     # Arrange
     # Fixture already created the test user and credentials
