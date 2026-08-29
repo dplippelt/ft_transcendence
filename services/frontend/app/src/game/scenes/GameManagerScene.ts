@@ -65,6 +65,9 @@ export class GameManagerScene extends Scene {
   create() {
     this.input.keyboard?.on("keydown-ESC", () => EventBus.emit(GameEvent.gameMenu));
 
+    this.game.events.on(Core.Events.BLUR, this.onBlur, this);
+    this.game.events.on(Core.Events.HIDDEN, this.onBlur, this);
+
     EventBus.on(GameEvent.gameVis, (visible: boolean) => {
       this._isGameVisible = visible;
       this.updateGlobalCapture();
@@ -225,5 +228,9 @@ export class GameManagerScene extends Scene {
 
   private anyPlayerAlive() {
     return this._gameScene.getAlivePlayerCount() > 0;
+  }
+
+  private onBlur() {
+    EventBus.emit(GameEvent.blur);
   }
 }

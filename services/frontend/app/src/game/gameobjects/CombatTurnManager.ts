@@ -1,7 +1,7 @@
-import Phaser, { Core, type Scene } from "phaser";
+import Phaser, { type Scene } from "phaser";
 import type CombatManager from "./CombatManager";
 import { EventBus } from "../EventBus";
-import { CombatEvent, GameEvent } from "../../utils/utils";
+import { CombatEvent } from "../../utils/utils";
 
 export enum TurnEvents {
   SWITCH = "switch",
@@ -34,15 +34,11 @@ export default class CombatTurnManager {
     this.isPlayerTurn = true;
     this.playerTimer = this.playTurnFor(this.playerDelayMs);
     this.enemyTimer = null;
-    this.scene.game.events.on(Core.Events.BLUR, this.onBlur, this);
-    this.scene.game.events.on(Core.Events.HIDDEN, this.onBlur, this);
     EventBus.addListener(CombatEvent.getTurnTimerState, this.sendElapsedTime, this)
   }
 
   destroy() {
     this.cleanupTimers();
-    this.scene.game.events.off(Core.Events.BLUR, this.onBlur, this);
-    this.scene.game.events.off(Core.Events.HIDDEN, this.onBlur, this);
     EventBus.removeListener(CombatEvent.getTurnTimerState, this.sendElapsedTime, this)
   }
 
@@ -101,10 +97,6 @@ export default class CombatTurnManager {
     if (!timer)
       return null;
     EventBus.emit(CombatEvent.initTurnTimer, this.playerDelayMs, timer.getElapsed());
-  }
-
-  onBlur() {
-    EventBus.emit(GameEvent.blur);
   }
 
   getIsPlayerTurn() {
