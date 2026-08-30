@@ -1,31 +1,43 @@
+import { useEffect, useState } from "react";
 import { EventBus } from "../../game/EventBus";
 import { CombatEvent } from "../../utils/utils";
 import styles from "./CombatButtons.module.scss";
 
 interface ICombatButton
 {
-	label: string;
 	onClick?: () => void;
 	extraStyling?: string;
-	disabled?: boolean;
 }
 
-function CombatButton( { label, onClick, extraStyling="", disabled=false } : ICombatButton )
+function CombatButton( { onClick, extraStyling="" } : ICombatButton )
 {
-	return <button className={`${styles.combatButton} ${extraStyling}`} type="button" disabled={disabled} onClick={onClick}>{label}</button>;
+	const [disabled, setDisabled] = useState<boolean>(false);
+
+	useEffect(() =>
+	{
+		function turnStart() { setDisabled(false); }
+		EventBus.addListener(CombatEvent.initTurn, turnStart);
+
+		function turnEnd() { setDisabled(true); }
+		EventBus.addListener(CombatEvent.turnEnded, turnEnd);
+
+		function cleanup () {
+			EventBus.removeListener(CombatEvent.initTurn, turnStart);
+			EventBus.removeListener(CombatEvent.turnEnded, turnEnd);
+		}
+
+		return () => cleanup();
+	}, [])
+
+	return <button className={`${styles.combatButton} ${extraStyling}`} type="button" disabled={disabled} onClick={onClick} />;
 }
 
 export function AttackButton()
 {
-	return <CombatButton label="" extraStyling={styles.attackButton} onClick={() => EventBus.emit(CombatEvent.attack)} />
+	return <CombatButton extraStyling={styles.attackButton} onClick={() => EventBus.emit(CombatEvent.attack)} />
 }
 
 export function DrawButton()
 {
-	return <CombatButton label="" extraStyling={styles.drawButton} onClick={() => EventBus.emit(CombatEvent.draw)} />
+	return <CombatButton extraStyling={styles.drawButton} onClick={() => EventBus.emit(CombatEvent.draw)} />
 }
-
-// export function ResetButton()
-// {
-// 	return <CombatButton label="Reset" extraStyling={styles.resetButton} onClick={() => EventBus.emit(CombatEvent.reset)} />
-// }

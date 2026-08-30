@@ -6,7 +6,6 @@ import CardBase, { CardEvents } from "./CardBase";
 import type { PlayerStatus } from "../../scenes/CombatScene";
 import { EventBus } from "../../EventBus";
 import { CombatEvent } from "../../../utils/utils";
-import type CombatTurnManager from "../CombatTurnManager";
 
 export enum CardActionEvents {
   DRAW = "draw",
@@ -20,7 +19,6 @@ export enum CardActionEvents {
 export default class CardManager {
   readonly scene: Scene;
   readonly playerStatus: PlayerStatus;
-  readonly turnManager: CombatTurnManager;
   readonly cardDeck: CardDeck;
   readonly cardHand: CardHand;
   readonly cardSelection: CardSelection;
@@ -28,10 +26,9 @@ export default class CardManager {
   readonly maxNumCardsInHand: number;
   private canRedraw: boolean;
 
-  constructor(scene: Scene, playerStatus: PlayerStatus, turnManager: CombatTurnManager) {
+  constructor(scene: Scene, playerStatus: PlayerStatus) {
     this.scene = scene;
     this.playerStatus = playerStatus;
-    this.turnManager = turnManager;
     this.cardDeck = new CardDeck(this.scene, cardDeckConfig);
     this.cardHand = new CardHand(this.scene);
     this.cardSelection = new CardSelection(this.scene);
@@ -73,7 +70,7 @@ export default class CardManager {
   }
 
   redrawCards() {
-    if (!this.turnManager.getIsPlayerTurn() || !this.canRedraw || this.playerStatus.mana <= 0) {
+    if ( !this.canRedraw || this.playerStatus.mana <= 0) {
       return;
     }
 

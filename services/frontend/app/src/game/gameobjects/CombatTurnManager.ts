@@ -96,11 +96,7 @@ export default class CombatTurnManager {
     const timer = this.isPlayerTurn ? this.playerTimer : null;
     if (!timer)
       return null;
-    EventBus.emit(CombatEvent.initTurnTimer, this.playerDelayMs, timer.getElapsed());
-  }
-
-  getIsPlayerTurn() {
-    return this.isPlayerTurn;
+    EventBus.emit(CombatEvent.initTurn, this.playerDelayMs, timer.getElapsed());
   }
 
   getPlayerDelayMs() {

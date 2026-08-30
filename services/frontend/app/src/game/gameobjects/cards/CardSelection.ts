@@ -67,17 +67,6 @@ export default class CardSelection {
     return selectedCards;
   }
 
-  // NOTE to Takato: I had to change the unsetAllCards() approach because
-  // I implemented a feature in unsetCardFromSlot() so that the cards in
-  // the slots shift left when you remove/unselect a card from the selection
-  // slots (so that when you unselect a card and then add a new one, the new
-  // card is always added to the end of the selection slots).
-  // The old unsetAllCards() was iterating over the slots and unselecting
-  // them inside the loop (which calls unsetCardFromSlot() through the emit()),
-  // which then would shift the cards in the slots array you're currently
-  // looping over (resulting in skipping a card in your loop).
-  // The new approach first gets an array of selected cards (independent of the
-  // slots array) and loops over that array to unselect those cards specifically.
   unsetAllCards() {
     const selectedCards = this.getSelectedCards();
 

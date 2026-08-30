@@ -18,7 +18,7 @@ export default function TurnTimer()
 			setElapsedTime(elapsedTime);
 			setTurn(prev => prev + 1)
 		}
-		EventBus.addListener(CombatEvent.initTurnTimer, initTurnTime);
+		EventBus.addListener(CombatEvent.initTurn, initTurnTime);
 
 		function endTurn() { setTurnTime(0); }
 		EventBus.addListener(CombatEvent.turnEnded, endTurn);
@@ -33,7 +33,7 @@ export default function TurnTimer()
 
 		function cleanup()
 		{
-			EventBus.removeListener(CombatEvent.initTurnTimer, initTurnTime);
+			EventBus.removeListener(CombatEvent.initTurn, initTurnTime);
 			EventBus.removeListener(CombatEvent.turnEnded, endTurn);
 			EventBus.removeListener(CombatEvent.pauseTimer, pauseTimer);
 			EventBus.removeListener(GameEvent.gameVis, onGameVisible);

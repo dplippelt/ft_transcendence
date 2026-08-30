@@ -67,31 +67,18 @@ export class GameManagerScene extends Scene {
 
     this.game.events.on(Core.Events.BLUR, this.onBlur, this);
     this.game.events.on(Core.Events.HIDDEN, this.onBlur, this);
+    EventBus.addListener(GameEvent.gameVis, this.onGameVisChange, this);
+    EventBus.addListener(GameEvent.chatFocus, this.onChatFocusChange, this);
+    EventBus.addListener(GameEvent.gameMenu, this.onGameMenu, this);
+    EventBus.addListener(GameEvent.blur, this.onGameBlur, this);
 
-    EventBus.on(GameEvent.gameVis, (visible: boolean) => {
-      this._isGameVisible = visible;
-      this.updateGlobalCapture();
-    });
-
-    EventBus.on(GameEvent.chatFocus, (focused: boolean) => {
-      this._isChatFocused = focused;
-      this.updateGlobalCapture();
-      if ( focused )
-        this.game.events.emit(Core.Events.BLUR, false);
-    });
-
-    EventBus.on(GameEvent.gameMenu, () => {
-      if (this._gameType === GameType.OnlineCoop)
-        return; // Do not pause game for online multiplayer games when game menu is opened.
-
-      this.togglePause();
-    });
-
-    EventBus.on(GameEvent.blur, () => {
-      if (this._gameType === GameType.OnlineCoop)
-        return;
-
-      this.pause();
+    this.events.once(Phaser.Scenes.Events.DESTROY, () => {
+      this.game.events.off(Core.Events.BLUR, this.onBlur, this);
+      this.game.events.off(Core.Events.HIDDEN, this.onBlur, this);
+      EventBus.removeListener(GameEvent.gameVis, this.onGameVisChange, this);
+      EventBus.removeListener(GameEvent.chatFocus, this.onChatFocusChange, this);
+      EventBus.removeListener(GameEvent.gameMenu, this.onGameMenu, this);
+      EventBus.removeListener(GameEvent.blur, this.onGameBlur, this);
     });
   }
 
@@ -233,5 +220,29 @@ export class GameManagerScene extends Scene {
   private onBlur( doBlur: boolean = true ) {
     if ( !doBlur ) return; // so it doesn't blur the game and open the game menu when BLUR is emitted by a focus on the side bar chat
     EventBus.emit(GameEvent.blur);
+  }
+
+  private onGameVisChange(visible: boolean) {
+    this._isGameVisible = visible;
+    this.updateGlobalCapture();
+  }
+
+  private onChatFocusChange(focused: boolean) {
+      this._isChatFocused = focused;
+      this.updateGlobalCapture();
+      if (focused)
+        this.game.events.emit(Core.Events.BLUR, false);
+  }
+
+  private onGameMenu() {
+      if (this._gameType === GameType.OnlineCoop)
+        return;
+      this.togglePause();
+  }
+
+  private onGameBlur() {
+      if (this._gameType === GameType.OnlineCoop)
+        return;
+      this.pause();
   }
 }

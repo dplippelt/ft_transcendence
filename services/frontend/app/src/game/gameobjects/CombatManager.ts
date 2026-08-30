@@ -34,8 +34,8 @@ export default class CombatManager {
     this.scene = scene;
     this.player = new CombatPlayer(scene, playerStatus);
     this.enemy = new CombatEnemy(scene, enemyData);
+    this.cardManager = new CardManager(scene, playerStatus);
     this.turnManager = new CombatTurnManager(this);
-    this.cardManager = new CardManager(scene, playerStatus, this.turnManager);
     this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
     this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.initEnemyTurn, this);
     this.executeManager = new CombatExecuteManager();
@@ -61,7 +61,7 @@ export default class CombatManager {
     this.cardManager.clearHand(true);
     this.cardManager.fillCardHand(this.cardManager.maxNumCardsInHand);
     this.executeManager.reset();
-    EventBus.emit(CombatEvent.initTurnTimer, this.turnManager.getPlayerDelayMs());
+    EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs());
   }
 
   initEnemyTurn() {
@@ -74,9 +74,6 @@ export default class CombatManager {
   }
 
   execute() {
-    if ( !this.turnManager.getIsPlayerTurn() )
-      return;
-
     const cards = this.cardManager.cardSelection.getSelectedCards();
 
     this.executeManager.evaluateSelectedCards(cards);
@@ -107,12 +104,14 @@ export default class CombatManager {
     if (combatant instanceof CombatEnemy) {
       const combo = this.executeManager.getCombo()!;
       combatant.takeDamage(this.damageToEnemyOn[combo]);
+      EventBus.emit(CombatEvent.updateEnemyHP, this.enemy.hitPoint);
       if (combatant.isDead()) {
         this.endCombat();
         return;
       }
     } else {
       combatant.takeDamage(this.enemy.enemyData.attackDamage);
+      EventBus.emit(CombatEvent.updatePlayerHP, this.player.status.hitPoint);
       if (combatant.isDead()) {
         this.endGame();
         return;

@@ -24,6 +24,7 @@ interface Background {
   topY: number;
   bottomY: number;
   leftX: number;
+  centerX: number;
   scale: number;
   insetX: number;
   insetY: number;
@@ -92,14 +93,14 @@ const combatLayout: CombatLayout = {
   width: 960,
   height: 540,
   player: {
-    xFromCenter: -220,
+    xFromCenter: -420,
     yFromBgBottom: -200,
-    scale: 1.8,
+    scale: 3,
   },
   enemy: {
-    xFromCenter: 220 + 0.5 * spriteSize.enemy.width,
+    xFromCenter: 420 + 0.5 * spriteSize.enemy.width,
     yFromBgBottom: -200,
-    scale: 1.8,
+    scale: 3,
   },
   cards: {
     hand: {
@@ -161,7 +162,7 @@ export default class CombatLayoutManager {
     this.spriteSize = spriteSize;
     this.layout = combatLayout;
     this.display = { width: 0, height: 0, centerX: 0, centerY: 0, scale: 0 };
-    this.background = { topY: 0, bottomY: 0, leftX: 0, scale: 0, insetX: 0, insetY: 0 };
+    this.background = { topY: 0, bottomY: 0, leftX: 0, centerX: 0, scale: 0, insetX: 0, insetY: 0 };
     this.scene.scale.refresh();
     this.updateDisplay();
     this.updateLayout();
@@ -206,6 +207,7 @@ export default class CombatLayoutManager {
     this.background.bottomY = this.display.height - this.background.insetY;
     this.background.topY = this.background.insetY;
     this.background.leftX = this.display.width - bgWidth - this.background.insetX;
+    this.background.centerX = this.display.centerX;
 
     document.documentElement.style.setProperty("--combat-ui-inset-x", `${this.background.insetX}px`);
   }
@@ -312,11 +314,10 @@ export default class CombatLayoutManager {
   updateSelectionSlots(isResize: boolean = true) {
     const selectionSlots = this.cardManager.cardSelection.getSelectionSlots();
     const occupiedSlots = selectionSlots.filter((slot) => slot.isCardSet());
-    const display = this.display;
     const background = this.background;
     const selectionLayout = this.layout.cards.selection;
     const cellWidth = ((this.spriteSize.card.width * selectionLayout.cellScale) + selectionLayout.cellGap) * background.scale;
-    const targetX = display.centerX - ((occupiedSlots.length - 1) / 2) * cellWidth;
+    const targetX = background.centerX - ((occupiedSlots.length - 1) / 2) * cellWidth;
     const targetY = background.topY + selectionLayout.yFromBgTop * background.scale;
     const gridOptions: Phaser.Types.Actions.GridAlignConfig = {
       width: -1,
@@ -337,29 +338,27 @@ export default class CombatLayoutManager {
   }
 
   updatePlayer() {
-    const display = this.display;
     const background = this.background;
     const playerLayout = this.layout.player;
-    const targetX = display.centerX + playerLayout.xFromCenter * display.scale;
+    const targetX = background.centerX + playerLayout.xFromCenter * background.scale;
     const targetY = background.bottomY + playerLayout.yFromBgBottom * background.scale;
     this.player.setData({
       [TransformInLayout.X]: targetX,
       [TransformInLayout.Y]: targetY,
-      [TransformInLayout.SCALE]: this.display.scale * playerLayout.scale,
+      [TransformInLayout.SCALE]: background.scale * playerLayout.scale,
     });
     this.events.emit(LayoutEvents.SET_COMBATANT_POS, this.player);
   }
 
   updateEnemy() {
-    const display = this.display;
     const background = this.background;
     const enemyLayout = this.layout.enemy;
-    const targetX = display.centerX + enemyLayout.xFromCenter * display.scale;
+    const targetX = background.centerX + enemyLayout.xFromCenter * background.scale;
     const targetY = background.bottomY + enemyLayout.yFromBgBottom * background.scale;
     this.enemy.setData({
       [TransformInLayout.X]: targetX,
       [TransformInLayout.Y]: targetY,
-      [TransformInLayout.SCALE]: this.display.scale * enemyLayout.scale,
+      [TransformInLayout.SCALE]: background.scale * enemyLayout.scale,
     });
     this.events.emit(LayoutEvents.SET_COMBATANT_POS, this.enemy);
   }
