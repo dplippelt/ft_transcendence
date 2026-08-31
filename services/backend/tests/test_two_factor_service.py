@@ -1,5 +1,6 @@
 import pyotp
 
+from app.core.security import create_two_factor_challenge_token
 from app.services.two_factor_service import (
     RECOVERY_CODE_COUNT,
     generate_provisioning_uri,
@@ -89,3 +90,103 @@ def test_disable_two_factor_success(client, auth_headers, two_factor_enabled_use
     assert response.status_code == 200
     data = response.json()
     assert data["two_factor_enabled"] is False
+
+
+def test_two_factor_recovery_code_is_single_use(client, auth_headers, two_factor_secret_user,):
+    # Arrange
+    user, secret = two_factor_secret_user
+
+    confirm_response = client.post(
+        "/auth/2fa/confirm",
+        headers=auth_headers,
+        json={
+            "code": pyotp.TOTP(secret).now(),
+        },
+    )
+
+    assert confirm_response.status_code == 200
+
+    recovery_code = confirm_response.json()["recovery_codes"][0]
+
+    challenge_token = create_two_factor_challenge_token(
+        user.id,
+    )
+
+    # Act - first use
+    response = client.post(
+        "/auth/2fa/recovery",
+        json={
+            "challenge_token": challenge_token,
+            "recovery_code": recovery_code,
+        },
+    )
+
+    # Assert
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+
+    # Act - reuse
+    response = client.post(
+        "/auth/2fa/recovery",
+        json={
+            "challenge_token": challenge_token,
+            "recovery_code": recovery_code,
+        },
+    )
+
+    # Assert
+    assert response.status_code == 401
+    assert (
+        response.json()["detail"]["code"]
+        == "INVALID_TWO_FACTOR_RECOVERY_CODE"
+    )
+
+
+def test_two_factor_recovery_accepts_normalized_code(client, auth_headers, two_factor_secret_user,):
+    # Arrange
+    user, secret = two_factor_secret_user
+
+    confirm_response = client.post(
+        "/auth/2fa/confirm",
+        headers=auth_headers,
+        json={
+            "code": pyotp.TOTP(secret).now(),
+        },
+    )
+
+    recovery_code = confirm_response.json()["recovery_codes"][0]
+    normalized_input = recovery_code.lower().replace("-", " ")
+
+    # Act
+    response = client.post(
+        "/auth/2fa/recovery",
+        json={
+            "challenge_token":
+                create_two_factor_challenge_token(user.id),
+            "recovery_code": normalized_input,
+        },
+    )
+
+    # Assert
+    assert response.status_code == 200
+    assert "access_token" in response.json()
+
+
+def test_access_token_cannot_be_used_for_two_factor_recovery(client, user,):
+    # Arrange
+    access_token = create_access_token(
+        data={"sub": str(user.id)},
+    )
+
+    # Act
+    response = client.post(
+        "/auth/2fa/recovery",
+        json={
+            "challenge_token": access_token,
+            "recovery_code": "AAAA-BBBB-CCCC-DDDD",
+        },
+    )
+
+    # Assert
+    assert response.status_code == 401
+    assert (response.json()["detail"]["code"] == "TWO_FACTOR_CHALLENGE_INVALID")
