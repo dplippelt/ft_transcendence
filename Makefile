@@ -5,103 +5,129 @@ VOLUME_DIRS =	$(HOME)/ft_transcendence
 POSTGRES_VOLUME = ft_transcendence_postgres_data
 
 ENV_FILE = .env
+ENV_EXAMPLE = .env.example
+
+ensure-env:
+	@if [ ! -f $(ENV_FILE) ]; then \
+		if [ ! -f $(ENV_EXAMPLE) ]; then \
+			echo "Missing $(ENV_FILE) and $(ENV_EXAMPLE)."; \
+			exit 1; \
+		fi; \
+		cp $(ENV_EXAMPLE) $(ENV_FILE); \
+		echo "Created $(ENV_FILE) from $(ENV_EXAMPLE)."; \
+	fi
+	@$(MAKE) --no-print-directory ensure-2fa-secrets
 
 ensure-2fa-secrets:
-	@if ! grep -q '^TWO_FACTOR_ENCRYPTION_KEY=.\+' $(ENV_FILE) 2>/dev/null || \
-		grep -q '^TWO_FACTOR_ENCRYPTION_KEY=replace-with-a-fernet-key' $(ENV_FILE) 2>/dev/null; then \
+	@touch $(ENV_FILE)
+	@VALUE=$$(sed -n 's/^TWO_FACTOR_ENCRYPTION_KEY=//p' $(ENV_FILE) | tail -n 1); \
+	if [ -z "$$VALUE" ] || \
+		[ "$$VALUE" = "replace-with-a-fernet-key" ] || \
+		! python3 -c 'import base64, sys; key = base64.urlsafe_b64decode(sys.argv[1].encode()); sys.exit(0 if len(key) == 32 else 1)' "$$VALUE" 2>/dev/null; then \
 		echo "Generating TWO_FACTOR_ENCRYPTION_KEY..."; \
-		KEY=$$(python3 -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"); \
-		sed -i "s|^TWO_FACTOR_ENCRYPTION_KEY=.*|TWO_FACTOR_ENCRYPTION_KEY=$$KEY|" $(ENV_FILE); \
+		KEY=$$(python3 -c 'import base64, secrets; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())'); \
+		if grep -q '^TWO_FACTOR_ENCRYPTION_KEY=' $(ENV_FILE); then \
+			sed -i "s|^TWO_FACTOR_ENCRYPTION_KEY=.*|TWO_FACTOR_ENCRYPTION_KEY=$$KEY|" $(ENV_FILE); \
+		else \
+			echo "TWO_FACTOR_ENCRYPTION_KEY=$$KEY" >> $(ENV_FILE); \
+		fi; \
 	fi
 
-	@if ! grep -q '^TWO_FACTOR_RECOVERY_HMAC_KEY=.\+' $(ENV_FILE) 2>/dev/null || \
-	    grep -q '^TWO_FACTOR_RECOVERY_HMAC_KEY=replace-with-a-long-random-secret' $(ENV_FILE) 2>/dev/null; then \
+	@VALUE=$$(sed -n 's/^TWO_FACTOR_RECOVERY_HMAC_KEY=//p' $(ENV_FILE) | tail -n 1); \
+	if [ -z "$$VALUE" ] || \
+		[ "$$VALUE" = "replace-with-a-long-random-secret" ] || \
+		[ $${#VALUE} -lt 32 ]; then \
 		echo "Generating TWO_FACTOR_RECOVERY_HMAC_KEY..."; \
-		KEY=$$(python3 -c "import secrets; print(secrets.token_urlsafe(64))"); \
-		sed -i "s|^TWO_FACTOR_RECOVERY_HMAC_KEY=.*|TWO_FACTOR_RECOVERY_HMAC_KEY=$$KEY|" $(ENV_FILE); \
+		KEY=$$(python3 -c 'import secrets; print(secrets.token_urlsafe(64))'); \
+		if grep -q '^TWO_FACTOR_RECOVERY_HMAC_KEY=' $(ENV_FILE); then \
+			sed -i "s|^TWO_FACTOR_RECOVERY_HMAC_KEY=.*|TWO_FACTOR_RECOVERY_HMAC_KEY=$$KEY|" $(ENV_FILE); \
+		else \
+			echo "TWO_FACTOR_RECOVERY_HMAC_KEY=$$KEY" >> $(ENV_FILE); \
+		fi; \
 	fi
 
-rotate-2fa-key:
-	@KEY=$$(docker compose -f $(DCOMP) run --rm --no-deps backend \
-		python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"); \
-	sed -i "s|^TWO_FACTOR_ENCRYPTION_KEY=.*|TWO_FACTOR_ENCRYPTION_KEY=$$KEY|" $(ENV_FILE)
-	@echo "TWO_FACTOR_ENCRYPTION_KEY rotated."
+rotate-2fa-key: ensure-env
+	@KEY=$$(python3 -c 'import base64, secrets; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())'); \
+	if grep -q '^TWO_FACTOR_ENCRYPTION_KEY=' $(ENV_FILE); then \
+		sed -i "s|^TWO_FACTOR_ENCRYPTION_KEY=.*|TWO_FACTOR_ENCRYPTION_KEY=$$KEY|" $(ENV_FILE); \
+	else \
+		echo "TWO_FACTOR_ENCRYPTION_KEY=$$KEY" >> $(ENV_FILE); \
+	fi
+	@echo "TWO_FACTOR_ENCRYPTION_KEY rotated. Existing encrypted TOTP secrets must be reset or re-encrypted."
 
-setup:
-	$(MAKE) ensure-2fa-secrets
+setup: ensure-env
 	$(MAKE) build
 
-build:
+build: ensure-env
 	@mkdir -p $(VOLUME_DIRS)/frontend_data
 	docker compose -f $(DCOMP) build
 
-check-frontend:
+check-frontend: ensure-env
 	docker compose -f $(DCOMP) run --rm frontend npm run build
 
-lint-backend:
+lint-backend: ensure-env
 	docker compose -f $(DCOMP) run --rm backend \
 		python -m ruff check app tests
 
-lint-backend-fix:
+lint-backend-fix: ensure-env
 	docker compose -f $(DCOMP) run --rm backend \
 		python -m ruff check app tests --fix
 
-check-backend:
+check-backend: ensure-env
 	docker compose -f $(DCOMP) run --rm backend \
 		python -m compileall -q /app/app
 	docker compose -f $(DCOMP) run --rm backend \
 		python -c "import app.main"
 	$(MAKE) lint-backend
 
-check: check-frontend check-backend
+check: ensure-env check-frontend check-backend
 
-dead-code:
+dead-code: ensure-env
 	docker compose -f $(DCOMP) run --rm backend \
 		python -m vulture app tests --min-confidence 100
 
-up:
+up: ensure-env
 	docker compose -f $(DCOMP) up -d
 
 down:
 	docker compose -f $(DCOMP) down
 
-start:
+start: ensure-env
 	docker compose -f $(DCOMP) start
 
 stop:
 	docker compose -f $(DCOMP) stop
 
-test:
+test: ensure-env
 	docker compose -f $(DCOMP) run --rm backend \
 		python -m pytest tests -v --maxfail=1 --disable-warnings
 
-test-auth:
+test-auth: ensure-env
 	docker compose -f $(DCOMP) run --rm backend \
 		python -m pytest tests/test_auth.py -v --maxfail=1
 
-test-security:
+test-security: ensure-env
 	docker compose -f $(DCOMP) run --rm backend \
 		python -m pytest tests/test_security.py -v --maxfail=1
 
-test-2fa-auth:
+test-2fa-auth: ensure-env
 	docker compose -f $(DCOMP) run --rm backend \
 		python -m pytest tests/test_two_factor_auth.py -v --maxfail=1
 
-test-2fa-service:
+test-2fa-service: ensure-env
 	docker compose -f $(DCOMP) run --rm backend \
 		python -m pytest tests/test_two_factor_service.py -v --maxfail=1
 
-reset-db:
+reset-db: ensure-env
 	$(MAKE) down || true
 	docker volume rm $(POSTGRES_VOLUME) 2>/dev/null || true
 	docker compose -f $(DCOMP) up -d
 
-restart:
+restart: ensure-env
 	docker compose -f $(DCOMP) restart
 
-re:
+re: ensure-env
 	$(MAKE) down || true
-	$(MAKE) ensure-2fa-secrets
 	$(MAKE) build
 	$(MAKE) check
 	$(MAKE) up
@@ -111,13 +137,13 @@ clean:
 
 fclean:
 	docker compose -f $(DCOMP) down -v || true
-	docker volume rm transc_frontend_data 2>/dev/null || true
 	sudo rm -rf $(VOLUME_DIRS)
 	sudo rm -rf services/frontend/app/node_modules
 
 fre: fclean setup check up
 
-.PHONY: setup build check check-frontend check-backend \
+.PHONY: ensure-env ensure-2fa-secrets rotate-2fa-key \
+	setup build check check-frontend check-backend \
+	lint-backend lint-backend-fix dead-code \
 	test test-auth test-security test-2fa-auth test-2fa-service \
-	lint-backend-fix dead-code setup build ensure-2fa-key rotate-2fa-key \
 	up down start stop restart reset-db re clean fclean fre
