@@ -65,7 +65,7 @@ def hash_recovery_code(code: str) -> str:
     normalized = normalize_recovery_code(code)
 
     return hmac.new(
-        settings.secret_key.encode(),
+        settings.two_factor_recovery_hmac_key.encode(),
         normalized.encode(),
         hashlib.sha256,
     ).hexdigest()

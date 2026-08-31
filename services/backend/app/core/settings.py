@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     google_client_id: str | None = None
     frontend_origin: str = "http://localhost:5173"
     two_factor_encryption_key: str
-
+    two_factor_recovery_hmac_key: str
     model_config = SettingsConfigDict(env_file=".env")
 
 
