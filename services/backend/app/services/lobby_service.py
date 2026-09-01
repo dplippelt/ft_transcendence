@@ -397,18 +397,19 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
 
 
 def start_game_session(db: Session, user: User, lobby_id: int) -> GameSession:
-    member = get_member(db, lobby_id, user.id)
-    if member is None:
+    host = get_member(db, lobby_id, user.id)
+    if host is None:
         raise forbidden("You are not a member of this lobby.", code=ErrorCode.NOT_LOBBY_MEMBER)
 
-    if member.role != HOST:
+    if host.role != HOST:
         raise forbidden("You are not the host of this lobby.", code=ErrorCode.NOT_LOBBY_HOST)
 
-    other_members = get_other_member_ids(db, lobby_id, user.id)
-    if not other_members:
+    user_ids = get_other_member_ids(db, lobby_id, user.id)
+    if not user_ids:
         raise forbidden("You cannot host the game alone.", code=ErrorCode.LOBBY_MISSING_PLAYERS)
 
-    game_session = game_session_manager.create(set(other_members))
+    user_ids.append(host.id)
+    game_session = game_session_manager.create(set(user_ids))
     if game_session is None:
         raise internal_server_error("Game session crashed.", ErrorCode.LOBBY_GAME_SESSION_CRASH)
 
