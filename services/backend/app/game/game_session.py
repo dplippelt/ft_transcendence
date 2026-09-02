@@ -1,4 +1,5 @@
 import asyncio
+from asyncio.exceptions import CancelledError
 import logging
 from enum import Enum, StrEnum, auto
 from time import monotonic
@@ -54,9 +55,7 @@ class GameSession:
             return True
 
         self.task = asyncio.create_task(self.game_loop())
-        if self.task.exception():
-            logger.error(f"start session failed: {logging.exception}")
-            return False
+        self.task.add_done_callback(self.task_ended)
         self.state = SessionState.WAITING_FOR_PLAYERS
         return True
 
@@ -64,11 +63,12 @@ class GameSession:
         if self.task is None:
             return
 
-        _ = self.task.cancel()
-        try:
-            await self.task
-        finally:
-            self.task = None
+        if self.task.cancel():
+            try:
+                await self.task
+            except CancelledError:
+                pass
+        self.task = None
 
     # TODO: Support spectators
     async def join(self, user_id: int, socket: WebSocket) -> JoinStatus:
@@ -156,6 +156,16 @@ class GameSession:
 
     def get_snapshot(self, user_id: int) -> GameSnapshot:
         return self.game.get_snapshot(user_id)
+
+    def task_ended(self, task: asyncio.Task[None]):
+        try:
+            task.result()
+        except CancelledError:
+            pass
+        except Exception as ex:
+            logger.exception(f"session {self.id} failed")
+
+        self.state = SessionState.SESSION_OVER
 
     def is_over(self) -> bool:
         if (

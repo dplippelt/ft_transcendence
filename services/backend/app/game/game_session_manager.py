@@ -1,4 +1,6 @@
+import logging
 import asyncio
+from asyncio.exceptions import CancelledError
 import uuid
 
 from fastapi import WebSocket
@@ -8,28 +10,38 @@ from app.core.websocket_manager import ConnectionManager
 from .game_session import GameSession, JoinStatus
 
 
+logger = logging.getLogger(__name__)
+
 class GameSessionManager:
     def __init__(self):
         self.game_sessions: dict[str, GameSession] = {}
         self.task: asyncio.Task[None] | None = None
+
+    def task_ended(self, task: asyncio.Task[None]):
+        try:
+            task.result()
+        except CancelledError:
+            pass
+        except Exception:
+            logger.exception("game session manager task failed")
 
     def start(self):
         if self.task:
             return
 
         self.task = asyncio.create_task(self.validate_session_state())
-        if self.task.exception():
-            raise self.task.exception() # pyright: ignore[reportGeneralTypeIssues]
+        self.task.add_done_callback(self.task_ended)
 
     async def stop(self):
         if self.task is None:
             return
 
-        _ = self.task.cancel()
-        try:
-            await self.task
-        finally:
-            self.task = None
+        if self.task.cancel():
+            try:
+                await self.task
+            except CancelledError:
+                pass
+        self.task = None
 
         for game_session in self.game_sessions.values():
             await game_session.stop()
