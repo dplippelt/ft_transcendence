@@ -8,6 +8,7 @@ export interface AuthUser
     avatar_url: string | null;
     is_guest: boolean;
     is_active: boolean;
+    two_factor_enabled: boolean;
     linked_providers: string[];
 }
 
@@ -15,6 +16,26 @@ export interface TokenResponse
 {
     access_token: string;
     token_type: string;
+}
+
+export interface TwoFactorAuthResponse
+{
+    required_two_factor: true;
+    challenge_token: string;
+}
+
+export type LoginResponse = TokenResponse | TwoFactorAuthResponse;
+
+export interface TwoFactorLoginRequest
+{
+    challenge_token: string;
+    code: string;
+}
+
+export interface TwoFactorRecoveryRequest
+{
+    challenge_token: string;
+    recovery_code: string;
 }
 
 export interface LoginRequest
@@ -42,9 +63,9 @@ export interface PasswordUpdateRequest
     new_password: string;
 }
 
-export function loginUser(credentials: LoginRequest): Promise<TokenResponse>
+export function loginUser(credentials: LoginRequest): Promise<LoginResponse>
 {
-    return apiRequest<TokenResponse>(
+    return apiRequest<LoginResponse>(
         "/auth/login",
         {
             method: "POST",
@@ -73,13 +94,35 @@ export function getCurrentUser(accessToken: string): Promise<AuthUser>
     );
 }
 
-export function loginWithGoogleCredentials(credential: string,): Promise<TokenResponse>
+export function loginWithGoogleCredentials(credential: string,): Promise<LoginResponse>
 {
-    return apiRequest<TokenResponse>(
+    return apiRequest<LoginResponse>(
         "/auth/google",
         {
             method: "POST",
             body: JSON.stringify({ credential }),
+        },
+    );
+}
+
+export function loginWithTwoFactor(data: TwoFactorLoginRequest): Promise<TokenResponse>
+{
+    return apiRequest<TokenResponse>(
+        "/auth/2fa/login",
+        {
+            method: "POST",
+            body: JSON.stringify(data),
+        },
+    );
+}
+
+export function loginWithRecoveryCode(data: TwoFactorRecoveryRequest): Promise<TokenResponse>
+{
+    return apiRequest<TokenResponse>(
+        "/auth/2fa/recovery",
+        {
+            method: "POST",
+            body: JSON.stringify(data),
         },
     );
 }
