@@ -1,6 +1,9 @@
 import pyotp
 
-from app.core.security import create_two_factor_challenge_token
+from app.core.security import (
+    create_access_token,
+    create_two_factor_challenge_token,
+)
 from app.services.two_factor_service import (
     RECOVERY_CODE_COUNT,
     generate_provisioning_uri,
