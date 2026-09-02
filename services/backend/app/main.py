@@ -6,9 +6,10 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
-from app.api.v1 import auth, chat, dungeons, leaderboard, lobbies, scores, users, friends
+from app.api.v1 import auth, chat, dungeons, leaderboard, lobbies, scores, users, friends, game
 from app.db.database import Base, engine
 from app.core.settings import get_settings
+from app.game.game_session_manager import game_session_manager
 from app.services.avatar_service import AVATAR_DIR
 
 # Import model modules so SQLAlchemy registers their tables in Base.metadata.
@@ -21,7 +22,9 @@ AVATAR_DIR.mkdir(parents=True, exist_ok=True)
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
+    game_session_manager.start()
     yield
+    await game_session_manager.stop()
 
 
 app = FastAPI(
@@ -43,9 +46,10 @@ app.include_router(users.router,       prefix="/users",        tags=["users"])
 app.include_router(dungeons.router,    prefix="/dungeons",     tags=["dungeons"])
 app.include_router(scores.router,      prefix="/scores",       tags=["scores"])
 app.include_router(leaderboard.router, prefix="/leaderboard",  tags=["leaderboard"])
-app.include_router(friends.router,     prefix="/friends",     tags=["friends"])
+app.include_router(friends.router,     prefix="/friends",      tags=["friends"])
 app.include_router(chat.router,        prefix="/chat",         tags=["chat"])
 app.include_router(lobbies.router,     prefix="/lobbies",      tags=["lobbies"])
+app.include_router(game.router,        prefix="/game",         tags=["game"])
 
 app.mount("/uploads/avatars", StaticFiles(directory=AVATAR_DIR), name="avatars")
 

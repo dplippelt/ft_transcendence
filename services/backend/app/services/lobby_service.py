@@ -5,13 +5,15 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.exceptions import ErrorCode, bad_request, conflict, forbidden, not_found
+from app.core.exceptions import ErrorCode, bad_request, conflict, forbidden, internal_server_error, not_found
 from app.db.utils import commit_or_bad_request
 from app.models.lobby import Lobby
 from app.models.lobby_member import LobbyMember
 from app.models.lobby_message import LobbyMessage
 from app.models.user import User
 from app.services.friend_service import get_friendship, utc_now
+from services.backend.app.game.game_session import GameSession
+from services.backend.app.game.game_session_manager import game_session_manager
 
 HOST = "host"
 GUEST = "guest"
@@ -392,3 +394,23 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
         raise not_found("Friendship not found.", code=ErrorCode.FRIENDSHIP_NOT_FOUND)
 
     return lobby
+
+
+def start_game_session(db: Session, user: User, lobby_id: int) -> GameSession:
+    host = get_member(db, lobby_id, user.id)
+    if host is None:
+        raise forbidden("You are not a member of this lobby.", code=ErrorCode.NOT_LOBBY_MEMBER)
+
+    if host.role != HOST:
+        raise forbidden("You are not the host of this lobby.", code=ErrorCode.NOT_LOBBY_HOST)
+
+    user_ids = get_other_member_ids(db, lobby_id, user.id)
+    if not user_ids:
+        raise forbidden("You cannot host the game alone.", code=ErrorCode.LOBBY_MISSING_PLAYERS)
+
+    user_ids.append(host.id)
+    game_session = game_session_manager.create(set(user_ids))
+    if game_session is None:
+        raise internal_server_error("Game session crashed.", ErrorCode.LOBBY_GAME_SESSION_CRASH)
+
+    return game_session
