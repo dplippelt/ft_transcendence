@@ -20,6 +20,11 @@ import type {
     UpdateUserRequest,
     PasswordUpdateRequest,
 } from "../api/authApi";
+
+import {
+    loginWithTwoFactor as loginWithTwoFactorRequest,
+    loginWithRecoveryCode as loginWithRecoveryCodeRequest,
+} from "../api/authApi";
 import { ApiError } from "../api/http";
 
 const ACCESS_TOKEN_KEY = "accessToken";
@@ -42,7 +47,9 @@ interface IAuthContext
 	auth: IAuth;
 	login: (credentials: LoginRequest) => Promise<void>;
 	register: (userData: RegisterRequest) => Promise<void>;
-	loginWithGoogle: (credential: string) => Promise<void>;
+    loginWithGoogle: (credential: string) => Promise<void>;
+    loginWithTwoFactor: (challengeToken: string, code: string,) => Promise<void>;
+    loginWithRecoveryCode: (challengeToken: string, recoveryCode: string,) => Promise<void>;
     updateProfile: (data: UpdateUserRequest) => Promise<void>;
     updatePassword: (data: PasswordUpdateRequest) => Promise<void>;
     updateAvatar: (avatar: File) => Promise<void>;
@@ -103,11 +110,19 @@ export default function AuthProvider( { children } : {children: ReactNode} )
         }
     }, [logout]);
 
-    const login = useCallback(async (credentials: LoginRequest) =>
+    const login = useCallback(async (credentials: LoginRequest): Promise<LoginResult> =>
     {
-        const tokenResponse = await loginUser(credentials);
+        const response = await loginUser(credentials);
 
-        await establishSession(tokenResponse.access_token);
+        if ("requires_two_factor" in response)
+        {
+            return {
+                requiresTwoFactor: true,
+                challengeToken: response.challenge_token,
+            };
+        }
+        await establishSession(response.access_token);
+        return { requiresTwoFactor: false };
     }, [establishSession]);
 
     const register = useCallback(async (userData: RegisterRequest) =>
@@ -120,11 +135,19 @@ export default function AuthProvider( { children } : {children: ReactNode} )
         });
     }, [login]);
 
-    const loginWithGoogle = useCallback(async (credential: string) =>
+    const loginWithGoogle = useCallback(async (credential: string): Promise<LoginResult> =>
     {
-        const tokenResponse = await loginWithGoogleCredentials(credential);
+        const response = await loginWithGoogleCredentials(credential);
 
-        await establishSession(tokenResponse.access_token);
+        if ("requires_two_factor" in response)
+        {
+            return {
+                requiresTwoFactor: true,
+                challengeToken: response.challenge_token,
+            };
+        }
+        await establishSession(response.access_token);
+        return { requiresTwoFactor: false };
     }, [establishSession]);
 
     useEffect(() =>
@@ -139,6 +162,17 @@ export default function AuthProvider( { children } : {children: ReactNode} )
         void establishSession(storedToken).catch(() => {
             // Auth state is handled by establishSession.
         });
+    }, [establishSession]);
+
+    const loginWithTwoFactor = useCallback(async (challengeToken: string, code: string) =>
+    {
+        const response = await loginWithTwoFactorRequest(challengeToken, code);
+        await establishSession(response.access_token);
+    }, [establishSession]);
+
+    const loginWithRecoveryCode = useCallback(async (challengeToken: string, recoveryCode: string) => {
+        const response = await loginWithRecoveryCodeRequest(challengeToken, recoveryCode);
+        await establishSession(response.access_token);
     }, [establishSession]);
 
     const auth: IAuth = {accessToken, user,status,};
@@ -231,6 +265,8 @@ export default function AuthProvider( { children } : {children: ReactNode} )
 				login,
 				register,
                 loginWithGoogle,
+                loginWithTwoFactor,
+                loginWithRecoveryCode,
                 linkGoogle,
                 unlinkGoogle,
 				logout,
