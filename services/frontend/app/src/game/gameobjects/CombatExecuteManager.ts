@@ -58,6 +58,13 @@ export default class CombatExecuteManager {
     this.targetNumbers[ExecuteCombo.THREE] = this.generateTargetNumber(numbers, operators, 3);
   }
 
+  // FOR DEBUG
+  consoleTargetNumbers() {
+    console.log("target number for 1 combo = " + this.targetNumbers[ExecuteCombo.ONE]);
+    console.log("target number for 2 combo = " + this.targetNumbers[ExecuteCombo.TWO]);
+    console.log("target number for 3 combo = " + this.targetNumbers[ExecuteCombo.THREE]);
+  }
+
   generateTargetNumber(numbers: CardBase[], operators: CardBase[], numOperators: number): number | null {
     if (numbers.length < numOperators + 1 || operators.length < numOperators) {
       return null;
