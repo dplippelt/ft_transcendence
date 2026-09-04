@@ -46,14 +46,14 @@ export default class CardManager {
     this.cardSelection.unsetAllCards();
   }
 
-  clearHand( isStartTurn: boolean ) {
-    if ( isStartTurn ) {
+  clearHand(isStartTurn: boolean) {
+    if (isStartTurn) {
       this.cardHand.clearHand(isStartTurn);
       this.canRedraw = true;
       return;
     }
 
-    const cards = this.cardHand.getHandCards().getAll() as CardBase[];
+    const cards = this.cardHand.getHandCards();
     this.events.emit(CardActionEvents.CLEAR_HAND, cards);
     this.cardHand.clearHand(isStartTurn);
   }
@@ -64,13 +64,27 @@ export default class CardManager {
   }
 
   fillCardHand(amount: number) {
+    let totalNumberCards = 0;
+    let totalOperatorCards = 0;
     for (let i = 0; i < amount; ++i) {
       this.drawCard();
+    }
+    const cards = this.cardHand.getHandCards();
+    for (const card of cards) {
+      if (card.isValueNumber()) {
+        totalNumberCards++;
+      } else {
+        totalOperatorCards++;
+      }
+    }
+    if (totalNumberCards < 2 || totalOperatorCards < 1) {
+      this.clearHand(true);
+      this.fillCardHand(amount);
     }
   }
 
   redrawCards() {
-    if ( !this.canRedraw || this.playerStatus.mana <= 0) {
+    if (!this.canRedraw || this.playerStatus.mana <= 0) {
       return;
     }
 
@@ -87,8 +101,8 @@ export default class CardManager {
     }
 
     if (this.cardDeck.isEmpty()) {
-        this.cardDeck.initDeck();
-        this.events.emit(CardActionEvents.GENERATE_DECK);
+      this.cardDeck.initDeck();
+      this.events.emit(CardActionEvents.GENERATE_DECK);
     }
     const card = this.cardDeck.dealCard()!;
     card.on(CardEvents.SELECTION, this.select, this);
