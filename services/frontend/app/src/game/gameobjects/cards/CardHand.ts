@@ -20,8 +20,8 @@ export default class CardHand {
     this.numCards = 0;
   }
 
-  getHandCards() {
-    return this.cards;
+  getHandCards(): CardBase[] {
+    return this.cards.getAll();
   }
 
   isUnderHandLimit(limit: number) {

@@ -274,7 +274,7 @@ export default class CombatLayoutManager {
   }
 
   updateCardHand(isResize: boolean = true) {
-    const handCards = this.cardManager.cardHand.getHandCards().getAll() as CardBase[];
+    const handCards = this.cardManager.cardHand.getHandCards();
     handCards.forEach((card) => card.setVisible(true)); // need to be made visible again as they were made invisible in the deck
     const totalCards = handCards.length;
     if (!totalCards) {
