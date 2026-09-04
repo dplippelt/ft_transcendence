@@ -5,7 +5,7 @@ import type { PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 import CombatLayoutManager from "./CombatLayoutManager";
 import CombatPlayer from "./CombatPlayer";
-import CombatExecuteManager, { damageToEnemyConfig, ExecuteCombo, type DamageToEnemy } from "./CombatExecuteManager";
+import CombatExecuteManager, { damageToEnemyConfig, type DamageToEnemy } from "./CombatExecuteManager";
 import { EventBus } from "../EventBus";
 import { CombatEvent } from "../../utils/utils";
 
@@ -17,6 +17,7 @@ export enum CombatEvents {
   ENEMYATTACK = "enemyAttack",
   TAKEDAMAGE = "takeDamage",
   ENDTURN = "endTurn",
+  JUDGERESULT = "judgeResult",
 }
 
 export default class CombatManager {
@@ -36,15 +37,10 @@ export default class CombatManager {
     this.enemy = new CombatEnemy(scene, enemyData);
     this.cardManager = new CardManager(scene, playerStatus);
     this.turnManager = new CombatTurnManager(this);
-    this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
-    this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.initEnemyTurn, this);
+    this.onTurnAction();
     this.executeManager = new CombatExecuteManager();
     this.events = new Phaser.Events.EventEmitter();
-    this.events.on(CombatEvents.PLAYERATTACK, this.playerAttack, this);
-    this.events.on(CombatEvents.PLAYERGUARD, this.playerGuard, this);
-    this.events.on(CombatEvents.ENEMYATTACK, this.enemyAttack, this);
-    this.events.on(CombatEvents.TAKEDAMAGE, this.takeDamage, this);
-    this.events.on(CombatEvents.ENDTURN, this.endTurn, this);
+    this.onCombatAction();
     this.layoutManager = new CombatLayoutManager(this);
     this.turnManager.turnEvents.emit(TurnEvents.STARTPLAYER);
     EventBus.emit(CombatEvent.initPlayerHP, this.player.status.hitPoint);
@@ -53,7 +49,21 @@ export default class CombatManager {
     EventBus.addListener(CombatEvent.attack, this.execute, this);
   }
 
-  update() {
+  update() {}
+
+  onTurnAction() {
+    const events = this.turnManager.turnEvents;
+    events.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
+    events.on(TurnEvents.STARTENEMY, this.initEnemyTurn, this);
+  }
+
+  onCombatAction() {
+    this.events.on(CombatEvents.PLAYERATTACK, this.playerAttack, this);
+    this.events.on(CombatEvents.PLAYERGUARD, this.playerGuard, this);
+    this.events.on(CombatEvents.ENEMYATTACK, this.enemyAttack, this);
+    this.events.on(CombatEvents.TAKEDAMAGE, this.takeDamage, this);
+    this.events.on(CombatEvents.ENDTURN, this.endTurn, this);
+    this.events.on(CombatEvents.JUDGERESULT, this.judgeResult, this);
   }
 
   initPlayerTurn() {
@@ -61,12 +71,14 @@ export default class CombatManager {
     this.cardManager.clearHand(true);
     this.cardManager.fillCardHand(this.cardManager.maxNumCardsInHand);
     this.executeManager.reset();
+    this.executeManager.generateTargetNumbersFromHand(this.cardManager.cardHand.getHandCards());
     EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs());
+    // TODO: emit an event for displaying targetNumbers
   }
 
   initEnemyTurn() {
     EventBus.emit(CombatEvent.turnEnded);
-    if (this.executeManager.getResult() !== null) {
+    if (this.executeManager.isSuccessHitTarget()) {
       this.events.emit(CombatEvents.PLAYERGUARD);
     } else {
       this.events.emit(CombatEvents.ENEMYATTACK);
@@ -75,16 +87,16 @@ export default class CombatManager {
 
   execute() {
     const cards = this.cardManager.cardSelection.getSelectedCards();
-
     this.executeManager.evaluateSelectedCards(cards);
-    // TODO: make the logic to determine the value of combo in the executeManager
-    this.executeManager.setCombo(ExecuteCombo.TWO);
-    const points = this.executeManager.getResult();
-    if (points !== null) {
+    if (this.executeManager.getResult() === null) {
+      return;
+    }
+    this.events.emit(CombatEvents.JUDGERESULT);
+  }
+
+  judgeResult() {
+    if (this.executeManager.isSuccessHitTarget()) {
       this.events.emit(CombatEvents.PLAYERATTACK);
-    } else {
-      // dealPenalty(this.playerStatus);
-      // or just to ignore like the case of no cards would be fine?
     }
   }
 
