@@ -74,6 +74,7 @@ export default class CombatManager {
     this.executeManager.generateTargetNumbersFromHand(this.cardManager.cardHand.getHandCards());
     EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs());
     // TODO: emit an event for displaying targetNumbers
+    this.executeManager.consoleTargetNumbers();
   }
 
   initEnemyTurn() {
