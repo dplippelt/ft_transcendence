@@ -65,7 +65,6 @@ export default class CombatManager {
   }
 
   initEnemyTurn() {
-    EventBus.emit(CombatEvent.turnEnded);
     if (this.executeManager.getResult() !== null) {
       this.events.emit(CombatEvents.PLAYERGUARD);
     } else {
@@ -82,6 +81,7 @@ export default class CombatManager {
     const points = this.executeManager.getResult();
     if (points !== null) {
       this.events.emit(CombatEvents.PLAYERATTACK);
+      // EventBus.emit(CombatEvent.turnEnded); // TODO: Either call it here or in CombaTurnManager.pausePlayerTurn()
     } else {
       // dealPenalty(this.playerStatus);
       // or just to ignore like the case of no cards would be fine?
