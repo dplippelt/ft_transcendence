@@ -106,6 +106,9 @@ export enum CombatEvent
 	// reset = "reset",
 	turnEnded = "turn-ended",
 	getTurnTimerState = "turn-timer-state",
+	getInitPlayerHp = "get-init-player-hp",
+	getInitPlayerMp = "get-init-player-mp",
+	getInitEnemyHp = "get-init-enemy-hp",
 }
 
 export enum GameState

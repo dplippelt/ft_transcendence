@@ -1,7 +1,7 @@
 import Phaser, { type Scene } from "phaser";
 import CardManager from "./cards/CardManager";
 import CombatTurnManager, { TurnEvents } from "./CombatTurnManager";
-import type { PlayerStatus } from "../scenes/CombatScene";
+import { initPlayerStatus, type PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 import CombatLayoutManager from "./CombatLayoutManager";
 import CombatPlayer from "./CombatPlayer";
@@ -29,9 +29,11 @@ export default class CombatManager {
   readonly events: Phaser.Events.EventEmitter;
   readonly layoutManager: CombatLayoutManager;
   readonly damageToEnemyOn: DamageToEnemy = damageToEnemyConfig;
+  readonly enemyData: EnemyData;
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
+    this.enemyData = enemyData;
     this.player = new CombatPlayer(scene, playerStatus);
     this.enemy = new CombatEnemy(scene, enemyData);
     this.cardManager = new CardManager(scene, playerStatus);
@@ -47,9 +49,9 @@ export default class CombatManager {
     this.events.on(CombatEvents.ENDTURN, this.endTurn, this);
     this.layoutManager = new CombatLayoutManager(this);
     this.turnManager.turnEvents.emit(TurnEvents.STARTPLAYER);
-    EventBus.emit(CombatEvent.initPlayerHP, this.player.status.hitPoint);
-    EventBus.emit(CombatEvent.initPlayerMP, this.player.status.mana);
-    EventBus.emit(CombatEvent.initEnemyHP, this.enemy.hitPoint);
+    EventBus.addListener(CombatEvent.getInitPlayerHp, this.sendInitPlayerHP, this);
+    EventBus.addListener(CombatEvent.getInitPlayerMp, this.sendInitPlayerMP, this);
+    EventBus.addListener(CombatEvent.getInitPlayerHp, this.sendInitEnemyHP, this);
     EventBus.addListener(CombatEvent.attack, this.execute, this);
   }
 
@@ -134,5 +136,17 @@ export default class CombatManager {
     this.turnManager.clock.removeAllEvents();
     this.turnManager.destroy();
     this.events.emit(CombatEvents.ENDGAME);
+  }
+
+  sendInitPlayerHP() {
+    EventBus.emit(CombatEvent.initPlayerHP, initPlayerStatus.hitPoint);
+  }
+
+  sendInitPlayerMP() {
+    EventBus.emit(CombatEvent.initPlayerMP, initPlayerStatus.mana);
+  }
+
+  sendInitEnemyHP() {
+    EventBus.emit(CombatEvent.initEnemyHP, this.enemyData.hitPoint);
   }
 }

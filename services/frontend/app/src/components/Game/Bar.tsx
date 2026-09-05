@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import styles from "./Bar.module.scss";
-import { EventBus } from "../../game/EventBus";
+import { emitWhenReady, EventBus } from "../../game/EventBus";
 import { CombatEvent } from "../../utils/utils";
 
 interface IHPBar
@@ -58,6 +58,8 @@ export function PlayerHPBar()
 			EventBus.removeListener(CombatEvent.updatePlayerHP, updatePlayerHP);
 		}
 
+		emitWhenReady(CombatEvent.getInitPlayerHp);
+
 		return () => cleanup();
 	}, []);
 
@@ -82,6 +84,8 @@ export function EnemyHPBar()
 			EventBus.removeListener(CombatEvent.updateEnemyHP, updateEnemyHP);
 		}
 
+		emitWhenReady(CombatEvent.getInitEnemyHp);
+
 		return () => cleanup();
 	}, []);
 
@@ -105,6 +109,8 @@ export function PlayerMPBar()
 			EventBus.removeListener(CombatEvent.initPlayerMP, initPlayerMP);
 			EventBus.removeListener(CombatEvent.updatePlayerMP, updatePlayerMP);
 		}
+
+		emitWhenReady(CombatEvent.getInitPlayerMp);
 
 		return () => cleanup();
 	}, []);

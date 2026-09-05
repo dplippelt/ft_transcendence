@@ -10,6 +10,11 @@ export interface PlayerStatus {
   mana: number;
 }
 
+export const initPlayerStatus: PlayerStatus = {
+	hitPoint: 10,
+	mana: 5,
+}
+
 export default class CombatScene extends Phaser.Scene {
   private playerStatus!: PlayerStatus;
   private enemyData!: EnemyData;
@@ -37,8 +42,8 @@ export default class CombatScene extends Phaser.Scene {
 
   create() {
     this.playerStatus = {
-      hitPoint: 10,
-      mana: 5,
+      hitPoint: initPlayerStatus.hitPoint,
+      mana: initPlayerStatus.mana,
     };
 
     this.enemyData = enemyTypes[EnemyLevel.NORMAL];
