@@ -32,6 +32,8 @@ export enum ErrorType
     incorrectCreds,
     accountInactive,
     registrationFailed,
+    loginRateLimitExceeded,
+    registrationRateLimitExceeded,
 
     googleLoginFailed,
     googleLoginUnavailable,
@@ -147,6 +149,16 @@ export function errorMsg(error: ErrorType): string
             return "This account is inactive.";
         case ErrorType.registrationFailed:
             return "Failed to create account.";
+        case ErrorType.loginRateLimitExceeded:
+            return (
+                "Too many authentication attempts. " +
+                "Please try again shortly."
+            );
+        case ErrorType.registrationRateLimitExceeded:
+            return (
+                "Too many registration attempts. " +
+                "Please try again shortly."
+            );
         case ErrorType.googleLoginFailed:
             return "Google login failed.";
         case ErrorType.googleLoginUnavailable:
@@ -298,6 +310,10 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.avatarTooLarge;
         case "REGISTRATION_FAILED":
             return ErrorType.registrationFailed;
+        case "LOGIN_RATE_LIMIT_EXCEEDED":
+            return ErrorType.loginRateLimitExceeded;
+        case "REGISTRATION_RATE_LIMIT_EXCEEDED":
+            return ErrorType.registrationRateLimitExceeded;
         case "GOOGLE_NOT_CONFIGURED":
             return ErrorType.googleLoginUnavailable;
         case "INVALID_GOOGLE_CREDENTIALS":

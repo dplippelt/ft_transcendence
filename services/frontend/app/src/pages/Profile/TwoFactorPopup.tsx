@@ -2,9 +2,10 @@ import { useState } from "react";
 import QRCode from "react-qr-code";
 import type React from "react";
 import { GoogleLogin } from "@react-oauth/google";
+import styles from "./TwoFactorPopup.module.scss";
 
 import { PasswordInput, TextInput } from "../../components/TextInput";
-import { MossButton } from "../../components/Buttons";
+import { MossButton, TextButton, } from "../../components/Buttons";
 import { PopupButtons } from "../../components/ButtonContainers";
 import ErrorText from "../../components/ErrorText";
 
@@ -50,6 +51,8 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
     const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
     const [error, setError] = useState<ErrorType>(ErrorType.none);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [showManualKey, setShowManualKey] = useState<boolean>(false);
+    const [secretCopied, setSecretCopied] = useState<boolean>(false);
     const [recoveryCodesRegenerated, setRecoveryCodesRegenerated] = useState<boolean>(false);
     const hasPassword = user.linked_providers.includes("password");
     const hasGoogle = user.linked_providers.includes("google");
@@ -66,6 +69,19 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
         {
             setCopied(false);
             setError(ErrorType.recoveryCodesCopyFailed);
+        }
+    }
+
+    async function copySetupKey(secret: string)
+    {
+        try
+        {
+            await navigator.clipboard.writeText(secret);
+            setSecretCopied(true);
+        }
+        catch
+        {
+            setSecretCopied(false);
         }
     }
 
@@ -332,38 +348,26 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
         return (
             <>
                 {error !== ErrorType.none && <ErrorText error={error}/>}
-
+    
                 <p>
                     Confirm your identity before enabling
                     two-factor authentication.
                 </p>
-
+    
                 {hasPassword &&
-                    <>
-                        <PasswordInput
-                            label="Current password:"
-                            placeholder="Enter current password"
-                            isNewPassword={false}
-                            setter={setCurrentPassword}
-                            id="twoFactorCurrentPassword"
-                        />
-
-                        <MossButton
-                            label={
-                                isSubmitting
-                                    ? "Checking..."
-                                    : "Continue"
-                            }
-                            onClick={() => void handlePasswordSetup()}
-                            disabled={isSubmitting}
-                        />
-                    </>
+                    <PasswordInput
+                        label="Current password:"
+                        placeholder="Enter current password"
+                        isNewPassword={false}
+                        setter={setCurrentPassword}
+                        id="twoFactorCurrentPassword"
+                    />
                 }
-
+    
                 {hasPassword && hasGoogle &&
                     <p>Or continue with Google:</p>
                 }
-
+    
                 {hasGoogle &&
                     <GoogleLogin
                         theme="filled_black"
@@ -373,17 +377,29 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
                         {
                             if (!credentialResponse.credential)
                             {
-                                setError(ErrorType.googleLoginFailed,);
+                                setError( ErrorType.googleLoginFailed, );
                                 return;
                             }
-
-                            void beginSetup({google_credential: credentialResponse.credential,});
+    
+                            void beginSetup({ google_credential: credentialResponse.credential, });
                         }}
-                        onError={() =>setError(ErrorType.googleLoginFailed,)}
+                        onError={() => setError(ErrorType.googleLoginFailed,)}
                     />
                 }
-
+    
                 <PopupButtons>
+                    {hasPassword &&
+                        <MossButton
+                            label={
+                                isSubmitting
+                                    ? "Checking..."
+                                    : "Continue"
+                            }
+                            onClick={() => void handlePasswordSetup()}
+                            disabled={isSubmitting}
+                        />
+                    }
+    
                     <MossButton
                         label="Back"
                         onClick={() => setPopupType(PopupType.none)}
@@ -402,19 +418,52 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
             <>
                 {error !== ErrorType.none && <ErrorText error={error}/>}
 
-                <p>
-                    Scan this QR code with your authenticator app.
+                <div className={styles.twoFactorSetup}>
+                <p className={styles.twoFactorInstruction}>
+                    Scan this QR code with your
+                    authenticator app.
                 </p>
 
-                <QRCode value={provisioningUri} size={180} />
+                <div className={styles.qrCode}>
+                    <QRCode
+                        value={provisioningUri}
+                        size={180}
+                    />
+                </div>
 
-                <p>
-                    Can't scan the QR code?
-                </p>
+                <TextButton
+                    label={
+                        showManualKey
+                            ? "Hide setup key"
+                            : "Can't scan? Show setup key"
+                    }
+                    onClick={() =>
+                        setShowManualKey(current => !current)
+                    }
+                />
 
-                <code>
-                    {secret}
-                </code>
+                {showManualKey &&
+                    <div className={styles.manualSetup}>
+                        <p>
+                            Manual setup key:
+                        </p>
+
+                        <code className={styles.setupKey}>
+                            {secret}
+                        </code>
+
+                        <TextButton
+                            label={
+                                secretCopied
+                                    ? "Copied!"
+                                    : "Copy setup key"
+                            }
+                            onClick={() =>
+                                void copySetupKey(secret)
+                            }
+                        />
+                    </div>
+                }
 
                 <TextInput
                     label="Authentication code:"
@@ -422,27 +471,31 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
                     setter={setVerificationCode}
                     id="twoFactorSetupCode"
                 />
+            </div>
 
-                <PopupButtons>
-                    <MossButton
-                        label={
-                            isSubmitting
-                                ? "Verifying..."
-                                : "Enable 2FA"
-                        }
-                        onClick={() => void handleConfirm()}
-                        disabled={isSubmitting}
-                    />
+            <PopupButtons>
+                <MossButton
+                    label={
+                        isSubmitting
+                            ? "Verifying..."
+                            : "Enable 2FA"
+                    }
+                    onClick={() =>
+                        void handleConfirm()
+                    }
+                    disabled={isSubmitting}
+                />
 
-                    <MossButton
-                        label="Cancel"
-                        onClick={() => setPopupType(PopupType.none)}
-                        disabled={isSubmitting}
-                    />
-                </PopupButtons>
-            </>
-        );
-    }
+                <MossButton
+                    label="Cancel"
+                    onClick={() =>
+                        setPopupType(PopupType.none)
+                    }
+                    disabled={isSubmitting}
+                />
+            </PopupButtons>
+        </>
+    );}
 
     return null;
 }
