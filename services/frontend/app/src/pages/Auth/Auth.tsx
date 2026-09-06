@@ -14,13 +14,21 @@ import { getValidUsername } from "../../utils/usernameCheck";
 import { GoogleLogin } from "@react-oauth/google";
 import { getValidEmail } from "../../utils/emailCheck";
 
+interface TwoFactorRequiredProps
+{
+    onTwoFactorRequired: (challengeToken: string) => void;
+}
 
-interface GoogleAuthButtonProps
+interface GoogleAuthButtonProps extends TwoFactorRequiredProps
 {
     setError: (error: ErrorType) => void;
 }
 
-function GoogleAuthButton({ setError }: GoogleAuthButtonProps)
+interface LoginFormProps extends TwoFactorRequiredProps
+{
+}
+
+function GoogleAuthButton({ setError, onTwoFactorRequired }: GoogleAuthButtonProps)
 {
     const navigate = useNavigate();
     const { loginWithGoogle } = useAuth();
@@ -62,9 +70,13 @@ function GoogleAuthButton({ setError }: GoogleAuthButtonProps)
                         try {
                             setError(ErrorType.none);
 
-                            await loginWithGoogle(
-                                credentialResponse.credential,
-                            );
+                            const result = await loginWithGoogle(credentialResponse.credential,);
+                            
+                            if (result.requiresTwoFactor)
+                            {
+                                onTwoFactorRequired(result.challengeToken);
+                                return;
+                            }
 
                             navigate(RoutePath.mainMenu);
                         }
@@ -81,7 +93,7 @@ function GoogleAuthButton({ setError }: GoogleAuthButtonProps)
     );
 }
 
-function LoginForm()
+function LoginForm({ onTwoFactorRequired }: LoginFormProps)
 {
 	const [email, setEmail] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
@@ -114,11 +126,17 @@ function LoginForm()
 
         try
         {
-            await login(
+            const result =await login(
             {
                 email: validEmail,
                 password,
-            });
+                });
+            
+            if (result.requiresTwoFactor)
+            {
+                onTwoFactorRequired(result.challengeToken);
+                return;
+            }
 
             navigate(RoutePath.mainMenu);
         }
@@ -163,7 +181,7 @@ function LoginForm()
                 type="submit"
                 disabled={isSubmitting}
             />
-            <GoogleAuthButton setError={setError}/>
+            <GoogleAuthButton setError={setError} onTwoFactorRequired={onTwoFactorRequired}/>
     
             <TextButton
                 label="Don't have an account? Sign-up"
@@ -175,7 +193,112 @@ function LoginForm()
     );
 }
 
-function SignupForm()
+interface TwoFactorFormProps
+{
+    challengeToken: string;
+    onBack: () => void;
+}
+
+function TwoFactorForm({ challengeToken, onBack }: TwoFactorFormProps)
+{
+    const [verificationCode, setVerificationCode] = useState<string>("");
+    const [useRecoveryCode, setRecoveryCode] = useState<boolean>(false);
+    const [error, setError] = useState<ErrorType>(ErrorType.none);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+    const navigate = useNavigate();
+    const { loginWithTwoFactor, loginWithRecoveryCode } = useAuth();
+
+    async function handleSubmit(event: React.FormEvent<HTMLFormElement>)
+    {
+        event.preventDefault();
+
+        if (isSubmitting)
+            return;
+
+        setError(ErrorType.none);
+        setIsSubmitting(true);
+
+        try {
+            const code = verificationCode.trim();
+
+            if (useRecoveryCode)
+                await loginWithRecoveryCode(challengeToken, code);
+            else
+                await loginWithTwoFactor(challengeToken, code);
+
+            navigate(RoutePath.mainMenu);
+        }
+        catch (error)
+        {
+            setError(mapAuthApiError(error));
+        }
+        finally
+        {
+            setIsSubmitting(false);
+        }
+    }
+
+    function toggleRecoveryCode()
+    {
+        if (isSubmitting)
+            return;
+
+        setError(ErrorType.none);
+        setVerificationCode("");
+        setRecoveryCode(current => !current);
+    }
+
+    function handleBack()
+    {
+        if (isSubmitting)
+            return;
+
+        onBack();
+    }
+
+    return (
+        <form
+            className={styles.window}
+            onSubmit={handleSubmit}
+            noValidate
+        >
+            {error !== ErrorType.none && <ErrorText error={error} />}
+            
+            <p>
+                {useRecoveryCode
+                    ? "Enter your recovery code:"
+                    : "Enter the verification code from your authenticator app:"}
+            </p>
+
+            <TextInput
+                key={useRecoveryCode ? "recovery" : "totp"}
+                label={useRecoveryCode ? "Recovery Code:" : "Authentication Code:"}
+                placeholder={useRecoveryCode ? "Enter recovery code" : "Enter authentication code"}
+                setter={setVerificationCode}
+                id={useRecoveryCode ? "recoveryCode" : "twoFactorCode"}
+            />
+
+            <MossButton
+                label={isSubmitting ? "Verifying..." : "Continue"}
+                type="submit"
+                disabled={isSubmitting}
+            />
+            
+            <TextButton
+                label={useRecoveryCode ? "Use authentication code" : "Use recovery code"}
+                onClick={toggleRecoveryCode}
+            />
+
+            <TextButton
+                label="Back"
+                onClick={handleBack}
+            />
+        </form>
+    );
+}
+
+function SignupForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
 {
     const [email, setEmail] = useState<string>("");
     const [username, setUsername] = useState<string>("");
@@ -283,7 +406,7 @@ function SignupForm()
                 disabled={isSubmitting}
 			/>
 
-			<GoogleAuthButton setError={setError} />
+			<GoogleAuthButton setError={setError} onTwoFactorRequired={onTwoFactorRequired}/>
 
 			<TextButton
 				label="Already have an account? Login"
@@ -295,27 +418,28 @@ function SignupForm()
 	);
 }
 
-function Login()
+function Login({ onTwoFactorRequired }: TwoFactorRequiredProps)
 {
-	return (
-		<>
-			<Background/>
-			<Page>
-				<MenuTitle title="Login"/>
-				<LoginForm/>
-			</Page>
-		</>
-	);
+    return (
+        <>
+            <Background/>
+            <Page>
+                <MenuTitle title="Login"/>
+
+                <LoginForm onTwoFactorRequired={onTwoFactorRequired}/>
+            </Page>
+        </>
+    );
 }
 
-function Signup()
+function Signup({ onTwoFactorRequired }: TwoFactorRequiredProps)
 {
 	return (
 		<>
 			<Background/>
 			<Page>
 				<MenuTitle title="Sign-up"/>
-				<SignupForm/>
+				<SignupForm onTwoFactorRequired={onTwoFactorRequired}/>
 			</Page>
 		</>
 	);
@@ -323,16 +447,33 @@ function Signup()
 
 export default function Auth()
 {
-	const [searchParams] = useSearchParams();
-	const mode = searchParams.get("mode");
+    const [searchParams] = useSearchParams();
+    const [challengeToken, setChallengeToken] = useState<string | null>(null);
 
-	switch (mode)
-	{
-		case "login":
-			return <Login/>
-		case "signup":
-			return <Signup/>
-		default:
-			return <Navigate to={RoutePath.auth + RouteParam.login} replace />;
-	}
+    const mode = searchParams.get("mode");
+
+    if (challengeToken)
+    {
+        return (
+            <>
+            <Background />
+            <Page>
+                <MenuTitle title="Two-factor authentication"/>
+                <TwoFactorForm
+                    challengeToken={challengeToken}
+                    onBack={() => setChallengeToken(null)}
+                />
+            </Page>
+            </>
+        );
+    }
+    switch (mode)
+    {
+        case "login":
+            return <Login onTwoFactorRequired={setChallengeToken}/>
+        case "signup":
+            return <Signup onTwoFactorRequired={setChallengeToken}/>
+        default:
+            return <Navigate to={RoutePath.auth + RouteParam.login} replace />;
+    }
 }

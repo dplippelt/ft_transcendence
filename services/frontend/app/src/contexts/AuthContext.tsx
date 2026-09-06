@@ -49,7 +49,8 @@ export interface IAuth
 interface IAuthContext
 {
 	auth: IAuth;
-	login: (credentials: LoginRequest) => Promise<LoginResult>;
+    login: (credentials: LoginRequest) => Promise<LoginResult>;
+    // 2FA can't be enabled on a newly-created account, as registration isn't using onTwoFactorRequired
 	register: (userData: RegisterRequest) => Promise<void>;
     loginWithGoogle: (credential: string) => Promise<LoginResult>;
     loginWithTwoFactor: (challengeToken: string, code: string,) => Promise<void>;
