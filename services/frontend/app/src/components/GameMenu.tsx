@@ -31,7 +31,7 @@ function Buttons()
 			{ loggedIn && <GameMenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname, gameMenu: true } }) } /> }
 			<GameMenuButton label="How to play" onClick={ () => {} } />
 			{ loggedIn && <GameMenuButton label="Settings" onClick={ () => navigate(RoutePath.settings, { state: { from: location.pathname, gameMenu: true } }) } /> }
-			{ loggedIn && <GameMenuButton label="Back to main menu" onClick={ () => navigate(RoutePath.mainMenu, { replace: true }) } /> }
+			{ loggedIn && <GameMenuButton label="Return to main menu" onClick={ () => navigate(RoutePath.mainMenu, { replace: true }) } /> }
 			<GameMenuButton label={ loggedIn ? "Logout" : "Quit" } onClick={ handleLogout } />
 		</MenuButtons>
 	)
@@ -40,7 +40,7 @@ function Buttons()
 export default function GameMenu()
 {
 	return (
-		<Popup extraStyling={styles.gameMenu}>
+		<Popup extraStyling={styles.gameMenu} backdropStyling={styles.backdrop}>
 			<Buttons />
 		</Popup>
 	)

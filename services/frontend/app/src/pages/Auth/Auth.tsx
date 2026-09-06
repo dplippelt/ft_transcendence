@@ -35,22 +35,22 @@ function GoogleAuthButton({ setError, onTwoFactorRequired }: GoogleAuthButtonPro
     useEffect(() =>
         {
             const element = googleButtonRef.current;
-    
+
             if (!element)
                 return;
-    
+
             const observer = new ResizeObserver(entries =>
             {
                 const width = Math.floor(entries[0].contentRect.width);
-    
+
                 setGoogleButtonWidth(Math.min(width, 400));
             });
-    
+
             observer.observe(element);
-    
+
             return () => observer.disconnect();
     }, []);
-    
+
     return (
         <div className={styles.googleLoginButton} ref={googleButtonRef}>
             {googleButtonWidth > 0 &&
@@ -95,7 +95,7 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
 	const [password, setPassword] = useState<string>("");
     const [error, setError] = useState<ErrorType>(ErrorType.none);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    
+
     const navigate = useNavigate();
     const { login } = useAuth();
 
@@ -155,7 +155,7 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
             {error !== ErrorType.none &&
                 <ErrorText error={error}/>
             }
-    
+
             <TextInput
                 type="email"
                 label="Email:"
@@ -163,7 +163,7 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
                 setter={setEmail}
                 id="email"
             />
-    
+
             <PasswordInput
                 label="Password:"
                 placeholder="Enter password"
@@ -171,14 +171,19 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
                 setter={setPassword}
                 id="password"
             />
-    
+
             <MossButton
                 label="Login"
                 type="submit"
                 disabled={isSubmitting}
             />
+<<<<<<< HEAD
             <GoogleAuthButton setError={setError} onTwoFactorRequired={onTwoFactorRequired}/>
     
+=======
+            <GoogleAuthButton setError={setError}/>
+
+>>>>>>> master
             <TextButton
                 label="Don't have an account? Sign-up"
                 onClick={() =>

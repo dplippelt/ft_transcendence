@@ -1,0 +1,42 @@
+@use '../../variables' as *;
+
+@property --percentage
+{
+	syntax: '<percentage>';
+	initial-value: 100%;
+	inherits: false;
+}
+
+.turnTimer
+{
+	position: absolute;
+	top: 1rem;
+	left: 50%;
+	width: $turn-timer-width;
+	height: $turn-timer-height;
+	transform: translateX(-50%) scaleX(-1);
+	border-radius: 50%;
+	background: conic-gradient($muddy-gold-light var(--percentage), transparent var(--percentage));
+	pointer-events: none;
+	animation: countdown var(--turn-duration) linear forwards;
+	animation-delay: var(--start-delay, 0ms);
+	animation-play-state: var(--timer-play-state, running);
+
+	@media ( max-height: 520px )
+	{
+		width: $combat-ui-down-scale-a * $turn-timer-width;
+		height: $combat-ui-down-scale-a * $turn-timer-height;
+	}
+
+	@media ( max-height: 320px )
+	{
+		width: $combat-ui-down-scale-b * $turn-timer-width;
+		height: $combat-ui-down-scale-b * $turn-timer-height;
+	}
+}
+
+@keyframes countdown
+{
+	from { --percentage: 100%; }
+	to { --percentage: 0%; }
+}

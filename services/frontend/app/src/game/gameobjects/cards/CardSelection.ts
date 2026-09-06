@@ -5,7 +5,7 @@ import { type StyledBoxConfig } from "../utils/StyledBox";
 
 export default class CardSelection {
   private readonly cardSlotStyleConfig!: StyledBoxConfig;
-  private readonly slots!: Phaser.GameObjects.Container;
+  private slots!: Phaser.GameObjects.Container;
   private readonly numSlots: number;
 
   constructor(scene: Scene) {
@@ -68,17 +68,18 @@ export default class CardSelection {
   }
 
   unsetAllCards() {
-    const slots = this.slots.getAll() as CardSlot[];
+    const selectedCards = this.getSelectedCards();
 
-    for (const slot of slots) {
-      const card = slot.getCard();
-      if (card) {
-        card.emit("pointerdown");
-      }
+    for (const card of selectedCards) {
+      card.emit("pointerdown");
     }
   }
 
   getSelectionSlots() {
     return this.slots.getAll() as CardSlot[];
+  }
+
+  getNumSlots() {
+    return this.numSlots;
   }
 }

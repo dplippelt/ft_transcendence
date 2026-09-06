@@ -9,6 +9,7 @@ export default class CombatPlayer extends Phaser.GameObjects.Sprite {
     super(scene, 0, 0, AssetsKey.CombatPlayer, "idle/frame0000");
     this.status = status;
     this.scene.add.existing(this);
+    this.setOrigin(0.5, 1);
   }
 
   takeDamage(damage: number) {
