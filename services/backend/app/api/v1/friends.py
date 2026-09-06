@@ -16,11 +16,19 @@ from app.schemas.friend import (
 )
 from app.services.friend_service import (
     PENDING,
-    accept_friend_request as accept_friend_request_service,
-    cancel_friend_request as cancel_friend_request_service,
-    reject_friend_request as reject_friend_request_service,
-    remove_friend as remove_friend_service,
     send_friend_request,
+)
+from app.services.friend_service import (
+    accept_friend_request as accept_friend_request_service,
+)
+from app.services.friend_service import (
+    cancel_friend_request as cancel_friend_request_service,
+)
+from app.services.friend_service import (
+    reject_friend_request as reject_friend_request_service,
+)
+from app.services.friend_service import (
+    remove_friend as remove_friend_service,
 )
 from app.services.user_service import get_active_user_by_username
 
@@ -175,7 +183,6 @@ def remove_friend(friend_id: int, current_user: CompletedUser, db: DbSession,):
         friend_id=friend_id,
     )
 
-    return None
 
 
 @router.delete("/requests/{request_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -186,4 +193,3 @@ def cancel_friend_request(request_id: int, current_user: CompletedUser, db: DbSe
         current_user=current_user,
     )
 
-    return None
