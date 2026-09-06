@@ -35,6 +35,10 @@ type AuthStatus =
     | "unauthenticated"
     | "error";
 
+export type LoginResult =
+    | { requiresTwoFactor: false }
+    | { requiresTwoFactor: true; challengeToken: string };
+
 export interface IAuth
 {
     accessToken: string | null;
@@ -45,9 +49,9 @@ export interface IAuth
 interface IAuthContext
 {
 	auth: IAuth;
-	login: (credentials: LoginRequest) => Promise<void>;
+	login: (credentials: LoginRequest) => Promise<LoginResult>;
 	register: (userData: RegisterRequest) => Promise<void>;
-    loginWithGoogle: (credential: string) => Promise<void>;
+    loginWithGoogle: (credential: string) => Promise<LoginResult>;
     loginWithTwoFactor: (challengeToken: string, code: string,) => Promise<void>;
     loginWithRecoveryCode: (challengeToken: string, recoveryCode: string,) => Promise<void>;
     updateProfile: (data: UpdateUserRequest) => Promise<void>;
@@ -166,12 +170,19 @@ export default function AuthProvider( { children } : {children: ReactNode} )
 
     const loginWithTwoFactor = useCallback(async (challengeToken: string, code: string) =>
     {
-        const response = await loginWithTwoFactorRequest(challengeToken, code);
+        const response = await loginWithTwoFactorRequest({
+            challenge_token: challengeToken,
+            code: code,
+        });
         await establishSession(response.access_token);
     }, [establishSession]);
 
-    const loginWithRecoveryCode = useCallback(async (challengeToken: string, recoveryCode: string) => {
-        const response = await loginWithRecoveryCodeRequest(challengeToken, recoveryCode);
+    const loginWithRecoveryCode = useCallback(async (challengeToken: string, recoveryCode: string) =>
+    {
+        const response = await loginWithRecoveryCodeRequest({
+            challenge_token: challengeToken,
+            recovery_code: recoveryCode,
+        });
         await establishSession(response.access_token);
     }, [establishSession]);
 

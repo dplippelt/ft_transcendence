@@ -20,7 +20,7 @@ export interface TokenResponse
 
 export interface TwoFactorAuthResponse
 {
-    required_two_factor: true;
+    requires_two_factor: true;
     challenge_token: string;
 }
 
