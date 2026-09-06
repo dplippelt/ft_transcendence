@@ -11,6 +11,10 @@ import {
     updateUser,
     updatePassword as updatePasswordRequest,
     updateAvatar as updateAvatarRequest,
+    loginWithTwoFactor as loginWithTwoFactorRequest,
+    loginWithRecoveryCode as loginWithRecoveryCodeRequest,
+    setupTwoFactor as setupTwoFactorRequest,
+    confirmTwoFactor as confirmTwoFactorRequest,
 } from "../api/authApi";
 
 import type {
@@ -19,12 +23,10 @@ import type {
     RegisterRequest,
     UpdateUserRequest,
     PasswordUpdateRequest,
+    TwoFactorSetupRequest,
+    TwoFactorSetupResponse,
 } from "../api/authApi";
 
-import {
-    loginWithTwoFactor as loginWithTwoFactorRequest,
-    loginWithRecoveryCode as loginWithRecoveryCodeRequest,
-} from "../api/authApi";
 import { ApiError } from "../api/http";
 
 const ACCESS_TOKEN_KEY = "accessToken";
@@ -55,6 +57,8 @@ interface IAuthContext
     loginWithGoogle: (credential: string) => Promise<LoginResult>;
     loginWithTwoFactor: (challengeToken: string, code: string,) => Promise<void>;
     loginWithRecoveryCode: (challengeToken: string, recoveryCode: string,) => Promise<void>;
+    setupTwoFactor: (data: TwoFactorSetupRequest) => Promise<TwoFactorSetupResponse>;
+    confirmTwoFactor: (code: string,) => Promise<string[]>;
     updateProfile: (data: UpdateUserRequest) => Promise<void>;
     updatePassword: (data: PasswordUpdateRequest) => Promise<void>;
     updateAvatar: (avatar: File) => Promise<void>;
@@ -139,6 +143,23 @@ export default function AuthProvider( { children } : {children: ReactNode} )
             password: userData.password,
         });
     }, [login]);
+
+    const setupTwoFactor = useCallback(async (data: TwoFactorSetupRequest): Promise<TwoFactorSetupResponse> =>
+    {
+        if (!accessToken)
+            throw new Error("No authenticated session");
+
+        return setupTwoFactorRequest(data, accessToken);
+    }, [accessToken]);
+
+    const confirmTwoFactor = useCallback(async (code: string): Promise<string[]> =>
+    {
+        if (!accessToken)
+            throw new Error("No authenticated session");
+        const response = await confirmTwoFactorRequest({ code }, accessToken);
+        setUser(response.user);
+        return response.recovery_codes;
+    }, [accessToken]);
 
     const loginWithGoogle = useCallback(async (credential: string): Promise<LoginResult> =>
     {
@@ -274,14 +295,16 @@ export default function AuthProvider( { children } : {children: ReactNode} )
 			value=
 			{{
 				auth,
-				login,
-				register,
+                login,
+                register,
                 loginWithGoogle,
                 loginWithTwoFactor,
                 loginWithRecoveryCode,
+                setupTwoFactor,
+                confirmTwoFactor,
                 linkGoogle,
                 unlinkGoogle,
-				logout,
+                logout,
                 updateProfile,
                 updatePassword,
                 updateAvatar,

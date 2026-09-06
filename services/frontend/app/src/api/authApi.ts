@@ -24,6 +24,28 @@ export interface TwoFactorAuthResponse
     challenge_token: string;
 }
 
+export interface TwoFactorSetupRequest
+{
+    current_password?: string;
+    google_credential?: string;
+}
+
+export interface TwoFactorSetupResponse
+{
+    provisioning_uri: string;
+}
+
+export interface TwoFactorCodeRequest
+{
+    code: string;
+}
+
+export interface TwoFactorConfirmResponse
+{
+    user: AuthUser;
+    recovery_codes: string[];
+}
+
 export type LoginResponse = TokenResponse | TwoFactorAuthResponse;
 
 export interface TwoFactorLoginRequest
@@ -184,6 +206,30 @@ export function updateAvatar(userID: number, avatar: File, accessToken: string,)
         {
             method: "PUT",
             body: formData,
+        },
+        accessToken,
+    );
+}
+
+export function setupTwoFactor(data: TwoFactorSetupRequest, accessToekn: string,): Promise<TwoFactorSetupResponse>
+{
+    return apiRequest<TwoFactorSetupResponse>(
+        "/auth/2fa/setup",
+        {
+            method: "POST",
+            body: JSON.stringify(data),
+        },
+        accessToekn,
+    );
+}
+
+export function confirmTwoFactor(data: TwoFactorCodeRequest, accessToken: string,): Promise<TwoFactorConfirmResponse>
+{
+    return apiRequest<TwoFactorConfirmResponse>(
+        "/auth/2fa/confirm",
+        {
+            method: "POST",
+            body: JSON.stringify(data),
         },
         accessToken,
     );
