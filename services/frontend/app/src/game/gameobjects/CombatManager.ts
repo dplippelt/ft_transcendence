@@ -63,6 +63,7 @@ export default class CombatManager {
   }
 
   initEnemyTurn() {
+    EventBus.emit(CombatEvent.turnEnded);
     if (this.executeManager.getResult() !== null) {
       this.events.emit(CombatEvents.PLAYERGUARD);
     } else {
@@ -102,12 +103,14 @@ export default class CombatManager {
     if (combatant instanceof CombatEnemy) {
       const combo = this.executeManager.getCombo()!;
       combatant.takeDamage(this.damageToEnemyOn[combo]);
+      EventBus.emit(CombatEvent.updateEnemyHP, this.enemy.hitPoint);
       if (combatant.isDead()) {
         this.endCombat();
         return;
       }
     } else {
       combatant.takeDamage(this.enemy.enemyData.attackDamage);
+      EventBus.emit(CombatEvent.updatePlayerHP, this.player.status.hitPoint);
       if (combatant.isDead()) {
         this.endGame();
         return;

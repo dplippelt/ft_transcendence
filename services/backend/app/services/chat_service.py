@@ -1,7 +1,7 @@
 from sqlalchemy import and_, or_
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import bad_request, forbidden
+from app.core.exceptions import ErrorCode, bad_request, forbidden
 from app.models.chat_message import ChatMessage
 from app.models.user import User
 from app.services.friend_service import get_friendship, utc_now
@@ -9,12 +9,12 @@ from app.services.friend_service import get_friendship, utc_now
 
 def require_friendship(db: Session, user_a_id: int, user_b_id: int) -> None:
     if get_friendship(db, user_a_id, user_b_id) is None:
-        raise forbidden("You can only message your friends.")
+        raise forbidden("You can only message your friends.", code=ErrorCode.NOT_FRIENDS)
 
 
 def send_message(db: Session, current_user: User, receiver: User, content: str) -> ChatMessage:
     if receiver.id == current_user.id:
-        raise bad_request("You cannot send a message to yourself.")
+        raise bad_request("You cannot send a message to yourself.", code=ErrorCode.CANNOT_MESSAGE_SELF)
 
     require_friendship(db, current_user.id, receiver.id)
 

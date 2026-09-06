@@ -23,7 +23,6 @@ export default class CardSlot extends StyledBox {
     scene.add.existing(this);
     this.selectedCard = null;
     this.setVisible(false);
-    this.setOrigin(0, 0.5);
   }
 
   setCard(card: CardBase) {
