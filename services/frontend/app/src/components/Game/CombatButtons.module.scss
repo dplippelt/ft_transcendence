@@ -1,0 +1,55 @@
+@use '../../variables' as *;
+
+.combatButton
+{
+	position: absolute;
+	border: none;
+	background-color: transparent;
+}
+
+.attackButton
+{
+	// using Deck positions passed by phaser to position the attack button symmetrically
+	top: var(--deck-y);
+	right: var(--deck-x);
+	height: var(--deck-height);
+	transform: translateX(50%) translateY(-50%) scale(90%);
+	aspect-ratio: 634 / 784; // needs to match image dimensions
+	background-image: url("../../assets/attack_button.png");
+	background-position: center;
+	background-size: cover;
+	transition: height 0.02s ease;
+
+	&:hover
+	{
+		border: 2px solid goldenrod;
+	}
+
+	&:active
+	{
+		height: calc(var(--deck-height) * 0.95);
+	}
+}
+
+.drawButton
+{
+	top: var(--deck-y);
+	left: var(--deck-x);
+	height: var(--deck-height);
+	transform: translateX(-50%) translateY(-50%) scale(90%);
+	aspect-ratio: 633 / 817; // needs to match image dimensions
+	background-image: url("../../assets/deck_button.png");
+	background-position: center;
+	background-size: cover;
+	transition: height 0.02s ease;
+
+	&:hover
+	{
+		border: 2px solid goldenrod;
+	}
+
+	&:active
+	{
+		height: calc(var(--deck-height) * 0.95);
+	}
+}

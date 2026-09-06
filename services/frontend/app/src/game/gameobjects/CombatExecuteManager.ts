@@ -6,6 +6,14 @@ export enum ExecuteCombo {
   THREE,
 }
 
+export type DamageToEnemy = Record<ExecuteCombo, number>;
+
+export const damageToEnemyConfig: DamageToEnemy = {
+  [ExecuteCombo.ONE]: 2,
+  [ExecuteCombo.TWO]: 4,
+  [ExecuteCombo.THREE]: 8,
+}
+
 export default class CombatExecuteManager {
   private result!: number | null;
   private combo!: ExecuteCombo | null;

@@ -6,10 +6,27 @@
 	border-color: $game-menu-border-color;
 	border-radius: 20px;
 	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.7);
+
+	@media ( max-height: 720px )
+	{
+		transform: scale(75%);
+	}
+
+	@media ( max-height: 480px )
+	{
+		transform: scale(50%);
+	}
 }
 
 .gameMenuButtons
 {
 	padding-top: 0.5rem;
 	padding-bottom: 0.5rem;
+}
+
+.backdrop
+{
+	background-color: rgba(0, 0, 0, 0.4);
+	backdrop-filter: blur(8px);
+	-webkit-backdrop-filter: blur(8px);
 }
