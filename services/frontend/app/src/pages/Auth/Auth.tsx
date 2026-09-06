@@ -24,10 +24,6 @@ interface GoogleAuthButtonProps extends TwoFactorRequiredProps
     setError: (error: ErrorType) => void;
 }
 
-interface LoginFormProps extends TwoFactorRequiredProps
-{
-}
-
 function GoogleAuthButton({ setError, onTwoFactorRequired }: GoogleAuthButtonProps)
 {
     const navigate = useNavigate();
@@ -93,7 +89,7 @@ function GoogleAuthButton({ setError, onTwoFactorRequired }: GoogleAuthButtonPro
     );
 }
 
-function LoginForm({ onTwoFactorRequired }: LoginFormProps)
+function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
 {
 	const [email, setEmail] = useState<string>("");
 	const [password, setPassword] = useState<string>("");
@@ -202,7 +198,7 @@ interface TwoFactorFormProps
 function TwoFactorForm({ challengeToken, onBack }: TwoFactorFormProps)
 {
     const [verificationCode, setVerificationCode] = useState<string>("");
-    const [useRecoveryCode, setRecoveryCode] = useState<boolean>(false);
+    const [useRecoveryCode, setUseRecoveryCode] = useState<boolean>(false);
     const [error, setError] = useState<ErrorType>(ErrorType.none);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
@@ -217,11 +213,22 @@ function TwoFactorForm({ challengeToken, onBack }: TwoFactorFormProps)
             return;
 
         setError(ErrorType.none);
+
+        const code = verificationCode.trim();
+        if (!code)
+        {
+            setError(
+                useRecoveryCode
+                    ? ErrorType.twoFactorRecoveryCodeRequired
+                    : ErrorType.twoFactorCodeRequired
+            );
+            return;
+        }
+        
         setIsSubmitting(true);
 
-        try {
-            const code = verificationCode.trim();
-
+        try
+        {
             if (useRecoveryCode)
                 await loginWithRecoveryCode(challengeToken, code);
             else
@@ -246,7 +253,7 @@ function TwoFactorForm({ challengeToken, onBack }: TwoFactorFormProps)
 
         setError(ErrorType.none);
         setVerificationCode("");
-        setRecoveryCode(current => !current);
+        setUseRecoveryCode(current => !current);
     }
 
     function handleBack()

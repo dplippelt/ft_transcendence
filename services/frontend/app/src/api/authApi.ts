@@ -60,6 +60,11 @@ export interface TwoFactorRecoveryRequest
     recovery_code: string;
 }
 
+export interface TwoFactorRecoveryCodesResponse
+{
+    recovery_codes: string[];
+}
+
 export interface LoginRequest
 {
     email: string;
@@ -211,7 +216,7 @@ export function updateAvatar(userID: number, avatar: File, accessToken: string,)
     );
 }
 
-export function setupTwoFactor(data: TwoFactorSetupRequest, accessToekn: string,): Promise<TwoFactorSetupResponse>
+export function setupTwoFactor(data: TwoFactorSetupRequest, accessToken: string,): Promise<TwoFactorSetupResponse>
 {
     return apiRequest<TwoFactorSetupResponse>(
         "/auth/2fa/setup",
@@ -219,7 +224,7 @@ export function setupTwoFactor(data: TwoFactorSetupRequest, accessToekn: string,
             method: "POST",
             body: JSON.stringify(data),
         },
-        accessToekn,
+        accessToken,
     );
 }
 
@@ -227,6 +232,30 @@ export function confirmTwoFactor(data: TwoFactorCodeRequest, accessToken: string
 {
     return apiRequest<TwoFactorConfirmResponse>(
         "/auth/2fa/confirm",
+        {
+            method: "POST",
+            body: JSON.stringify(data),
+        },
+        accessToken,
+    );
+}
+
+export function disableTwoFactor(data: TwoFactorCodeRequest, accessToken: string,): Promise<AuthUser>
+{
+    return apiRequest<AuthUser>(
+        "/auth/2fa",
+        {
+            method: "DELETE",
+            body: JSON.stringify(data),
+        },
+        accessToken,
+    );
+}
+
+export function regenerateTwoFactorRecoveryCodes(data: TwoFactorCodeRequest, accessToken: string,): Promise<TwoFactorRecoveryCodesResponse>
+{
+    return apiRequest<TwoFactorRecoveryCodesResponse>(
+        "/auth/2fa/recovery-codes",
         {
             method: "POST",
             body: JSON.stringify(data),

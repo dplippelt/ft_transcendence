@@ -37,7 +37,12 @@ type SetupStep =
 export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
 {
     const user = useCurrentUser();
-    const {setupTwoFactor, confirmTwoFactor,} = useAuth();
+    const {
+        setupTwoFactor,
+        confirmTwoFactor,
+        disableTwoFactor,
+        regenerateTwoFactorRecoveryCodes,
+    } = useAuth();
     const [step, setStep]  = useState<SetupStep>("reauthenticate");
     const [currentPassword, setCurrentPassword] = useState<string>("");
     const [verificationCode, setVerificationCode] = useState<string>("");
@@ -45,16 +50,23 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
     const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
     const [error, setError] = useState<ErrorType>(ErrorType.none);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+    const [recoveryCodesRegenerated, setRecoveryCodesRegenerated] = useState<boolean>(false);
     const hasPassword = user.linked_providers.includes("password");
     const hasGoogle = user.linked_providers.includes("google");
     const [copied, setCopied] = useState<boolean>(false);
 
     async function copyRecoveryCodes()
     {
-        const text = recoveryCodes.join("\n");
-
-        await navigator.clipboard.writeText(text);
-        setCopied(true);
+        try
+        {
+            await navigator.clipboard.writeText(recoveryCodes.join("\n"),);
+            setCopied(true);
+        }
+        catch
+        {
+            setCopied(false);
+            setError(ErrorType.recoveryCodesCopyFailed);
+        }
     }
 
     async function beginSetup(data: TwoFactorSetupRequest,)
@@ -102,6 +114,13 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
         const code = verificationCode.trim();
 
         setError(ErrorType.none);
+
+        if (!code)
+        {
+            setError(ErrorType.twoFactorCodeRequired);
+            return;
+        }
+
         setIsSubmitting(true);
 
         try
@@ -109,6 +128,73 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
             const codes = await confirmTwoFactor(code);
 
             setRecoveryCodes(codes);
+            setRecoveryCodesRegenerated(false);
+            setStep("recovery");
+        }
+        catch (error)
+        {
+            setError(mapAuthApiError(error));
+        }
+        finally
+        {
+            setIsSubmitting(false);
+        }
+    }
+
+    async function handleDisable()
+    {
+        if (isSubmitting)
+            return;
+        const code = verificationCode.trim();
+
+        setError(ErrorType.none);
+        
+        if (!code)
+        {
+            setError(ErrorType.twoFactorCodeRequired);
+            return;
+        }
+
+        setIsSubmitting(true);
+
+        try
+        {
+            await disableTwoFactor(code);
+            setPopupType(PopupType.none);
+        }
+        catch (error)
+        {
+            setError(mapAuthApiError(error));
+        }
+        finally
+        {
+            setIsSubmitting(false);
+        }
+    }
+
+    async function handleRegenerateRecoveryCodes()
+    {
+        if (isSubmitting)
+            return;
+
+        const code = verificationCode.trim();
+
+        setError(ErrorType.none);
+
+        if (!code)
+        {
+            setError(ErrorType.twoFactorCodeRequired);
+            return;
+        }
+        
+        setIsSubmitting(true);
+
+        try
+        {
+            const codes = await regenerateTwoFactorRecoveryCodes(code);
+            setRecoveryCodes(codes);
+            setCopied(false);
+            setRecoveryCodesRegenerated(true);
             setStep("recovery");
         }
         catch (error)
@@ -145,15 +231,30 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
     {
         return (
             <>
-                <p>
-                    Two-factor authentication is now enabled.
-                </p>
+                {error !== ErrorType.none && <ErrorText error={error}/>}
 
                 <p>
-                    Save these recovery codes somewhere safe.
-                    Each code can only be used once.
+                    {recoveryCodesRegenerated
+                        ? "New recovery codes generated."
+                        : "Two-factor authentication is now enabled."
+                    }
                 </p>
-
+    
+                <p>
+                    {recoveryCodesRegenerated
+                        ?
+                        (
+                            "Your previous recovery codes are now invalid. " +
+                            "Save these new codes somewhere safe."
+                        )
+                        :
+                        (
+                            "Save these recovery codes somewhere safe. " +
+                            "Each code can only be used once."
+                        )
+                    }
+                </p>
+    
                 <div>
                     {recoveryCodes.map(code =>
                         <div key={code}>
@@ -161,32 +262,67 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
                         </div>
                     )}
                 </div>
-
+    
                 <PopupButtons>
-                    <MossButton
-                        label="Done"
-                        onClick={() =>
-                            setPopupType(PopupType.none)
-                        }
-                    />
                     <MossButton
                         label={copied ? "Copied!" : "Copy all"}
                         onClick={() => void copyRecoveryCodes()}
                     />
+    
+                    <MossButton
+                        label="Done"
+                        onClick={() => setPopupType(PopupType.none)}
+                    />
                 </PopupButtons>
             </>
-        )
+        );
     }
 
     if (user.two_factor_enabled)
     {
         return (
             <>
+                {error !== ErrorType.none && <ErrorText error={error}/>}
+    
                 <p>
                     Two-factor authentication is enabled.
                 </p>
     
-                ...
+                <p>
+                    Enter your current authenticator code
+                    to manage two-factor authentication.
+                </p>
+    
+                <TextInput
+                    label="Authentication code:"
+                    placeholder="Enter authentication code"
+                    setter={setVerificationCode}
+                    id="twoFactorManageCode"
+                />
+    
+                <PopupButtons>
+                    <MossButton
+                        label={
+                            isSubmitting
+                                ? "Processing..."
+                                : "Regenerate recovery codes"
+                        }
+                        onClick={() => void handleRegenerateRecoveryCodes()}
+                        disabled={isSubmitting}
+                    />
+    
+                    <MossButton
+                        label="Disable 2FA"
+                        onClick={() => void handleDisable()}
+                        disabled={isSubmitting}
+                    />
+    
+                    <MossButton
+                        label="Back"
+                        onClick={() => setPopupType(PopupType.none)}
+                        disabled={isSubmitting}
+                    />
+                </PopupButtons>
             </>
         );
     }
@@ -308,31 +444,5 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
         );
     }
 
-    return (
-        <>
-            <p>
-                Two-factor authentication is now enabled.
-            </p>
-
-            <p>
-                Save these recovery codes somewhere safe.
-                Each code can only be used once.
-            </p>
-
-            <div>
-                {recoveryCodes.map(code =>
-                    <div key={code}>
-                        <code>{code}</code>
-                    </div>
-                )}
-            </div>
-
-            <PopupButtons>
-                <MossButton
-                    label="Done"
-                    onClick={() => setPopupType(PopupType.none)}
-                />
-            </PopupButtons>
-        </>
-    );
+    return null;
 }
