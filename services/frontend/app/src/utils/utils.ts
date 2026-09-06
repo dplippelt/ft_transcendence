@@ -109,6 +109,9 @@ export enum CombatEvent
 	getInitPlayerHp = "get-init-player-hp",
 	getInitPlayerMp = "get-init-player-mp",
 	getInitEnemyHp = "get-init-enemy-hp",
+	getCurrPlayerHp = "get-curr-player-hp",
+	getCurrPlayerMp = "get-curr-player-mp",
+	getCurrEnemyHp = "get-curr-enemy-hp",
 }
 
 export enum GameState

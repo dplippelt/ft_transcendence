@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import styles from "./Bar.module.scss";
-import { emitWhenReady, EventBus } from "../../game/EventBus";
+import { emitEveryFrame, emitWhenReady, EventBus } from "../../game/EventBus";
 import { CombatEvent } from "../../utils/utils";
 
 interface IHPBar
@@ -44,21 +44,27 @@ export function PlayerHPBar()
 {
 	const [maxHP, setMaxHP] = useState<number>(0);
 	const [currHP, setCurrHP] = useState<number>(0);
+	const stopPollingRef = useRef<(() => void) | null>(null);
 
 	useEffect(() =>
 	{
-		function initPlayerHP( maxPlayerHP: number ) { setMaxHP(maxPlayerHP); setCurrHP(maxPlayerHP); }
+		function initPlayerHP( maxPlayerHP: number ) {
+			setMaxHP(maxPlayerHP);
+			setCurrHP(maxPlayerHP);
+			stopPollingRef.current = emitEveryFrame(CombatEvent.getCurrPlayerHp);
+		}
 		EventBus.addListener(CombatEvent.initPlayerHP, initPlayerHP);
 
 		function updatePlayerHP( currPlayerHP: number ) { setCurrHP(currPlayerHP >= 0 ? currPlayerHP : 0); }
 		EventBus.addListener(CombatEvent.updatePlayerHP, updatePlayerHP);
 
+		emitWhenReady(CombatEvent.getInitPlayerHp);
+
 		function cleanup() {
 			EventBus.removeListener(CombatEvent.initPlayerHP, initPlayerHP);
 			EventBus.removeListener(CombatEvent.updatePlayerHP, updatePlayerHP);
+			stopPollingRef.current?.();
 		}
-
-		emitWhenReady(CombatEvent.getInitPlayerHp);
 
 		return () => cleanup();
 	}, []);
@@ -70,21 +76,27 @@ export function EnemyHPBar()
 {
 	const [maxHP, setMaxHP] = useState<number>(0);
 	const [currHP, setCurrHP] = useState<number>(0);
+	const stopPollingRef = useRef<(() => void) | null>(null);
 
 	useEffect(() =>
 	{
-		function initEnemyHP( maxEnemyHP: number ) { setMaxHP(maxEnemyHP); setCurrHP(maxEnemyHP); }
+		function initEnemyHP( maxEnemyHP: number ) {
+			setMaxHP(maxEnemyHP);
+			setCurrHP(maxEnemyHP);
+			stopPollingRef.current = emitEveryFrame(CombatEvent.getCurrEnemyHp);
+		}
 		EventBus.addListener(CombatEvent.initEnemyHP, initEnemyHP);
 
 		function updateEnemyHP( currEnemyHP: number ) { setCurrHP(currEnemyHP >= 0 ? currEnemyHP : 0); }
 		EventBus.addListener(CombatEvent.updateEnemyHP, updateEnemyHP);
 
+		emitWhenReady(CombatEvent.getInitEnemyHp);
+
 		function cleanup() {
 			EventBus.removeListener(CombatEvent.initEnemyHP, initEnemyHP);
 			EventBus.removeListener(CombatEvent.updateEnemyHP, updateEnemyHP);
+			stopPollingRef.current?.();
 		}
-
-		emitWhenReady(CombatEvent.getInitEnemyHp);
 
 		return () => cleanup();
 	}, []);
@@ -96,21 +108,27 @@ export function PlayerMPBar()
 {
 	const [maxMP, setMaxMP] = useState<number>(0);
 	const [currMP, setCurrMP] = useState<number>(0);
+	const stopPollingRef = useRef<(() => void) | null>(null);
 
 	useEffect(() =>
 	{
-		function initPlayerMP( maxPlayerMP: number ) { setMaxMP(maxPlayerMP); setCurrMP(maxPlayerMP); }
+		function initPlayerMP( maxPlayerMP: number ) {
+			setMaxMP(maxPlayerMP);
+			setCurrMP(maxPlayerMP);
+			stopPollingRef.current = emitEveryFrame(CombatEvent.getCurrPlayerMp);
+		}
 		EventBus.addListener(CombatEvent.initPlayerMP, initPlayerMP);
 
 		function updatePlayerMP( currPlayerMP: number ) { setCurrMP(currPlayerMP >= 0 ? currPlayerMP : 0); }
 		EventBus.addListener(CombatEvent.updatePlayerMP, updatePlayerMP);
 
+		emitWhenReady(CombatEvent.getInitPlayerMp);
+
 		function cleanup() {
 			EventBus.removeListener(CombatEvent.initPlayerMP, initPlayerMP);
 			EventBus.removeListener(CombatEvent.updatePlayerMP, updatePlayerMP);
+			stopPollingRef.current?.();
 		}
-
-		emitWhenReady(CombatEvent.getInitPlayerMp);
 
 		return () => cleanup();
 	}, []);

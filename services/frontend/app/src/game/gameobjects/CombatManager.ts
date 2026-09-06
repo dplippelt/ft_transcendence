@@ -49,10 +49,6 @@ export default class CombatManager {
     this.events.on(CombatEvents.ENDTURN, this.endTurn, this);
     this.layoutManager = new CombatLayoutManager(this);
     this.turnManager.turnEvents.emit(TurnEvents.STARTPLAYER);
-    EventBus.addListener(CombatEvent.getInitPlayerHp, this.sendInitPlayerHP, this);
-    EventBus.addListener(CombatEvent.getInitPlayerMp, this.sendInitPlayerMP, this);
-    EventBus.addListener(CombatEvent.getInitPlayerHp, this.sendInitEnemyHP, this);
-    EventBus.addListener(CombatEvent.attack, this.execute, this);
   }
 
   update() {
@@ -106,14 +102,12 @@ export default class CombatManager {
     if (combatant instanceof CombatEnemy) {
       const combo = this.executeManager.getCombo()!;
       combatant.takeDamage(this.damageToEnemyOn[combo]);
-      EventBus.emit(CombatEvent.updateEnemyHP, this.enemy.hitPoint);
       if (combatant.isDead()) {
         this.endCombat();
         return;
       }
     } else {
       combatant.takeDamage(this.enemy.enemyData.attackDamage);
-      EventBus.emit(CombatEvent.updatePlayerHP, this.player.status.hitPoint);
       if (combatant.isDead()) {
         this.endGame();
         return;
@@ -148,5 +142,17 @@ export default class CombatManager {
 
   sendInitEnemyHP() {
     EventBus.emit(CombatEvent.initEnemyHP, this.enemyData.hitPoint);
+  }
+
+  sendCurrPlayerHP() {
+    EventBus.emit(CombatEvent.updatePlayerHP, this.player.status.hitPoint);
+  }
+
+  sendCurrPlayerMP() {
+    EventBus.emit(CombatEvent.updatePlayerMP, this.player.status.mana);
+  }
+
+  sendCurrEnemyHP() {
+    EventBus.emit(CombatEvent.updateEnemyHP, this.enemy.hitPoint);
   }
 }

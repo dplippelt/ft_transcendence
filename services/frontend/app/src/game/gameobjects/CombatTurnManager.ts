@@ -34,12 +34,10 @@ export default class CombatTurnManager {
     this.isPlayerTurn = true;
     this.playerTimer = this.playTurnFor(this.playerDelayMs);
     this.enemyTimer = null;
-    EventBus.addListener(CombatEvent.getTurnTimerState, this.sendElapsedTime, this)
   }
 
   destroy() {
     this.cleanupTimers();
-    EventBus.removeListener(CombatEvent.getTurnTimerState, this.sendElapsedTime, this)
   }
 
   cleanupTimers() {

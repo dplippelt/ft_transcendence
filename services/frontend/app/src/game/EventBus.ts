@@ -15,3 +15,20 @@ export function emitWhenReady( event: string, ...args: unknown[] ) {
     requestAnimationFrame(() => emitWhenReady(event, ...args));
   }
 }
+
+// Repeatedly emits an event once per animation frame, to request the current
+// value of some Phaser-side state. It only sends the request, the response is
+// handled elsewhere. To stop polling the returned function needs to be called.
+export function emitEveryFrame( event: string, ...args: unknown[] ) : () => void {
+  let stop = false;
+
+  function onFrame() {
+    if ( stop )
+      return;
+    EventBus.emit(event, ...args);
+    requestAnimationFrame(onFrame);
+  }
+
+  onFrame();
+  return () => { stop = true; }
+}
