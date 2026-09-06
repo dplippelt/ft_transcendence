@@ -174,7 +174,4 @@ class GameSession:
         ) and (monotonic() - self.time_since_last_action) > SESSION_TIMEOUT:
             return True
 
-        if self.task is None or self.task.exception():
-            return True
-
         return self.state == SessionState.SESSION_OVER
