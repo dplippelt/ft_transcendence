@@ -177,13 +177,8 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
                 type="submit"
                 disabled={isSubmitting}
             />
-<<<<<<< HEAD
             <GoogleAuthButton setError={setError} onTwoFactorRequired={onTwoFactorRequired}/>
     
-=======
-            <GoogleAuthButton setError={setError}/>
-
->>>>>>> master
             <TextButton
                 label="Don't have an account? Sign-up"
                 onClick={() =>
