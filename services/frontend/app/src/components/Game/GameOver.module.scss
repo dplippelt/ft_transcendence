@@ -1,0 +1,33 @@
+@use '../../variables' as *;
+
+.gameOver
+{
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+
+	@media ( min-height: 420px )
+	{
+		transform: translateY(-10%);
+	}
+}
+
+.subText
+{
+	width: 100%;
+	max-width: min(450px, 98vw);
+	font-size: 1.3rem;
+	text-shadow: 0 2px 16px rgba(0, 0, 0, 0.8);
+	margin: 0 auto;
+	background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 30%, transparent 70%);
+	padding: 1.5rem 0rem;
+	margin-top: -1rem;
+	font-family: $text-font;
+	text-align: center;
+}
