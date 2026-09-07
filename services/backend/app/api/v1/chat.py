@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, status
 
 from app.api.dependencies import CompletedUser, CurrentUserIdWS, DbSession
-from app.core.exceptions import not_found
+from app.core.exceptions import ErrorCode, not_found
 from app.core.websocket_manager import connection_manager
 from app.schemas.chat import ChatMessageCreate, ChatMessageResponse
 from app.services.chat_service import (
@@ -40,7 +40,7 @@ def create_message(friend_id: int, message_data: ChatMessageCreate, current_user
     receiver = get_active_user_by_id(db, friend_id)
 
     if receiver is None:
-        raise not_found("User not found.")
+        raise not_found("User not found.", code=ErrorCode.USER_NOT_FOUND)
 
     message = send_message(
         db=db,
