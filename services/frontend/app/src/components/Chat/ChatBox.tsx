@@ -22,6 +22,17 @@ export default function ChatBox()
 	const [msg, setMsg] = useState<string>("");
 	const timeoutIDRef = useRef<number | undefined>(undefined);
 
+	// Lets handleSend's failure handler (below) check, once a send actually
+	// fails, whether the user is still on the same friend's chat -- read
+	// from a ref rather than the activeFriendID in this render's closure,
+	// since that closure is stale by the time an async rejection arrives.
+	const activeFriendIDRef = useRef(activeFriendID);
+
+	useEffect(() =>
+	{
+		activeFriendIDRef.current = activeFriendID;
+	}, [activeFriendID]);
+
 	const userID = String(user.id);
 
 	useEffect(() =>
@@ -78,6 +89,7 @@ export default function ChatBox()
 			return;
 
 		const content = msg;
+		const sentFriendID = activeFriendID!;
 
 		clearTimeout(timeoutIDRef.current);
 
@@ -93,8 +105,16 @@ export default function ChatBox()
 		addChatHistory(activeFriendID!, content)
 			.catch(() =>
 			{
-				// Restore the draft so a failed send isn't silently lost.
-				setMsg(content);
+				// Restore the draft so a failed send isn't silently lost --
+				// but only if the user is still on the same friend's chat
+				// (otherwise this would inject friend A's failed message
+				// into friend B's input) and hasn't already typed something
+				// new into the box in the meantime (otherwise this would
+				// clobber that newer, unsent draft).
+				if (activeFriendIDRef.current !== sentFriendID)
+					return;
+
+				setMsg(currentMsg => currentMsg.length === 0 ? content : currentMsg);
 			});
 	}
 

@@ -41,9 +41,17 @@ export default function ChatHistory()
 
 	useLayoutEffect(() =>
 	{
+		// Depends on activeChatHistory too, not just activeFriendID: opening
+		// a friend's chat before their history has finished loading (or
+		// before a just-arrived live message lands) would otherwise mark
+		// them read against a still-empty/incomplete local array and never
+		// get another chance to mark the real messages once they show up.
+		// setChatToRead itself no-ops (including the backend call) once
+		// nothing is left unread, so this doesn't re-fire the network call
+		// on every render once the friend's messages are already all read.
 		if ( activeFriendID )
 			setChatToRead(activeFriendID);
-	}, [activeFriendID]);
+	}, [activeFriendID, activeChatHistory]);
 
 	if ( !activeChatHistory )
 		return null; // or a loading message;
