@@ -10,6 +10,7 @@ from app.models.lobby import Lobby
 from app.models.user import User
 from app.schemas.lobby import (
     LobbyCreate,
+    LobbyGameResponse,
     LobbyInviteCreate,
     LobbyInviteResponse,
     LobbyMessageCreate,
@@ -28,7 +29,9 @@ from app.services.lobby_service import (
     leave_lobby,
     list_lobbies,
     send_lobby_message,
+    start_game_session,
 )
+from services.backend.app.game.game_session import GameSession
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +58,11 @@ def notify_other_members(db: Session, lobby_id: int, sender_id: int, message: ob
     try:
         member_ids = get_other_member_ids(db, lobby_id, sender_id)
     except Exception:
-        logger.warning("Failed to look up lobby members to notify for lobby %s", lobby_id, exc_info=True)
+        logger.warning(
+            "Failed to look up lobby members to notify for lobby %s",
+            lobby_id,
+            exc_info=True,
+        )
         return
 
     for member_id in member_ids:
@@ -75,9 +82,35 @@ def notify_invite(friend_id: int, lobby: Lobby, inviter: User) -> bool:
         lambda: {
             "lobby_id": lobby.id,
             "lobby_name": lobby.name,
-            "inviter": PublicUserResponse.model_validate(inviter).model_dump(mode="json"),
+            "inviter": PublicUserResponse.model_validate(inviter).model_dump(
+                mode="json"
+            ),
         },
     )
+
+
+def notify_game_start(db: Session, user_id: int, lobby_id: int, game_session: GameSession) -> None:
+    try:
+        member_ids = get_other_member_ids(db, lobby_id, user_id)
+    except Exception:
+        logger.warning(
+            "Failed to look up lobby members to notify for lobby %s",
+            lobby_id,
+            exc_info=True,
+        )
+        return
+
+    for member_id in member_ids:
+        connection_manager.notify_safely(
+            member_id,
+            "lobby_start",
+            lambda: {
+                "lobby_id": lobby_id,
+                "game": LobbyGameResponse(game_session_id=game_session.id).model_dump(
+                    mode="json"
+                ),
+            },
+        )
 
 
 @router.get("", response_model=list[LobbyResponse])
@@ -125,7 +158,12 @@ def get_messages(lobby_id: int, current_user: CompletedUser, db: DbSession):
 
 
 @router.post("/{lobby_id}/messages", response_model=LobbyMessageResponse, status_code=status.HTTP_201_CREATED)
-def post_message(lobby_id: int, message_data: LobbyMessageCreate, current_user: CompletedUser, db: DbSession):
+def post_message(
+    lobby_id: int,
+    message_data: LobbyMessageCreate,
+    current_user: CompletedUser,
+    db: DbSession,
+):
     message = send_lobby_message(db, current_user, lobby_id, message_data.content)
 
     notify_other_members(db, lobby_id, current_user.id, message)
@@ -134,7 +172,12 @@ def post_message(lobby_id: int, message_data: LobbyMessageCreate, current_user: 
 
 
 @router.post("/{lobby_id}/invite", response_model=LobbyInviteResponse)
-def invite(lobby_id: int, invite_data: LobbyInviteCreate, current_user: CompletedUser, db: DbSession):
+def invite(
+    lobby_id: int,
+    invite_data: LobbyInviteCreate,
+    current_user: CompletedUser,
+    db: DbSession,
+):
     lobby = invite_friend_to_lobby(db, current_user, lobby_id, invite_data.friend_id)
 
     # The cooldown stays reserved even when nothing was delivered (friend
@@ -144,3 +187,12 @@ def invite(lobby_id: int, invite_data: LobbyInviteCreate, current_user: Complete
     delivered = notify_invite(invite_data.friend_id, lobby, current_user)
 
     return LobbyInviteResponse(delivered=delivered)
+
+
+@router.post("/{lobby_id}/start", response_model=LobbyGameResponse, status_code=status.HTTP_201_CREATED)
+def start_game(lobby_id: int, current_user: CompletedUser, db: DbSession):
+    game_session = start_game_session(db, current_user, lobby_id)
+
+    notify_game_start(db, current_user.id, lobby_id, game_session)
+
+    return LobbyGameResponse(game_session_id=game_session.id)

@@ -82,3 +82,7 @@ class LobbyInviteResponse(BaseModel):
     # friend connected to a different worker/instance in a multi-process
     # deployment would show False here despite being online elsewhere.
     delivered: bool
+
+
+class LobbyGameResponse(BaseModel):
+    game_session_id: str
