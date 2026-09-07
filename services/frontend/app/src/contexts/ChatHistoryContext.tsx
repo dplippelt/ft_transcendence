@@ -129,13 +129,22 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 				if ( accessTokenRef.current !== accessToken )
 					return;
 
-				setChatHistory(prev => ({
-					...prev,
-					[friendID]: mergeMessages(
-						prev[friendID] ?? [],
-						messages.map(message => toChatMsg(message, currentUserId)),
-					),
-				}));
+				setChatHistory(prev =>
+				{
+					// The friend may have been removed (removeChatHistoryEntry)
+					// while this request was in flight -- applying it now
+					// would resurrect an entry the user explicitly removed.
+					if ( prev[friendID] === undefined )
+						return prev;
+
+					return {
+						...prev,
+						[friendID]: mergeMessages(
+							prev[friendID],
+							messages.map(message => toChatMsg(message, currentUserId)),
+						),
+					};
+				});
 			})
 			.catch(() =>
 			{
@@ -180,7 +189,9 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 
 	function setChatToRead( friendID: string )
 	{
-		const hasUnread = chatHistory[friendID]?.some(msg => !msg.read) ?? false;
+		const unreadIds = new Set(
+			(chatHistory[friendID] ?? []).filter(msg => !msg.read).map(msg => msg.id)
+		);
 
 		// Bail out (including on the backend call below) when there's
 		// nothing locally unread to mark -- most importantly, right after
@@ -189,7 +200,7 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 		// fire and mark that friend's real messages read before the user
 		// had actually seen them, so the unread badge would never show
 		// them as unread once they do load.
-		if ( !hasUnread )
+		if ( unreadIds.size === 0 )
 			return;
 
 		setChatHistory(prev =>
@@ -201,18 +212,40 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 			return {
 				...prev,
 				[friendID]: friendChatHistory.map(msg =>
-					msg.read
-						? msg
-						: { ...msg, read: true }
+					unreadIds.has(msg.id)
+						? { ...msg, read: true }
+						: msg
 				)
 			}
 		});
 
-		// Best-effort, same reasoning as everywhere else this pattern shows
-		// up: the local read-state already updated, so a failed/late request
-		// here shouldn't block or roll back the UI.
-		if ( auth.accessToken )
-			markConversationAsRead(Number(friendID), auth.accessToken).catch(() => {});
+		if ( !auth.accessToken )
+			return;
+
+		markConversationAsRead(Number(friendID), auth.accessToken).catch(() =>
+		{
+			// Roll back just the messages this call marked read (not the
+			// whole friend, in case more arrived and got marked read in
+			// the meantime) so a failed request leaves them unread rather
+			// than silently drifting from the backend's real state -- the
+			// next time this chat is (re)opened or a new message arrives,
+			// the effect that calls setChatToRead retries naturally.
+			setChatHistory(prev =>
+			{
+				const friendChatHistory = prev[friendID];
+				if ( !friendChatHistory )
+					return prev;
+
+				return {
+					...prev,
+					[friendID]: friendChatHistory.map(msg =>
+						unreadIds.has(msg.id)
+							? { ...msg, read: false }
+							: msg
+					)
+				};
+			});
+		});
 	}
 
 	function hasNewMsg() : boolean
@@ -248,6 +281,42 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 		let socket: WebSocket | null = null;
 		let reconnectTimeoutID: number | undefined;
 		let isCurrent = true;
+		let hasConnectedBefore = false;
+
+		// Re-pulls a friend's full conversation and merges it into local
+		// state (mergeMessages dedupes by id, so this is safe to call
+		// against an already-populated history). Used from the "open"
+		// listener below after a reconnect: a message sent while the
+		// socket was down was still persisted by the backend, but this
+		// client's now-replaced connection never delivered it, and
+		// fetchedFriendIDsRef would otherwise stop addChatHistoryEntry
+		// from ever fetching it either.
+		function refetchConversation( friendID: string )
+		{
+			getConversation(Number(friendID), accessToken!)
+				.then(messages =>
+				{
+					if ( accessTokenRef.current !== accessToken )
+						return;
+
+					setChatHistory(prev =>
+					{
+						// Friend may have been removed since the reconnect
+						// started (removeChatHistoryEntry) -- don't resurrect it.
+						if ( prev[friendID] === undefined )
+							return prev;
+
+						return {
+							...prev,
+							[friendID]: mergeMessages(
+								prev[friendID],
+								messages.map(message => toChatMsg(message, currentUserId!)),
+							),
+						};
+					});
+				})
+				.catch(() => {}); // best-effort; the next reconnect retries this too
+		}
 
 		function connect()
 		{
@@ -264,6 +333,19 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 			// close listener further down -- these consts are never
 			// reassigned, so it still holds whenever this actually runs.
 			socket = new WebSocket(getWsUrl(`/chat/ws?token=${encodeURIComponent(accessToken!)}`));
+
+			socket.addEventListener("open", () =>
+			{
+				// Skip on the very first connection of this effect --
+				// addChatHistoryEntry already handles each tracked friend's
+				// initial load. Only a reconnect (after a drop) needs to
+				// backfill the gap the dead connection left.
+				if ( hasConnectedBefore )
+					for ( const friendID of fetchedFriendIDsRef.current )
+						refetchConversation(friendID);
+
+				hasConnectedBefore = true;
+			});
 
 			socket.addEventListener("message", (event) =>
 			{
@@ -316,9 +398,16 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 				});
 			});
 
-			socket.addEventListener("close", () =>
+			socket.addEventListener("close", (event) =>
 			{
-				if ( isCurrent )
+				// 1008 (policy violation) is what get_current_user_id_ws
+				// closes with when the token itself is rejected -- retrying
+				// with that same token would just fail the same way every
+				// 3s forever, so only reconnect on other, recoverable
+				// closes (network drop, server restart, etc). The socket
+				// picks back up once a valid token flows through (this
+				// effect re-runs on auth.accessToken changing).
+				if ( isCurrent && event.code !== 1008 )
 					reconnectTimeoutID = window.setTimeout(connect, 3000);
 			});
 		}

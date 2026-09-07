@@ -105,12 +105,20 @@ export default function ChatBox()
 		addChatHistory(activeFriendID!, content)
 			.catch(() =>
 			{
-				// Restore the draft so a failed send isn't silently lost --
-				// but only if the user is still on the same friend's chat
-				// (otherwise this would inject friend A's failed message
-				// into friend B's input) and hasn't already typed something
-				// new into the box in the meantime (otherwise this would
-				// clobber that newer, unsent draft).
+				// Always persist the failed content as that friend's draft,
+				// even if the user has since switched away, so it isn't
+				// silently lost -- only restoring it to the visible input
+				// (below) depends on still being on the same chat.
+				localStorage.setItem(
+					getFriendDraftKey(userID, sentFriendID),
+					content,
+				);
+
+				// Only touch the visible input if the user is still on the
+				// same friend's chat (otherwise this would inject friend
+				// A's failed message into friend B's input) and hasn't
+				// already typed something new into the box in the meantime
+				// (otherwise this would clobber that newer, unsent draft).
 				if (activeFriendIDRef.current !== sentFriendID)
 					return;
 
