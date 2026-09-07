@@ -1,5 +1,10 @@
 import { apiRequest } from "./http";
 
+// Matches ChatMessageCreate.content's max_length in the backend schema
+// (services/backend/app/schemas/chat.py) -- kept in one place so the input
+// and the validation it's enforcing client-side can't drift apart silently.
+export const CHAT_MESSAGE_MAX_LENGTH = 2000;
+
 export interface ChatMessageResponse
 {
     id: number;

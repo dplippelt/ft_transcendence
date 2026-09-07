@@ -5,6 +5,7 @@ import { useFriends } from "../../contexts/FriendsContext";
 import { useLobbies } from "../../contexts/LobbiesContext";
 import { useCurrentUser } from "../../contexts/AuthContext";
 import { useParams } from "react-router-dom";
+import { getDisplayName } from "../../utils/utils";
 
 interface IChatMessage
 {
@@ -63,7 +64,7 @@ export default function ChatHistory()
 	function resolveUsername( senderId: number ): string
 	{
 		if ( senderId === user.id )
-			return user.username ?? user.display_name ?? "You";
+			return getDisplayName(user, "You");
 
 		return friends[String(senderId)]?.username ?? "Unknown";
 	}

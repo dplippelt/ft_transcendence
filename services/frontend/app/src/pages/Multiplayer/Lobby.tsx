@@ -4,7 +4,7 @@ import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
 import SideBar from "../../components/SideBar";
-import { PopupType, AvatarSize, RoutePath, MobilePosition, JoinStatus, getLobbyDraftKey } from "../../utils/utils";
+import { PopupType, AvatarSize, RoutePath, MobilePosition, JoinStatus, getLobbyDraftKey, getDisplayName } from "../../utils/utils";
 import { BottomButtons } from "../../components/ButtonContainers";
 import { BottomButton } from "../../components/Buttons";
 import styles from "./Lobby.module.scss";
@@ -71,7 +71,7 @@ function Players( { lobbyID } : IPlayers )
 	function getHostUsername() : string
 	{
 		if ( lobby.hostID === String(user.id) )
-			return user.username ?? user.display_name ?? "Unknown";
+			return getDisplayName(user);
 		return "Host"; // TODO: fetch username from database
 	}
 
@@ -86,7 +86,7 @@ function Players( { lobbyID } : IPlayers )
 	function getGuestUsername() : string
 	{
 		if ( lobby.guestID === String(user.id) )
-			return user.username ?? user.display_name ?? "Unknown";
+			return getDisplayName(user);
 		if ( lobby.guestID )
 			return "Guest"; // TODO: fetch username from database
 		return "Waiting...";

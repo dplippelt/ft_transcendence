@@ -1,10 +1,11 @@
-import { createContext, useContext, useCallback, useEffect, useRef, useState } from "react";
+import { createContext, useContext, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
 
 import { useAuth } from "./AuthContext";
 import { getConversation, markConversationAsRead, sendChatMessage } from "../api/chatApi";
 import type { ChatMessageResponse } from "../api/chatApi";
 import { getWsUrl } from "../api/http";
+import useLatestRef from "../hooks/useLatestRef";
 
 export interface IChatMsg
 {
@@ -46,7 +47,16 @@ function mergeMessages( existing: IChatMsg[], incoming: IChatMsg[] ): IChatMsg[]
 		byId.set(msg.id, msg);
 
 	for ( const msg of incoming )
-		byId.set(msg.id, msg);
+	{
+		const prior = byId.get(msg.id);
+
+		// read only ever moves forward (unread -> read), never back: without
+		// this, a REST response that started before a WS-triggered local
+		// read mark but resolves after it (its own read_at may still be
+		// null server-side at that point) would silently regress an
+		// already-seen message back to unread.
+		byId.set(msg.id, prior?.read ? { ...msg, read: true } : msg);
+	}
 
 	return Array.from(byId.values()).sort((a, b) => a.id - b.id);
 }
@@ -76,21 +86,24 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 	// entirely instead of just no-op'ing the local state write.
 	const fetchedFriendIDsRef = useRef<Set<string>>(new Set());
 
+	// Friend ids with a markConversationAsRead request currently in flight,
+	// so two setChatToRead calls fired back to back for the same friend
+	// (e.g. a live message landing right as the chat opens, or React
+	// StrictMode's dev double-invoke) -- both reading the same
+	// not-yet-updated chatHistory and both seeing it as unread -- don't
+	// both fire the same network call.
+	const pendingReadMarksRef = useRef<Set<string>>(new Set());
+
 	// Mirrors auth.accessToken so an in-flight request's .then() can tell
 	// whether the session that issued it is still the current one -- see
 	// addChatHistoryEntry below.
-	const accessTokenRef = useRef(auth.accessToken);
+	const accessTokenRef = useLatestRef(auth.accessToken);
 
-	useEffect(() =>
-	{
-		accessTokenRef.current = auth.accessToken;
-	}, [auth.accessToken]);
-
-	function resetChatHistory()
+	const resetChatHistory = useCallback(() =>
 	{
 		fetchedFriendIDsRef.current.clear();
 		setChatHistory({});
-	}
+	}, []);
 
 	// Reserves the entry immediately (so the UI has something to render
 	// right away) then backfills it from the real conversation history, so
@@ -152,9 +165,9 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 				// history permanently stuck empty because of one failure.
 				fetchedFriendIDsRef.current.delete(friendID);
 			});
-	}, [auth.accessToken, auth.user?.id]);
+	}, [auth.accessToken, auth.user?.id, accessTokenRef]);
 
-	function removeChatHistoryEntry( friendID: string )
+	const removeChatHistoryEntry = useCallback(( friendID: string ) =>
 	{
 		fetchedFriendIDsRef.current.delete(friendID);
 
@@ -167,9 +180,9 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 			delete chatHistory[friendID];
 			return chatHistory;
 		});
-	}
+	}, []);
 
-	async function addChatHistory( friendID: string, content: string )
+	const addChatHistory = useCallback(async ( friendID: string, content: string ) =>
 	{
 		if ( !auth.accessToken || auth.user === null )
 			throw new Error("No authenticated session");
@@ -185,9 +198,9 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 			...prev,
 			[friendID]: mergeMessages(prev[friendID] ?? [], [toChatMsg(message, currentUserId)]),
 		}));
-	}
+	}, [auth.accessToken, auth.user]);
 
-	function setChatToRead( friendID: string )
+	const setChatToRead = useCallback(( friendID: string ) =>
 	{
 		const unreadIds = new Set(
 			(chatHistory[friendID] ?? []).filter(msg => !msg.read).map(msg => msg.id)
@@ -219,10 +232,15 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 			}
 		});
 
-		if ( !auth.accessToken )
+		// Don't fire a second markConversationAsRead for this friend while
+		// one is already in flight -- see pendingReadMarksRef above.
+		if ( !auth.accessToken || pendingReadMarksRef.current.has(friendID) )
 			return;
 
-		markConversationAsRead(Number(friendID), auth.accessToken).catch(() =>
+		pendingReadMarksRef.current.add(friendID);
+
+		markConversationAsRead(Number(friendID), auth.accessToken)
+			.catch(() =>
 		{
 			// Roll back just the messages this call marked read (not the
 			// whole friend, in case more arrived and got marked read in
@@ -245,24 +263,25 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 					)
 				};
 			});
-		});
-	}
+		})
+			.finally(() => { pendingReadMarksRef.current.delete(friendID); });
+	}, [chatHistory, auth.accessToken]);
 
-	function hasNewMsg() : boolean
+	const hasNewMsg = useCallback(() : boolean =>
 	{
 		return Object.values(chatHistory).some(data =>
 			data.some(({ read }) => !read)
 		);
-	}
+	}, [chatHistory]);
 
-	function countUnreadMsg( friendID: string ) : number
+	const countUnreadMsg = useCallback(( friendID: string ) : number =>
 	{
 		const friendChatHistory = chatHistory[friendID];
 		if ( !friendChatHistory )
 			return 0;
 
 		return friendChatHistory.filter(({ read }) => !read).length;
-	}
+	}, [chatHistory]);
 
 	// Live delivery for messages other people send us. Only updates a
 	// friend we're already tracking (i.e. addChatHistoryEntry has loaded
@@ -291,9 +310,12 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 		// client's now-replaced connection never delivered it, and
 		// fetchedFriendIDsRef would otherwise stop addChatHistoryEntry
 		// from ever fetching it either.
-		function refetchConversation( friendID: string )
+		// accessToken/currentUserId are taken as parameters (rather than
+		// read from the outer closure) so they keep their already-narrowed
+		// non-nullable types here without needing a non-null assertion.
+		function refetchConversation( friendID: string, accessToken: string, currentUserId: number )
 		{
-			getConversation(Number(friendID), accessToken!)
+			getConversation(Number(friendID), accessToken)
 				.then(messages =>
 				{
 					if ( accessTokenRef.current !== accessToken )
@@ -310,7 +332,7 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 							...prev,
 							[friendID]: mergeMessages(
 								prev[friendID],
-								messages.map(message => toChatMsg(message, currentUserId!)),
+								messages.map(message => toChatMsg(message, currentUserId)),
 							),
 						};
 					});
@@ -318,7 +340,8 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 				.catch(() => {}); // best-effort; the next reconnect retries this too
 		}
 
-		function connect()
+		// Same parameter-passing reasoning as refetchConversation above.
+		function connect( accessToken: string, currentUserId: number )
 		{
 			// Token in the URL query string rather than an Authorization
 			// header, since browsers can't set custom headers on a
@@ -327,12 +350,7 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 			// risks exposure via reverse-proxy/access logs, so the
 			// deployment needs to stay on WSS and avoid logging query
 			// strings for this path.
-			// Non-null assertions below: already checked above, but TS
-			// can't carry that narrowing into this nested closure since it
-			// could (in principle) run later, via the setTimeout in the
-			// close listener further down -- these consts are never
-			// reassigned, so it still holds whenever this actually runs.
-			socket = new WebSocket(getWsUrl(`/chat/ws?token=${encodeURIComponent(accessToken!)}`));
+			socket = new WebSocket(getWsUrl(`/chat/ws?token=${encodeURIComponent(accessToken)}`));
 
 			socket.addEventListener("open", () =>
 			{
@@ -342,7 +360,7 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 				// backfill the gap the dead connection left.
 				if ( hasConnectedBefore )
 					for ( const friendID of fetchedFriendIDsRef.current )
-						refetchConversation(friendID);
+						refetchConversation(friendID, accessToken, currentUserId);
 
 				hasConnectedBefore = true;
 			});
@@ -364,12 +382,18 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 					payload.type !== "chat_message" ||
 					payload.id === undefined ||
 					payload.sender_id === undefined ||
+					payload.receiver_id === undefined ||
 					payload.content === undefined ||
 					payload.created_at === undefined
 				)
 					return;
 
-				const senderID = String(payload.sender_id);
+				// The backend pushes a sent message back to the sender's
+				// own other tabs/devices too, not just the receiver's, so
+				// this push can be our own echo. The conversation it
+				// belongs to is keyed by whichever side isn't us.
+				const isOwnMessage = payload.sender_id === currentUserId;
+				const friendID = String(isOwnMessage ? payload.receiver_id : payload.sender_id);
 
 				// Route through the same mapping toChatMsg uses for
 				// REST-loaded messages instead of a second hand-built
@@ -378,22 +402,22 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 					{
 						id: payload.id,
 						sender_id: payload.sender_id,
-						receiver_id: currentUserId!,
+						receiver_id: payload.receiver_id,
 						content: payload.content,
 						created_at: payload.created_at,
 						read_at: payload.read_at ?? null,
 					},
-					currentUserId!,
+					currentUserId,
 				);
 
 				setChatHistory(prev =>
 				{
-					if ( prev[senderID] === undefined )
+					if ( prev[friendID] === undefined )
 						return prev;
 
 					return {
 						...prev,
-						[senderID]: mergeMessages(prev[senderID], [incoming]),
+						[friendID]: mergeMessages(prev[friendID], [incoming]),
 					};
 				});
 			});
@@ -408,11 +432,11 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 				// picks back up once a valid token flows through (this
 				// effect re-runs on auth.accessToken changing).
 				if ( isCurrent && event.code !== 1008 )
-					reconnectTimeoutID = window.setTimeout(connect, 3000);
+					reconnectTimeoutID = window.setTimeout(() => connect(accessToken, currentUserId), 3000);
 			});
 		}
 
-		connect();
+		connect(accessToken, currentUserId);
 
 		return () =>
 		{
@@ -420,21 +444,31 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 			clearTimeout(reconnectTimeoutID);
 			socket?.close();
 		};
-	}, [auth.accessToken, auth.user?.id]);
+	}, [auth.accessToken, auth.user?.id, accessTokenRef]);
+
+	const value = useMemo(() => (
+	{
+		chatHistory,
+		resetChatHistory,
+		addChatHistory,
+		setChatToRead,
+		hasNewMsg,
+		countUnreadMsg,
+		addChatHistoryEntry,
+		removeChatHistoryEntry,
+	}), [
+		chatHistory,
+		resetChatHistory,
+		addChatHistory,
+		setChatToRead,
+		hasNewMsg,
+		countUnreadMsg,
+		addChatHistoryEntry,
+		removeChatHistoryEntry,
+	]);
 
 	return (
-		<ChatHistoryContext.Provider
-			value=
-			{{
-				chatHistory,
-				resetChatHistory,
-				addChatHistory,
-				setChatToRead,
-				hasNewMsg,
-				countUnreadMsg,
-				addChatHistoryEntry,
-				removeChatHistoryEntry,
-			}}>
+		<ChatHistoryContext.Provider value={value}>
 			{children}
 		</ChatHistoryContext.Provider>
 	);
