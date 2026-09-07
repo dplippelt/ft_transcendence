@@ -1,45 +1,41 @@
-import { createContext, useContext, /* useEffect, */ useState } from "react";
+import { createContext, useContext, useCallback, useEffect, useState } from "react";
 import type { ReactNode } from "react";
 
-interface IChatMsg
+import { useAuth } from "./AuthContext";
+import { getConversation, markConversationAsRead, sendChatMessage } from "../api/chatApi";
+import type { ChatMessageResponse } from "../api/chatApi";
+import { getWsUrl } from "../api/http";
+
+export interface IChatMsg
 {
-	username: string;
-	message: string;
+	id: number;
+	senderId: number;
+	content: string;
+	createdAt: string;
 	read: boolean;
 }
 
 type userID = string;
 type ChatHistory = Record<userID, IChatMsg[]>;
 
-// start temporary default chat history for all default friends for testing
-export const defaultChatHistory: ChatHistory =
+function toChatMsg( message: ChatMessageResponse, currentUserId: number ): IChatMsg
 {
-	"Mesca_ID": [],
-	"Valr_ID": [],
-	"Lemon_ID": [],
-	"Crawly_ID": [],
-	"Takato_ID": [],
-	"Seungah_ID": [],
-	"Bell_ID": [],
-	"José_ID": [],
-	"Friend_1_ID": [],
-	"Friend_2_ID": [],
-	"Friend_3_ID": [],
-	"Friend_4_ID": [],
-	"Friend_5_ID": [],
-	"Friend_6_ID": [],
-	"Friend_7_ID": [],
-	"Friend_8_ID": [],
-	"Friend_9_ID": [],
+	return {
+		id: message.id,
+		senderId: message.sender_id,
+		content: message.content,
+		createdAt: message.created_at,
+		// A message the current user sent is never "unread" for them; one
+		// the backend already has a read_at for was read on another device.
+		read: message.sender_id === currentUserId || message.read_at !== null,
+	};
 }
-// end temporary default chat history for all default friends for testing
 
 interface IChatHistoryContext
 {
 	chatHistory: ChatHistory;
 	resetChatHistory: () => void;
-	updateUsername: ( oldUsername: string, newUsername: string ) => void;
-	addChatHistory: ( friendID: string, username: string, message: string ) => void;
+	addChatHistory: ( friendID: string, content: string ) => Promise<void>;
 	setChatToRead: ( friendID: string ) => void;
 	hasNewMsg: () => boolean;
 	countUnreadMsg: ( friendID: string ) => number;
@@ -51,41 +47,69 @@ const ChatHistoryContext = createContext<IChatHistoryContext | null>(null);
 
 export default function ChatHistoryProvider( { children } : {children: ReactNode} )
 {
-	const [chatHistory, setChatHistory] = useState<ChatHistory>(defaultChatHistory);
+	const { auth } = useAuth();
+	const [chatHistory, setChatHistory] = useState<ChatHistory>({});
 
 	function resetChatHistory()
 	{
-		setChatHistory(defaultChatHistory);
+		setChatHistory({});
 	}
 
-	function updateUsername( oldUsername: string, newUsername: string )
+	// Reserves the entry immediately (so the UI has something to render
+	// right away) then backfills it from the real conversation history, so
+	// a friend's chat survives a refresh instead of starting empty every
+	// time. No-ops if this friend is already tracked.
+	const addChatHistoryEntry = useCallback(( friendID: string ) =>
+	{
+		const accessToken = auth.accessToken;
+		const currentUserId = auth.user?.id;
+
+		if ( !accessToken || currentUserId === undefined )
+			return;
+
+		setChatHistory(prev =>
+		{
+			if ( prev[friendID] !== undefined )
+				return prev;
+
+			return { ...prev, [friendID]: [] };
+		});
+
+		getConversation(Number(friendID), accessToken)
+			.then(messages =>
+			{
+				setChatHistory(prev => ({
+					...prev,
+					[friendID]: messages.map(message => toChatMsg(message, currentUserId)),
+				}));
+			})
+			.catch(() => {}); // best-effort: chat stays empty until the next successful load
+	}, [auth.accessToken, auth.user?.id]);
+
+	function removeChatHistoryEntry( friendID: string )
 	{
 		setChatHistory(prev =>
 		{
-			const updatedHistory = Object.entries(prev).map(([friendID, chatHistory]) => [
-				friendID,
-				chatHistory.map(msg =>
-					msg.username === oldUsername
-						? { ...msg, username: newUsername }
-						: msg
-				)
-			]);
+			if ( prev[friendID] === undefined )
+				return prev;
 
-			return Object.fromEntries(updatedHistory);
+			const chatHistory = { ...prev };
+			delete chatHistory[friendID];
+			return chatHistory;
 		});
 	}
 
-	function addChatHistory( friendID: string, username: string, message: string )
+	async function addChatHistory( friendID: string, content: string )
 	{
-		// NOTE: Setting read to false only for demonstration purposes.
-		// 		 Should be true eventually as a message written by the user themselves should never be "unread" for them
-		//		 For now, writing a new message to a friend will create new "unread" messages which will trigger the "new/unread messages" effect
-		//		 To "read" them you will need to (re)open the friend's chat window
-		const newMsg: IChatMsg = { username: username, message: message, read: false }; // TODO: set read to true later!!!;
+		if ( !auth.accessToken || auth.user === null )
+			throw new Error("No authenticated session");
+
+		const message = await sendChatMessage(Number(friendID), content, auth.accessToken);
+		const currentUserId = auth.user.id;
 
 		setChatHistory(prev => ({
 			...prev,
-			[friendID]: [ ...(prev[friendID] ?? []), newMsg ]
+			[friendID]: [ ...(prev[friendID] ?? []), toChatMsg(message, currentUserId) ],
 		}));
 	}
 
@@ -110,6 +134,12 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 				)
 			}
 		});
+
+		// Best-effort, same reasoning as everywhere else this pattern shows
+		// up: the local read-state already updated, so a failed/late request
+		// here shouldn't block or roll back the UI.
+		if ( auth.accessToken )
+			markConversationAsRead(Number(friendID), auth.accessToken).catch(() => {});
 	}
 
 	function hasNewMsg() : boolean
@@ -128,45 +158,89 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 		return friendChatHistory.filter(({ read }) => !read).length;
 	}
 
-	function addChatHistoryEntry( friendID: string )
+	// Live delivery for messages other people send us. Only updates a
+	// friend we're already tracking (i.e. addChatHistoryEntry has loaded
+	// them) -- a message from someone not yet tracked is picked up the
+	// next time their entry loads instead. Reconnects on drop since a
+	// closed socket would otherwise silently stop live updates for the
+	// rest of the session.
+	useEffect(() =>
 	{
-		setChatHistory(prev => {
-			if ( prev[friendID] !== undefined )
-				return prev;
+		const accessToken = auth.accessToken;
 
-			return {
-				...prev,
-				[friendID]: [],
-			}
-		});
-	}
+		if ( !accessToken )
+			return;
 
-	function removeChatHistoryEntry( friendID: string )
-	{
-		setChatHistory(prev => {
-			if ( prev[friendID] === undefined )
-				return prev;
+		let socket: WebSocket | null = null;
+		let reconnectTimeoutID: number | undefined;
+		let isCurrent = true;
 
-			const chatHistory = { ...prev };
-			delete chatHistory[friendID];
-			return chatHistory;
-		});
-	}
+		function connect()
+		{
+			if ( !isCurrent )
+				return;
 
-	// mock template for later when loading accout info from database after login (e.g. when user hits F5 to reload page)
-	// at the moment when you hit F5 everything is rerendered and Chat History info will be set to default again.
-	// turn it into a custom hook because it also needs to be called in the login / signup button handler after a succesful login/sign-up
+			socket = new WebSocket(getWsUrl(`/chat/ws?token=${encodeURIComponent(accessToken!)}`));
 
-	// useEffect(() =>
-	// {
-	// 	async function loadChatHistory()
-	// 	{
-	// 		const sessionToken = localStorage.getItem("sessionToken");
-	// 		if (await isValidToken(sessionToken))
-	// 			setChatHistory(await fetchDbUser(sessionToken));
-	// 	}
-	// 	loadChatHistory();
-	// }, []);
+			socket.addEventListener("message", (event) =>
+			{
+				let payload: Partial<ChatMessageResponse> & { type?: string };
+
+				try
+				{
+					payload = JSON.parse(event.data);
+				}
+				catch
+				{
+					return;
+				}
+
+				if (
+					payload.type !== "chat_message" ||
+					payload.sender_id === undefined ||
+					payload.id === undefined ||
+					payload.content === undefined ||
+					payload.created_at === undefined
+				)
+					return;
+
+				const senderID = String(payload.sender_id);
+				const incoming: IChatMsg = {
+					id: payload.id,
+					senderId: payload.sender_id,
+					content: payload.content,
+					createdAt: payload.created_at,
+					read: false,
+				};
+
+				setChatHistory(prev =>
+				{
+					if ( prev[senderID] === undefined )
+						return prev;
+
+					return {
+						...prev,
+						[senderID]: [ ...prev[senderID], incoming ],
+					};
+				});
+			});
+
+			socket.addEventListener("close", () =>
+			{
+				if ( isCurrent )
+					reconnectTimeoutID = window.setTimeout(connect, 3000);
+			});
+		}
+
+		connect();
+
+		return () =>
+		{
+			isCurrent = false;
+			clearTimeout(reconnectTimeoutID);
+			socket?.close();
+		};
+	}, [auth.accessToken]);
 
 	return (
 		<ChatHistoryContext.Provider
@@ -174,7 +248,6 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 			{{
 				chatHistory,
 				resetChatHistory,
-				updateUsername,
 				addChatHistory,
 				setChatToRead,
 				hasNewMsg,

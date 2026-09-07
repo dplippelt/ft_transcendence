@@ -23,10 +23,6 @@ export default function ChatBox()
 	const timeoutIDRef = useRef<number | undefined>(undefined);
 
 	const userID = String(user.id);
-	const username =
-		user.username ??
-		user.display_name ??
-		"Unknown";
 
 	useEffect(() =>
 	{
@@ -81,11 +77,7 @@ export default function ChatBox()
 		if (msg.trim().length === 0)
 			return;
 
-		addChatHistory(
-			activeFriendID!,
-			username,
-			msg,
-		);
+		const content = msg;
 
 		clearTimeout(timeoutIDRef.current);
 
@@ -97,6 +89,13 @@ export default function ChatBox()
 		);
 
 		setMsg("");
+
+		addChatHistory(activeFriendID!, content)
+			.catch(() =>
+			{
+				// Restore the draft so a failed send isn't silently lost.
+				setMsg(content);
+			});
 	}
 
 	return (
