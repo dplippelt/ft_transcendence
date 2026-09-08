@@ -72,6 +72,7 @@ export default class CombatManager {
     this.cardManager.fillCardHand(this.cardManager.maxNumCardsInHand);
     this.executeManager.reset();
     this.executeManager.generateTargetNumbersFromHand(this.cardManager.cardHand.getHandCards());
+    // TODO: it needs to be calculated after clearing card hand
     EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs());
     // TODO: emit an event for displaying targetNumbers
     this.executeManager.consoleTargetNumbers();
