@@ -14,16 +14,30 @@ from app.services.user_service import get_active_user_by_id
 router = APIRouter()
 
 
-def notify_receiver(receiver_id: int, message: object) -> None:
+def notify_conversation(sender_id: int, receiver_id: int, message: object) -> None:
     # Best-effort: the message is already persisted, so a delivery failure
     # here (e.g. a dead connection anyio couldn't clean up in time) must not
     # turn a successful send into a 500 -- covers payload construction too,
     # not just the socket send.
-    connection_manager.notify_safely(
-        receiver_id,
+    # Notifies the sender too, not just the receiver: send_to_user pushes to
+    # every connection registered for that user id, so if the sender has the
+    # same conversation open in another tab/device, that connection would
+    # otherwise never see this message until a reload. The tab that made the
+    # POST already has it from the response, but merging in a duplicate over
+    # the socket is a no-op (ChatHistoryContext.mergeMessages dedupes by id).
+    # Builds the payload once via the shared helper (same guard notify_safely
+    # uses) since this fans out to 2 recipients -- notify_safely itself is
+    # 1:1 and would rebuild/re-log per recipient instead of once.
+    payload = connection_manager.build_payload_safely(
         "chat_message",
         lambda: ChatMessageResponse.model_validate(message).model_dump(mode="json"),
     )
+
+    if payload is None:
+        return
+
+    connection_manager.notify(sender_id, payload)
+    connection_manager.notify(receiver_id, payload)
 
 
 @router.get("/{friend_id}/messages", response_model=list[ChatMessageResponse])
@@ -49,7 +63,7 @@ def create_message(friend_id: int, message_data: ChatMessageCreate, current_user
         content=message_data.content,
     )
 
-    notify_receiver(receiver.id, message)
+    notify_conversation(current_user.id, receiver.id, message)
 
     return message
 
@@ -60,6 +74,15 @@ def mark_as_read(friend_id: int, current_user: CompletedUser, db: DbSession):
         db=db,
         current_user=current_user,
         other_user_id=friend_id,
+    )
+
+    # Tell the user's other tabs/devices this conversation is now read so
+    # they can clear their unread badge too -- best-effort, same reasoning
+    # as notify_conversation: the state is already persisted.
+    connection_manager.notify_safely(
+        current_user.id,
+        "conversation_read",
+        lambda: {"friend_id": friend_id},
     )
 
     return None

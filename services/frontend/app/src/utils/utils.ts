@@ -129,3 +129,11 @@ export function getLobbyDraftKey( userID: string, lobbyID: string ) : string
 	return DRAFT_STORAGE_PREFIX + LOBBY_DRAFT + userID + ":" + lobbyID;
 }
 
+// Shared username/display_name fallback chain -- used anywhere a user needs
+// to be shown as a single display string, so the precedence (and fallback
+// text) can't silently drift between call sites.
+export function getDisplayName( user: { username: string | null; display_name: string | null }, fallback = "Unknown" ) : string
+{
+	return user.username ?? user.display_name ?? fallback;
+}
+
