@@ -94,6 +94,18 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 	// both fire the same network call.
 	const pendingReadMarksRef = useRef<Set<string>>(new Set());
 
+	// Friend ids that got another setChatToRead call while their
+	// markConversationAsRead was still in flight. A new message can arrive
+	// (and be marked read locally) in that window, so rather than dropping
+	// the second call we run one more pass once the in-flight request
+	// settles, to push that newer read state to the backend too.
+	const rereadFriendsRef = useRef<Set<string>>(new Set());
+
+	// Points at the latest setChatToRead so the settle handler below can
+	// re-run it against current chatHistory, not the stale closure the
+	// in-flight request was created in.
+	const setChatToReadRef = useRef<( friendID: string ) => void>(() => {});
+
 	// Mirrors auth.accessToken so an in-flight request's .then() can tell
 	// whether the session that issued it is still the current one -- see
 	// addChatHistoryEntry below.
@@ -190,14 +202,25 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 		const message = await sendChatMessage(Number(friendID), content, auth.accessToken);
 		const currentUserId = auth.user.id;
 
-		// Merge (keyed + sorted by id) rather than blind-append: two sends
-		// fired in quick succession resolve in whatever order the network
-		// happens to return them, not necessarily the order they were sent
-		// in, so appending naively can display them reversed.
-		setChatHistory(prev => ({
-			...prev,
-			[friendID]: mergeMessages(prev[friendID] ?? [], [toChatMsg(message, currentUserId)]),
-		}));
+		setChatHistory(prev =>
+		{
+			// The friend may have been removed (removeChatHistoryEntry)
+			// while this send was in flight -- same guard the fetch and
+			// reconnect paths use, so a send that resolves late can't
+			// resurrect an entry the user explicitly removed.
+			if ( prev[friendID] === undefined )
+				return prev;
+
+			// Merge (keyed + sorted by id) rather than blind-append: two
+			// sends fired in quick succession resolve in whatever order the
+			// network happens to return them, not necessarily the order
+			// they were sent in, so appending naively can display them
+			// reversed.
+			return {
+				...prev,
+				[friendID]: mergeMessages(prev[friendID], [toChatMsg(message, currentUserId)]),
+			};
+		});
 	}, [auth.accessToken, auth.user]);
 
 	const setChatToRead = useCallback(( friendID: string ) =>
@@ -232,10 +255,18 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 			}
 		});
 
-		// Don't fire a second markConversationAsRead for this friend while
-		// one is already in flight -- see pendingReadMarksRef above.
-		if ( !auth.accessToken || pendingReadMarksRef.current.has(friendID) )
+		if ( !auth.accessToken )
 			return;
+
+		// A request is already in flight for this friend: note that
+		// another pass is wanted once it settles (a message may have
+		// arrived and been marked read locally in the meantime) rather
+		// than dropping this call entirely.
+		if ( pendingReadMarksRef.current.has(friendID) )
+		{
+			rereadFriendsRef.current.add(friendID);
+			return;
+		}
 
 		pendingReadMarksRef.current.add(friendID);
 
@@ -264,8 +295,20 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 				};
 			});
 		})
-			.finally(() => { pendingReadMarksRef.current.delete(friendID); });
+			.finally(() =>
+			{
+				pendingReadMarksRef.current.delete(friendID);
+
+				// Something asked to mark this friend read again while the
+				// request was in flight -- run one more pass now against
+				// current state. setChatToRead no-ops if nothing is left
+				// unread, so this can't loop unless messages keep arriving.
+				if ( rereadFriendsRef.current.delete(friendID) )
+					setChatToReadRef.current(friendID);
+			});
 	}, [chatHistory, auth.accessToken]);
+
+	useEffect(() => { setChatToReadRef.current = setChatToRead; }, [setChatToRead]);
 
 	const hasNewMsg = useCallback(() : boolean =>
 	{
@@ -300,16 +343,14 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 		let socket: WebSocket | null = null;
 		let reconnectTimeoutID: number | undefined;
 		let isCurrent = true;
-		let hasConnectedBefore = false;
 
 		// Re-pulls a friend's full conversation and merges it into local
 		// state (mergeMessages dedupes by id, so this is safe to call
-		// against an already-populated history). Used from the "open"
-		// listener below after a reconnect: a message sent while the
-		// socket was down was still persisted by the backend, but this
-		// client's now-replaced connection never delivered it, and
-		// fetchedFriendIDsRef would otherwise stop addChatHistoryEntry
-		// from ever fetching it either.
+		// against an already-populated history). Run from the "open"
+		// listener below on every successful connect: a message persisted
+		// between this client's last delivery and the socket (re)connecting
+		// was never pushed anywhere, and fetchedFriendIDsRef would
+		// otherwise stop addChatHistoryEntry from ever fetching it either.
 		// accessToken/currentUserId are taken as parameters (rather than
 		// read from the outer closure) so they keep their already-narrowed
 		// non-nullable types here without needing a non-null assertion.
@@ -354,20 +395,19 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 
 			socket.addEventListener("open", () =>
 			{
-				// Skip on the very first connection of this effect --
-				// addChatHistoryEntry already handles each tracked friend's
-				// initial load. Only a reconnect (after a drop) needs to
-				// backfill the gap the dead connection left.
-				if ( hasConnectedBefore )
-					for ( const friendID of fetchedFriendIDsRef.current )
-						refetchConversation(friendID, accessToken, currentUserId);
-
-				hasConnectedBefore = true;
+				// Every successful connect, first one included: between the
+				// initial REST history resolving and this handshake
+				// completing there's a window where a freshly-persisted
+				// message is pushed to nobody. The redundant fetch that
+				// overlaps addChatHistoryEntry's own initial load on first
+				// connect is harmless -- mergeMessages dedupes by id.
+				for ( const friendID of fetchedFriendIDsRef.current )
+					refetchConversation(friendID, accessToken, currentUserId);
 			});
 
 			socket.addEventListener("message", (event) =>
 			{
-				let payload: Partial<ChatMessageResponse> & { type?: string };
+				let payload: Partial<ChatMessageResponse> & { type?: string; friend_id?: number };
 
 				try
 				{
@@ -375,6 +415,33 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 				}
 				catch
 				{
+					return;
+				}
+
+				// The user read this conversation on another tab/device --
+				// clear our own unread state for it so the badge doesn't
+				// stay stuck until the next refetch/reconnect.
+				if ( payload.type === "conversation_read" )
+				{
+					if ( payload.friend_id === undefined )
+						return;
+
+					const readFriendID = String(payload.friend_id);
+
+					setChatHistory(prev =>
+					{
+						const friendChatHistory = prev[readFriendID];
+						if ( !friendChatHistory || !friendChatHistory.some(msg => !msg.read) )
+							return prev;
+
+						return {
+							...prev,
+							[readFriendID]: friendChatHistory.map(msg =>
+								msg.read ? msg : { ...msg, read: true }
+							),
+						};
+					});
+
 					return;
 				}
 

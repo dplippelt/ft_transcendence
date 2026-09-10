@@ -76,6 +76,15 @@ def mark_as_read(friend_id: int, current_user: CompletedUser, db: DbSession):
         other_user_id=friend_id,
     )
 
+    # Tell the user's other tabs/devices this conversation is now read so
+    # they can clear their unread badge too -- best-effort, same reasoning
+    # as notify_conversation: the state is already persisted.
+    connection_manager.notify_safely(
+        current_user.id,
+        "conversation_read",
+        lambda: {"friend_id": friend_id},
+    )
+
     return None
 
 
