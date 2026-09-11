@@ -1,3 +1,4 @@
+from typing import Annotated
 from uuid import uuid4
 
 from fastapi import APIRouter, File, Request, UploadFile, status
@@ -5,6 +6,7 @@ from fastapi import APIRouter, File, Request, UploadFile, status
 from app.api.dependencies import CompletedUser, CurrentUser, DbSession, SelfUser
 from app.core.exceptions import bad_request, not_found
 from app.schemas.user import PublicUserResponse, UserResponse, UserUpdate
+from app.services.avatar_service import AVATAR_DIR, delete_local_avatar
 from app.services.user_service import (
     ErrorCode,
     deactivate_user,
@@ -12,8 +14,6 @@ from app.services.user_service import (
     update_user_avatar,
     update_user_profile,
 )
-from app.services.avatar_service import delete_local_avatar, AVATAR_DIR
-
 
 router = APIRouter()
 
@@ -54,11 +54,10 @@ def delete_user(self_user: SelfUser, db: DbSession):
     
     delete_local_avatar(avatar_url)
 
-    return None
 
 
 @router.put("/{user_id}/avatar", response_model=UserResponse)
-async def update_avatar(request: Request, self_user: SelfUser, db: DbSession, avatar: UploadFile = File(...),):
+async def update_avatar(request: Request, self_user: SelfUser, db: DbSession, avatar: Annotated[UploadFile, File()],):
     extension = ALLOWED_AVATAR_TYPES.get(avatar.content_type)
 
     if extension is None:

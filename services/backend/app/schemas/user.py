@@ -1,7 +1,12 @@
 from typing import Any
 
-from pydantic import BaseModel, EmailStr, Field, HttpUrl, field_validator, model_validator
-
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
 USERNAME_PATTERN = r"^[a-zA-Z0-9_.-]+$"
 
@@ -70,6 +75,7 @@ class UserResponse(BaseModel):
     avatar_url: str | None = None
     is_guest: bool
     is_active: bool
+    two_factor_enabled: bool
     linked_providers: list[str] = Field(
         default_factory=list,
     )
@@ -97,6 +103,59 @@ class Token(BaseModel):
     token_type: str = "bearer"
 
 
+class TwoFactorSetupResponse(BaseModel):
+    provisioning_uri: str
+
+
+class TwoFactorCode(BaseModel):
+    code: str = Field(
+        min_length=6,
+        max_length=6,
+        pattern=r"^\d{6}$",
+    )
+
+
+class TwoFactorLogin(BaseModel):
+    challenge_token: str
+    code: str = Field(
+        min_length=6,
+        max_length=6,
+        pattern=r"^\d{6}$",
+    )
+
+
+class TwoFactorChallenge(BaseModel):
+    requires_two_factor: bool = True
+    challenge_token: str
+
+
+class TwoFactorSetup(BaseModel):
+    current_password: str | None = None
+    google_credential: str | None = None
+    
+    @model_validator(mode="after")
+    def require_one_reauthentication_method(self):
+        provided = sum([
+            self.current_password is not None,
+            self.google_credential is not None,
+        ])
+
+        if provided != 1:
+            raise ValueError(
+                "Provide exactly one reauthentication method"
+            )
+
+        return self
+
+
+class TwoFactorRecoveryLogin(BaseModel):
+    challenge_token: str
+    recovery_code: str = Field(
+        min_length=1,
+        max_length=64,
+    )
+
+
 class GoogleLogin(BaseModel):
     credential: str
 
@@ -104,3 +163,8 @@ class GoogleLogin(BaseModel):
 class PasswordUpdate(BaseModel):
     current_password: str | None = None
     new_password: str = Field(min_length=8)
+
+
+class TwoFactorConfirmResponse(BaseModel):
+    user: UserResponse
+    recovery_codes: list[str]

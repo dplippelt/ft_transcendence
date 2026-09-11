@@ -7,3 +7,9 @@ pwdlib[argon2]
 google-auth
 requests
 CacheControl
+pyotp
+pytest
+httpx
+cryptography
+ruff
+vulture

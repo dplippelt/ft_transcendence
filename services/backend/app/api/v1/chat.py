@@ -62,7 +62,6 @@ def mark_as_read(friend_id: int, current_user: CompletedUser, db: DbSession):
         other_user_id=friend_id,
     )
 
-    return None
 
 
 @router.websocket("/ws")
