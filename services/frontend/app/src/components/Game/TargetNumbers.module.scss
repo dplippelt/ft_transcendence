@@ -1,0 +1,33 @@
+@use '../../variables' as *;
+
+.targetNumbers
+{
+	position: absolute;
+	top: 55%;
+	left: 50%;
+	width: fit-content;
+	height: fit-content;
+	transform: translateX(-50%) translateY(-50%) scale(var(--combat-ui-bg-scale));
+}
+
+.targetNumber
+{
+	position: absolute;
+	top: var(--y);
+	left: var(--x);
+	transform: translateX(-50%) translateY(-50%);
+	color: yellow;
+	font-family: 'Arial', 'Helvetica', 'sans-serif';
+	font-size: 1.7rem;
+	animation: drift var(--duration) linear infinite;
+	animation: drift var(--duration) cubic-bezier(0.45, 0.40, 0.55, 0.60) infinite;
+}
+
+@keyframes drift
+{
+	0%   { translate: 0 0; }
+	20%  { translate: calc(var(--drift-x) * 0.4) calc(var(--drift-y) * -0.6); }
+	45%  { translate: calc(var(--drift-x) * -0.3) calc(var(--drift-y) * -1); }
+	70%  { translate: calc(var(--drift-x) * -1) calc(var(--drift-y) * 0.3); }
+	100% { translate: 0 0; }
+}
