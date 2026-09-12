@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { EventBus } from "../../game/EventBus";
+import { emitWhenReady, EventBus } from "../../game/EventBus";
 import { CombatEvent, GameEvent } from "../../utils/utils";
 import styles from "./TurnTimer.module.scss";
 import React from "react";
@@ -29,7 +29,7 @@ export default function TurnTimer()
 		function onGameVisible( visible: boolean ) { if ( visible ) EventBus.emit(CombatEvent.getTurnTimerState); }
 		EventBus.addListener(GameEvent.gameVis, onGameVisible);
 
-		EventBus.emit(CombatEvent.getTurnTimerState);
+		emitWhenReady(CombatEvent.getTurnTimerState);
 
 		function cleanup()
 		{
