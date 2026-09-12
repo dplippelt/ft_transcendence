@@ -21,15 +21,16 @@ export enum AvatarSize
 export enum PopupType
 {
 	none,
-	addFriend,
-	removeFriend,
-	inviteFriend,
-	editAvatar,
+    addFriend,
+    removeFriend,
+    inviteFriend,
+    editAvatar,
     editUsername,
     editDisplayName,
-	editPassword,
-	createLobby,
-	localCoop,
+    editPassword,
+    twoFactor,
+    createLobby,
+    localCoop,
 }
 
 export enum Tab

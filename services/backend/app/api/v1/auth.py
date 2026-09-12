@@ -45,6 +45,7 @@ from app.schemas.user import (
     TwoFactorCode,
     TwoFactorConfirmResponse,
     TwoFactorLogin,
+    TwoFactorRecoveryCodesResponse,
     TwoFactorRecoveryLogin,
     TwoFactorSetup,
     TwoFactorSetupResponse,
@@ -297,6 +298,16 @@ def get_user_for_two_factor_update(db: Session, user_id: int,) -> User:
 
 
 def reauthenticate_user(db: Session, user: User, current_password: str | None, google_credential: str | None) -> None:
+    if (
+        (current_password is None and google_credential is None)
+        or
+        (current_password is not None and google_credential is not None)
+    ):
+        raise bad_request(
+            "Exactly one reauthentication method is required",
+            code=ErrorCode.TWO_FACTOR_REAUTH_REQUIRED,
+        )
+        
     if current_password is not None:
         password_account = get_password_account_for_user(db, user.id,)
         
@@ -313,21 +324,19 @@ def reauthenticate_user(db: Session, user: User, current_password: str | None, g
                 code=ErrorCode.INVALID_CURRENT_PASSWORD,
             )
         return
+    
+    identity = verify_google_credential(google_credential,)
 
-    if google_credential is not None:
-        identity = verify_google_credential(google_credential,)
-        google_account = get_google_account_for_user(db, user.id,)
+    google_account = get_google_account_for_user(db, user.id,)
 
-        if google_account is None or google_account.provider_account_id != identity.sub:
-            raise unauthorized(
-                "Google reauthentication failed",
-                code=ErrorCode.INVALID_GOOGLE_CREDENTIALS,
-            )
-        return
-
-    raise ValueError(
-        "Exactly one reauthentication method is required"
-    )
+    if (
+        google_account is None
+        or google_account.provider_account_id != identity.sub
+    ):
+        raise unauthorized(
+            "Google reauthentication failed",
+            code=ErrorCode.INVALID_GOOGLE_CREDENTIALS,
+        )
 
 
 def apply_google_profile_defaults(user: User, identity: GoogleIdentity) -> None:
@@ -872,7 +881,7 @@ def two_factor_login(data: TwoFactorLogin, db: DbSession, request: Request,):
     return create_token_for_user(user)
 
 @router.delete("/2fa", response_model=UserResponse)
-def disable_two_factor(data: TwoFactorCode, db: DbSession, current_user: CurrentUser, request: Request,):
+def disable_two_factor(data: TwoFactorCode, db: DbSession, current_user: CurrentUser,):
     _check_two_factor_rate_limit(current_user.id)
 
     user = get_user_for_two_factor_update(
@@ -986,3 +995,64 @@ def two_factor_recovery(data: TwoFactorRecoveryLogin, db: DbSession, request: Re
         )
 
     return create_token_for_user(user)
+
+
+@router.post("/2fa/recovery-codes", response_model=TwoFactorRecoveryCodesResponse,)
+def regenerate_two_factor_recovery_codes(data: TwoFactorCode, db: DbSession, current_user: CurrentUser,):
+    user = get_user_for_two_factor_update(db, current_user.id,)
+
+    if not user.two_factor_enabled:
+        raise bad_request(
+            "Two-factor authentication is not enabled",
+            code=ErrorCode.TWO_FACTOR_NOT_ENABLED,
+        )
+
+    encrypted_secret = user.two_factor_secret
+
+    if encrypted_secret is None:
+        raise bad_request(
+            "Two-factor authentication setup is invalid",
+            code=ErrorCode.TWO_FACTOR_SETUP_REQUIRED,
+        )
+
+    _check_two_factor_rate_limit(user.id)
+
+    secret = decrypt_two_factor_secret(
+        encrypted_secret,
+    )
+
+    if not verify_two_factor_code(secret, data.code,):
+        raise unauthorized(
+            "Invalid two-factor authentication code",
+            code=ErrorCode.INVALID_TWO_FACTOR_CODE,
+        )
+
+    recovery_codes = generate_recovery_codes()
+
+    db.query(TwoFactorRecoveryCode).filter(
+        TwoFactorRecoveryCode.user_id == user.id,
+    ).delete(
+        synchronize_session=False,
+    )
+
+    for recovery_code in recovery_codes:
+        db.add(
+            TwoFactorRecoveryCode(
+                user_id=user.id,
+                code_hash=hash_recovery_code(
+                    recovery_code,
+                ),
+            )
+        )
+
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+
+        raise bad_request(
+            "Recovery codes could not be regenerated",
+            code=ErrorCode.TWO_FACTOR_FAILED,
+        )
+
+    return TwoFactorRecoveryCodesResponse(recovery_codes=recovery_codes,)

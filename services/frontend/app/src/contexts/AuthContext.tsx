@@ -11,15 +11,25 @@ import {
     updateUser,
     updatePassword as updatePasswordRequest,
     updateAvatar as updateAvatarRequest,
+    loginWithTwoFactor as loginWithTwoFactorRequest,
+    loginWithRecoveryCode as loginWithRecoveryCodeRequest,
+    setupTwoFactor as setupTwoFactorRequest,
+    confirmTwoFactor as confirmTwoFactorRequest,
+    disableTwoFactor as disableTwoFactorRequest,
+    regenerateTwoFactorRecoveryCodes as regenerateTwoFactorRecoveryCodesRequest,
 } from "../api/authApi";
 
 import type {
     AuthUser,
     LoginRequest,
+    LoginResponse,
     RegisterRequest,
     UpdateUserRequest,
     PasswordUpdateRequest,
+    TwoFactorSetupRequest,
+    TwoFactorSetupResponse,
 } from "../api/authApi";
+
 import { ApiError } from "../api/http";
 
 const ACCESS_TOKEN_KEY = "accessToken";
@@ -29,6 +39,10 @@ type AuthStatus =
     | "authenticated"
     | "unauthenticated"
     | "error";
+
+export type LoginResult =
+    | { requiresTwoFactor: false }
+    | { requiresTwoFactor: true; challengeToken: string };
 
 export interface IAuth
 {
@@ -40,9 +54,16 @@ export interface IAuth
 interface IAuthContext
 {
 	auth: IAuth;
-	login: (credentials: LoginRequest) => Promise<void>;
+    login: (credentials: LoginRequest) => Promise<LoginResult>;
+    // 2FA can't be enabled on a newly-created account, as registration isn't using onTwoFactorRequired
 	register: (userData: RegisterRequest) => Promise<void>;
-	loginWithGoogle: (credential: string) => Promise<void>;
+    loginWithGoogle: (credential: string) => Promise<LoginResult>;
+    loginWithTwoFactor: (challengeToken: string, code: string,) => Promise<void>;
+    loginWithRecoveryCode: (challengeToken: string, recoveryCode: string,) => Promise<void>;
+    setupTwoFactor: (data: TwoFactorSetupRequest) => Promise<TwoFactorSetupResponse>;
+    confirmTwoFactor: (code: string,) => Promise<string[]>;
+    disableTwoFactor: (code: string,) => Promise<void>;
+    regenerateTwoFactorRecoveryCodes: (code: string,) => Promise<string[]>;
     updateProfile: (data: UpdateUserRequest) => Promise<void>;
     updatePassword: (data: PasswordUpdateRequest) => Promise<void>;
     updateAvatar: (avatar: File) => Promise<void>;
@@ -103,12 +124,28 @@ export default function AuthProvider( { children } : {children: ReactNode} )
         }
     }, [logout]);
 
-    const login = useCallback(async (credentials: LoginRequest) =>
+    const handleLoginResponse = useCallback(async (response: LoginResponse): Promise<LoginResult> =>
     {
-        const tokenResponse = await loginUser(credentials);
-
-        await establishSession(tokenResponse.access_token);
+        if ("requires_two_factor" in response)
+        {
+            return {
+                requiresTwoFactor: true,
+                challengeToken: response.challenge_token,
+            };
+        }
+    
+        await establishSession(response.access_token);
+    
+        return {
+            requiresTwoFactor: false,
+        };
     }, [establishSession]);
+
+    const login = useCallback(async (credentials: LoginRequest): Promise<LoginResult> =>
+    {
+        const response = await loginUser(credentials);
+        return handleLoginResponse(response);
+    }, [handleLoginResponse]);
 
     const register = useCallback(async (userData: RegisterRequest) =>
     {
@@ -120,12 +157,28 @@ export default function AuthProvider( { children } : {children: ReactNode} )
         });
     }, [login]);
 
-    const loginWithGoogle = useCallback(async (credential: string) =>
+    const setupTwoFactor = useCallback(async (data: TwoFactorSetupRequest): Promise<TwoFactorSetupResponse> =>
     {
-        const tokenResponse = await loginWithGoogleCredentials(credential);
+        if (!accessToken)
+            throw new Error("No authenticated session");
 
-        await establishSession(tokenResponse.access_token);
-    }, [establishSession]);
+        return setupTwoFactorRequest(data, accessToken);
+    }, [accessToken]);
+
+    const confirmTwoFactor = useCallback(async (code: string): Promise<string[]> =>
+    {
+        if (!accessToken)
+            throw new Error("No authenticated session");
+        const response = await confirmTwoFactorRequest({ code }, accessToken);
+        setUser(response.user);
+        return response.recovery_codes;
+    }, [accessToken]);
+
+    const loginWithGoogle = useCallback(async (credential: string): Promise<LoginResult> =>
+    {
+        const response = await loginWithGoogleCredentials(credential);
+        return handleLoginResponse(response);
+    }, [handleLoginResponse]);
 
     useEffect(() =>
     {
@@ -140,6 +193,39 @@ export default function AuthProvider( { children } : {children: ReactNode} )
             // Auth state is handled by establishSession.
         });
     }, [establishSession]);
+
+    const loginWithTwoFactor = useCallback(async (challengeToken: string, code: string) =>
+    {
+        const response = await loginWithTwoFactorRequest({
+            challenge_token: challengeToken,
+            code: code,
+        });
+        await establishSession(response.access_token);
+    }, [establishSession]);
+
+    const loginWithRecoveryCode = useCallback(async (challengeToken: string, recoveryCode: string) =>
+    {
+        const response = await loginWithRecoveryCodeRequest({
+            challenge_token: challengeToken,
+            recovery_code: recoveryCode,
+        });
+        await establishSession(response.access_token);
+    }, [establishSession]);
+
+    const disableTwoFactor = useCallback(async (code: string,): Promise<void> => {
+        if (!accessToken)
+            throw new Error("No authenticated session");
+        const updatedUser = await disableTwoFactorRequest({ code }, accessToken);
+        setUser(updatedUser);
+    }, [accessToken]);
+
+    const regenerateTwoFactorRecoveryCodes = useCallback(async (code: string,): Promise<string[]> =>
+    {
+        if (!accessToken)
+            throw new Error("No authenticated session");
+        const response = await regenerateTwoFactorRecoveryCodesRequest({ code }, accessToken);
+        return response.recovery_codes;
+    }, [accessToken]);
 
     const auth: IAuth = {accessToken, user,status,};
     
@@ -227,13 +313,19 @@ export default function AuthProvider( { children } : {children: ReactNode} )
 		<AuthContext.Provider
 			value=
 			{{
-				auth,
-				login,
-				register,
+                auth,
+                login,
+                register,
                 loginWithGoogle,
+                loginWithTwoFactor,
+                loginWithRecoveryCode,
+                setupTwoFactor,
+                confirmTwoFactor,
+                disableTwoFactor,
+                regenerateTwoFactorRecoveryCodes,
                 linkGoogle,
                 unlinkGoogle,
-				logout,
+                logout,
                 updateProfile,
                 updatePassword,
                 updateAvatar,

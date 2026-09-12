@@ -14,7 +14,7 @@ import { PopupType, AvatarSize, } from "../../utils/utils";
 import AvatarImg from "../../components/Avatar";
 import { useCurrentUser } from "../../contexts/AuthContext";
 import noAvatar from "../../assets/no_avatar.png";
-
+import TwoFactorPopup from "./TwoFactorPopup";
 
 interface IAccountInfo
 {
@@ -132,6 +132,25 @@ function GoogleAccount()
     );
 }
 
+function TwoFactorAuthentication({ setPopupType }: IAccountInfo)
+{
+    const user = useCurrentUser();
+
+    return (
+        <>
+            <div className={sharedStyle.profileLabel}>
+                Two-factor authentication:
+            </div>
+            <div className={sharedStyle.textInfo}>
+                {user.two_factor_enabled ? "Enabled" : "Disabled"}
+            </div>
+            <EditButton
+                popupType={PopupType.twoFactor}
+                setPopupType={setPopupType}
+            />
+        </>
+    );
+}
 
 export default function Account()
 {
@@ -143,14 +162,22 @@ export default function Account()
             <Username setPopupType={setPopupType} />
             <DisplayName setPopupType={setPopupType} />
             <Password setPopupType={setPopupType} />
+            <TwoFactorAuthentication setPopupType={setPopupType} />
             <GoogleAccount />
 
             {popupType !== PopupType.none &&
                 <Popup>
-                    <EditPopup
-                        popupType={popupType}
-                        setPopupType={setPopupType}
-                    />
+                    {popupType === PopupType.twoFactor
+                        ?
+                            <TwoFactorPopup
+                                setPopupType={setPopupType}
+                            />
+                        :
+                            <EditPopup
+                                popupType={popupType}
+                                setPopupType={setPopupType}
+                            />
+                    }
                 </Popup>
             }
         </div>

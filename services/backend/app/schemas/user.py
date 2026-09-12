@@ -156,6 +156,10 @@ class TwoFactorRecoveryLogin(BaseModel):
     )
 
 
+class TwoFactorRecoveryCodesResponse(BaseModel):
+    recovery_codes: list[str]
+
+
 class GoogleLogin(BaseModel):
     credential: str
 
