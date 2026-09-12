@@ -34,12 +34,10 @@ export default class CombatTurnManager {
     this.isPlayerTurn = true;
     this.playerTimer = this.playTurnFor(this.playerDelayMs);
     this.enemyTimer = null;
-    EventBus.addListener(CombatEvent.getTurnTimerState, this.sendElapsedTime, this)
   }
 
   destroy() {
     this.cleanupTimers();
-    EventBus.removeListener(CombatEvent.getTurnTimerState, this.sendElapsedTime, this)
   }
 
   cleanupTimers() {
@@ -81,6 +79,7 @@ export default class CombatTurnManager {
   pausePlayerTurn() {
     this.scene.input.enabled = false;
     if (this.playerTimer) {
+      EventBus.emit(CombatEvent.turnEnded); // TODO: Either call it here or in CombaManager.execute()
       this.playerTimer.paused = true;
     }
   }

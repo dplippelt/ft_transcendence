@@ -71,7 +71,7 @@ def handle_existing_friend_request(db: Session, existing_request: FriendRequest,
 
         return existing_request
 
-    raise bad_request("Invalid friend request state.")
+    raise bad_request("Invalid friend request state.", code=ErrorCode.INVALID_FRIEND_REQUEST_STATE)
 
 
 def get_friendship(db: Session, user_a_id: int, user_b_id: int,) -> Friendship | None:
@@ -117,7 +117,7 @@ def require_pending_received_request(db: Session, request_id: int, current_user_
         raise not_found("Friend request not found.", code=ErrorCode.FRIEND_REQUEST_NOT_FOUND)
 
     if friend_request.recipient_id != current_user_id:
-        raise forbidden(f"You cannot {action} this friend request.")
+        raise forbidden(f"You cannot {action} this friend request.", code=ErrorCode.NOT_FRIEND_REQUEST_RECIPIENT)
 
     if friend_request.status != PENDING:
         raise bad_request("Friend request is not pending.", code=ErrorCode.FRIEND_REQUEST_NOT_PENDING)
@@ -200,7 +200,7 @@ def send_friend_request(db: Session, current_user: User, recipient: User,) -> Fr
                 recipient=recipient,
             )
 
-        raise bad_request("Friend request already exists.")
+        raise bad_request("Friend request already exists.", code=ErrorCode.FRIEND_REQUEST_ALREADY_SENT)
 
     db.refresh(friend_request)
 
@@ -249,7 +249,7 @@ def cancel_friend_request(db: Session, request_id: int, current_user: User,) -> 
         raise not_found("Friend request not found.", code=ErrorCode.FRIEND_REQUEST_NOT_FOUND)
 
     if friend_request.requester_id != current_user.id:
-        raise forbidden("You cannot cancel this friend request.")
+        raise forbidden("You cannot cancel this friend request.", code=ErrorCode.NOT_FRIEND_REQUEST_REQUESTER)
 
     if friend_request.status != PENDING:
         raise bad_request("Friend request is not pending.", code=ErrorCode.FRIEND_REQUEST_NOT_PENDING)

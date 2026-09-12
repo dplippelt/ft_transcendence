@@ -16,7 +16,7 @@ from app.api.dependencies import CurrentUser, DbSession
 from app.core.exceptions import (
     ErrorCode, bad_request, conflict, forbidden, service_unavailable, too_many_requests, unauthorized,
 )
-from app.core.rate_limit import SlidingWindowLimiter
+from app.core.rate_limit import FixedWindowLimiter
 from app.core.security import (DUMMY_PASSWORD_HASH, create_access_token, get_password_hash, verify_password,)
 from app.core.settings import get_settings
 from app.models.auth_account import AuthAccount
@@ -38,14 +38,17 @@ google_request = google_requests.Request(session=google_session)
 # Keyed by client IP rather than the attempted email/username, so a single
 # source can't just cycle through target accounts to dodge the limit --
 # /login and /token share one limiter since they're both just different
-# entry points to the same password check.
+# entry points to the same password check. This is a first layer against
+# casual brute-forcing, not full account-level protection: a distributed
+# attempt against one account from many IPs isn't caught here and would
+# need a per-account (email/username) limiter as well.
 LOGIN_RATE_LIMIT_WINDOW = timedelta(minutes=1)
 LOGIN_RATE_LIMIT_MAX = 10
-_login_rate_limiter = SlidingWindowLimiter(LOGIN_RATE_LIMIT_WINDOW, LOGIN_RATE_LIMIT_MAX)
+_login_rate_limiter = FixedWindowLimiter(LOGIN_RATE_LIMIT_WINDOW, LOGIN_RATE_LIMIT_MAX)
 
 REGISTER_RATE_LIMIT_WINDOW = timedelta(minutes=1)
 REGISTER_RATE_LIMIT_MAX = 5
-_register_rate_limiter = SlidingWindowLimiter(REGISTER_RATE_LIMIT_WINDOW, REGISTER_RATE_LIMIT_MAX)
+_register_rate_limiter = FixedWindowLimiter(REGISTER_RATE_LIMIT_WINDOW, REGISTER_RATE_LIMIT_MAX)
 
 
 def _client_ip(request: Request) -> str:

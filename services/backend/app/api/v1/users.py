@@ -41,7 +41,7 @@ def get_user(user_id: int, _current_user: CompletedUser, db: DbSession):
     user = get_active_user_by_id(db, user_id)
 
     if user is None:
-        raise not_found("User not found")
+        raise not_found("User not found", code=ErrorCode.USER_NOT_FOUND)
 
     return user
 

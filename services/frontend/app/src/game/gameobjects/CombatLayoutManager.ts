@@ -317,7 +317,7 @@ export default class CombatLayoutManager {
     const background = this.background;
     const selectionLayout = this.layout.cards.selection;
     const cellWidth = ((this.spriteSize.card.width * selectionLayout.cellScale) + selectionLayout.cellGap) * background.scale;
-    const targetX = background.centerX - ((occupiedSlots.length - 1) / 2) * cellWidth;
+    const targetX = background.centerX - ((occupiedSlots.length - 1) / 2) * cellWidth - this.spriteSize.card.width / 2;
     const targetY = background.topY + selectionLayout.yFromBgTop * background.scale;
     const gridOptions: Phaser.Types.Actions.GridAlignConfig = {
       width: -1,

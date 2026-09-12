@@ -138,6 +138,13 @@ export class GameManagerScene extends Scene {
     this.updateGlobalCapture();
 
     EventBus.emit(GameEvent.inCombat, false);
+    EventBus.removeListener(CombatEvent.getInitPlayerHp);
+    EventBus.removeListener(CombatEvent.getInitPlayerMp);
+    EventBus.removeListener(CombatEvent.getInitEnemyHp);
+    EventBus.removeListener(CombatEvent.getCurrPlayerHp);
+    EventBus.removeListener(CombatEvent.getCurrPlayerMp);
+    EventBus.removeListener(CombatEvent.getCurrEnemyHp);
+    EventBus.removeListener(CombatEvent.getTurnTimerState);
     EventBus.removeListener(CombatEvent.attack);
     EventBus.removeListener(CombatEvent.draw);
     // EventBus.removeListener(CombatEvent.reset);

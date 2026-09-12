@@ -43,10 +43,10 @@ def get_current_user(token: BearerToken, db: DbSession) -> User:
     user = get_user_from_token(token, db)
 
     if user is None:
-        raise unauthorized("Invalid authentication credentials",)
+        raise unauthorized("Invalid authentication credentials", code=ErrorCode.INVALID_TOKEN)
 
     if not user.is_active:
-        raise forbidden("User account is inactive",)
+        raise forbidden("User account is inactive", code=ErrorCode.ACCOUNT_INACTIVE)
 
     return user
 
@@ -69,7 +69,7 @@ CompletedUser = Annotated[User, Depends(get_completed_user),]
 
 def get_current_user_matching_path(user_id: int, current_user: CurrentUser) -> User:
     if user_id != current_user.id:
-        raise forbidden("You can only modify your own account")
+        raise forbidden("You can only modify your own account", code=ErrorCode.NOT_SELF_ACCOUNT)
 
     return current_user
 
