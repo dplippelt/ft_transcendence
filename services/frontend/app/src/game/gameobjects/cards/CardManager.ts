@@ -4,8 +4,6 @@ import CardHand from "./CardHand";
 import CardSelection from "./CardSelection";
 import CardBase, { CardEvents } from "./CardBase";
 import type { PlayerStatus } from "../../scenes/CombatScene";
-import { EventBus } from "../../EventBus";
-import { CombatEvent } from "../../../utils/utils";
 
 export enum CardActionEvents {
   DRAW = "draw",
@@ -38,8 +36,6 @@ export default class CardManager {
 
     scene.input.setTopOnly(true);
     this.events.on(CardActionEvents.CLEAR_HAND_COMPLETE, this.clearHandComplete, this);
-    EventBus.addListener(CombatEvent.draw, this.redrawCards, this);
-    // EventBus.addListener(CombatEvent.reset, this.resetSelection, this);
   }
 
   resetSelection() {
@@ -78,7 +74,6 @@ export default class CardManager {
     this.resetSelection();
     this.clearHand(false);
     this.playerStatus.mana--;
-    EventBus.emit(CombatEvent.updatePlayerMP, this.playerStatus.mana);
   }
 
   drawCard() {
@@ -97,16 +92,6 @@ export default class CardManager {
     this.events.emit(CardActionEvents.DRAW, card);
     return true;
   }
-
-  // drawExtraCard() {
-  //   if (this.playerStatus.mana <= 0) {
-  //     return;
-  //   }
-  //   if (this.drawCard()) {
-  //     this.playerStatus.mana--;
-  //     EventBus.emit(CombatEvent.updatePlayerMP, this.playerStatus.mana);
-  //   }
-  // }
 
   shiftCards() {
     const slots = this.cardSelection.getSelectionSlots();
