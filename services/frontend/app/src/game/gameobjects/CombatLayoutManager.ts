@@ -210,6 +210,7 @@ export default class CombatLayoutManager {
     this.background.centerX = this.display.centerX;
 
     document.documentElement.style.setProperty("--combat-ui-inset-x", `${this.background.insetX}px`);
+    document.documentElement.style.setProperty("--combat-ui-bg-scale", `${this.background.scale}`);
   }
 
   updateLayout(isResize: boolean = true) {

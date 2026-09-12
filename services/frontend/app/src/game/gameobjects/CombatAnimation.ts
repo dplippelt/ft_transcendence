@@ -196,13 +196,15 @@ export default class CombatAnimation {
   }
 
   HoverUp(card: CardBase) {
+    const liftDistance = 30 * this.combatLayoutManager.display.scale;
+
     if (card.input?.hitArea instanceof Geom.Rectangle) {
       card.input.hitArea.right += 0;
-      card.input.hitArea.bottom += 30;
+      card.input.hitArea.bottom += liftDistance;
     }
     this.scene.tweens.add({
       targets: card,
-      y: card.getData(TransformInLayout.Y) - 30,
+      y: card.getData(TransformInLayout.Y) - liftDistance,
       angle: 0,
       duration: 50,
       ease: "Cubic.easeOut",
@@ -210,9 +212,11 @@ export default class CombatAnimation {
   }
 
   HoverDown(card: CardBase) {
+    const liftDistance = 30 * this.combatLayoutManager.display.scale;
+
     if (card.input?.hitArea instanceof Geom.Rectangle) {
       card.input.hitArea.right -= 0;
-      card.input.hitArea.bottom -= 30;
+      card.input.hitArea.bottom -= liftDistance;
     }
     this.scene.tweens.add({
       targets: card,
