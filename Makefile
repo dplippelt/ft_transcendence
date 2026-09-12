@@ -31,13 +31,6 @@ ensure-env:
 		cp $(ENV_SECRET_EXAMPLE) $(ENV_SECRET_FILE); \
 		echo "Created $(ENV_SECRET_FILE) from $(ENV_SECRET_EXAMPLE)."; \
 	fi
-<<<<<<< HEAD
-	@$(MAKE) --no-print-directory ensure-2fa-secrets
-
-ensure-2fa-secrets:
-	@touch $(ENV_SECRET_FILE)
-	@VALUE=$$(sed -n 's/^TWO_FACTOR_ENCRYPTION_KEY=//p' $(ENV_SECRET_FILE) | tail -n 1); \
-=======
 	@$(MAKE) --no-print-directory ensure-secrets
 
 ensure-secrets:
@@ -79,22 +72,12 @@ ensure-secrets:
 	fi
 
 	@VALUE=$$(sed -n 's/^TWO_FACTOR_ENCRYPTION_KEY=//p' $(ENV_SECRET_FILE) | tail -n 1 | tr -d '\r'); \
->>>>>>> master
 	if [ -z "$$VALUE" ] || \
 		[ "$$VALUE" = "replace-with-a-fernet-key" ] || \
 		! python3 -c 'import base64, sys; key = base64.urlsafe_b64decode(sys.argv[1].encode()); sys.exit(0 if len(key) == 32 else 1)' "$$VALUE" 2>/dev/null; then \
 		echo "Generating TWO_FACTOR_ENCRYPTION_KEY..."; \
 		KEY=$$(python3 -c 'import base64, secrets; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())'); \
 		if grep -q '^TWO_FACTOR_ENCRYPTION_KEY=' $(ENV_SECRET_FILE); then \
-<<<<<<< HEAD
-			sed -i "s|^TWO_FACTOR_ENCRYPTION_KEY=.*|TWO_FACTOR_ENCRYPTION_KEY=$$KEY|" $(ENV_SECRET_FILE); \
-		else \
-			echo "TWO_FACTOR_ENCRYPTION_KEY=$$KEY" >> $(ENV_SECRET_FILE); \
-		fi; \
-	fi
-
-	@VALUE=$$(sed -n 's/^TWO_FACTOR_RECOVERY_HMAC_KEY=//p' $(ENV_SECRET_FILE) | tail -n 1); \
-=======
 			sed "s|^TWO_FACTOR_ENCRYPTION_KEY=.*|TWO_FACTOR_ENCRYPTION_KEY=$$KEY|" \
 				$(ENV_SECRET_FILE) > $(ENV_SECRET_FILE).tmp && \
 			mv $(ENV_SECRET_FILE).tmp $(ENV_SECRET_FILE); \
@@ -104,20 +87,15 @@ ensure-secrets:
 	fi
 
 	@VALUE=$$(sed -n 's/^TWO_FACTOR_RECOVERY_HMAC_KEY=//p' $(ENV_SECRET_FILE) | tail -n 1 | tr -d '\r'); \
->>>>>>> master
 	if [ -z "$$VALUE" ] || \
 		[ "$$VALUE" = "replace-with-a-long-random-secret" ] || \
 		[ $${#VALUE} -lt 32 ]; then \
 		echo "Generating TWO_FACTOR_RECOVERY_HMAC_KEY..."; \
 		KEY=$$(python3 -c 'import secrets; print(secrets.token_urlsafe(64))'); \
 		if grep -q '^TWO_FACTOR_RECOVERY_HMAC_KEY=' $(ENV_SECRET_FILE); then \
-<<<<<<< HEAD
-			sed -i "s|^TWO_FACTOR_RECOVERY_HMAC_KEY=.*|TWO_FACTOR_RECOVERY_HMAC_KEY=$$KEY|" $(ENV_SECRET_FILE); \
-=======
 			sed "s|^TWO_FACTOR_RECOVERY_HMAC_KEY=.*|TWO_FACTOR_RECOVERY_HMAC_KEY=$$KEY|" \
 				$(ENV_SECRET_FILE) > $(ENV_SECRET_FILE).tmp && \
 			mv $(ENV_SECRET_FILE).tmp $(ENV_SECRET_FILE); \
->>>>>>> master
 		else \
 			echo "TWO_FACTOR_RECOVERY_HMAC_KEY=$$KEY" >> $(ENV_SECRET_FILE); \
 		fi; \
@@ -126,13 +104,9 @@ ensure-secrets:
 rotate-2fa-key: ensure-env
 	@KEY=$$(python3 -c 'import base64, secrets; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())'); \
 	if grep -q '^TWO_FACTOR_ENCRYPTION_KEY=' $(ENV_SECRET_FILE); then \
-<<<<<<< HEAD
-		sed -i "s|^TWO_FACTOR_ENCRYPTION_KEY=.*|TWO_FACTOR_ENCRYPTION_KEY=$$KEY|" $(ENV_SECRET_FILE); \
-=======
 		sed "s|^TWO_FACTOR_ENCRYPTION_KEY=.*|TWO_FACTOR_ENCRYPTION_KEY=$$KEY|" \
 			$(ENV_SECRET_FILE) > $(ENV_SECRET_FILE).tmp && \
 		mv $(ENV_SECRET_FILE).tmp $(ENV_SECRET_FILE); \
->>>>>>> master
 	else \
 		echo "TWO_FACTOR_ENCRYPTION_KEY=$$KEY" >> $(ENV_SECRET_FILE); \
 	fi
