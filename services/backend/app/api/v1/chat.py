@@ -70,7 +70,7 @@ def create_message(friend_id: int, message_data: ChatMessageCreate, current_user
 
 @router.post("/{friend_id}/read", status_code=status.HTTP_204_NO_CONTENT)
 def mark_as_read(friend_id: int, current_user: CompletedUser, db: DbSession):
-    mark_conversation_as_read(
+    boundary_id = mark_conversation_as_read(
         db=db,
         current_user=current_user,
         other_user_id=friend_id,
@@ -78,12 +78,17 @@ def mark_as_read(friend_id: int, current_user: CompletedUser, db: DbSession):
 
     # Tell the user's other tabs/devices this conversation is now read so
     # they can clear their unread badge too -- best-effort, same reasoning
-    # as notify_conversation: the state is already persisted.
-    connection_manager.notify_safely(
-        current_user.id,
-        "conversation_read",
-        lambda: {"friend_id": friend_id},
-    )
+    # as notify_conversation: the state is already persisted. Includes the
+    # highest message id this call actually marked, so a receiving tab only
+    # clears unread state up to that point instead of everything currently
+    # unread locally -- a message that arrives on that tab after this call
+    # started but before it processes the event was never touched here.
+    if boundary_id is not None:
+        connection_manager.notify_safely(
+            current_user.id,
+            "conversation_read",
+            lambda: {"friend_id": friend_id, "up_to_message_id": boundary_id},
+        )
 
     return None
 

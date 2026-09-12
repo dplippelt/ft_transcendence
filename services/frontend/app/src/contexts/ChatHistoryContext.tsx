@@ -101,11 +101,6 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 	// settles, to push that newer read state to the backend too.
 	const rereadFriendsRef = useRef<Set<string>>(new Set());
 
-	// Points at the latest setChatToRead so the settle handler below can
-	// re-run it against current chatHistory, not the stale closure the
-	// in-flight request was created in.
-	const setChatToReadRef = useRef<( friendID: string ) => void>(() => {});
-
 	// Mirrors auth.accessToken so an in-flight request's .then() can tell
 	// whether the session that issued it is still the current one -- see
 	// addChatHistoryEntry below.
@@ -223,6 +218,73 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 		});
 	}, [auth.accessToken, auth.user]);
 
+	// Points at the latest fireReadRequest so its own settle handler below
+	// can call it recursively without self-referencing the const it's
+	// assigned to (which the linter rightly flags -- that value isn't
+	// bound yet at the point this closure is created, only by the time it
+	// actually runs).
+	const fireReadRequestRef = useRef<( friendID: string, rollbackIds: Set<number> | null ) => void>(() => {});
+
+	// Fires the actual /read call for a friend and handles it settling.
+	// Deliberately independent of local read state (unlike setChatToRead
+	// below): by the time this is invoked, the relevant messages may
+	// already have been optimistically marked read locally, so re-deriving
+	// "what's unread" here would see nothing and silently skip the backend
+	// call. rollbackIds is the specific set to revert on failure, or null
+	// for the requeued follow-up pass below, which has no single set of
+	// ids tied to it (best-effort, matching other secondary-sync paths in
+	// this file such as refetchConversation).
+	const fireReadRequest = useCallback(( friendID: string, rollbackIds: Set<number> | null ) =>
+	{
+		if ( !auth.accessToken )
+			return;
+
+		pendingReadMarksRef.current.add(friendID);
+
+		markConversationAsRead(Number(friendID), auth.accessToken)
+			.catch(() =>
+			{
+				if ( !rollbackIds )
+					return;
+
+				// Roll back just the messages this call marked read (not
+				// the whole friend, in case more arrived and got marked
+				// read in the meantime) so a failed request leaves them
+				// unread rather than silently drifting from the backend's
+				// real state -- the next time this chat is (re)opened or a
+				// new message arrives, the effect that calls setChatToRead
+				// retries naturally.
+				setChatHistory(prev =>
+				{
+					const friendChatHistory = prev[friendID];
+					if ( !friendChatHistory )
+						return prev;
+
+					return {
+						...prev,
+						[friendID]: friendChatHistory.map(msg =>
+							rollbackIds.has(msg.id)
+								? { ...msg, read: false }
+								: msg
+						)
+					};
+				});
+			})
+			.finally(() =>
+			{
+				pendingReadMarksRef.current.delete(friendID);
+
+				// Something asked to mark this friend read again while
+				// this request was in flight -- fire one more pass now,
+				// unconditionally (not gated on local unread state, which
+				// the earlier optimistic mark already emptied out).
+				if ( rereadFriendsRef.current.delete(friendID) )
+					fireReadRequestRef.current(friendID, null);
+			});
+	}, [auth.accessToken]);
+
+	useEffect(() => { fireReadRequestRef.current = fireReadRequest; }, [fireReadRequest]);
+
 	const setChatToRead = useCallback(( friendID: string ) =>
 	{
 		const unreadIds = new Set(
@@ -258,57 +320,19 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 		if ( !auth.accessToken )
 			return;
 
-		// A request is already in flight for this friend: note that
-		// another pass is wanted once it settles (a message may have
-		// arrived and been marked read locally in the meantime) rather
-		// than dropping this call entirely.
+		// A request is already in flight for this friend: the messages
+		// this call just marked read locally weren't covered by it (it
+		// started before they even arrived), so once it settles we owe
+		// the backend another call regardless of what's left unread
+		// locally by then -- see fireReadRequest's requeue above.
 		if ( pendingReadMarksRef.current.has(friendID) )
 		{
 			rereadFriendsRef.current.add(friendID);
 			return;
 		}
 
-		pendingReadMarksRef.current.add(friendID);
-
-		markConversationAsRead(Number(friendID), auth.accessToken)
-			.catch(() =>
-		{
-			// Roll back just the messages this call marked read (not the
-			// whole friend, in case more arrived and got marked read in
-			// the meantime) so a failed request leaves them unread rather
-			// than silently drifting from the backend's real state -- the
-			// next time this chat is (re)opened or a new message arrives,
-			// the effect that calls setChatToRead retries naturally.
-			setChatHistory(prev =>
-			{
-				const friendChatHistory = prev[friendID];
-				if ( !friendChatHistory )
-					return prev;
-
-				return {
-					...prev,
-					[friendID]: friendChatHistory.map(msg =>
-						unreadIds.has(msg.id)
-							? { ...msg, read: false }
-							: msg
-					)
-				};
-			});
-		})
-			.finally(() =>
-			{
-				pendingReadMarksRef.current.delete(friendID);
-
-				// Something asked to mark this friend read again while the
-				// request was in flight -- run one more pass now against
-				// current state. setChatToRead no-ops if nothing is left
-				// unread, so this can't loop unless messages keep arriving.
-				if ( rereadFriendsRef.current.delete(friendID) )
-					setChatToReadRef.current(friendID);
-			});
-	}, [chatHistory, auth.accessToken]);
-
-	useEffect(() => { setChatToReadRef.current = setChatToRead; }, [setChatToRead]);
+		fireReadRequest(friendID, unreadIds);
+	}, [chatHistory, auth.accessToken, fireReadRequest]);
 
 	const hasNewMsg = useCallback(() : boolean =>
 	{
@@ -407,7 +431,7 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 
 			socket.addEventListener("message", (event) =>
 			{
-				let payload: Partial<ChatMessageResponse> & { type?: string; friend_id?: number };
+				let payload: Partial<ChatMessageResponse> & { type?: string; friend_id?: number; up_to_message_id?: number };
 
 				try
 				{
@@ -420,24 +444,29 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 
 				// The user read this conversation on another tab/device --
 				// clear our own unread state for it so the badge doesn't
-				// stay stuck until the next refetch/reconnect.
+				// stay stuck until the next refetch/reconnect. Only up to
+				// up_to_message_id, the highest id that backend call
+				// actually marked: a message that arrives on this tab after
+				// that call started but before this event is processed was
+				// never touched by it, so it must stay unread here too.
 				if ( payload.type === "conversation_read" )
 				{
-					if ( payload.friend_id === undefined )
+					if ( payload.friend_id === undefined || payload.up_to_message_id === undefined )
 						return;
 
 					const readFriendID = String(payload.friend_id);
+					const upToMessageId = payload.up_to_message_id;
 
 					setChatHistory(prev =>
 					{
 						const friendChatHistory = prev[readFriendID];
-						if ( !friendChatHistory || !friendChatHistory.some(msg => !msg.read) )
+						if ( !friendChatHistory || !friendChatHistory.some(msg => !msg.read && msg.id <= upToMessageId) )
 							return prev;
 
 						return {
 							...prev,
 							[readFriendID]: friendChatHistory.map(msg =>
-								msg.read ? msg : { ...msg, read: true }
+								(!msg.read && msg.id <= upToMessageId) ? { ...msg, read: true } : msg
 							),
 						};
 					});

@@ -1,4 +1,4 @@
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, func, or_
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ErrorCode, bad_request, forbidden
@@ -53,8 +53,26 @@ def get_conversation(db: Session, current_user: User, other_user_id: int) -> lis
     )
 
 
-def mark_conversation_as_read(db: Session, current_user: User, other_user_id: int) -> None:
+def mark_conversation_as_read(db: Session, current_user: User, other_user_id: int) -> int | None:
     require_friendship(db, current_user.id, other_user_id)
+
+    # Capture the boundary before updating so the caller can tell the
+    # user's other connections precisely which messages this call covered.
+    # Without it, a message that arrives on another tab between this update
+    # and that tab processing the resulting event would get swept up as
+    # read too, even though this call never actually touched it.
+    boundary_id = (
+        db.query(func.max(ChatMessage.id))
+        .filter(
+            ChatMessage.sender_id == other_user_id,
+            ChatMessage.receiver_id == current_user.id,
+            ChatMessage.read_at.is_(None),
+        )
+        .scalar()
+    )
+
+    if boundary_id is None:
+        return None
 
     (
         db.query(ChatMessage)
@@ -62,8 +80,11 @@ def mark_conversation_as_read(db: Session, current_user: User, other_user_id: in
             ChatMessage.sender_id == other_user_id,
             ChatMessage.receiver_id == current_user.id,
             ChatMessage.read_at.is_(None),
+            ChatMessage.id <= boundary_id,
         )
         .update({"read_at": utc_now()})
     )
 
     db.commit()
+
+    return boundary_id
