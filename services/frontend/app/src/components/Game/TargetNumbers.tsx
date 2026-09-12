@@ -96,7 +96,7 @@ export default function TargetNumbers()
 
 	// 	function cleanup() {
 	// 		EventBus.removeListener(CombatEvent.initTargetNumbers, initNumbers);
-	// 		EventBus.removeListener(CombatEvent.getInitTargetNumbers, updateNumbers);
+	// 		EventBus.removeListener(CombatEvent.updateTargetNumbers, updateNumbers);
 	// 		stopPollingRef.current?.();
 	// 	}
 
