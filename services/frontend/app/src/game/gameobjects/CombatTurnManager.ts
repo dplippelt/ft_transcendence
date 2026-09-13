@@ -1,7 +1,5 @@
 import Phaser, { type Scene } from "phaser";
 import type CombatManager from "./CombatManager";
-import { EventBus } from "../EventBus";
-import { CombatEvent } from "../../utils/utils";
 
 export enum TurnEvents {
   SWITCH = "switch",
