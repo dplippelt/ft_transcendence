@@ -55,8 +55,7 @@ interface IAuthContext
 {
 	auth: IAuth;
     login: (credentials: LoginRequest) => Promise<LoginResult>;
-    // 2FA can't be enabled on a newly-created account, as registration isn't using onTwoFactorRequired
-	register: (userData: RegisterRequest) => Promise<void>;
+	register: (userData: RegisterRequest) => Promise<LoginResult>;
     loginWithGoogle: (credential: string) => Promise<LoginResult>;
     loginWithTwoFactor: (challengeToken: string, code: string,) => Promise<void>;
     loginWithRecoveryCode: (challengeToken: string, recoveryCode: string,) => Promise<void>;
@@ -147,11 +146,11 @@ export default function AuthProvider( { children } : {children: ReactNode} )
         return handleLoginResponse(response);
     }, [handleLoginResponse]);
 
-    const register = useCallback(async (userData: RegisterRequest) =>
+    const register = useCallback(async (userData: RegisterRequest): Promise<LoginResult> =>
     {
         await registerUser(userData);
 
-        await login({
+        return login({
             email: userData.email,
             password: userData.password,
         });

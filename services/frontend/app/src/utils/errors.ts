@@ -83,8 +83,7 @@ export enum ErrorType
     twoFactorSetupRequired,
     twoFactorRateLimitExceeded,
     twoFactorFailed,
-    twoFactorReauthRequired,
-    recoveryCodesCopyFailed,
+    clipboardCopyFailed,
 
     unknown,
 }
@@ -275,10 +274,8 @@ export function errorMsg(error: ErrorType): string
             );
         case ErrorType.twoFactorFailed:
             return "Two-factor authentication operation failed.";
-        case ErrorType.twoFactorReauthRequired:
-            return "Please confirm your identity first.";
-        case ErrorType.recoveryCodesCopyFailed:
-            return "Could not copy recovery codes.";
+        case ErrorType.clipboardCopyFailed:
+            return "Could not copy to clipboard.";
         case ErrorType.unknown:
             return "Something went wrong!";
         default:
@@ -370,8 +367,6 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.twoFactorRateLimitExceeded;
         case "TWO_FACTOR_FAILED":
             return ErrorType.twoFactorFailed;
-        case "TWO_FACTOR_REAUTH_REQUIRED":
-            return ErrorType.twoFactorReauthRequired;
     }
     if (error.status === 422 && error.validationErrors)
     {
@@ -392,6 +387,10 @@ export function mapAuthApiError(error: unknown): ErrorType
                     if (validationError.type === "string_too_long")
                         return ErrorType.displayNameTooLong;
                     return ErrorType.displayNameCannotBeEmpty;
+                case "code":
+                    return ErrorType.invalidTwoFactorCode;
+                case "recovery_code":
+                    return ErrorType.invalidTwoFactorRecoveryCode;
             }
         }
     }

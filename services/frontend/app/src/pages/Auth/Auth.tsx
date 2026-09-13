@@ -1,5 +1,5 @@
 import { Navigate, useSearchParams, useNavigate } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { MenuTitle } from "../../components/PageTitle";
 import styles from "./Auth.module.scss";
 import Background from "../../components/Background";
@@ -11,8 +11,8 @@ import { ErrorType, isErrorType, mapAuthApiError } from "../../utils/errors";
 import { MossButton, TextButton } from "../../components/Buttons";
 import { PasswordInput, TextInput } from "../../components/TextInput";
 import { getValidUsername } from "../../utils/usernameCheck";
-import { GoogleLogin } from "@react-oauth/google";
 import { getValidEmail } from "../../utils/emailCheck";
+import GoogleCredentialButton from "../../components/GoogleCredentialButton";
 
 interface TwoFactorRequiredProps
 {
@@ -29,63 +29,33 @@ function GoogleAuthButton({ setError, onTwoFactorRequired }: GoogleAuthButtonPro
     const navigate = useNavigate();
     const { loginWithGoogle } = useAuth();
 
-    const googleButtonRef = useRef<HTMLDivElement>(null);
-    const [googleButtonWidth, setGoogleButtonWidth] = useState<number>(0);
-
-    useEffect(() =>
+    async function handleCredential(credential: string)
+    {
+        try
         {
-            const element = googleButtonRef.current;
+            setError(ErrorType.none);
 
-            if (!element)
-                return;
+            const result = await loginWithGoogle(credential);
 
-            const observer = new ResizeObserver(entries =>
+            if (result.requiresTwoFactor)
             {
-                const width = Math.floor(entries[0].contentRect.width);
+                onTwoFactorRequired(result.challengeToken);
+                return;
+            }
 
-                setGoogleButtonWidth(Math.min(width, 400));
-            });
-
-            observer.observe(element);
-
-            return () => observer.disconnect();
-    }, []);
+            navigate(RoutePath.mainMenu);
+        }
+        catch (error)
+        {
+            setError(mapAuthApiError(error));
+        }
+    }
 
     return (
-        <div className={styles.googleLoginButton} ref={googleButtonRef}>
-            {googleButtonWidth > 0 &&
-                <GoogleLogin
-                    theme="filled_black"
-                    shape="rectangular"
-                    text="continue_with"
-                    width={googleButtonWidth}
-                    onSuccess={async (credentialResponse) => {
-                        if (!credentialResponse.credential)
-                            return setError(ErrorType.googleLoginFailed);
-
-                        try {
-                            setError(ErrorType.none);
-
-                            const result = await loginWithGoogle(credentialResponse.credential,);
-                            
-                            if (result.requiresTwoFactor)
-                            {
-                                onTwoFactorRequired(result.challengeToken);
-                                return;
-                            }
-
-                            navigate(RoutePath.mainMenu);
-                        }
-                        catch (error) {
-                            setError(mapAuthApiError(error));
-                        }
-                    }}
-                    onError={() => {
-                        setError(ErrorType.googleLoginFailed);
-                    }}
-            />
-            }
-        </div>
+        <GoogleCredentialButton
+            onCredential={credential => void handleCredential(credential)}
+            onError={() => setError(ErrorType.googleLoginFailed)}
+        />
     );
 }
 
@@ -95,7 +65,7 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
 	const [password, setPassword] = useState<string>("");
     const [error, setError] = useState<ErrorType>(ErrorType.none);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
+    
     const navigate = useNavigate();
     const { login } = useAuth();
 
@@ -155,7 +125,7 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
             {error !== ErrorType.none &&
                 <ErrorText error={error}/>
             }
-
+    
             <TextInput
                 type="email"
                 label="Email:"
@@ -163,7 +133,7 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
                 setter={setEmail}
                 id="email"
             />
-
+    
             <PasswordInput
                 label="Password:"
                 placeholder="Enter password"
@@ -171,7 +141,7 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
                 setter={setPassword}
                 id="password"
             />
-
+    
             <MossButton
                 label="Login"
                 type="submit"
@@ -347,12 +317,18 @@ function SignupForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
 
         try
         {
-            await register(
+            const result = await register(
             {
                 email: validEmail,
                 username: validUsername,
                 password,
             });
+
+            if (result.requiresTwoFactor)
+            {
+                onTwoFactorRequired(result.challengeToken);
+                return;
+            }
 
             navigate(RoutePath.mainMenu);
         }

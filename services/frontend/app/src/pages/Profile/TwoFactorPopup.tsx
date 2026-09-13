@@ -1,13 +1,13 @@
 import { useState } from "react";
 import QRCode from "react-qr-code";
 import type React from "react";
-import { GoogleLogin } from "@react-oauth/google";
 import styles from "./TwoFactorPopup.module.scss";
 
 import { PasswordInput, TextInput } from "../../components/TextInput";
 import { MossButton, TextButton, } from "../../components/Buttons";
 import { PopupButtons } from "../../components/ButtonContainers";
 import ErrorText from "../../components/ErrorText";
+import GoogleCredentialButton from "../../components/GoogleCredentialButton";
 
 import {
     useAuth,
@@ -57,6 +57,7 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
     const hasPassword = user.linked_providers.includes("password");
     const hasGoogle = user.linked_providers.includes("google");
     const [copied, setCopied] = useState<boolean>(false);
+    const [recoveryCodesSaved, setRecoveryCodesSaved] = useState<boolean>(false);
 
     async function copyRecoveryCodes()
     {
@@ -64,11 +65,12 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
         {
             await navigator.clipboard.writeText(recoveryCodes.join("\n"),);
             setCopied(true);
+            setRecoveryCodesSaved(true);
         }
         catch
         {
             setCopied(false);
-            setError(ErrorType.recoveryCodesCopyFailed);
+            setError(ErrorType.clipboardCopyFailed);
         }
     }
 
@@ -82,6 +84,7 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
         catch
         {
             setSecretCopied(false);
+            setError(ErrorType.clipboardCopyFailed);
         }
     }
 
@@ -144,6 +147,8 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
             const codes = await confirmTwoFactor(code);
 
             setRecoveryCodes(codes);
+            setCopied(false);
+            setRecoveryCodesSaved(false);
             setRecoveryCodesRegenerated(false);
             setStep("recovery");
         }
@@ -210,6 +215,7 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
             const codes = await regenerateTwoFactorRecoveryCodes(code);
             setRecoveryCodes(codes);
             setCopied(false);
+            setRecoveryCodesSaved(false);
             setRecoveryCodesRegenerated(true);
             setStep("recovery");
         }
@@ -279,6 +285,17 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
                     )}
                 </div>
     
+                <label>
+                    <input
+                        type="checkbox"
+                        checked={recoveryCodesSaved}
+                        onChange={event =>
+                            setRecoveryCodesSaved(event.target.checked)
+                        }
+                    />
+                    I have saved these recovery codes.
+                </label>
+
                 <PopupButtons>
                     <MossButton
                         label={copied ? "Copied!" : "Copy all"}
@@ -288,6 +305,7 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
                     <MossButton
                         label="Done"
                         onClick={() => setPopupType(PopupType.none)}
+                        disabled={!recoveryCodesSaved}
                     />
                 </PopupButtons>
             </>
@@ -369,21 +387,11 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
                 }
     
                 {hasGoogle &&
-                    <GoogleLogin
-                        theme="filled_black"
-                        shape="rectangular"
-                        text="continue_with"
-                        onSuccess={credentialResponse =>
-                        {
-                            if (!credentialResponse.credential)
-                            {
-                                setError( ErrorType.googleLoginFailed, );
-                                return;
-                            }
-    
-                            void beginSetup({ google_credential: credentialResponse.credential, });
-                        }}
-                        onError={() => setError(ErrorType.googleLoginFailed,)}
+                    <GoogleCredentialButton
+                        onCredential={credential =>
+                            void beginSetup({ google_credential: credential, })
+                        }
+                        onError={() => setError(ErrorType.googleLoginFailed)}
                     />
                 }
     
@@ -415,7 +423,13 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
         const secret = getSecret();
 
         return (
-            <>
+            <form
+                onSubmit={event =>
+                {
+                    event.preventDefault();
+                    void handleConfirm();
+                }}
+            >
                 {error !== ErrorType.none && <ErrorText error={error}/>}
 
                 <div className={styles.twoFactorSetup}>
@@ -480,22 +494,22 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
                             ? "Verifying..."
                             : "Enable 2FA"
                     }
-                    onClick={() =>
-                        void handleConfirm()
-                    }
+                    type="submit"
                     disabled={isSubmitting}
                 />
 
                 <MossButton
                     label="Cancel"
+                    type="button"
                     onClick={() =>
                         setPopupType(PopupType.none)
                     }
                     disabled={isSubmitting}
                 />
             </PopupButtons>
-        </>
-    );}
+        </form>
+    );
+    }
 
     return null;
 }

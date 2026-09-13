@@ -75,6 +75,11 @@ class User(Base):
         nullable=True,
     )
 
+    two_factor_last_management_timecode: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True,
+    )
+
     # This doesnt create a database column. It calculates the list from the exisiting auth_accounts rows
     @property
     def linked_providers(self) -> list[str]:
