@@ -66,9 +66,10 @@ export default class CombatScene extends Phaser.Scene {
     EventBus.addListener(CombatEvent.getCurrPlayerHp, this.combatManager.sendCurrPlayerHP, this.combatManager);
     EventBus.addListener(CombatEvent.getCurrPlayerMp, this.combatManager.sendCurrPlayerMP, this.combatManager);
     EventBus.addListener(CombatEvent.getCurrEnemyHp, this.combatManager.sendCurrEnemyHP, this.combatManager);
-    EventBus.addListener(CombatEvent.getTurnTimerState, this.combatManager.turnManager.sendElapsedTime, this.combatManager.turnManager)
+    // EventBus.addListener(CombatEvent.getTurnTimerState, this.combatManager.turnManager.sendElapsedTime, this.combatManager.turnManager)
+    EventBus.addListener(CombatEvent.getTurnTimerState, this.combatManager.sendElapsedPlayerTime, this.combatManager)
     EventBus.addListener(CombatEvent.attack, this.combatManager.execute, this.combatManager);
-    EventBus.addListener(CombatEvent.draw, this.combatManager.cardManager.redrawCards, this.combatManager.cardManager);
+    EventBus.addListener(CombatEvent.draw, this.combatManager.redrawCards, this.combatManager);
     // EventBus.addListener(CombatEvent.reset, this.combatManager.cardManager.resetSelection, this.combatManager.cardManager);
 
     EventBus.emit("current-scene-ready", this);

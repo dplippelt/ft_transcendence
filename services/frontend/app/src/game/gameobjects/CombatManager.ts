@@ -5,7 +5,7 @@ import { initPlayerStatus, type PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 import CombatLayoutManager from "./CombatLayoutManager";
 import CombatPlayer from "./CombatPlayer";
-import CombatExecuteManager, { damageToEnemyConfig, type DamageToEnemy } from "./CombatExecuteManager";
+import CombatExecuteManager, { damageToEnemyConfig, ExecuteCombo, type DamageToEnemy } from "./CombatExecuteManager";
 import { EventBus } from "../EventBus";
 import { CombatEvent } from "../../utils/utils";
 
@@ -31,6 +31,7 @@ export default class CombatManager {
   readonly layoutManager: CombatLayoutManager;
   readonly damageToEnemyOn: DamageToEnemy = damageToEnemyConfig;
   readonly enemyData: EnemyData;
+  readonly targetNumbersText: Phaser.GameObjects.Text;
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
@@ -44,7 +45,9 @@ export default class CombatManager {
     this.events = new Phaser.Events.EventEmitter();
     this.onCombatAction();
     this.layoutManager = new CombatLayoutManager(this);
+    this.targetNumbersText = this.scene.add.text(500, 100, "targetNumbers");
     this.turnManager.turnEvents.emit(TurnEvents.STARTPLAYER);
+
   }
 
   update() {}
@@ -69,11 +72,12 @@ export default class CombatManager {
     this.cardManager.clearHand(true);
     this.cardManager.fillCardHand(this.cardManager.maxNumCardsInHand);
     this.executeManager.reset();
-    this.executeManager.generateTargetNumbersFromHand(this.cardManager.cardHand.getHandCards());
+    this.executeManager.generateTargetNumbersFromHand(this.cardManager.cardHand);
     // TODO: it needs to be calculated after clearing card hand
     EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs());
     // TODO: emit an event for displaying targetNumbers
-    this.executeManager.consoleTargetNumbers();
+    this.targetNumbersText.setText(this.executeManager.getTargetNumbers());
+
   }
 
   initEnemyTurn() {
@@ -97,7 +101,7 @@ export default class CombatManager {
   judgeResult() {
     if (this.executeManager.isSuccessHitTarget()) {
       this.events.emit(CombatEvents.PLAYERATTACK);
-      // EventBus.emit(CombatEvent.turnEnded); // TODO: Either call it here or in CombaTurnManager.pausePlayerTurn()
+      EventBus.emit(CombatEvent.turnEnded); // TODO: Either call it here or in CombaTurnManager.pausePlayerTurn()
     } else {
       // dealPenalty(this.playerStatus);
       // or just to ignore like the case of no cards would be fine?
@@ -152,6 +156,12 @@ export default class CombatManager {
     this.events.emit(CombatEvents.ENDGAME);
   }
 
+  redrawCards() {
+    this.cardManager.redrawCards();
+    this.executeManager.generateTargetNumbersFromHand(this.cardManager.cardHand);
+    this.targetNumbersText.setText(this.executeManager.getTargetNumbers());
+  }
+
   sendInitPlayerHP() {
     EventBus.emit(CombatEvent.initPlayerHP, initPlayerStatus.hitPoint);
   }
@@ -174,5 +184,13 @@ export default class CombatManager {
 
   sendCurrEnemyHP() {
     EventBus.emit(CombatEvent.updateEnemyHP, this.enemy.hitPoint);
+  }
+
+  sendElapsedPlayerTime() {
+    const elapsedTime = this.turnManager.getElapsedPlayerTime();
+    if (elapsedTime === null) {
+      return;
+    }
+    EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs(), elapsedTime);
   }
 }
