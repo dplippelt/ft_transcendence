@@ -1,5 +1,6 @@
 import CardBase, { type CardValue, Operator } from "./cards/CardBase";
 import { shuffle } from "./cards/CardDeck";
+import CardHand from "./cards/CardHand";
 
 export enum ExecuteCombo {
   ONE,
@@ -42,7 +43,8 @@ export default class CombatExecuteManager {
     return this.combo;
   }
 
-  generateTargetNumbersFromHand(cards: CardBase[]) {
+  generateTargetNumbersFromHand(hand: CardHand) {
+    const cards = hand.getHandCards();
     const numbers: CardBase[] = [];
     const operators: CardBase[] = [];
 
@@ -59,31 +61,120 @@ export default class CombatExecuteManager {
   }
 
   // FOR DEBUG
-  consoleTargetNumbers() {
-    console.log("target number for 1 combo = " + this.targetNumbers[ExecuteCombo.ONE]);
-    console.log("target number for 2 combo = " + this.targetNumbers[ExecuteCombo.TWO]);
-    console.log("target number for 3 combo = " + this.targetNumbers[ExecuteCombo.THREE]);
+  getTargetNumbers() {
+    const output: string[] = [];
+    output.push("target number 1 = " + this.targetNumbers[ExecuteCombo.ONE]);
+    output.push("target number 2 = " + this.targetNumbers[ExecuteCombo.TWO]);
+    output.push("target number 3 = " + this.targetNumbers[ExecuteCombo.THREE]);
+    return output
   }
 
   generateTargetNumber(numbers: CardBase[], operators: CardBase[], numOperators: number): number | null {
-    if (numbers.length < numOperators + 1 || operators.length < numOperators) {
+    if (!this.hasValidCardCombination(numbers, operators, numOperators)) {
       return null;
     }
+
+    const maxTry = 3;
+    let cards: CardBase[] | null = null;
+    for (let i = 0; i < maxTry; ++i) {
+      cards = this.getRandomizedFormula(numbers, operators, numOperators);
+      if (this.isValidCardCombination(cards)) {
+        break;
+      }
+      cards = null;
+    }
+    if (cards === null) {
+      cards = this.getValidFormula(numbers, operators, numOperators);
+    }
+    const values = this.evaluateHighPrecedenceOperations(cards)!;
+    const result = this.evaluateLowPrecedenceOperations(values);
+    return result;
+  }
+
+  hasValidCardCombination(numbers: CardBase[], operators: CardBase[], numOperators: number) {
+    if (numbers.length < numOperators + 1 || operators.length < numOperators) {
+      return false;
+    }
+
+    let nonZeros = 0;
+    for (const number of numbers) {
+      if (number.getValue() !== 0) {
+        nonZeros++;
+      }
+    }
+    let nonDivOrModOps = 0;
+    for (const operator of operators) {
+      if (operator.getValue() !== Operator.Divide && operator.getValue() !== Operator.Modulo) {
+        nonDivOrModOps++;
+      }
+    }
+    const minNonZero = Math.max(0, numOperators - nonDivOrModOps);
+    if (nonZeros < minNonZero) {
+      return false;
+    }
+    return true;
+  }
+
+  getRandomizedFormula(numbers: CardBase[], operators: CardBase[], numOperators: number) {
+    const cards: CardBase[] = [];
+
     shuffle(numbers);
     shuffle(operators);
-    const cards: CardBase[] = [];
     for (let i = 0; i < numOperators; ++i) {
       cards.push(numbers[i]);
       cards.push(operators[i]);
     }
     cards.push(numbers[numOperators]);
 
-    const values = this.evaluateHighPrecedenceOperations(cards);
-    if (!values) {
-      return this.generateTargetNumber(numbers, operators, numOperators);
+    return cards;
+  }
+
+  isValidCardCombination(cards: CardBase[]) {
+    for (let i = 2; i < cards.length; i += 2) {
+      const operator = cards[i - 1].getValue() as Operator;
+      const number = cards[i].getValue() as number;
+      if (operator !== Operator.Divide && operator !== Operator.Modulo) {
+        continue;
+      }
+      if (number === 0) {
+        return false;
+      }
     }
-    const result = this.evaluateLowPrecedenceOperations(values);
-    return result;
+    return true;
+  }
+
+  getValidFormula(numbers: CardBase[], operators: CardBase[], numOperators: number) {
+    const cards: CardBase[] = [];
+
+    const zeros: CardBase[] = [];
+    const nonZeros: CardBase[] = [];
+    for (const number of numbers) {
+      if (number.getValue() === 0) {
+        zeros.push(number);
+      } else {
+        nonZeros.push(number);
+      }
+    }
+    const sortedNumbers: CardBase[] = zeros.concat(nonZeros);
+
+    const nonDivOrModOps: CardBase[] = [];
+    const divOrModOps: CardBase[] = [];
+    for (const operator of operators) {
+      if (operator.getValue() !== Operator.Divide || operator.getValue() !== Operator.Modulo) {
+        nonDivOrModOps.push(operator);
+      } else {
+        divOrModOps.push(operator);
+      }
+    }
+    const sortedOperators: CardBase[] = nonDivOrModOps.concat(divOrModOps);
+
+    for (let i = 0; i < numOperators; ++i) {
+      cards.push(sortedNumbers[i]);
+      cards.push(sortedOperators[i]);
+    }
+    cards.push(sortedNumbers[numOperators]);
+
+    return cards;
   }
 
   evaluateSelectedCards(selectedCards: CardBase[]) {
@@ -118,10 +209,10 @@ export default class CombatExecuteManager {
 
   isSuccessHitTarget() {
     if (this.combo === null || this.result === null) {
-        return false;
+      return false;
     }
     if (this.targetNumbers[this.combo] === this.result) {
-        return true;
+      return true;
     }
     return false;
   }
