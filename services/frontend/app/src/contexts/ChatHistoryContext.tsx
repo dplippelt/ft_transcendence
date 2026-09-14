@@ -95,11 +95,16 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 	const pendingReadMarksRef = useRef<Set<string>>(new Set());
 
 	// Friend ids that got another setChatToRead call while their
-	// markConversationAsRead was still in flight. A new message can arrive
-	// (and be marked read locally) in that window, so rather than dropping
-	// the second call we run one more pass once the in-flight request
-	// settles, to push that newer read state to the backend too.
-	const rereadFriendsRef = useRef<Set<string>>(new Set());
+	// markConversationAsRead was still in flight, mapped to the ids that
+	// call marked read locally. A new message can arrive (and be marked
+	// read locally) in that window, so rather than dropping the second call
+	// we run one more pass once the in-flight request settles, to push that
+	// newer read state to the backend too. Accumulating the actual ids (not
+	// just the friend id) lets that follow-up pass roll them back if it
+	// fails too -- otherwise a failed requeue has nothing to revert and
+	// those messages silently stay read locally forever, since mergeMessages
+	// won't move read back to false.
+	const rereadFriendsRef = useRef<Map<string, Set<number>>>(new Map());
 
 	// Mirrors auth.accessToken so an in-flight request's .then() can tell
 	// whether the session that issued it is still the current one -- see
@@ -277,9 +282,15 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 				// Something asked to mark this friend read again while
 				// this request was in flight -- fire one more pass now,
 				// unconditionally (not gated on local unread state, which
-				// the earlier optimistic mark already emptied out).
-				if ( rereadFriendsRef.current.delete(friendID) )
-					fireReadRequestRef.current(friendID, null);
+				// the earlier optimistic mark already emptied out), passing
+				// along the ids that pass marked read so this one can still
+				// roll them back if it fails too.
+				const requeuedIds = rereadFriendsRef.current.get(friendID);
+				if ( requeuedIds )
+				{
+					rereadFriendsRef.current.delete(friendID);
+					fireReadRequestRef.current(friendID, requeuedIds);
+				}
 			});
 	}, [auth.accessToken]);
 
@@ -324,10 +335,15 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 		// this call just marked read locally weren't covered by it (it
 		// started before they even arrived), so once it settles we owe
 		// the backend another call regardless of what's left unread
-		// locally by then -- see fireReadRequest's requeue above.
+		// locally by then -- see fireReadRequest's requeue above. Accumulate
+		// onto any ids a prior queued call already stashed, in case several
+		// setChatToRead calls land while the same request is in flight.
 		if ( pendingReadMarksRef.current.has(friendID) )
 		{
-			rereadFriendsRef.current.add(friendID);
+			const queued = rereadFriendsRef.current.get(friendID) ?? new Set<number>();
+			for ( const id of unreadIds )
+				queued.add(id);
+			rereadFriendsRef.current.set(friendID, queued);
 			return;
 		}
 
