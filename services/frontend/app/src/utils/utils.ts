@@ -103,6 +103,7 @@ export enum CombatEvent
 	pauseTimer = "pause-timer",
 	attack = "attack",
 	draw = "draw",
+    completeFillHand = "completeFillHand",
 	// reset = "reset",
 	turnEnded = "turn-ended",
 	getTurnTimerState = "turn-timer-state",
