@@ -32,6 +32,8 @@ export enum ErrorType
     incorrectCreds,
     accountInactive,
     registrationFailed,
+    loginRateLimitExceeded,
+    registrationRateLimitExceeded,
 
     googleLoginFailed,
     googleLoginUnavailable,
@@ -73,6 +75,18 @@ export enum ErrorType
     passwordEmailConflict,
     passwordUpdateFailed,
     passwordSameAsCurrent,
+
+    twoFactorCodeRequired,
+    twoFactorRecoveryCodeRequired,
+    invalidTwoFactorCode,
+    invalidTwoFactorRecoveryCode,
+    twoFactorChallengeInvalid,
+    twoFactorNotEnabled,
+    twoFactorAlreadyEnabled,
+    twoFactorSetupRequired,
+    twoFactorRateLimitExceeded,
+    twoFactorFailed,
+    clipboardCopyFailed,
 
     unknown,
 }
@@ -137,6 +151,16 @@ export function errorMsg(error: ErrorType): string
             return "This account is inactive.";
         case ErrorType.registrationFailed:
             return "Failed to create account.";
+        case ErrorType.loginRateLimitExceeded:
+            return (
+                "Too many authentication attempts. " +
+                "Please try again shortly."
+            );
+        case ErrorType.registrationRateLimitExceeded:
+            return (
+                "Too many registration attempts. " +
+                "Please try again shortly."
+            );
         case ErrorType.googleLoginFailed:
             return "Google login failed.";
         case ErrorType.googleLoginUnavailable:
@@ -231,6 +255,34 @@ export function errorMsg(error: ErrorType): string
             return "Failed to update password.";
         case ErrorType.passwordSameAsCurrent:
             return "New password must be different from your current password.";
+        case ErrorType.twoFactorCodeRequired:
+            return "Authentication code is required.";
+        case ErrorType.twoFactorRecoveryCodeRequired:
+            return "Recovery code is required.";
+        case ErrorType.invalidTwoFactorCode:
+            return "Invalid authentication code.";
+        case ErrorType.invalidTwoFactorRecoveryCode:
+            return "Invalid or already used recovery code.";
+        case ErrorType.twoFactorChallengeInvalid:
+            return (
+                "Your login session has expired. " +
+                "Go back and sign in again."
+            );
+        case ErrorType.twoFactorNotEnabled:
+            return "Two-factor authentication is not enabled.";
+        case ErrorType.twoFactorAlreadyEnabled:
+            return "Two-factor authentication is already enabled.";
+        case ErrorType.twoFactorSetupRequired:
+            return "Two-factor authentication setup is incomplete.";
+        case ErrorType.twoFactorRateLimitExceeded:
+            return (
+                "Too many authentication attempts. " +
+                "Please try again shortly."
+            );
+        case ErrorType.twoFactorFailed:
+            return "Two-factor authentication operation failed.";
+        case ErrorType.clipboardCopyFailed:
+            return "Could not copy to clipboard.";
         case ErrorType.unknown:
             return "Something went wrong!";
         default:
@@ -262,6 +314,10 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.avatarTooLarge;
         case "REGISTRATION_FAILED":
             return ErrorType.registrationFailed;
+        case "LOGIN_RATE_LIMIT_EXCEEDED":
+            return ErrorType.loginRateLimitExceeded;
+        case "REGISTRATION_RATE_LIMIT_EXCEEDED":
+            return ErrorType.registrationRateLimitExceeded;
         case "GOOGLE_NOT_CONFIGURED":
             return ErrorType.googleLoginUnavailable;
         case "INVALID_GOOGLE_CREDENTIALS":
@@ -302,6 +358,22 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.passwordSameAsCurrent;
         case "PASSWORD_ALREADY_SET":
             return ErrorType.passwordAlreadySet;
+        case "INVALID_TWO_FACTOR_CODE":
+            return ErrorType.invalidTwoFactorCode;
+        case "INVALID_TWO_FACTOR_RECOVERY_CODE":
+            return ErrorType.invalidTwoFactorRecoveryCode;
+        case "TWO_FACTOR_CHALLENGE_INVALID":
+            return ErrorType.twoFactorChallengeInvalid;
+        case "TWO_FACTOR_NOT_ENABLED":
+            return ErrorType.twoFactorNotEnabled;
+        case "TWO_FACTOR_ALREADY_ENABLED":
+            return ErrorType.twoFactorAlreadyEnabled;
+        case "TWO_FACTOR_SETUP_REQUIRED":
+            return ErrorType.twoFactorSetupRequired;
+        case "TWO_FACTOR_RATE_LIMIT_EXCEEDED":
+            return ErrorType.twoFactorRateLimitExceeded;
+        case "TWO_FACTOR_FAILED":
+            return ErrorType.twoFactorFailed;
     }
     if (error.status === 422 && error.validationErrors)
     {
@@ -322,6 +394,10 @@ export function mapAuthApiError(error: unknown): ErrorType
                     if (validationError.type === "string_too_long")
                         return ErrorType.displayNameTooLong;
                     return ErrorType.displayNameCannotBeEmpty;
+                case "code":
+                    return ErrorType.invalidTwoFactorCode;
+                case "recovery_code":
+                    return ErrorType.invalidTwoFactorRecoveryCode;
             }
         }
     }
