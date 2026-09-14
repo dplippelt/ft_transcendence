@@ -66,7 +66,21 @@ export default class CombatExecuteManager {
     output.push("target number 1 = " + this.targetNumbers[ExecuteCombo.ONE]);
     output.push("target number 2 = " + this.targetNumbers[ExecuteCombo.TWO]);
     output.push("target number 3 = " + this.targetNumbers[ExecuteCombo.THREE]);
-    return output
+    return output;
+  }
+
+  isValidCardHand(hand: CardHand) {
+    const cards = hand.getHandCards();
+    const numbers: CardBase[] = [];
+    const operators: CardBase[] = [];
+    for (const card of cards) {
+      if (card.isValueNumber()) {
+        numbers.push(card);
+      } else {
+        operators.push(card);
+      }
+    }
+    return this.hasValidCardCombination(numbers, operators, 1);
   }
 
   generateTargetNumber(numbers: CardBase[], operators: CardBase[], numOperators: number): number | null {

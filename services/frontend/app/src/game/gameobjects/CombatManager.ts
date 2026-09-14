@@ -18,6 +18,7 @@ export enum CombatEvents {
   TAKEDAMAGE = "takeDamage",
   ENDTURN = "endTurn",
   JUDGERESULT = "judgeResult",
+  COMPLETEFILLHAND = "completeFillHand",
 }
 
 export default class CombatManager {
@@ -47,7 +48,6 @@ export default class CombatManager {
     this.layoutManager = new CombatLayoutManager(this);
     this.targetNumbersText = this.scene.add.text(500, 100, "targetNumbers");
     this.turnManager.turnEvents.emit(TurnEvents.STARTPLAYER);
-
   }
 
   update() {}
@@ -65,19 +65,39 @@ export default class CombatManager {
     this.events.on(CombatEvents.TAKEDAMAGE, this.takeDamage, this);
     this.events.on(CombatEvents.ENDTURN, this.endTurn, this);
     this.events.on(CombatEvents.JUDGERESULT, this.judgeResult, this);
+    this.events.on(CombatEvents.COMPLETEFILLHAND, this.completeFillHand, this);
   }
 
   initPlayerTurn() {
+    this.resetHand();
+    EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs());
+  }
+
+  resetHand() {
     this.cardManager.resetSelection();
-    this.cardManager.clearHand(true);
-    this.cardManager.fillCardHand(this.cardManager.maxNumCardsInHand);
+    this.cardManager.clearHand();
+    this.fillCardHand();
     this.executeManager.reset();
     this.executeManager.generateTargetNumbersFromHand(this.cardManager.cardHand);
-    // TODO: it needs to be calculated after clearing card hand
-    EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs());
     // TODO: emit an event for displaying targetNumbers
     this.targetNumbersText.setText(this.executeManager.getTargetNumbers());
+  }
 
+  fillCardHand() {
+    const amount = this.cardManager.maxNumCardsInHand;
+    this.cardManager.fillCardHand(amount);
+    if (!this.executeManager.isValidCardHand(this.cardManager.cardHand)) {
+      this.cardManager.cardHand.removeAll(true);
+      this.fillCardHand();
+    }
+  }
+
+  redrawCards() {
+    if (this.player.status.mana > 0) {
+      this.resetHand();
+      this.player.status.mana--;
+    }
+    this.targetNumbersText.setText(this.executeManager.getTargetNumbers());
   }
 
   initEnemyTurn() {
@@ -156,12 +176,6 @@ export default class CombatManager {
     this.events.emit(CombatEvents.ENDGAME);
   }
 
-  redrawCards() {
-    this.cardManager.redrawCards();
-    this.executeManager.generateTargetNumbersFromHand(this.cardManager.cardHand);
-    this.targetNumbersText.setText(this.executeManager.getTargetNumbers());
-  }
-
   sendInitPlayerHP() {
     EventBus.emit(CombatEvent.initPlayerHP, initPlayerStatus.hitPoint);
   }
@@ -192,5 +206,9 @@ export default class CombatManager {
       return;
     }
     EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs(), elapsedTime);
+  }
+
+  completeFillHand() {
+    EventBus.emit(CombatEvent.completeFillHand);
   }
 }
