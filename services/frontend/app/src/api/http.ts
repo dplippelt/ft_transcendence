@@ -1,6 +1,13 @@
 const API_BASE_URL =
 	import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
+// Same origin as API_BASE_URL, just http(s) -> ws(s), for endpoints that
+// upgrade to a WebSocket instead of a plain request/response.
+export function getWsUrl(path: string): string
+{
+	return `${API_BASE_URL.replace(/^http/, "ws")}${path}`;
+}
+
 // This represnts one FastAPI validation error, we only care about the message, but there are type and loc.
 interface ValidationError
 {

@@ -1,8 +1,10 @@
-import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
 import { useAuth } from "./AuthContext";
 import { useChatHistory } from "./ChatHistoryContext";
+import useLatestRef from "../hooks/useLatestRef";
+import { getDisplayName } from "../utils/utils";
 import
 {
 	getFriends,
@@ -36,7 +38,7 @@ type Friends = Record<userID, IFriendData>;
 function toFriendData( user: PublicUser ): IFriendData
 {
 	return {
-		username: user.username ?? user.display_name ?? "Unknown",
+		username: getDisplayName(user),
 		avatar: user.avatar_url ?? guestAvatar,
 	};
 }
@@ -84,8 +86,7 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 	// response that resolves after logout/relogin (a different or null
 	// token by then) can be discarded instead of overwriting the new
 	// session's state with stale data.
-	const accessTokenRef = useRef(auth.accessToken);
-	accessTokenRef.current = auth.accessToken;
+	const accessTokenRef = useLatestRef(auth.accessToken);
 
 	const resetFriends = useCallback(() =>
 	{
