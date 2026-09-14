@@ -15,7 +15,12 @@ export default class CardHand {
     this.numCards++;
   }
 
-  clearHand( doDestroy: boolean ) {
+  removeCard(card: CardBase) {
+    this.cards.remove(card);
+    this.numCards--;
+  }
+
+  removeAll(doDestroy: boolean) {
     this.cards.removeAll(doDestroy);
     this.numCards = 0;
   }
