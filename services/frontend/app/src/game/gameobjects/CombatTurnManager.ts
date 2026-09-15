@@ -79,7 +79,6 @@ export default class CombatTurnManager {
   pausePlayerTurn() {
     this.scene.input.enabled = false;
     if (this.playerTimer) {
-      EventBus.emit(CombatEvent.turnEnded); // TODO: Either call it here or in CombaManager.execute()
       this.playerTimer.paused = true;
     }
   }
