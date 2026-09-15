@@ -1,7 +1,5 @@
 import Phaser, { type Scene } from "phaser";
 import type CombatManager from "./CombatManager";
-import { EventBus } from "../EventBus";
-import { CombatEvent } from "../../utils/utils";
 
 export enum TurnEvents {
   SWITCH = "switch",
@@ -29,7 +27,7 @@ export default class CombatTurnManager {
     this.clock = this.scene.time;
     this.turnEvents = new Phaser.Events.EventEmitter();
     this.turnEvents.on(TurnEvents.SWITCH, this.switchTurn, this);
-    this.playerDelayMs = 10000;
+    this.playerDelayMs = 30000;
     this.enemyDelayMs = 5000;
     this.isPlayerTurn = true;
     this.playerTimer = this.playTurnFor(this.playerDelayMs);
@@ -79,7 +77,6 @@ export default class CombatTurnManager {
   pausePlayerTurn() {
     this.scene.input.enabled = false;
     if (this.playerTimer) {
-      EventBus.emit(CombatEvent.turnEnded); // TODO: Either call it here or in CombaManager.execute()
       this.playerTimer.paused = true;
     }
   }
@@ -91,11 +88,9 @@ export default class CombatTurnManager {
     }
   }
 
-  sendElapsedTime() {
+  getElapsedPlayerTime() {
     const timer = this.isPlayerTurn ? this.playerTimer : null;
-    if (!timer)
-      return null;
-    EventBus.emit(CombatEvent.initTurn, this.playerDelayMs, timer.getElapsed());
+    return timer ? timer.getElapsed() : null;
   }
 
   getPlayerDelayMs() {
