@@ -136,7 +136,7 @@ export default class CombatAnimation {
 
   onCardAnimation() {
     const events = this.cardManager.events;
-    events.off(CardActionEvents.DRAW, this.draw, this);
+    events.off(CardActionEvents.DRAW);
     events.on(CardActionEvents.DRAW, this.draw, this);
     events.off(CardActionEvents.UNSELECT);
     events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
