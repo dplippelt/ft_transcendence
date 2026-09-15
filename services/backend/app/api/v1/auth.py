@@ -87,6 +87,7 @@ _login_rate_limiter = FixedWindowLimiter(LOGIN_RATE_LIMIT_WINDOW, LOGIN_RATE_LIM
 REGISTER_RATE_LIMIT_WINDOW = timedelta(minutes=1)
 REGISTER_RATE_LIMIT_MAX = 5
 _register_rate_limiter = FixedWindowLimiter(REGISTER_RATE_LIMIT_WINDOW, REGISTER_RATE_LIMIT_MAX)
+
 TWO_FACTOR_RATE_LIMIT_WINDOW = timedelta(minutes=1)
 TWO_FACTOR_RATE_LIMIT_MAX = 5
 _two_factor_rate_limiter = FixedWindowLimiter(TWO_FACTOR_RATE_LIMIT_WINDOW, TWO_FACTOR_RATE_LIMIT_MAX)
