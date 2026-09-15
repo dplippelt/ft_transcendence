@@ -29,6 +29,7 @@ interface IChatInput
 	onSend: () => void;
 	msg: string;
 	setMsg: React.Dispatch<React.SetStateAction<string>>;
+	maxLength?: number;
 }
 
 export function TextInput( { label, placeholder, id, setter, type = "text", maxLength } : ITextInput )
@@ -72,7 +73,7 @@ export function PasswordInput( { label, placeholder, isNewPassword, id, setter }
 	);
 }
 
-export function ChatInput( { placeholder, onSend, msg, setMsg } : IChatInput )
+export function ChatInput( { placeholder, onSend, msg, setMsg, maxLength } : IChatInput )
 {
 	const textAreaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -119,6 +120,7 @@ export function ChatInput( { placeholder, onSend, msg, setMsg } : IChatInput )
 				rows={2}
 				placeholder={placeholder}
 				value={msg}
+				maxLength={maxLength}
 				onChange={handleChange}
 				onKeyDown={handleKeyDown}
 				onFocus={ () => EventBus.emit(GameEvent.chatFocus, true) }

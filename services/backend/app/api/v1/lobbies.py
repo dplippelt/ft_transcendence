@@ -109,14 +109,12 @@ def join(lobby_id: int, current_user: CompletedUser, db: DbSession):
 def leave(lobby_id: int, current_user: CompletedUser, db: DbSession):
     leave_lobby(db, current_user, lobby_id)
 
-    return None
 
 
 @router.delete("/{lobby_id}", status_code=status.HTTP_204_NO_CONTENT)
 def close(lobby_id: int, current_user: CompletedUser, db: DbSession):
     close_lobby(db, current_user, lobby_id)
 
-    return None
 
 
 @router.get("/{lobby_id}/messages", response_model=list[LobbyMessageResponse])

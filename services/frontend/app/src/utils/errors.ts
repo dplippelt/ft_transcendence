@@ -64,6 +64,9 @@ export enum ErrorType
     lobbyDoesNotExist,
     lobbyFull,
 
+    chatMessageTooLong,
+    chatNotFriends,
+
     currentPasswordRequired,
     invalidCurrentPassword,
     passwordEmailUnavailable,
@@ -212,6 +215,10 @@ export function errorMsg(error: ErrorType): string
             return "Failed to join because the lobby does not exist";
         case ErrorType.lobbyFull:
             return "Failed to join because the lobby is full";
+        case ErrorType.chatMessageTooLong:
+            return "Message is too long (max 2000 characters).";
+        case ErrorType.chatNotFriends:
+            return "You're no longer friends, so this message wasn't sent.";
         case ErrorType.currentPasswordRequired:
             return "Current password is required.";
         case ErrorType.invalidCurrentPassword:
@@ -346,5 +353,28 @@ export function mapFriendsApiError(error: unknown): ErrorType
         case "FRIENDSHIP_NOT_FOUND":
             return ErrorType.friendshipNotFound;
     }
+    return ErrorType.unknown;
+}
+
+export function mapChatApiError(error: unknown): ErrorType
+{
+    if (!(error instanceof ApiError))
+        return ErrorType.unknown;
+
+    switch (error.code)
+    {
+        case "NOT_FRIENDS":
+            return ErrorType.chatNotFriends;
+    }
+
+    if (error.status === 422 && error.validationErrors)
+    {
+        for (const validationError of error.validationErrors)
+        {
+            if (validationError.loc?.[validationError.loc.length - 1] === "content")
+                return ErrorType.chatMessageTooLong;
+        }
+    }
+
     return ErrorType.unknown;
 }

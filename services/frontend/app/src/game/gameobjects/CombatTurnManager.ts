@@ -1,5 +1,7 @@
 import Phaser, { type Scene } from "phaser";
 import type CombatManager from "./CombatManager";
+import { EventBus } from "../EventBus";
+import { CombatEvent } from "../../utils/utils";
 
 export enum TurnEvents {
   SWITCH = "switch",
@@ -77,6 +79,7 @@ export default class CombatTurnManager {
   pausePlayerTurn() {
     this.scene.input.enabled = false;
     if (this.playerTimer) {
+      EventBus.emit(CombatEvent.turnEnded); // TODO: Either call it here or in CombaManager.execute()
       this.playerTimer.paused = true;
     }
   }

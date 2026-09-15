@@ -2,13 +2,12 @@ from datetime import datetime, timezone
 
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from app.core.exceptions import ErrorCode, bad_request, forbidden, not_found
 
+from app.core.exceptions import ErrorCode, bad_request, forbidden, not_found
 from app.db.utils import commit_or_bad_request
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
 from app.models.user import User
-
 
 PENDING = "pending"
 ACCEPTED = "accepted"
