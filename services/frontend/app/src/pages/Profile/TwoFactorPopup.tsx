@@ -327,36 +327,50 @@ export default function TwoFactorPopup({ setPopupType, }: TwoFactorPopupProps)
                     to manage two-factor authentication.
                 </p>
     
-                <TextInput
-                    label="Authentication code:"
-                    placeholder="Enter authentication code"
-                    setter={setVerificationCode}
-                    id="twoFactorManageCode"
-                />
-    
-                <PopupButtons>
-                    <MossButton
-                        label={
-                            isSubmitting
-                                ? "Processing..."
-                                : "Regenerate recovery codes"
-                        }
-                        onClick={() => void handleRegenerateRecoveryCodes()}
-                        disabled={isSubmitting}
+                <form
+                    onSubmit={event =>
+                    {
+                        event.preventDefault();
+                        void handleRegenerateRecoveryCodes();
+                    }}
+                >
+                    <TextInput
+                        label="Authentication code:"
+                        placeholder="Enter authentication code"
+                        setter={setVerificationCode}
+                        id="twoFactorManageCode"
                     />
     
-                    <MossButton
-                        label="Disable 2FA"
-                        onClick={() => void handleDisable()}
-                        disabled={isSubmitting}
-                    />
+                    <PopupButtons>
+                        <MossButton
+                            label={
+                                isSubmitting
+                                    ? "Processing..."
+                                    : "Regenerate recovery codes"
+                            }
+                            type="submit"
+                            disabled={isSubmitting}
+                        />
     
-                    <MossButton
-                        label="Back"
-                        onClick={() => setPopupType(PopupType.none)}
-                        disabled={isSubmitting}
-                    />
-                </PopupButtons>
+                        <MossButton
+                            label="Disable 2FA"
+                            type="button"
+                            onClick={() =>
+                                void handleDisable()
+                            }
+                            disabled={isSubmitting}
+                        />
+    
+                        <MossButton
+                            label="Back"
+                            type="button"
+                            onClick={() =>
+                                setPopupType(PopupType.none)
+                            }
+                            disabled={isSubmitting}
+                        />
+                    </PopupButtons>
+                </form>
             </>
         );
     }
