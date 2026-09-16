@@ -32,12 +32,14 @@ def _check_score_rate_limit(user_id: int) -> None:
 
 @router.post("", response_model=ScoreResponse, status_code=status.HTTP_201_CREATED)
 def create_score(score_data: ScoreCreate, current_user: CompletedUser, db: DbSession):
-    _check_score_rate_limit(current_user.id)
-
     dungeon = get_dungeon_by_id(db, score_data.dungeon_id)
 
     if dungeon is None:
         raise not_found("Dungeon not found", code=ErrorCode.DUNGEON_NOT_FOUND)
+
+    # Checked after the dungeon lookup so a stale/invalid dungeon_id (a
+    # client-side bug, not abuse) doesn't burn the submitter's budget.
+    _check_score_rate_limit(current_user.id)
 
     return record_score(
         db=db,

@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import app.models
-from app.api.v1 import auth
+from app.api.v1 import auth, scores
 from app.core.rate_limit import FixedWindowLimiter
 from app.core.security import create_access_token, get_password_hash
 from app.db.database import Base, get_db
@@ -88,6 +88,15 @@ def app(db, monkeypatch):
         FixedWindowLimiter(
             auth.TWO_FACTOR_RATE_LIMIT_WINDOW,
             auth.TWO_FACTOR_RATE_LIMIT_MAX,
+        ),
+    )
+
+    monkeypatch.setattr(
+        scores,
+        "_score_rate_limiter",
+        FixedWindowLimiter(
+            scores.SCORE_RATE_LIMIT_WINDOW,
+            scores.SCORE_RATE_LIMIT_MAX,
         ),
     )
 
