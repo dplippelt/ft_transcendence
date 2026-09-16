@@ -44,10 +44,11 @@ def test_confirm_two_factor_success(client, auth_headers, two_factor_secret_user
 
 def test_confirm_two_factor_with_wrong_code(client, auth_headers, two_factor_secret_user, monkeypatch):
     # Arrange
+
     monkeypatch.setattr(
         auth,
-        "verify_two_factor_code",
-        lambda secret, code: False,
+        "verify_encrypted_two_factor_code",
+        lambda encrypted_secret, code: False,
     )
 
     # Act
@@ -59,7 +60,7 @@ def test_confirm_two_factor_with_wrong_code(client, auth_headers, two_factor_sec
 
     # Assert
     assert response.status_code == 401
-    assert (response.json()["detail"]["code"] == "INVALID_TWO_FACTOR_CODE")
+    assert (response.json()["detail"]["code"]== "INVALID_TWO_FACTOR_CODE")
 
 
 def test_disable_two_factor_when_not_enabled(client, auth_headers):
@@ -96,7 +97,6 @@ def test_setup_two_factor_success(client, db, user, auth_headers, user_credentia
 
 def test_setup_two_factor_when_already_enabled(client, db, user, auth_headers, two_factor_secret_user):
     # Arrange
-    user, _ = two_factor_secret_user
 
     user.two_factor_enabled = True
     db.commit()
@@ -240,10 +240,11 @@ def test_password_login_with_two_factor_enabled_returns_challenge(client, two_fa
 
 def test_two_factor_rate_limit(client, auth_headers, two_factor_secret_user, monkeypatch):
     # Arrange
+
     monkeypatch.setattr(
         auth,
-        "verify_two_factor_code",
-        lambda secret, code: False,
+        "verify_encrypted_two_factor_code",
+        lambda encrypted_secret, code: False,
     )
 
     # Act

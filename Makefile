@@ -10,6 +10,9 @@ ENV_SECRET_FILE = .env.secrets
 ENV_EXAMPLE = .env.example
 ENV_SECRET_EXAMPLE = .env.secrets.example
 
+MIGRATIONS_DIR = services/backend/migrations
+TWO_FACTOR_MIGRATION = $(MIGRATIONS_DIR)/20260913_add_two_factor_management_timecode.sql
+
 COMPOSE = docker compose -f $(DCOMP) \
 	--env-file $(ENV_FILE) \
 	--env-file $(ENV_SECRET_FILE)
@@ -143,6 +146,36 @@ dead-code: ensure-env
 	$(COMPOSE) run --rm backend \
 		python -m vulture app tests --min-confidence 100
 
+migrate-db: ensure-env
+	@if [ ! -f $(TWO_FACTOR_MIGRATION) ]; then \
+		echo "Missing migration: $(TWO_FACTOR_MIGRATION)"; \
+		exit 1; \
+	fi
+	@echo "Starting PostgreSQL..."
+	@$(COMPOSE) up -d db
+	@echo "Waiting for PostgreSQL..."
+	@until $(COMPOSE) exec -T db sh -c \
+		'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' \
+		>/dev/null 2>&1; do \
+		sleep 1; \
+	done
+	@echo "Applying database migration..."
+	@$(COMPOSE) exec -T db sh -c \
+		'psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' \
+		< $(TWO_FACTOR_MIGRATION)
+	@echo "Database migration applied."
+
+check-users-table: ensure-env
+	@$(COMPOSE) exec -T db sh -c \
+		'psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -c "\d users"'
+
+check-2fa-migration: ensure-env
+	@$(COMPOSE) exec -T db sh -c \
+		'psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -tAc \
+		"SELECT column_name FROM information_schema.columns \
+		WHERE table_name = '\''users'\'' \
+		AND column_name = '\''two_factor_last_management_timecode'\'';"'
+
 up: ensure-env
 	$(COMPOSE) up -d
 
@@ -175,6 +208,10 @@ test-2fa-service: ensure-env
 	$(COMPOSE) run --rm backend \
 		python -m pytest tests/test_two_factor_service.py -v --maxfail=1
 
+test-2fa-regeneration: ensure-env
+	$(COMPOSE) run --rm backend \
+		python -m pytest tests/test_two_factor_regeneration.py -v --maxfail=1
+
 reset-db: ensure-env
 	$(MAKE) down || true
 	docker volume rm $(POSTGRES_VOLUME) 2>/dev/null || true
@@ -199,8 +236,9 @@ fclean:
 
 fre: fclean setup check up
 
-.PHONY: ensure-env ensure-2fa-secrets rotate-2fa-key \
+.PHONY: ensure-env ensure-secrets rotate-2fa-key \
 	setup build check check-frontend check-backend \
 	lint-backend lint-backend-fix dead-code \
 	test test-auth test-security test-2fa-auth test-2fa-service \
+	test-2fa-regeneration migrate-db check-2fa-migration \
 	up down start stop restart reset-db re clean fclean fre

@@ -45,6 +45,7 @@ from app.schemas.user import (
     TwoFactorCode,
     TwoFactorConfirmResponse,
     TwoFactorLogin,
+    TwoFactorRecoveryCodesResponse,
     TwoFactorRecoveryLogin,
     TwoFactorSetup,
     TwoFactorSetupResponse,
@@ -59,7 +60,8 @@ from app.services.two_factor_service import (
     generate_recovery_codes,
     generate_two_factor_secret,
     hash_recovery_code,
-    verify_two_factor_code,
+    match_unused_encrypted_two_factor_timecode,
+    verify_encrypted_two_factor_code,
 )
 from app.services.user_service import ensure_username_is_available
 
@@ -314,20 +316,19 @@ def reauthenticate_user(db: Session, user: User, current_password: str | None, g
             )
         return
 
-    if google_credential is not None:
-        identity = verify_google_credential(google_credential,)
-        google_account = get_google_account_for_user(db, user.id,)
+    assert google_credential is not None
+    identity = verify_google_credential(google_credential,)
 
-        if google_account is None or google_account.provider_account_id != identity.sub:
-            raise unauthorized(
-                "Google reauthentication failed",
-                code=ErrorCode.INVALID_GOOGLE_CREDENTIALS,
-            )
-        return
+    google_account = get_google_account_for_user(db, user.id,)
 
-    raise ValueError(
-        "Exactly one reauthentication method is required"
-    )
+    if (
+        google_account is None
+        or google_account.provider_account_id != identity.sub
+    ):
+        raise unauthorized(
+            "Google reauthentication failed",
+            code=ErrorCode.INVALID_GOOGLE_CREDENTIALS,
+        )
 
 
 def apply_google_profile_defaults(user: User, identity: GoogleIdentity) -> None:
@@ -752,6 +753,7 @@ def setup_two_factor(data: TwoFactorSetup, db: DbSession, current_user: CurrentU
     if user.two_factor_secret is None:
         secret = generate_two_factor_secret()
         user.two_factor_secret = encrypt_two_factor_secret(secret,)
+        user.two_factor_last_management_timecode = None
 
         try:
             db.commit()
@@ -783,20 +785,25 @@ def confirm_two_factor(data: TwoFactorCode, db: DbSession, current_user: Current
             code=ErrorCode.TWO_FACTOR_SETUP_REQUIRED,
         )
 
-    secret = decrypt_two_factor_secret(encrypted_secret)
-
     if user.two_factor_enabled:
         raise conflict(
             "Two-factor authentication is already enabled",
             code=ErrorCode.TWO_FACTOR_ALREADY_ENABLED,
         )
 
-    if not verify_two_factor_code(secret, data.code):
+    matched_timecode = match_unused_encrypted_two_factor_timecode(
+        encrypted_secret,
+        data.code,
+        user.two_factor_last_management_timecode,
+    )
+
+    if matched_timecode is None:
         raise unauthorized(
-            "Invalid two-factor authentication code",
+            "Invalid or already used two-factor authentication code",
             code=ErrorCode.INVALID_TWO_FACTOR_CODE,
         )
 
+    user.two_factor_last_management_timecode = matched_timecode
     user.two_factor_enabled = True
 
     recovery_codes = generate_recovery_codes()
@@ -861,9 +868,10 @@ def two_factor_login(data: TwoFactorLogin, db: DbSession, request: Request,):
             code=ErrorCode.TWO_FACTOR_CHALLENGE_INVALID,
         )
 
-    secret = decrypt_two_factor_secret(encrypted_secret)
-
-    if not verify_two_factor_code(secret, data.code):
+    if not verify_encrypted_two_factor_code(
+        encrypted_secret,
+        data.code,
+    ):
         raise unauthorized(
             "Invalid two-factor authentication code",
             code=ErrorCode.INVALID_TWO_FACTOR_CODE,
@@ -872,7 +880,7 @@ def two_factor_login(data: TwoFactorLogin, db: DbSession, request: Request,):
     return create_token_for_user(user)
 
 @router.delete("/2fa", response_model=UserResponse)
-def disable_two_factor(data: TwoFactorCode, db: DbSession, current_user: CurrentUser, request: Request,):
+def disable_two_factor(data: TwoFactorCode, db: DbSession, current_user: CurrentUser,):
     _check_two_factor_rate_limit(current_user.id)
 
     user = get_user_for_two_factor_update(
@@ -894,21 +902,21 @@ def disable_two_factor(data: TwoFactorCode, db: DbSession, current_user: Current
             code=ErrorCode.TWO_FACTOR_SETUP_REQUIRED,
         )
 
-    secret = decrypt_two_factor_secret(
+    matched_timecode = match_unused_encrypted_two_factor_timecode(
         encrypted_secret,
+        data.code,
+        user.two_factor_last_management_timecode,
     )
 
-    if not verify_two_factor_code(
-        secret,
-        data.code,
-    ):
+    if matched_timecode is None:
         raise unauthorized(
-            "Invalid two-factor authentication code",
+            "Invalid or already used two-factor authentication code",
             code=ErrorCode.INVALID_TWO_FACTOR_CODE,
         )
 
     user.two_factor_enabled = False
     user.two_factor_secret = None
+    user.two_factor_last_management_timecode = None
 
     db.query(TwoFactorRecoveryCode).filter(
         TwoFactorRecoveryCode.user_id == user.id,
@@ -986,3 +994,66 @@ def two_factor_recovery(data: TwoFactorRecoveryLogin, db: DbSession, request: Re
         )
 
     return create_token_for_user(user)
+
+
+@router.post("/2fa/recovery-codes", response_model=TwoFactorRecoveryCodesResponse,)
+def regenerate_two_factor_recovery_codes(data: TwoFactorCode, db: DbSession, current_user: CurrentUser,):
+    _check_two_factor_rate_limit(current_user.id)
+    user = get_user_for_two_factor_update(db, current_user.id,)
+
+    if not user.two_factor_enabled:
+        raise bad_request(
+            "Two-factor authentication is not enabled",
+            code=ErrorCode.TWO_FACTOR_NOT_ENABLED,
+        )
+
+    encrypted_secret = user.two_factor_secret
+
+    if encrypted_secret is None:
+        raise bad_request(
+            "Two-factor authentication setup is invalid",
+            code=ErrorCode.TWO_FACTOR_SETUP_REQUIRED,
+        )
+
+    matched_timecode = match_unused_encrypted_two_factor_timecode(
+        encrypted_secret,
+        data.code,
+        user.two_factor_last_management_timecode,
+    )
+
+    if matched_timecode is None:
+        raise unauthorized(
+            "Invalid or already used two-factor authentication code",
+            code=ErrorCode.INVALID_TWO_FACTOR_CODE,
+        )
+
+    user.two_factor_last_management_timecode = matched_timecode
+    recovery_codes = generate_recovery_codes()
+
+    db.query(TwoFactorRecoveryCode).filter(
+        TwoFactorRecoveryCode.user_id == user.id,
+    ).delete(
+        synchronize_session=False,
+    )
+
+    for recovery_code in recovery_codes:
+        db.add(
+            TwoFactorRecoveryCode(
+                user_id=user.id,
+                code_hash=hash_recovery_code(
+                    recovery_code,
+                ),
+            )
+        )
+
+    try:
+        db.commit()
+    except SQLAlchemyError:
+        db.rollback()
+
+        raise bad_request(
+            "Recovery codes could not be regenerated",
+            code=ErrorCode.TWO_FACTOR_FAILED,
+        )
+
+    return TwoFactorRecoveryCodesResponse(recovery_codes=recovery_codes,)
