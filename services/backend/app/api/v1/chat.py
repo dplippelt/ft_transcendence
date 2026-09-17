@@ -90,8 +90,6 @@ def mark_as_read(friend_id: int, current_user: CompletedUser, db: DbSession):
             lambda: {"friend_id": friend_id, "up_to_message_id": boundary_id},
         )
 
-    return None
-
 
 @router.websocket("/ws")
 async def chat_websocket(websocket: WebSocket, current_user_id: CurrentUserIdWS):
