@@ -35,14 +35,6 @@ class ConnectionManager:
         if not connections:
             _ = self.active_connections.pop(user_id, None)
 
-    def has_user_websocket(self, user_id: int, websocket: WebSocket):
-        return user_id in self.active_connections and websocket in self.active_connections[user_id]
-
-    def disconnect_user(self, user_id: int) -> None:
-        if user_id not in self.active_connections:
-            return
-        del self.active_connections[user_id]
-
     async def send_to_user(self, user_id: int, payload: dict) -> bool:
         # Catch broadly per-socket: one dead/broken connection must not stop
         # delivery to this user's other open tabs/devices. A timeout guards
