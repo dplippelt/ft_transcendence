@@ -5,15 +5,22 @@ import { MenuButtons } from "../../components/ButtonContainers";
 import Background from "../../components/Background";
 import { useAuth } from "../../contexts/AuthContext";
 import { MenuButton } from "../../components/Buttons";
-import { RoutePath } from "../../utils/utils";
+import { PopupType, RoutePath } from "../../utils/utils";
 import SideBar from "../../components/SideBar";
 import useSessionCleanup from "../../hooks/useSessionCleanup";
 import { useError } from "../../contexts/ErrorContext";
 import { ErrorType } from "../../utils/errors";
 import Popup from "../../components/Popup";
 import ErrorPopup from "../../components/ErrorPopup";
+import React, { useState } from "react";
+import OperatorSelection from "../../components/OperatorSelection";
 
-function Buttons()
+interface IButtons
+{
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
+}
+
+function Buttons( { setPopupType } : IButtons )
 {
 	const navigate = useNavigate();
 	const location = useLocation();
@@ -27,9 +34,14 @@ function Buttons()
 		navigate(RoutePath.landingPage);
 	}
 
+	function handleNewGame()
+	{
+		setPopupType(PopupType.operatorSelection);
+	}
+
 	return (
 		<MenuButtons>
-			<MenuButton label="New game" onClick={ () => navigate(RoutePath.gameDev) } />
+			<MenuButton label="New game" onClick={handleNewGame} />
 			<MenuButton label="Multiplayer" onClick={ () => navigate(RoutePath.multiplayer) } />
 			<MenuButton label="Friends" onClick={ () => navigate(RoutePath.friends, { state: { from: location.pathname } }) } />
 			<MenuButton label="Profile" onClick={ () => navigate(RoutePath.profile, { state: { from: location.pathname } }) } />
@@ -44,15 +56,17 @@ function Buttons()
 export default function MainMenu()
 {
 	const { error } = useError();
+	const [ popupType, setPopupType ] = useState<PopupType>(PopupType.none);
 
 	return (
 		<>
 			<Background/>
 			<div className={styles.mainMenuPage}>
 				<AppTitle />
-				<Buttons />
+				<Buttons setPopupType={setPopupType} />
 				<SideBar />
 				{ error !== ErrorType.none && <Popup> <ErrorPopup /> </Popup> }
+				{ popupType === PopupType.operatorSelection && <Popup> <OperatorSelection setPopupType={setPopupType} /> </Popup>}
 			</div>
 		</>
 	)
