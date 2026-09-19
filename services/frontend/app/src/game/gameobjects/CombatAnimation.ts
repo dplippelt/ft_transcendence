@@ -176,14 +176,14 @@ export default class CombatAnimation {
     });
   }
 
-  setCardPositionInHand(card: CardBase, index: number, animDuration: number = 300) {
+  setCardPositionInHand(card: CardBase, index: number) {
     this.scene.tweens.add({
       targets: card,
       x: card.getData(TransformInLayout.X),
       y: card.getData(TransformInLayout.Y),
       angle: card.getData(TransformInLayout.ANGLE),
       scale: card.getData(TransformInLayout.SCALE),
-      duration: animDuration,
+      duration: 400,
       ease: "Cubic.easeOut",
       onComplete: () => {
         if (index == this.cardManager.maxNumCardsInHand - 1) {

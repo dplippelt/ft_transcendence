@@ -313,7 +313,7 @@ export default class CombatLayoutManager {
       if (isResize) {
         this.setCardPosition(card);
       } else {
-        this.events.emit(LayoutEvents.SET_CARD_POS_IN_HAND, card, index, 400);
+        this.events.emit(LayoutEvents.SET_CARD_POS_IN_HAND, card, index);
       }
     });
   }
