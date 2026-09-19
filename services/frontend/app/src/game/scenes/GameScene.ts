@@ -4,6 +4,7 @@ import { Dungeon } from "../gameobjects/dungeon/Dungeon.ts";
 import { Direction, type DungeonConfig } from "../map/procedural";
 import { WallType, FloorType, PassageType, FoilageType } from "../map/TileSetMap.ts";
 import Player from "../gameobjects/Player.ts";
+import { call_create_session } from "../network/GameSocket.ts";
 
 const dungeonConfig: DungeonConfig = {
   emptyRoomConfig: {
@@ -70,63 +71,6 @@ const dungeonConfig: DungeonConfig = {
   },
   roomCount: { min: 8, max: 16 },
 };
-
-// Websocket testing code
-let socket: WebSocket;
-
-function call_create_session() {
-  console.log("calling create session");
-  fetch("http://localhost:8000/game/create", {method: "POST"})
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error: ${response.status}`);
-      }
-      return response.json();
-    })
-    .then((json) => connect_to_session(json))
-    .catch((err) => console.error(`Fetch problem: ${err.message}`));
-}
-
-type GameSnapshot = {
-  type: string;
-  game_id: string;
-  tick_id: integer;
-  state: string;
-  dungeon_seed: integer;
-  user_player_id: integer;
-  players: [unknown];
-  enemies: [unknown];
-  combat: [unknown];
-}
-
-// @ts-expect-error TS7006: ssssh...;
-function connect_to_session(json) {
-  console.log(json);
-  socket = new WebSocket(`ws://localhost:8000/game/ws/join/${json.game_id}`);
-  socket.addEventListener("message", (event) => {
-    // Retrieve message
-    const message = JSON.parse(event.data) as GameSnapshot;
-    console.log("original: ", event.data);
-    console.log("First message:", message);
-    console.log("type: ", message.type);
-    console.log("game_id", message.game_id);
-
-    // leave the game :-)
-    const response = {
-      "type": "game.player.action",
-      "game_id": message.game_id,
-      "sequence": 1,
-      "action": {
-        type: 5,
-        direction: 0,
-        card: 0
-      }
-    };
-    socket.send(JSON.stringify(response));
-    socket.close(1000, "Done");
-  }, { once: true });
-}
-// End of websocket testing code
 
 // TODO: GameSession structure (local / network) -> thruth sayer; player hp, position etc, syncs up with the game itself
 export default class GameScene extends Scene {

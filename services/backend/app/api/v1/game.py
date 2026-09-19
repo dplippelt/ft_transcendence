@@ -7,6 +7,7 @@ from app.api.dependencies import CurrentUserIdWS
 from app.game.game_session import JoinStatus
 from app.game.game_session_manager import game_session_manager
 from app.schemas.game import NewGameSession, PlayerAction
+from app.core.exceptions import internal_server_error
 
 # TODO: temp setting for debugging
 logging.basicConfig(
@@ -23,7 +24,9 @@ router = APIRouter()
     "/create", response_model=NewGameSession, status_code=status.HTTP_201_CREATED
 )
 async def create_game_session():
-    game_session = game_session_manager.create()
+    game_session = game_session_manager.create(allowed_user_list={0, 1})
+    if game_session is None:
+        raise internal_server_error("Failed to create game session")
     return NewGameSession(type="game.game-session", game_id=game_session.id)
 
 
@@ -36,13 +39,14 @@ async def list_game_sessions():
     return live_game_sessions
 
 
-# TODO: re-enable current_user_id: CurrentUserIdWS
-@router.websocket("/ws/join/{game_session_id}")
+# TODO: re-enable current_user_id: CurrentUserIdWS and remove {user_id}!!!
+@router.websocket("/ws/join/{game_session_id}/{user_id}")
 async def game_websocket(
     websocket: WebSocket,
     game_session_id: str,  # , current_user_id: CurrentUserIdWS
+    user_id: int
 ):
-    current_user_id = 0
+    current_user_id = user_id
     joined, game_session = await game_session_manager.join_session(
         game_session_id, current_user_id, websocket
     )
@@ -55,8 +59,10 @@ async def game_websocket(
     try:
         while True:
             message = await websocket.receive()
-            logger.debug(f"raw message: {message}")
             if message["type"] == "websocket.disconnect":
+                break
+
+            if not game_session.websocket_connected(current_user_id, websocket):
                 break
 
             if message.get("text") is None:
@@ -71,4 +77,4 @@ async def game_websocket(
                 logger.warning(f"Invalid player action received! {message}")
     finally:
         logger.debug(f"player {current_user_id} disconnected from the session {game_session.id}")
-        await game_session.leave(current_user_id)
+        await game_session.leave(current_user_id, websocket)

@@ -1,7 +1,7 @@
-import logging
 import asyncio
-from asyncio.exceptions import CancelledError
+import logging
 import uuid
+from asyncio.exceptions import CancelledError
 
 from fastapi import WebSocket
 
@@ -9,8 +9,8 @@ from app.core.websocket_manager import ConnectionManager
 
 from .game_session import GameSession, JoinStatus
 
-
 logger = logging.getLogger(__name__)
+
 
 class GameSessionManager:
     def __init__(self):
@@ -49,7 +49,7 @@ class GameSessionManager:
 
     def create(self, allowed_user_list: set[int] | None) -> GameSession | None:
         session_id = uuid.uuid4()
-        game_session = GameSession(str(session_id.int), ConnectionManager(), allowed_user_list)
+        game_session = GameSession(str(session_id.int), allowed_user_list)
         if game_session.start():
             self.game_sessions[str(session_id.int)] = game_session
             return game_session

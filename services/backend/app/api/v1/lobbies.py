@@ -31,7 +31,7 @@ from app.services.lobby_service import (
     send_lobby_message,
     start_game_session,
 )
-from services.backend.app.game.game_session import GameSession
+from app.game.game_session import GameSession
 
 logger = logging.getLogger(__name__)
 

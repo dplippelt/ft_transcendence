@@ -1,19 +1,17 @@
 import asyncio
-from asyncio.exceptions import CancelledError
 import logging
+from asyncio.exceptions import CancelledError
 from enum import Enum, StrEnum, auto
 from time import monotonic
 
 from fastapi import WebSocket
 
-from app.core.websocket_manager import ConnectionManager
 from app.schemas.game import GameSnapshot, PlayerAction
 
 from .game_simulation import GameSimulation
+from .session_connection_manager import Connection, SessionConnectionManager
 
 SESSION_TIMEOUT = 140.0
-CLIENT_TIMEOUT = 10.0
-MAX_PLAYERS = 2
 
 logger = logging.getLogger(__name__)
 
@@ -30,25 +28,23 @@ class JoinStatus(StrEnum):
     GAME_FULL = "Game is full"
     GAME_NOT_JOINED = "Game not joined"
     GAME_NOT_FOUND = "Game not found"
+    GAME_ALREADY_JOINED = "Game already joined"
 
 
 class GameSession:
     def __init__(
         self,
         id: str,
-        connection_manager: ConnectionManager,
         allowed_user_list: set[int] | None = None,
     ):
         self.id: str = id
-        self.connection_manager: ConnectionManager = connection_manager
+        self.connection_manager: SessionConnectionManager = SessionConnectionManager()
         self.allowed_user_list: set[int] | None = allowed_user_list
         self.game: GameSimulation = GameSimulation(self.id)
         self.state: SessionState = SessionState.INITIALIZE
-        self.connected_users: set[int] = set()
         self.task: asyncio.Task[None] | None = None
         self.lock: asyncio.Lock = asyncio.Lock()
         self.time_since_last_action: float = monotonic()
-        self.time_last_player_action: dict[int, float] = {}
 
     def start(self) -> bool:
         if self.task:
@@ -76,58 +72,58 @@ class GameSession:
             return JoinStatus.GAME_NOT_JOINED
 
         async with self.lock:
-            if user_id in self.connected_users:
-                await self.connection_manager.connect(user_id, socket)
-                self.update_time_since_action(user_id)
-                return JoinStatus.GAME_JOINED
-
-            if len(self.connected_users) == MAX_PLAYERS:
-                return JoinStatus.GAME_FULL
-
-            await self.connection_manager.connect(user_id, socket)
-            self.connected_users.add(user_id)
+            await self.connection_manager.accept_connection(user_id, socket)
             self.game.connect_player(user_id)
             self.update_time_since_action(user_id)
 
-            if len(self.connected_users) == MAX_PLAYERS:
+            if self.connection_manager.is_full():
                 self.state = SessionState.RUNNING
 
         return JoinStatus.GAME_JOINED
 
-    def disconnect_user(self, user_id: int):
-        self.connection_manager.disconnect_user(user_id)
-        self.connected_users.remove(user_id)
-        self.game.disconnect_player(user_id)
-
-    async def leave(self, user_id: int) -> None:
+    async def leave(self, user_id: int, websocket: WebSocket) -> None:
         async with self.lock:
-            if user_id not in self.connected_users:
-                return
+            self.connection_manager.remove_connection(user_id, websocket)
 
-            self.disconnect_user(user_id)
+            if not self.connection_manager.is_user_connected(user_id):
+                self.game.disconnect_player(user_id)
 
-            if not self.connected_users:
+            if self.connection_manager.is_empty():
                 self.state = SessionState.WAITING_FOR_PLAYERS
+
+    def websocket_connected(self, user_id: int, websocket: WebSocket) -> bool:
+        return self.connection_manager.is_user_connected(user_id, websocket)
 
     async def broadcast(self) -> None:
         async with self.lock:
-            connected_users = list(self.connected_users)
+            connected_users = self.connection_manager.get_user_connections()
 
-        for user_id in connected_users:
-            await self.connection_manager.send_to_user(
-                user_id, self.game.get_snapshot(user_id).model_dump(mode="json")
-            )
+        failed_deliveries: list[Connection] = []
+        for user in connected_users:
+            delivered = await user.send_snapshot(self.game.get_snapshot(user.user_id))
+            if not delivered:
+                failed_deliveries.append(user)
+
+        if not failed_deliveries:
+            return
+
+        async with self.lock:
+            for user in failed_deliveries:
+                await self.connection_manager.close_connection(
+                    user.user_id, user.websocket
+                )
+                self.game.disconnect_player(user.user_id)
+
+            if self.connection_manager.is_empty():
+                self.state = SessionState.WAITING_FOR_PLAYERS
 
     async def check_user_activity(self):
         async with self.lock:
-            current_time = monotonic()
-            for user_id in list(self.connected_users):
-                if user_id in self.time_last_player_action and (
-                    current_time - self.time_last_player_action[user_id] > CLIENT_TIMEOUT
-                ):
-                    self.disconnect_user(user_id)
+            timed_out_users = await self.connection_manager.time_out_inactive_users()
+            for user_id in timed_out_users:
+                self.game.disconnect_player(user_id)
 
-            if not self.connected_users:
+            if self.connection_manager.is_empty():
                 self.state = SessionState.WAITING_FOR_PLAYERS
 
     async def game_loop(self):
@@ -148,7 +144,7 @@ class GameSession:
 
     def update_time_since_action(self, user_id: int):
         self.time_since_last_action = monotonic()
-        self.time_last_player_action[user_id] = monotonic()
+        self.connection_manager.update_last_seen_of_user(user_id)
 
     def enqueue_player_action(self, user_id: int, player_action: PlayerAction) -> None:
         self.update_time_since_action(user_id)

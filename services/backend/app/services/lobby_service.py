@@ -12,8 +12,8 @@ from app.models.lobby_member import LobbyMember
 from app.models.lobby_message import LobbyMessage
 from app.models.user import User
 from app.services.friend_service import get_friendship, utc_now
-from services.backend.app.game.game_session import GameSession
-from services.backend.app.game.game_session_manager import game_session_manager
+from app.game.game_session import GameSession
+from app.game.game_session_manager import game_session_manager
 
 HOST = "host"
 GUEST = "guest"
@@ -93,7 +93,7 @@ def create_lobby(db: Session, user: User, name: str) -> Lobby:
     return lobby
 
 
-def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby:
+def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby | None:
     # Locks the lobby row so concurrent joins serialize instead of both
     # reading the same member count and both passing the MAX_MEMBERS check.
     lobby = (
