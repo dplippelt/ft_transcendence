@@ -31,6 +31,7 @@ export enum PopupType
     twoFactor,
     createLobby,
     localCoop,
+    operatorSelection,
 }
 
 export enum Tab
@@ -74,10 +75,20 @@ export enum RoutePath
 	gameOver = "/game-over",
 }
 
+export enum RouteParamKey
+{
+	mode = "mode",
+	ops = "ops",
+}
+
+export enum RouteParamValue
+{
+	login = "login",
+	signup = "signup",
+}
+
 export enum RouteParam
 {
-	login = "?mode=login",
-	signup = "?mode=signup",
 	lobbyID = "/:lobbyID",
 }
 
@@ -145,3 +156,29 @@ export function getDisplayName( user: { username: string | null; display_name: s
 	return user.username ?? user.display_name ?? fallback;
 }
 
+export function buildRoute( path: RoutePath, params: Partial<Record<RouteParamKey, string>> ) : string
+{
+	const query = new URLSearchParams(params as Record<string, string>).toString();
+	const fullPath = `${path}?${query}`;
+	return fullPath;
+}
+
+export enum OperatorBit
+{
+	none = 0,
+	plus = 1 << 0,
+	minus = 1 << 1,
+	multiply = 1 << 2,
+	modulo = 1 << 3,
+	divide = 1 << 4,
+}
+
+type Bit = "0" | "1";
+type OpsMaskStr = `${Bit}${Bit}${Bit}${Bit}${Bit}`;
+
+export const DEFAULT_OPS_MASK = "00011";
+
+export function isValidOpsMaskStr(value: string): value is OpsMaskStr
+{
+	return /^[01]{5}$/.test(value) && parseInt(value, 2) > 0;
+}

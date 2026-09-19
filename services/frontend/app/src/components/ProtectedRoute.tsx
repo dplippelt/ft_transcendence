@@ -5,7 +5,7 @@ import Page from "./Page";
 import { MenuTitle } from "./PageTitle";
 
 import { useAuth } from "../contexts/AuthContext";
-import { RouteParam, RoutePath, } from "../utils/utils";
+import { buildRoute, RouteParamKey, RouteParamValue, RoutePath, } from "../utils/utils";
 
 import styles from "./ProtectedRoute.module.scss";
 
@@ -38,7 +38,7 @@ export default function ProtectedRoute()
     {
         return (
             <Navigate
-                to={ RoutePath.auth + RouteParam.login }
+                to={buildRoute(RoutePath.auth, { [RouteParamKey.mode]: RouteParamValue.login })}
                 state={{ from: location.pathname, }}
                 replace
             />

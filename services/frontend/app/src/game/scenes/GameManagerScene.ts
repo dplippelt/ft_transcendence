@@ -4,7 +4,8 @@ import CombatScene from "./CombatScene";
 import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
 import { EventBus } from "../EventBus";
-import { CombatEvent, GameEvent, GameState } from "../../utils/utils";
+import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, isValidOpsMaskStr, OperatorBit, RouteParamKey } from "../../utils/utils";
+import { Operator } from "../gameobjects/cards/CardBase";
 
 export enum GameEvents {
   CombatInitiated = "combat-initiated",
@@ -38,6 +39,7 @@ export class GameManagerScene extends Scene {
   private _exitedPlayers: Set<Player>;
   private _levelCount: number = 1; // TODO: Hard-coded for now
                                     // // TODO: change back to intended max level count (was 5)
+  private _operators: Operator[];
 
   constructor() {
     super("game-manager");
@@ -45,6 +47,8 @@ export class GameManagerScene extends Scene {
     this._gameType = GameType.SinglePlayer;
     this._combatScenes = [];
     this._exitedPlayers = new Set<Player>();
+    this._operators = this.getOperators();
+    console.log(this._operators);
   }
 
   init() {
@@ -252,5 +256,22 @@ export class GameManagerScene extends Scene {
       if (this._gameType === GameType.OnlineCoop)
         return;
       this.pause();
+  }
+
+  // Just a temporary helper function that builds the Operator[] for you change/move it however you like
+  getOperators() {
+    const searchParams = new URLSearchParams(window.location.search);
+    let opsMaskString = searchParams.get(RouteParamKey.ops);
+    if ( !opsMaskString || !isValidOpsMaskStr(opsMaskString) )
+      opsMaskString = DEFAULT_OPS_MASK; // this should never be necessary because PhaserGame already checks and fixes the url but good to keep anyway
+
+    const opsFlags =  parseInt(opsMaskString, 2);
+    const ops: Operator[] = [];
+    if ( opsFlags & OperatorBit.plus ) ops.push(Operator.Plus);
+    if ( opsFlags & OperatorBit.minus ) ops.push(Operator.Minus);
+    if ( opsFlags & OperatorBit.multiply ) ops.push(Operator.Multiply);
+    if ( opsFlags & OperatorBit.divide ) ops.push(Operator.Divide);
+    if ( opsFlags & OperatorBit.modulo ) ops.push(Operator.Modulo);
+    return ops;
   }
 }

@@ -1,8 +1,8 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
-import { useLocation } from "react-router-dom";
-import { CombatEvent, GameEvent, GameState, RoutePath } from "../../utils/utils";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { buildRoute, CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, isValidOpsMaskStr, RouteParamKey, RoutePath } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import { useAuth } from "../../contexts/AuthContext";
 import GameUI from "../../components/Game/GameUI";
@@ -59,8 +59,11 @@ function Game( { currentActiveScene, gameRef, isGameURL } : IGame )
 export default function PhaserGame( { currentActiveScene } : IPhaserGame )
 {
   const { auth } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const isGameURL = location.pathname === RoutePath.gameDev;
+  const ops = searchParams.get(RouteParamKey.ops);
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
   const [inCombat, setInCombat] = useState<boolean>(false);
   const [gameState, setGameState] = useState<GameState>(GameState.default);
@@ -131,6 +134,11 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     if ( !isGameURL )
       return;
 
+    if ( !ops || !isValidOpsMaskStr(ops) ) {
+      navigate(buildRoute(RoutePath.game, { [RouteParamKey.ops]: DEFAULT_OPS_MASK}));
+      return;
+    }
+
     function toggleGameMenu() { setGameMenuVis(prev => !prev); }
     EventBus.addListener(GameEvent.gameMenu, toggleGameMenu);
 
@@ -151,7 +159,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     }
 
     return () => cleanup();
-  }, [location.pathname, isGameURL, gameState, gameMenuVis])
+  }, [location.pathname, isGameURL, gameState, gameMenuVis, ops])
 
   if ( gameState !== GameState.default )
     return <GameOver loggedIn={loggedIn} gameResult={gameState} cleanupGame={cleanupGame} />;
