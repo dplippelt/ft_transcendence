@@ -101,7 +101,7 @@ interface SpriteSheetFrame {
   repeat: number;
 }
 
-const enemyAnimationFram: Record<EnemyAnimation, SpriteSheetFrame> = {
+const enemyAnimationFrame: Record<EnemyAnimation, SpriteSheetFrame> = {
   [EnemyAnimation.WALK]: {
     frameRate: 8,
     repeat: -1,
@@ -136,9 +136,9 @@ export default class CombatAnimation {
 
   onCardAnimation() {
     const events = this.cardManager.events;
-    events.off(CardActionEvents.DRAW, this.draw, this);
+    events.off(CardActionEvents.DRAW);
     events.on(CardActionEvents.DRAW, this.draw, this);
-    events.off(CardActionEvents.UNSELECT, this.setCardPosition, this);
+    events.off(CardActionEvents.UNSELECT);
     events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
   }
 
@@ -158,8 +158,10 @@ export default class CombatAnimation {
     events.on(LayoutEvents.SET_CARD_TO_SLOT, this.setCardToSlot, this);
     events.off(LayoutEvents.SET_CARD_POS);
     events.on(LayoutEvents.SET_CARD_POS, this.setCardPosition, this);
-    events.off(LayoutEvents.CLEAR_HAND);
-    events.on(LayoutEvents.CLEAR_HAND, this.animateClearHand, this);
+    events.off(LayoutEvents.SET_CARD_POS_IN_HAND);
+    events.on(LayoutEvents.SET_CARD_POS_IN_HAND, this.setCardPositionInHand, this);
+    events.off(LayoutEvents.SET_CARD_POS_AND_REMOVE);
+    events.on(LayoutEvents.SET_CARD_POS_AND_REMOVE, this.setCardPositionAndDestroy, this);
   }
 
   setCardPosition(card: CardBase, animDuration: number = 300) {
@@ -171,6 +173,23 @@ export default class CombatAnimation {
       scale: card.getData(TransformInLayout.SCALE),
       duration: animDuration,
       ease: "Cubic.easeOut",
+    });
+  }
+
+  setCardPositionInHand(card: CardBase, index: number) {
+    this.scene.tweens.add({
+      targets: card,
+      x: card.getData(TransformInLayout.X),
+      y: card.getData(TransformInLayout.Y),
+      angle: card.getData(TransformInLayout.ANGLE),
+      scale: card.getData(TransformInLayout.SCALE),
+      duration: 400,
+      ease: "Cubic.easeOut",
+      onComplete: () => {
+        if (index == this.cardManager.maxNumCardsInHand - 1) {
+          this.combatManager.events.emit(CombatEvents.COMPLETEFILLHAND);
+        }
+      },
     });
   }
 
@@ -336,36 +355,24 @@ export default class CombatAnimation {
       anims.create({
         key: animKey,
         frames: anims.generateFrameNumbers(AssetsKey.CombatEnemy),
-        frameRate: enemyAnimationFram[animKey].frameRate,
-        repeat: enemyAnimationFram[animKey].repeat,
+        frameRate: enemyAnimationFrame[animKey].frameRate,
+        repeat: enemyAnimationFrame[animKey].repeat,
       });
     }
   }
 
-  animateClearHand(cards: CardBase[]) {
-    if ( cards.length === 0 ) {
-      this.cardManager.events.emit(CardActionEvents.CLEAR_HAND_COMPLETE);
-      return;
-    }
-
-    let cardsCleared = 0;
-
-    for (const card of cards) {
-      this.scene.tweens.add({
-        targets: card,
-        x: card.getData(TransformInLayout.X),
-        y: card.getData(TransformInLayout.Y),
-        angle: card.getData(TransformInLayout.ANGLE),
-        scale: card.getData(TransformInLayout.SCALE),
-        duration: 200,
-        ease: "Cubic.easeIn",
-        onComplete: () => {
-          card.destroy();
-          cardsCleared++;
-          if ( cardsCleared >= cards.length )
-            this.cardManager.events.emit(CardActionEvents.CLEAR_HAND_COMPLETE);
-        },
-      });
-    }
+  setCardPositionAndDestroy(card: CardBase, animDuration: number = 300) {
+    this.scene.tweens.add({
+      targets: card,
+      x: card.getData(TransformInLayout.X),
+      y: card.getData(TransformInLayout.Y),
+      angle: card.getData(TransformInLayout.ANGLE),
+      scale: card.getData(TransformInLayout.SCALE),
+      duration: animDuration,
+      ease: "Cubic.easeOut",
+      onComplete: () => {
+        card.destroy();
+      },
+    });
   }
 }

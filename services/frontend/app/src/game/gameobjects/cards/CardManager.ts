@@ -10,8 +10,7 @@ export enum CardActionEvents {
   SELECT = "select",
   UNSELECT = "unselect",
   GENERATE_DECK = "generateDeck",
-  CLEAR_HAND = "clearHand",
-  CLEAR_HAND_COMPLETE = "clearHandComplete",
+  TRASH_CARD = "trashCard",
 }
 
 export default class CardManager {
@@ -22,7 +21,6 @@ export default class CardManager {
   readonly cardSelection: CardSelection;
   readonly events: Phaser.Events.EventEmitter;
   readonly maxNumCardsInHand: number;
-  private canRedraw: boolean;
 
   constructor(scene: Scene, playerStatus: PlayerStatus) {
     this.scene = scene;
@@ -32,31 +30,19 @@ export default class CardManager {
     this.cardSelection = new CardSelection(this.scene);
     this.events = new Phaser.Events.EventEmitter();
     this.maxNumCardsInHand = 8;
-    this.canRedraw = true;
-
     scene.input.setTopOnly(true);
-    this.events.on(CardActionEvents.CLEAR_HAND_COMPLETE, this.clearHandComplete, this);
   }
 
   resetSelection() {
     this.cardSelection.unsetAllCards();
   }
 
-  clearHand( isStartTurn: boolean ) {
-    if ( isStartTurn ) {
-      this.cardHand.clearHand(isStartTurn);
-      this.canRedraw = true;
-      return;
+  clearHand() {
+    const cards = this.cardHand.getHandCards();
+    for (const card of cards) {
+      this.cardHand.removeCard(card);
+      this.events.emit(CardActionEvents.TRASH_CARD, card);
     }
-
-    const cards = this.cardHand.getHandCards().getAll() as CardBase[];
-    this.events.emit(CardActionEvents.CLEAR_HAND, cards);
-    this.cardHand.clearHand(isStartTurn);
-  }
-
-  clearHandComplete() {
-    this.fillCardHand(this.maxNumCardsInHand);
-    this.canRedraw = true;
   }
 
   fillCardHand(amount: number) {
@@ -65,25 +51,14 @@ export default class CardManager {
     }
   }
 
-  redrawCards() {
-    if ( !this.canRedraw || this.playerStatus.mana <= 0) {
-      return;
-    }
-
-    this.canRedraw = false;
-    this.resetSelection();
-    this.clearHand(false);
-    this.playerStatus.mana--;
-  }
-
   drawCard() {
     if (!this.cardHand.isUnderHandLimit(this.maxNumCardsInHand)) {
       return false;
     }
 
     if (this.cardDeck.isEmpty()) {
-        this.cardDeck.initDeck();
-        this.events.emit(CardActionEvents.GENERATE_DECK);
+      this.cardDeck.initDeck();
+      this.events.emit(CardActionEvents.GENERATE_DECK);
     }
     const card = this.cardDeck.dealCard()!;
     card.on(CardEvents.SELECTION, this.select, this);
@@ -93,7 +68,7 @@ export default class CardManager {
     return true;
   }
 
-  shiftCards() {
+  shiftSelectedCards() {
     const slots = this.cardSelection.getSelectionSlots();
     const numSlots = this.cardSelection.getNumSlots();
 
@@ -118,7 +93,7 @@ export default class CardManager {
 
     if (card.getIsSelected()) {
       this.cardSelection.unsetCardFromSlot(card);
-      this.shiftCards();
+      this.shiftSelectedCards();
       card.setIsSelected(false);
       this.events.emit(CardActionEvents.UNSELECT, card);
       return;
