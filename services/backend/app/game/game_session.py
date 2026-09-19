@@ -46,14 +46,13 @@ class GameSession:
         self.lock: asyncio.Lock = asyncio.Lock()
         self.time_since_last_action: float = monotonic()
 
-    def start(self) -> bool:
+    def start(self):
         if self.task:
-            return True
+            return
 
         self.task = asyncio.create_task(self.game_loop())
         self.task.add_done_callback(self.task_ended)
         self.state = SessionState.WAITING_FOR_PLAYERS
-        return True
 
     async def stop(self):
         if self.task is None:

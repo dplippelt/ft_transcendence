@@ -47,13 +47,12 @@ class GameSessionManager:
             await game_session.stop()
         self.game_sessions.clear()
 
-    def create(self, allowed_user_list: set[int] | None) -> GameSession | None:
+    def create(self, allowed_user_list: set[int] | None) -> GameSession:
         session_id = uuid.uuid4()
         game_session = GameSession(str(session_id.int), allowed_user_list)
-        if game_session.start():
-            self.game_sessions[str(session_id.int)] = game_session
-            return game_session
-        return None
+        game_session.start()
+        self.game_sessions[str(session_id.int)] = game_session
+        return game_session
 
     async def join_session(
         self, session_id: str, user_id: int, socket: WebSocket

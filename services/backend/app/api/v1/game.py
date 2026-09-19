@@ -7,7 +7,6 @@ from app.api.dependencies import CurrentUserIdWS
 from app.game.game_session import JoinStatus
 from app.game.game_session_manager import game_session_manager
 from app.schemas.game import NewGameSession, PlayerAction
-from app.core.exceptions import internal_server_error
 
 # TODO: temp setting for debugging
 logging.basicConfig(
@@ -25,8 +24,6 @@ router = APIRouter()
 )
 async def create_game_session():
     game_session = game_session_manager.create(allowed_user_list={0, 1})
-    if game_session is None:
-        raise internal_server_error("Failed to create game session")
     return NewGameSession(type="game.game-session", game_id=game_session.id)
 
 

@@ -5,7 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.exceptions import ErrorCode, bad_request, conflict, forbidden, internal_server_error, not_found
+from app.core.exceptions import ErrorCode, bad_request, conflict, forbidden, not_found
 from app.db.utils import commit_or_bad_request
 from app.models.lobby import Lobby
 from app.models.lobby_member import LobbyMember
@@ -409,8 +409,4 @@ def start_game_session(db: Session, user: User, lobby_id: int) -> GameSession:
         raise forbidden("You cannot host the game alone.", code=ErrorCode.LOBBY_MISSING_PLAYERS)
 
     user_ids.append(host.id)
-    game_session = game_session_manager.create(set(user_ids))
-    if game_session is None:
-        raise internal_server_error("Game session crashed.", ErrorCode.LOBBY_GAME_SESSION_CRASH)
-
-    return game_session
+    return game_session_manager.create(set(user_ids))
