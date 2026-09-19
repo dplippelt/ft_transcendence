@@ -200,7 +200,7 @@ export default class CombatAnimation {
 
     if (card.input?.hitArea instanceof Geom.Rectangle) {
       card.input.hitArea.right += 0;
-      card.input.hitArea.bottom += liftDistance;
+      card.input.hitArea.bottom += liftDistance / card.scale;
     }
     this.scene.tweens.add({
       targets: card,
@@ -216,7 +216,7 @@ export default class CombatAnimation {
 
     if (card.input?.hitArea instanceof Geom.Rectangle) {
       card.input.hitArea.right -= 0;
-      card.input.hitArea.bottom -= liftDistance;
+      card.input.hitArea.bottom -= liftDistance / card.scale;
     }
     this.scene.tweens.add({
       targets: card,
