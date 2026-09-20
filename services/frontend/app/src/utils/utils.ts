@@ -58,20 +58,20 @@ export enum JoinStatus
 
 export enum RoutePath
 {
-  landingPage = "/",
-  auth = "/auth",
-  completeProfile = "/complete-profile",
-  mainMenu = "/main-menu",
-  multiplayer = "/multiplayer",
-  mpLobby = "/multiplayer/lobby",
-  mpBrowser = "/multiplayer/browser",
-  friends = "/friends",
-  profile = "/profile",
-  leaderboard = "/leaderboard",
-  howToPlay = "/how-to-play",
-  settings = "/settings",
-  game = "/game",
-  gameOver = "/game-over",
+	landingPage = "/",
+	auth = "/auth",
+	completeProfile = "/complete-profile",
+	mainMenu = "/main-menu",
+	multiplayer = "/multiplayer",
+	mpLobby = "/multiplayer/lobby",
+	mpBrowser = "/multiplayer/browser",
+	friends = "/friends",
+	profile = "/profile",
+	leaderboard = "/leaderboard",
+	howToPlay = "/how-to-play",
+	settings = "/settings",
+	game = "/game",
+	gameOver = "/game-over",
 }
 
 export enum RouteParamKey
@@ -114,7 +114,7 @@ export enum CombatEvent
 	pauseTimer = "pause-timer",
 	attack = "attack",
 	draw = "draw",
-  completeFillHand = "complete-fill-hand",
+	completeFillHand = "complete-fill-hand",
 	turnEnded = "turn-ended",
 	getTurnTimerState = "turn-timer-state",
 	getInitPlayerHp = "get-init-player-hp",
