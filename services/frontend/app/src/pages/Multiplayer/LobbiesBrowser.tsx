@@ -1,13 +1,33 @@
-import React, { useMemo, useState } from "react";
+import React, {
+	useMemo,
+	useState,
+} from "react";
+
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
 import SideBar from "../../components/SideBar";
+
 import { BottomButtons } from "../../components/ButtonContainers";
-import ColumnButton, { BackButton, JoinButton, RefreshButton } from "../../components/Buttons";
-import { RoutePath, SortBy } from "../../utils/utils";
+
+import ColumnButton, {
+	BackButton,
+	JoinButton,
+	RefreshButton,
+} from "../../components/Buttons";
+
+import {
+	RoutePath,
+	SortBy,
+} from "../../utils/utils";
+
 import styles from "./LobbiesBrowser.module.scss";
-import { useLobbies, type LobbyData } from "../../contexts/LobbiesContext";
+
+import {
+	useLobbies,
+	type LobbyData,
+} from "../../contexts/LobbiesContext";
+
 import { ErrorType } from "../../utils/errors";
 import Popup from "../../components/Popup";
 import ErrorPopup from "../../components/ErrorPopup";
@@ -26,14 +46,16 @@ interface IColumnTitles
 	setSortBy: React.Dispatch<React.SetStateAction<SortBy>>;
 }
 
-function ColumnTitles( { sortBy, setSortBy } : IColumnTitles )
-{
-	const { refreshLobbies } = useLobbies();
 
+function ColumnTitles({ sortBy, setSortBy }: IColumnTitles,)
+{
+    const { refreshLobbies } = useLobbies();
+    
 	function onSortByName()
 	{
-		setSortBy(prev => {
-			switch ( prev )
+		setSortBy(prev =>
+		{
+			switch (prev)
 			{
 				case SortBy.name:
 					return SortBy.nameRev;
@@ -49,8 +71,9 @@ function ColumnTitles( { sortBy, setSortBy } : IColumnTitles )
 
 	function onSortByPlayers()
 	{
-		setSortBy(prev => {
-			switch ( prev )
+		setSortBy(prev =>
+		{
+			switch (prev)
 			{
 				case SortBy.players:
 					return SortBy.playersRev;
@@ -66,38 +89,68 @@ function ColumnTitles( { sortBy, setSortBy } : IColumnTitles )
 
 	function getNameSortBy()
 	{
-		if ( sortBy === SortBy.name || sortBy === SortBy.nameRev )
+		if (sortBy === SortBy.name || sortBy === SortBy.nameRev)
 			return sortBy;
 		return SortBy.noSort;
 	}
 
 	function getPlayersSortBy()
 	{
-		if ( sortBy === SortBy.players || sortBy === SortBy.playersRev )
+		if (sortBy === SortBy.players || sortBy === SortBy.playersRev)
 			return sortBy;
 		return SortBy.noSort;
 	}
 
 	return (
 		<div className={styles.columnTitles}>
-			<ColumnButton label="Name" onClick={onSortByName} sortBy={getNameSortBy()} />
-			<ColumnButton label="Players" onClick={onSortByPlayers} sortBy={getPlayersSortBy()} extraStyling={styles.players} />
-			<RefreshButton onClick={refreshLobbies} />
+			<ColumnButton
+				label="Name"
+				onClick={onSortByName}
+				sortBy={getNameSortBy()}
+			/>
+
+			<ColumnButton
+				label="Players"
+				onClick={onSortByPlayers}
+				sortBy={getPlayersSortBy()}
+				extraStyling={styles.players}
+			/>
+
+			<RefreshButton
+				onClick={refreshLobbies}
+			/>
 		</div>
 	);
 }
 
-function Lobbies( { lobbiesArr } : ILobbies )
+
+function Lobbies({ lobbiesArr }: ILobbies,)
 {
 	return (
 		<div className={styles.lobbies}>
-			{ lobbiesArr.map(([lobbyID, { lobbyName, guestID }]) =>
-				<div className={styles.lobby} key={lobbyID}>
-					<div className={styles.lobbyName}>{lobbyName}</div>
-					<div className={styles.players}>{guestID ? "2/2" : "1/2"}</div>
-					<JoinButton lobbyID={lobbyID} />
-				</div>
-			)}
+			{
+				lobbiesArr.map(
+					([lobbyID, lobby]) =>
+						<div
+							className={styles.lobby}
+							key={lobbyID}
+						>
+							<div className={styles.lobbyName}>
+								{lobby.name}
+							</div>
+
+							<div className={styles.players}>
+								{
+									lobby.members.length
+								}/2
+							</div>
+
+							<JoinButton
+								lobbyID={lobbyID}
+							/>
+						</div>
+				)
+			}
 		</div>
 	);
 }
@@ -105,60 +158,58 @@ function Lobbies( { lobbiesArr } : ILobbies )
 function BrowserWindow()
 {
 	const { lobbies } = useLobbies();
-	const [ sortBy, setSortBy ] = useState<SortBy>(SortBy.noSort);
-	const lobbiesArr = useMemo(sortLobbies, [sortBy, lobbies]);
+	const [sortBy, setSortBy] = useState<SortBy>(SortBy.noSort,);
+	const lobbiesArr = useMemo(sortLobbies, [sortBy, lobbies],);
 
-	function sortByLobbyName(
-		[, { lobbyName: lobbyName_a }]: Lobby,
-		[, { lobbyName: lobbyName_b }]: Lobby, )
-	{ return lobbyName_a.localeCompare(lobbyName_b); }
-
-	function sortByLobbyNameRev(
-		[, { lobbyName: lobbyName_a }]: Lobby,
-		[, { lobbyName: lobbyName_b }]: Lobby, )
-	{ return lobbyName_b.localeCompare(lobbyName_a); }
-
-	function sortByPlayers(
-		[, { guestID: a }]: Lobby,
-		[, { guestID: b }]: Lobby )
+	function sortByLobbyName([, lobbyA]: Lobby, [, lobbyB]: Lobby,)
 	{
-		if (a === null && b !== null) return -1;
-		if (a !== null && b === null) return 1;
-		return 0;
+		return lobbyA.name.localeCompare(lobbyB.name,);
 	}
 
-	function sortByPlayersRev(
-		[, { guestID: a }]: Lobby,
-		[, { guestID: b }]: Lobby )
+	function sortByLobbyNameRev([, lobbyA]: Lobby, [, lobbyB]: Lobby,)
 	{
-		if (a === null && b !== null) return 1;
-		if (a !== null && b === null) return -1;
-		return 0;
+		return lobbyB.name.localeCompare(lobbyA.name,);
 	}
 
-	function sortLobbies()
+	function sortByPlayers([, lobbyA]: Lobby, [, lobbyB]: Lobby,)
 	{
-		switch ( sortBy )
+		return (lobbyA.members.length - lobbyB.members.length);
+	}
+
+	function sortByPlayersRev([, lobbyA]: Lobby, [, lobbyB]: Lobby,)
+	{
+		return (lobbyB.members.length - lobbyA.members.length);
+	}
+
+	function sortLobbies(): Lobby[]
+	{
+		const entries = Object.entries(lobbies);
+
+		switch (sortBy)
 		{
 			case SortBy.name:
-				return Object.entries(lobbies).sort(sortByLobbyName);
+				return entries.sort(sortByLobbyName,);
 			case SortBy.nameRev:
-				return Object.entries(lobbies).sort(sortByLobbyNameRev);
+				return entries.sort(sortByLobbyNameRev,);
 			case SortBy.players:
-				return Object.entries(lobbies).sort(sortByPlayers);
+				return entries.sort(sortByPlayers,);
 			case SortBy.playersRev:
-				return Object.entries(lobbies).sort(sortByPlayersRev);
+				return entries.sort(sortByPlayersRev,);
 			default:
-				return Object.entries(lobbies);
+				return entries;
 		}
 	}
 
 	return (
 		<div className={styles.browserWindow}>
-			<ColumnTitles sortBy={sortBy} setSortBy={setSortBy} />
-			<Lobbies lobbiesArr={lobbiesArr} />
+			<ColumnTitles
+				sortBy={sortBy}
+				setSortBy={setSortBy}
+			/>
+
+			<Lobbies lobbiesArr={lobbiesArr}/>
 		</div>
-	)
+	);
 }
 
 function Buttons()
@@ -176,13 +227,19 @@ export default function LobbiesBrowser()
 
 	return (
 		<>
-			<Background />
+			<Background/>
+
 			<Page>
 				<MenuTitle title="Lobbies Browser" />
-				<BrowserWindow />
-				<Buttons />
-				<SideBar />
-				{ error !== ErrorType.none && <Popup> <ErrorPopup /> </Popup> }
+				<BrowserWindow/>
+				<Buttons/>
+				<SideBar/>
+				{
+					error !== ErrorType.none &&
+						<Popup>
+							<ErrorPopup/>
+						</Popup>
+				}
 			</Page>
 		</>
 	);

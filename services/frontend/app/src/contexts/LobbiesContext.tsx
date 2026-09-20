@@ -1,6 +1,24 @@
-import { createContext, useContext, /* useEffect, */ useState } from "react";
+import {
+	createContext,
+	useCallback,
+	useContext,
+	useEffect,
+	useState,
+} from "react";
+
 import type { ReactNode } from "react";
-import { ErrorType } from "../utils/errors";
+
+import {
+	getLobbies,
+	getLobby as getLobbyRequest,
+	createLobby as createLobbyRequest,
+	joinLobby as joinLobbyRequest,
+	leaveLobby as leaveLobbyRequest,
+	closeLobby as closeLobbyRequest,
+} from "../api/lobbyApi";
+
+import type { ILobbyResponse } from "../api/lobbyApi";
+import { useAuth } from "./AuthContext";
 
 interface ILobbyChatMsg
 {
@@ -8,181 +26,254 @@ interface ILobbyChatMsg
 	message: string;
 }
 
-export interface LobbyData
+export interface LobbyData extends ILobbyResponse
 {
-	lobbyName: string;
-	hostID: string;
-	guestID: guestID;
 	chatHistory: ILobbyChatMsg[];
 }
 
-type lobbyID = string;
-type guestID = string | null;
-type Lobbies = Record<lobbyID, LobbyData>;
-
-const defaultLobbies: Lobbies =
-{
-	"lobbyID_1": { lobbyName: "Lobby 1", hostID: "hostID_1", guestID: "guestID_1", chatHistory: [] },
-	"lobbyID_2": { lobbyName: "Lobby 2", hostID: "hostID_2", guestID: null, chatHistory: [] },
-	"lobbyID_3": { lobbyName: "Lobby 3", hostID: "hostID_3", guestID: null, chatHistory: [] },
-	"lobbyID_4": { lobbyName: "Lobby 4", hostID: "hostID_4", guestID: "guestID_4", chatHistory: [] },
-	"lobbyID_5": { lobbyName: "Lobby 5", hostID: "hostID_5", guestID: null, chatHistory: [] },
-	"lobbyID_6": { lobbyName: "Lobby 6", hostID: "hostID_6", guestID: null, chatHistory: [] },
-	"lobbyID_7": { lobbyName: "Lobby 7", hostID: "hostID_7", guestID: "guestID_7", chatHistory: [] },
-	"lobbyID_8": { lobbyName: "Lobby 8", hostID: "hostID_8", guestID: null, chatHistory: [] },
-	"lobbyID_9": { lobbyName: "Lobby 9", hostID: "hostID_9", guestID: null, chatHistory: [] },
-	"lobbyID_10": { lobbyName: "Lobby 10", hostID: "hostID_10", guestID: "guestID_10", chatHistory: [] },
-	"lobbyID_11": { lobbyName: "Lobby 11", hostID: "hostID_11", guestID: null, chatHistory: [] },
-	"lobbyID_12": { lobbyName: "Lobby 12", hostID: "hostID_12", guestID: null, chatHistory: [] },
-	"lobbyID_13": { lobbyName: "Lobby 13", hostID: "hostID_13", guestID: "guestID_13", chatHistory: [] },
-	"lobbyID_14": { lobbyName: "Lobby 14", hostID: "hostID_14", guestID: null, chatHistory: [] },
-	"lobbyID_15": { lobbyName: "Lobby 15", hostID: "hostID_15", guestID: null, chatHistory: [] },
-	"lobbyID_16": { lobbyName: "Lobby with really long name, it just keeps going and going and going and going", hostID: "hostID_15", guestID: null, chatHistory: [] },
-}
+type LobbyID = string;
+type Lobbies = Record<LobbyID, LobbyData>;
 
 interface ILobbiesContext
 {
 	lobbies: Lobbies;
 	resetLobbies: () => void;
-	refreshLobbies: () => void;
-	createLobby: ( lobbyID: lobbyID, hostID: string, lobbyName: string ) => void;
-	closeLobby: ( lobbyID: lobbyID ) => void;
-	joinLobby: ( lobbyID: lobbyID, guestID: string ) => ErrorType;
-	leaveLobby: ( lobbyID: lobbyID ) => void;
-	getChatHistory: ( lobbyID: lobbyID ) => ILobbyChatMsg[] | undefined;
-	addChatHistory: ( lobbyID: lobbyID, username: string, message: string ) => void;
+	refreshLobbies: () => Promise<void>;
+	loadLobby: (lobbyID: LobbyID,) => Promise<LobbyData>;
+	createLobby: (lobbyName: string,) => Promise<LobbyData>;
+	joinLobby: (lobbyID: LobbyID,) => Promise<LobbyData>;
+	leaveLobby: (lobbyID: LobbyID,) => Promise<void>;
+	closeLobby: (lobbyID: LobbyID,) => Promise<void>;
+	getChatHistory: (lobbyID: LobbyID,) => ILobbyChatMsg[] | undefined;
+	addChatHistory: (
+		lobbyID: LobbyID,
+		username: string,
+		message: string,
+	) => void;
 }
 
 const LobbiesContext = createContext<ILobbiesContext | null>(null);
 
+function toLobbyData(lobby: ILobbyResponse, existing?: LobbyData): LobbyData
+{
+    return { ...lobby, chatHistory: existing?.chatHistory ?? [] };
+}
+
 export default function LobbiesProvider( { children } : {children: ReactNode} )
 {
-	const [lobbies, setLobbies] = useState<Lobbies>(defaultLobbies);
+    const [lobbies, setLobbies] = useState<Lobbies>({});
+    const { auth } = useAuth();
 
-	function resetLobbies()
-	{
-		setLobbies(defaultLobbies);
-	}
+    const resetLobbies = useCallback(() => {setLobbies({});}, []);
 
-	function refreshLobbies()
-	{
-		// TODO: implement later (needs backend)
-	}
+    const refreshLobbies = useCallback(async () =>
+    {
+        const accessToken = auth.accessToken;
 
-	function createLobby( lobbyID: lobbyID, hostID: string, lobbyName: string )
+        if (!accessToken)
+            return;
+
+        const lobbyList = await getLobbies(accessToken);
+
+        setLobbies(prev =>
+            Object.fromEntries(
+                lobbyList.map(lobby =>
+                [
+                    String(lobby.id),
+                    toLobbyData(
+                        lobby,
+                        prev[String(lobby.id)],
+                    ),
+                ]
+            )
+        ));
+    },[auth.accessToken]);
+
+    const loadLobby = useCallback(async (lobbyID: string): Promise<LobbyData> =>
+    {
+        const accessToken = auth.accessToken;
+        
+        if (!accessToken)
+            throw new Error("No authenticated session");
+
+        const lobby = await getLobbyRequest(Number(lobbyID), accessToken,);
+        
+        const lobbyData = toLobbyData(lobby);
+
+        setLobbies(prev => ({
+            ...prev,
+    
+            [lobbyID]:
+                toLobbyData(
+                    lobby,
+                    prev[lobbyID],
+                ),
+        }));
+    
+        return lobbyData;
+    }, [auth.accessToken]);
+
+	const createLobby = useCallback(async (lobbyName: string,): Promise<LobbyData> =>
 	{
+		const accessToken = auth.accessToken;
+
+		if (!accessToken)
+			throw new Error("No authenticated session",);
+
+		const lobby = await createLobbyRequest(lobbyName, accessToken,);
+
+		const lobbyData = toLobbyData(lobby);
+
 		setLobbies(prev => ({
 			...prev,
-			[lobbyID]: { lobbyName: lobbyName, hostID: hostID, guestID: null, chatHistory: [] },
-		}));
-	}
-
-	function joinLobby( lobbyID: lobbyID, guestID: string ) : ErrorType
-	{
-		// TODO: will need to (re)fetch lobbies or just this lobby from backend so early return checks are accurate.
-
-		if ( lobbies[lobbyID] === undefined )
-			return ErrorType.lobbyDoesNotExist;
-		if ( lobbies[lobbyID].guestID === guestID )
-			return ErrorType.none;
-		if ( lobbies[lobbyID].guestID !== null )
-			return ErrorType.lobbyFull;
-
-		setLobbies(prev => ({
-			...prev,
-			[lobbyID]: { ...prev[lobbyID], guestID: guestID }
+			[String(lobby.id)]: lobbyData,
 		}));
 
-		return ErrorType.none;
-	}
+		return lobbyData;
+    }, [auth.accessToken]);
 
-	function leaveLobby( lobbyID: lobbyID )
+    const inviteFriend = useCallback(async (lobbyID: string, friendID: number,): Promise<boolean> =>
+    {
+        const accessToken = auth.accessToken;
+    
+        if (!accessToken)
+            throw new Error("No authenticated session");
+    
+        const result = await inviteToLobbyRequest(
+                Number(lobbyID),
+                friendID,
+                accessToken,
+            );
+        return result.delivered;
+    }, [auth.accessToken]);
+
+	const joinLobby = useCallback(async (lobbyID: string,): Promise<LobbyData> =>
+    {
+        const accessToken = auth.accessToken;
+    
+        if (!accessToken)
+            throw new Error("No authenticated session",);
+    
+        const lobby = await joinLobbyRequest(Number(lobbyID),accessToken,);
+    
+        const lobbyData = toLobbyData(lobby);
+    
+        setLobbies(prev => ({
+            ...prev,
+    
+            [lobbyID]:
+                toLobbyData(
+                    lobby,
+                    prev[lobbyID],
+                ),
+        }));
+    
+        return lobbyData;
+    }, [auth.accessToken]);
+
+	const leaveLobby = useCallback(async (lobbyID: string,): Promise<void> =>
 	{
-		setLobbies(prev => {
-			if ( prev[lobbyID] === undefined )
-				return prev;
+		const accessToken = auth.accessToken;
 
-			return {
-				...prev,
-				[lobbyID]: { ...prev[lobbyID], guestID: null }
-			};
-		});
-	}
+		if (!accessToken)
+			throw new Error("No authenticated session",);
 
-	function closeLobby( lobbyID: lobbyID )
+		await leaveLobbyRequest(Number(lobbyID), accessToken,);
+
+		await refreshLobbies();
+	}, [auth.accessToken, refreshLobbies,]);
+
+
+	const closeLobby = useCallback(async (lobbyID: string,): Promise<void> =>
 	{
-		setLobbies(prev => {
-			if ( prev[lobbyID] === undefined )
+		const accessToken = auth.accessToken;
+
+		if (!accessToken)
+			throw new Error("No authenticated session",);
+
+		await closeLobbyRequest(Number(lobbyID), accessToken,);
+
+		setLobbies(prev =>
+		{
+			if (!prev[lobbyID])
 				return prev;
-
-			const newLobbies = { ...prev };
-			delete newLobbies[lobbyID];
-			return newLobbies;
+			const next = { ...prev };
+			delete next[lobbyID];
+			return next;
 		});
-	}
+    }, [auth.accessToken]);
 
-	function getChatHistory( lobbyID: lobbyID ) : ILobbyChatMsg[] | undefined
+	function getChatHistory( lobbyID: string ) : ILobbyChatMsg[] | undefined
 	{
 		return lobbies[lobbyID]?.chatHistory;
 	}
 
-	function addChatHistory( lobbyID: lobbyID, username: string, message: string )
+	function addChatHistory( lobbyID: LobbyID, username: string, message: string )
 	{
-		const newMsg: ILobbyChatMsg = { username: username, message: message };
+		const newMsg: ILobbyChatMsg = { username, message, };
 
-		setLobbies(prev => {
-			if ( prev[lobbyID] === undefined )
-				return prev;
+		setLobbies(prev =>
+        {
+            if (!prev[lobbyID])
+                return prev;
 
-			return {
-				...prev,
-				[lobbyID]: {
-					...prev[lobbyID],
-					chatHistory: [ ...(prev[lobbyID].chatHistory ?? []), newMsg ]
-				}
-			};
-		});
-	}
+            return {
+                ...prev,
 
-	// mock template for later when loading info from database (e.g. when user hits F5 to reload page)
-	// at the moment when you hit F5 everything is rerendered and Lobbies info will be set to default again.
-	// turn it into a custom hook because it also needs to be called in the login / signup button handler after a succesful login/sign-up
+                [lobbyID]:
+                {
+                    ...prev[lobbyID],
 
-	// useEffect(() =>
-	// {
-	// 	async function loadLobbies()
-	// 	{
-	// 		const sessionToken = localStorage.getItem("sessionToken");
-	// 		if (await isValidToken(sessionToken))
-	// 			setLobbies(await fetchDbUser(sessionToken));
-	// 	}
-	// 	loadLobbies();
-	// }, []);
+                    chatHistory:
+                    [
+                        ...prev[lobbyID].chatHistory,
+                        newMsg,
+                    ],
+                },
+            };
+        });
+    }
 
-	return (
-		<LobbiesContext.Provider
-			value=
-			{{
-				lobbies,
-				resetLobbies,
-				refreshLobbies,
-				createLobby,
-				closeLobby,
-				joinLobby,
-				leaveLobby,
-				getChatHistory,
-				addChatHistory,
-			}}>
-			{children}
-		</LobbiesContext.Provider>
-	);
-}
+	useEffect(() =>
+    {
+        if (auth.status === "authenticated")
+        {
+            void refreshLobbies().catch(() => {});
+        }
+    
+        if (auth.status === "unauthenticated")
+        {
+            resetLobbies();
+        }
+        }, [auth.status, refreshLobbies, resetLobbies,]);
 
-// import and use useLobbies() anywhere you want to reference or change Lobbies values.
+        return (
+            <LobbiesContext.Provider
+                value=
+                {{
+                    lobbies,
+                    resetLobbies,
+                    refreshLobbies,
+                    loadLobby,
+                    createLobby,
+                    closeLobby,
+                    joinLobby,
+                    leaveLobby,
+                    getChatHistory,
+                    addChatHistory,
+                }}
+            >
+                {children}
+            </LobbiesContext.Provider>
+        );
+    }
+
 export function useLobbies()
 {
-	const context = useContext(LobbiesContext);
-	if ( !context )
-		throw new Error("useLobbies() must be used within a LobbiesProvider");
-	return context;
+    const context = useContext(LobbiesContext);
+
+    if (!context)
+        throw new Error("useLobbies() must be used within a LobbiesProvider",);
+
+    return context;
 }

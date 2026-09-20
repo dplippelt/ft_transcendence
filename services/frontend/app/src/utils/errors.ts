@@ -454,3 +454,25 @@ export function mapChatApiError(error: unknown): ErrorType
 
     return ErrorType.unknown;
 }
+
+
+export function mapLobbyApiError(error: unknown): ErrorType
+{
+	if (!(error instanceof ApiError))
+		return ErrorType.unknown;
+
+	switch (error.code)
+	{
+		case "LOBBY_NAME_ALREADY_EXISTS":
+			return ErrorType.lobbyNameAlreadyExists;
+
+		case "LOBBY_NOT_FOUND":
+			return ErrorType.lobbyDoesNotExist;
+
+		case "LOBBY_FULL":
+			return ErrorType.lobbyFull;
+
+		default:
+			return ErrorType.unknown;
+	}
+}
