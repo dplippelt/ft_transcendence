@@ -164,14 +164,14 @@ export default class CombatAnimation {
     events.on(LayoutEvents.SET_CARD_POS_AND_REMOVE, this.setCardPositionAndDestroy, this);
   }
 
-  setCardPosition(card: CardBase, animDuration: number = 300) {
+  setCardPosition(card: CardBase) {
     this.scene.tweens.add({
       targets: card,
       x: card.getData(TransformInLayout.X),
       y: card.getData(TransformInLayout.Y),
       angle: card.getData(TransformInLayout.ANGLE),
       scale: card.getData(TransformInLayout.SCALE),
-      duration: animDuration,
+      duration: 300,
       ease: "Cubic.easeOut",
     });
   }
@@ -357,14 +357,14 @@ export default class CombatAnimation {
     }
   }
 
-  setCardPositionAndDestroy(card: CardBase, animDuration: number = 300) {
+  setCardPositionAndDestroy(card: CardBase) {
     this.scene.tweens.add({
       targets: card,
       x: card.getData(TransformInLayout.X),
       y: card.getData(TransformInLayout.Y),
       angle: card.getData(TransformInLayout.ANGLE),
       scale: card.getData(TransformInLayout.SCALE),
-      duration: animDuration,
+      duration: 400,
       ease: "Cubic.easeOut",
       onComplete: () => {
         card.destroy();

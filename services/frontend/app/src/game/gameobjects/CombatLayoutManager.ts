@@ -415,7 +415,7 @@ export default class CombatLayoutManager {
       [TransformInLayout.ANGLE]: targetAngle,
       [TransformInLayout.SCALE]: this.display.scale,
     });
-    this.events.emit(LayoutEvents.SET_CARD_POS_AND_REMOVE, card, 400);
+    this.events.emit(LayoutEvents.SET_CARD_POS_AND_REMOVE, card);
   }
 
   destroyCard(card: CardBase) {
