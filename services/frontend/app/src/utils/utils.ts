@@ -70,8 +70,8 @@ export enum RoutePath
 	leaderboard = "/leaderboard",
 	howToPlay = "/how-to-play",
 	settings = "/settings",
-	gameDev = "/game-dev",
-	game = "/game-dev", //TODO: change path to just "/game" or "/sp-game" later
+	gameDev = "/game-dev", // TODO: remove
+	game = "/game",
 	gameOver = "/game-over",
 }
 

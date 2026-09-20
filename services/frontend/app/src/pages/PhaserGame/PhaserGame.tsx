@@ -62,7 +62,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
-  const isGameURL = location.pathname === RoutePath.gameDev;
+  const isGameURL = location.pathname === RoutePath.game;
   const ops = searchParams.get(RouteParamKey.ops);
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
   const [inCombat, setInCombat] = useState<boolean>(false);
@@ -111,7 +111,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     function preserveGame() : boolean {
       switch ( location.pathname )
       {
-        case RoutePath.gameDev:
+        case RoutePath.game:
           return true;
         case RoutePath.friends:
           return true;

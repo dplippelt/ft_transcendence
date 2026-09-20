@@ -49,7 +49,7 @@ export default function OperatorSelection( { setPopupType } : IOperatorSelection
 		}
 		setError(ErrorType.none);
 		setPopupType(PopupType.none);
-		navigate(buildRoute(RoutePath.gameDev, { [RouteParamKey.ops]: getOperatorsMask() }));
+		navigate(buildRoute(RoutePath.game, { [RouteParamKey.ops]: getOperatorsMask() }));
 	}
 
 	function handleCancel()

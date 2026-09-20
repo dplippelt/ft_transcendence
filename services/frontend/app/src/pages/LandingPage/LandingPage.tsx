@@ -31,12 +31,13 @@ function Buttons( { setPopupType } : IButtons )
 		setPopupType(PopupType.operatorSelection);
 	}
 
+	// TODO: remove Game dev Button
 	return (
 		<MenuButtons>
 			<MenuButton label="Start game" onClick={handleNewGame} />
 			<MenuButton label="Login" onClick={ () => navigate(buildRoute(RoutePath.auth, { [RouteParamKey.mode]: RouteParamValue.login })) } />
 			<MenuButton label="How to play" onClick={ () => {} } />
-			<MenuButton label="Game dev" onClick={ () => navigate(RoutePath.gameDev) } />
+			<MenuButton label="Game dev" onClick={handleNewGame} />
 		</MenuButtons>
 	)
 }
