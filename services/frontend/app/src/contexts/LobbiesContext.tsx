@@ -15,6 +15,7 @@ import {
 	joinLobby as joinLobbyRequest,
 	leaveLobby as leaveLobbyRequest,
 	closeLobby as closeLobbyRequest,
+	inviteToLobby as inviteToLobbyRequest,
 } from "../api/lobbyApi";
 
 import type { ILobbyResponse } from "../api/lobbyApi";
@@ -49,7 +50,8 @@ interface ILobbiesContext
 		lobbyID: LobbyID,
 		username: string,
 		message: string,
-	) => void;
+    ) => void;
+    inviteFriend: (lobbyID: LobbyID, friendID: number,) => Promise<boolean>;
 }
 
 const LobbiesContext = createContext<ILobbiesContext | null>(null);
@@ -259,6 +261,7 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
                     closeLobby,
                     joinLobby,
                     leaveLobby,
+                    inviteFriend,
                     getChatHistory,
                     addChatHistory,
                 }}
