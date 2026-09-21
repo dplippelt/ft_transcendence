@@ -236,7 +236,7 @@ export function JoinButton( { lobbyID } : IJoinButton )
 	const navigate = useNavigate();
 	const { lobbies } = useLobbies();
 	const lobby = lobbies[lobbyID];
-	const disabled: boolean = !lobby || lobby.guestID !== null ? true : false;
+    const disabled: boolean = !lobby || lobby.members.length >= 2;
 
 	function onClick()
 	{
