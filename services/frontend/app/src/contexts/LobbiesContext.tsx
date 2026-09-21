@@ -42,6 +42,7 @@ interface ILobbiesContext
 	refreshLobbies: () => Promise<void>;
 	loadLobby: (lobbyID: LobbyID,) => Promise<LobbyData>;
 	createLobby: (lobbyName: string,) => Promise<LobbyData>;
+    inviteFriend: (lobbyID: LobbyID, friendID: number,) => Promise<boolean>;
 	joinLobby: (lobbyID: LobbyID,) => Promise<LobbyData>;
 	leaveLobby: (lobbyID: LobbyID,) => Promise<void>;
 	closeLobby: (lobbyID: LobbyID,) => Promise<void>;
@@ -51,7 +52,6 @@ interface ILobbiesContext
 		username: string,
 		message: string,
     ) => void;
-    inviteFriend: (lobbyID: LobbyID, friendID: number,) => Promise<boolean>;
 }
 
 const LobbiesContext = createContext<ILobbiesContext | null>(null);
