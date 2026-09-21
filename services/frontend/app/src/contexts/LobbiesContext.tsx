@@ -20,7 +20,7 @@ import {
 
 import type { ILobbyResponse } from "../api/lobbyApi";
 import { useAuth } from "./AuthContext";
-import { getWsUrl } from "../api/http"
+import { getWsUrl } from "../api/http";
 
 interface ILobbyChatMsg
 {
@@ -340,7 +340,7 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
                             return next;
                         });
                     }
-                    // chat_messgae,
+                    // chat_message,
                     // conversation_read,
                     // lobby_invite,
                     // are intentionally ignored here
