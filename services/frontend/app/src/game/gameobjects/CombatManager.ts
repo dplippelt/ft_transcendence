@@ -81,6 +81,7 @@ export default class CombatManager {
     this.executeManager.generateTargetNumbersFromHand(this.cardManager.cardHand);
     // TODO: emit an event for displaying targetNumbers
     this.targetNumbersText.setText(this.executeManager.getTargetNumbers());
+    this.executeManager.test_getValidFormula(this.scene);
   }
 
   fillCardHand() {

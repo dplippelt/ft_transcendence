@@ -1,3 +1,4 @@
+import type { Scene } from "phaser"; // Temporarily imported
 import CardBase, { type CardValue, Operator } from "./cards/CardBase";
 import { shuffle } from "./cards/CardDeck";
 import CardHand from "./cards/CardHand";
@@ -100,6 +101,7 @@ export default class CombatExecuteManager {
     if (cards === null) {
       cards = this.getValidFormula(numbers, operators, numOperators);
     }
+
     const values = this.evaluateHighPrecedenceOperations(cards)!;
     const result = this.evaluateLowPrecedenceOperations(values);
     return result;
@@ -118,7 +120,7 @@ export default class CombatExecuteManager {
     }
     let nonDivOrModOps = 0;
     for (const operator of operators) {
-      if (operator.getValue() !== Operator.Divide && operator.getValue() !== Operator.Modulo) {
+      if (!operator.isDivisionOperator()) {
         nonDivOrModOps++;
       }
     }
@@ -145,12 +147,12 @@ export default class CombatExecuteManager {
 
   isValidCardCombination(cards: CardBase[]) {
     for (let i = 2; i < cards.length; i += 2) {
-      const operator = cards[i - 1].getValue() as Operator;
-      const number = cards[i].getValue() as number;
-      if (operator !== Operator.Divide && operator !== Operator.Modulo) {
+      const operator = cards[i - 1];
+      const number = cards[i];
+      if (!operator.isDivisionOperator()) {
         continue;
       }
-      if (number === 0) {
+      if (number.getValue() === 0) {
         return false;
       }
     }
@@ -169,26 +171,71 @@ export default class CombatExecuteManager {
         nonZeros.push(number);
       }
     }
-    const sortedNumbers: CardBase[] = zeros.concat(nonZeros);
 
     const nonDivOrModOps: CardBase[] = [];
     const divOrModOps: CardBase[] = [];
     for (const operator of operators) {
-      if (operator.getValue() !== Operator.Divide || operator.getValue() !== Operator.Modulo) {
+      if (!operator.isDivisionOperator()) {
         nonDivOrModOps.push(operator);
       } else {
         divOrModOps.push(operator);
       }
     }
-    const sortedOperators: CardBase[] = nonDivOrModOps.concat(divOrModOps);
+    const sortedOperators: CardBase[] = divOrModOps.concat(nonDivOrModOps);
+
+    if (zeros.length > 0) {
+      cards.push(zeros.pop()!);
+    } else {
+      cards.push(nonZeros.pop()!);
+    }
 
     for (let i = 0; i < numOperators; ++i) {
-      cards.push(sortedNumbers[i]);
-      cards.push(sortedOperators[i]);
+      const operator = sortedOperators.pop()!;
+      cards.push(operator);
+      if (!operator.isDivisionOperator() && zeros.length > 0) {
+        cards.push(zeros.pop()!);
+      } else {
+        cards.push(nonZeros.pop()!);
+      }
     }
-    cards.push(sortedNumbers[numOperators]);
 
     return cards;
+  }
+
+  // Temporary tester for getValidFormula used in CombatManger.resetHand();
+  test_getValidFormula(scene: Scene) {
+    const test_numbers = [
+      new CardBase(scene, 0),
+      new CardBase(scene, 0),
+      new CardBase(scene, 1),
+      new CardBase(scene, 2),
+      new CardBase(scene, 3),
+    ];
+    const test_operators = [
+      new CardBase(scene, Operator.Divide),
+      new CardBase(scene, Operator.Divide),
+      new CardBase(scene, Operator.Divide),
+    ];
+    if (this.hasValidCardCombination(test_numbers, test_operators, 1)) {
+      const validFormula1 = this.getValidFormula(test_numbers, test_operators, 1);
+      const cards1 = [];
+      for (const card of validFormula1) {
+        cards1.push(card.getValue());
+      }
+      console.log("Card1 " + cards1);
+    } else {
+      console.log("no valid combination for combo 1");
+    }
+    if (this.hasValidCardCombination(test_numbers, test_operators, 2)) {
+      const validFormula2 = this.getValidFormula(test_numbers, test_operators, 2);
+      const cards2 = [];
+      for (const card of validFormula2) {
+        cards2.push(card.getValue());
+      }
+      console.log("Card2 " + cards2);
+    } else {
+      console.log("no valid combination for combo 2");
+    }
   }
 
   evaluateSelectedCards(selectedCards: CardBase[]) {
