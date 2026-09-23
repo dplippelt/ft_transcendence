@@ -87,7 +87,7 @@ const spriteSize: SpriteSize = {
     width: 37,
     height: 43,
   },
-}
+};
 
 const combatLayout: CombatLayout = {
   width: 960,
@@ -131,9 +131,10 @@ export enum TransformInLayout {
 
 export enum LayoutEvents {
   SET_CARD_POS = "setCardPos",
+  SET_CARD_POS_IN_HAND = "setCardPosInHand",
   SET_CARD_TO_SLOT = "setSelectionSlotsPos",
   SET_COMBATANT_POS = "setCombatantPos",
-  CLEAR_HAND = "clearHandCards",
+  SET_CARD_POS_AND_REMOVE = "setCardPosAndRemove",
 }
 
 export default class CombatLayoutManager {
@@ -170,16 +171,22 @@ export default class CombatLayoutManager {
   }
 
   onCardActions() {
+    this.cardManager.events.off(CardActionEvents.SELECT);
     this.cardManager.events.on(CardActionEvents.SELECT, () => this.updateSelectionSlots(false), this);
+    this.cardManager.events.off(CardActionEvents.UNSELECT);
     this.cardManager.events.on(CardActionEvents.UNSELECT, () => this.updateSelectionSlots(false), this);
+    this.cardManager.events.off(CardActionEvents.GENERATE_DECK);
     this.cardManager.events.on(CardActionEvents.GENERATE_DECK, this.updateDeck, this);
-    this.cardManager.events.on(CardActionEvents.CLEAR_HAND, this.clearHand, this);
+    this.cardManager.events.off(CardActionEvents.TRASH_CARD);
+    this.cardManager.events.on(CardActionEvents.TRASH_CARD, this.trashCard, this);
   }
 
   onLayoutActions() {
     this.events.on(LayoutEvents.SET_CARD_POS, this.setCardPosition, this);
+    this.events.on(LayoutEvents.SET_CARD_POS_IN_HAND, this.setCardPosition, this);
     this.events.on(LayoutEvents.SET_CARD_TO_SLOT, this.setCardToSlot, this);
     this.events.on(LayoutEvents.SET_COMBATANT_POS, this.setCombatantPositions, this);
+    this.events.on(LayoutEvents.SET_CARD_POS_AND_REMOVE, this.destroyCard, this);
   }
 
   updateDisplay() {
@@ -275,7 +282,7 @@ export default class CombatLayoutManager {
   }
 
   updateCardHand(isResize: boolean = true) {
-    const handCards = this.cardManager.cardHand.getHandCards().getAll() as CardBase[];
+    const handCards = this.cardManager.cardHand.getHandCards();
     handCards.forEach((card) => card.setVisible(true)); // need to be made visible again as they were made invisible in the deck
     const totalCards = handCards.length;
     if (!totalCards) {
@@ -307,7 +314,7 @@ export default class CombatLayoutManager {
       if (isResize) {
         this.setCardPosition(card);
       } else {
-        this.events.emit(LayoutEvents.SET_CARD_POS, card, 400);
+        this.events.emit(LayoutEvents.SET_CARD_POS_IN_HAND, card, index);
       }
     });
   }
@@ -317,7 +324,8 @@ export default class CombatLayoutManager {
     const occupiedSlots = selectionSlots.filter((slot) => slot.isCardSet());
     const background = this.background;
     const selectionLayout = this.layout.cards.selection;
-    const cellWidth = ((this.spriteSize.card.width * selectionLayout.cellScale) + selectionLayout.cellGap) * background.scale;
+    const cellWidth =
+      (this.spriteSize.card.width * selectionLayout.cellScale + selectionLayout.cellGap) * background.scale;
     const targetX = background.centerX - ((occupiedSlots.length - 1) / 2) * cellWidth - this.spriteSize.card.width / 2;
     const targetY = background.topY + selectionLayout.yFromBgTop * background.scale;
     const gridOptions: Phaser.Types.Actions.GridAlignConfig = {
@@ -397,19 +405,21 @@ export default class CombatLayoutManager {
     combatant.scale = scale;
   }
 
-  clearHand(cards: CardBase[]) {
+  trashCard(card: CardBase) {
     const targetX = this.display.centerX;
     const targetY = this.display.height + spriteSize.card.height;
     const targetAngle = 0;
 
-    for ( const card of cards ) {
-      card.setData({
-        [TransformInLayout.X]: targetX,
-        [TransformInLayout.Y]: targetY,
-        [TransformInLayout.ANGLE]: targetAngle,
-        [TransformInLayout.SCALE]: this.display.scale,
-      });
-    }
-    this.events.emit(LayoutEvents.CLEAR_HAND, cards);
+    card.setData({
+      [TransformInLayout.X]: targetX,
+      [TransformInLayout.Y]: targetY,
+      [TransformInLayout.ANGLE]: targetAngle,
+      [TransformInLayout.SCALE]: this.display.scale,
+    });
+    this.events.emit(LayoutEvents.SET_CARD_POS_AND_REMOVE, card);
+  }
+
+  destroyCard(card: CardBase) {
+    card.destroy();
   }
 }

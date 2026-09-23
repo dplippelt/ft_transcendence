@@ -22,8 +22,8 @@ export enum CardEvents {
 }
 
 const cardSize = {
-    width: 64,
-    height: 96
+  width: 64,
+  height: 96,
 };
 
 export default class CardBase extends Phaser.GameObjects.Container {
@@ -37,9 +37,9 @@ export default class CardBase extends Phaser.GameObjects.Container {
     this.cardBaseConfig = cardConfig;
 
     if (value === undefined) {
-        this.createCardBack(scene);
+      this.createCardBack(scene);
     } else {
-        this.createCard(scene, value);
+      this.createCard(scene, value);
     }
 
     this.setSize(cardSize.width, cardSize.height);
@@ -120,5 +120,9 @@ export default class CardBase extends Phaser.GameObjects.Container {
 
   isValueOperator() {
     return OPERATORS.includes(this.value as Operator);
+  }
+
+  isDivisionOperator() {
+    return this.value === Operator.Divide || this.value === Operator.Modulo;
   }
 }
