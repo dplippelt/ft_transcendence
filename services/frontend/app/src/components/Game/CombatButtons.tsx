@@ -5,11 +5,17 @@ import styles from "./CombatButtons.module.scss";
 
 interface ICombatButton
 {
+    disabled: boolean;
 	onClick?: () => void;
 	extraStyling?: string;
 }
 
-function CombatButton( { onClick, extraStyling="" } : ICombatButton )
+function CombatButton( { disabled, onClick, extraStyling="" } : ICombatButton )
+{
+	return <button className={`${styles.combatButton} ${extraStyling}`} type="button" disabled={disabled} onClick={onClick} />;
+}
+
+export function AttackButton()
 {
 	const [disabled, setDisabled] = useState<boolean>(false);
 
@@ -29,15 +35,32 @@ function CombatButton( { onClick, extraStyling="" } : ICombatButton )
 		return () => cleanup();
 	}, [])
 
-	return <button className={`${styles.combatButton} ${extraStyling}`} type="button" disabled={disabled} onClick={onClick} />;
-}
-
-export function AttackButton()
-{
-	return <CombatButton extraStyling={styles.attackButton} onClick={() => EventBus.emit(CombatEvent.attack)} />
+	return <CombatButton extraStyling={styles.attackButton} disabled={disabled} onClick={() => EventBus.emit(CombatEvent.attack)} />
 }
 
 export function DrawButton()
 {
-	return <CombatButton extraStyling={styles.drawButton} onClick={() => EventBus.emit(CombatEvent.draw)} />
+    const [disabled, setDisabled] = useState<boolean>(false);
+
+    function handleClick() {
+        if (disabled) {
+            return ;
+        }
+        setDisabled(true);
+        EventBus.emit(CombatEvent.draw);
+    }
+
+    useEffect(() => 
+    {
+        function enableDraw() { setDisabled(false); }
+        EventBus.addListener(CombatEvent.completeFillHand, enableDraw);
+
+        function cleanup() {
+            EventBus.removeListener(CombatEvent.completeFillHand, enableDraw);
+        }
+
+        return () => cleanup();
+    }, [])
+
+	return <CombatButton extraStyling={styles.drawButton} disabled={disabled} onClick={handleClick} />
 }
