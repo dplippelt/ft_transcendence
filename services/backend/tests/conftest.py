@@ -1,3 +1,5 @@
+import itertools
+
 import pyotp
 import pytest
 from fastapi import FastAPI
@@ -179,3 +181,34 @@ def two_factor_enabled_user(db, two_factor_secret_user,):
     db.refresh(user)
 
     return user, secret
+
+
+@pytest.fixture()
+def make_user(db):
+    counter = itertools.count(1)
+
+    def _make_user(
+        *,
+        username: str | None = None,
+        display_name: str | None = None,
+        is_guest: bool = False,
+        is_active: bool = True,
+    ) -> User:
+        user_number = next(counter)
+
+        user = User(
+            username=username or f"testuser{user_number}",
+            display_name=display_name or f"Test User {user_number}",
+            is_guest=is_guest,
+            is_active=is_active,
+            two_factor_enabled=False,
+            two_factor_secret=None,
+        )
+
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        return user
+
+    return _make_user
