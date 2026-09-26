@@ -28,7 +28,8 @@
 	height: fit-content;
 	transform: translateX(-50%) translateY(-50%) scale(var(--combat-ui-bg-scale));
 	pointer-events: none;
-	font-family: 'm6x11', sans-serif;
+	font-family: $target-number-font;
+	font-size: 2rem;
 }
 
 .targetNumber
@@ -38,7 +39,6 @@
 	left: var(--x);
 	transform: translateX(-50%) translateY(-50%);
 	color: var(--color);
-	font-size: 2rem;
 	animation: drift var(--duration) cubic-bezier(0.45, 0.40, 0.55, 0.60) infinite;
 
 	&::before

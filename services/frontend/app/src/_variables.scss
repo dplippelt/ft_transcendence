@@ -1,3 +1,5 @@
+@use './_fonts.scss' as *;
+
 $grey-light: #4a4a5a;
 $grey-dark: #2a2a35;
 $grey-dark-v2: #2a2a2f;
@@ -60,6 +62,7 @@ $menu-title-font: 'Cinzel', serif;
 $text-font: 'Cinzel', serif;
 $button-font: 'Lato', sans-serif;
 $input-font: 'Lato', sans-serif;
+$target-number-font: 'm6x11', sans-serif;
 
 $window-border: 5px solid $window-border-color;
 $window-border-radius: 4px;
@@ -85,12 +88,3 @@ $turn-timer-height: 80px;
 
 $combat-ui-down-scale-a: 0.7;
 $combat-ui-down-scale-b: 0.5;
-
-@font-face
-{
-	font-family: 'm6x11';
-	src: url('./assets/fonts/m6x11plus.ttf') format('truetype');
-	font-weight: normal;
-	font-style: normal;
-	font-display: swap;
-}
