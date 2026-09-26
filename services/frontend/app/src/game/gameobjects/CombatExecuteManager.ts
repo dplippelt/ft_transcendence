@@ -61,13 +61,8 @@ export default class CombatExecuteManager {
     this.targetNumbers[ExecuteCombo.THREE] = this.generateTargetNumber(numbers, operators, 3);
   }
 
-  // FOR DEBUG
   getTargetNumbers() {
-    const output: string[] = [];
-    output.push("target number 1 = " + this.targetNumbers[ExecuteCombo.ONE]);
-    output.push("target number 2 = " + this.targetNumbers[ExecuteCombo.TWO]);
-    output.push("target number 3 = " + this.targetNumbers[ExecuteCombo.THREE]);
-    return output;
+    return this.targetNumbers;
   }
 
   isValidCardHand(hand: CardHand) {
