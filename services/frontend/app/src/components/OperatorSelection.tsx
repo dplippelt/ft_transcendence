@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { buildRoute, DEFAULT_OPS_MASK, OperatorBit, PopupType, RouteParamKey, RoutePath } from "../utils/utils";
+import { buildRoute, OperatorBit, PopupType, RouteParamKey, RoutePath } from "../utils/utils";
 import { useState } from "react";
 import { ErrorType } from "../utils/errors";
 import ErrorText from "./ErrorText";
@@ -7,6 +7,7 @@ import Checkbox from "./Checkbox";
 import { PopupButtons } from "./ButtonContainers";
 import { MossButton } from "./Buttons";
 import styles from "./OperatorSelection.module.scss";
+import { useOperators } from "../contexts/OperatorContext";
 
 interface IOperatorSelection
 {
@@ -16,22 +17,19 @@ interface IOperatorSelection
 export default function OperatorSelection( { setPopupType } : IOperatorSelection )
 {
 	const navigate = useNavigate();
-	const [operators, setOperators] = useState<number>(parseInt(DEFAULT_OPS_MASK, 2));
+  const { operators, getOperatorsMask, saveOperators } = useOperators();
+
+	const [ops, setOps] = useState<number>(operators);
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 
 	function addOperator( op: OperatorBit )
 	{
-		setOperators(prev => prev |= op);
+		setOps(prev => prev |= op);
 	}
 
 	function removeOperator( op: OperatorBit )
 	{
-		setOperators(prev => prev &= ~op );
-	}
-
-	function getOperatorsMask() : string
-	{
-		return operators.toString(2).padStart(5, "0");
+		setOps(prev => prev &= ~op );
 	}
 
 	function handleChange( e: React.ChangeEvent<HTMLInputElement>, op: OperatorBit )
@@ -49,6 +47,7 @@ export default function OperatorSelection( { setPopupType } : IOperatorSelection
 		}
 		setError(ErrorType.none);
 		setPopupType(PopupType.none);
+		saveOperators(ops);
 		navigate(buildRoute(RoutePath.game, { [RouteParamKey.ops]: getOperatorsMask() }));
 	}
 

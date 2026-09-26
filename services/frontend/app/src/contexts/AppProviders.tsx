@@ -5,6 +5,7 @@ import FriendsProvider from "./FriendsContext";
 import ChatHistoryProvider from "./ChatHistoryContext";
 import LobbiesProvider from "./LobbiesContext";
 import ErrorProvider from "./ErrorContext";
+import OperatorsProvider from "./OperatorContext";
 
 export default function AppProviders( { children } : { children: React.ReactNode } )
 {
@@ -15,7 +16,9 @@ export default function AppProviders( { children } : { children: React.ReactNode
 					<FriendsProvider>
 						<SettingsProvider>
 							<ErrorProvider>
-								{children}
+                <OperatorsProvider>
+								  {children}
+                </OperatorsProvider>
 							</ErrorProvider>
 						</SettingsProvider>
 					</FriendsProvider>
