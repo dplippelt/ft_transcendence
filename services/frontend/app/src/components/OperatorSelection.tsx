@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { buildRoute, OperatorBit, PopupType, RouteParamKey, RoutePath } from "../utils/utils";
+import { buildRoute, DEFAULT_OPS_MASK, OperatorBit, PopupType, RouteParamKey, RoutePath } from "../utils/utils";
 import { useState } from "react";
 import { ErrorType } from "../utils/errors";
 import ErrorText from "./ErrorText";
@@ -16,7 +16,7 @@ interface IOperatorSelection
 export default function OperatorSelection( { setPopupType } : IOperatorSelection )
 {
 	const navigate = useNavigate();
-	const [operators, setOperators] = useState<number>(OperatorBit.none);
+	const [operators, setOperators] = useState<number>(parseInt(DEFAULT_OPS_MASK, 2));
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 
 	function addOperator( op: OperatorBit )
@@ -78,7 +78,7 @@ export default function OperatorSelection( { setPopupType } : IOperatorSelection
 				/>
 				<Checkbox
 					label="Multiply"
-					id="mulitply"
+					id="multiply"
 					setting={!!(operators & OperatorBit.multiply)}
 					onChange={ (e) => handleChange(e, OperatorBit.multiply) }
 					extraStyling={styles.checkbox}

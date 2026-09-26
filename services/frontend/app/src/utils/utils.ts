@@ -114,8 +114,7 @@ export enum CombatEvent
 	pauseTimer = "pause-timer",
 	attack = "attack",
 	draw = "draw",
-    completeFillHand = "complete-fill-hand",
-	// reset = "reset",
+  completeFillHand = "complete-fill-hand",
 	turnEnded = "turn-ended",
 	getTurnTimerState = "turn-timer-state",
 	getInitPlayerHp = "get-init-player-hp",
@@ -158,7 +157,7 @@ export function getDisplayName( user: { username: string | null; display_name: s
 export function buildRoute( path: RoutePath, params: Partial<Record<RouteParamKey, string>> ) : string
 {
 	const query = new URLSearchParams(params as Record<string, string>).toString();
-	const fullPath = `${path}?${query}`;
+	const fullPath = query ? `${path}?${query}` : path;
 	return fullPath;
 }
 
@@ -175,7 +174,7 @@ export enum OperatorBit
 type Bit = "0" | "1";
 type OpsMaskStr = `${Bit}${Bit}${Bit}${Bit}${Bit}`;
 
-export const DEFAULT_OPS_MASK = "00011";
+export const DEFAULT_OPS_MASK = (OperatorBit.plus | OperatorBit.minus).toString(2).padStart(5, "0");
 
 export function isValidOpsMaskStr(value: string): value is OpsMaskStr
 {

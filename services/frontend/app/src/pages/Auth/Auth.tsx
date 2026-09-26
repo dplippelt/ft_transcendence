@@ -433,7 +433,7 @@ export default function Auth()
     const [searchParams] = useSearchParams();
     const [challengeToken, setChallengeToken] = useState<string | null>(null);
 
-    const mode = searchParams.get("mode");
+    const mode = searchParams.get(RouteParamKey.mode);
 
     if (challengeToken)
     {
@@ -452,9 +452,9 @@ export default function Auth()
     }
     switch (mode)
     {
-        case "login":
+        case RouteParamValue.login:
             return <Login onTwoFactorRequired={setChallengeToken}/>
-        case "signup":
+        case RouteParamValue.signup:
             return <Signup onTwoFactorRequired={setChallengeToken}/>
         default:
             return <Navigate to={buildRoute(RoutePath.auth, { [RouteParamKey.mode]: RouteParamValue.login })} replace />;
