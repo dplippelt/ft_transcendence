@@ -174,11 +174,18 @@ def require_lobby_member(db: Session, lobby_id: int, user_id: int) -> LobbyMembe
     return member
 
 
+def get_member_ids(db: Session, lobby_id: int) -> list[int]:
+    return [
+        user_id
+        for (user_id,) in db.query(LobbyMember.user_id).filter(LobbyMember.lobby_id == lobby_id).all()
+    ]
+
+
 def get_other_member_ids(db: Session, lobby_id: int, user_id: int) -> list[int]:
     return [
-        member.user_id
-        for member in db.query(LobbyMember).filter(LobbyMember.lobby_id == lobby_id).all()
-        if member.user_id != user_id
+        member_id
+        for (member_id,) in get_member_ids(db, lobby_id)
+        if member_id != user_id
     ]
 
 
