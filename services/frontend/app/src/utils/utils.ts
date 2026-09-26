@@ -58,21 +58,20 @@ export enum JoinStatus
 
 export enum RoutePath
 {
-	landingPage = "/",
-    auth = "/auth",
-    completeProfile = "/complete-profile",
-	mainMenu = "/main-menu",
-	multiplayer = "/multiplayer",
-	mpLobby = "/multiplayer/lobby",
-	mpBrowser = "/multiplayer/browser",
-	friends = "/friends",
-	profile = "/profile",
-	leaderboard = "/leaderboard",
-	howToPlay = "/how-to-play",
-	settings = "/settings",
-	gameDev = "/game-dev", // TODO: remove
-	game = "/game",
-	gameOver = "/game-over",
+  landingPage = "/",
+  auth = "/auth",
+  completeProfile = "/complete-profile",
+  mainMenu = "/main-menu",
+  multiplayer = "/multiplayer",
+  mpLobby = "/multiplayer/lobby",
+  mpBrowser = "/multiplayer/browser",
+  friends = "/friends",
+  profile = "/profile",
+  leaderboard = "/leaderboard",
+  howToPlay = "/how-to-play",
+  settings = "/settings",
+  game = "/game",
+  gameOver = "/game-over",
 }
 
 export enum RouteParamKey

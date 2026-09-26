@@ -37,7 +37,6 @@ function Buttons( { setPopupType } : IButtons )
 			<MenuButton label="Start game" onClick={handleNewGame} />
 			<MenuButton label="Login" onClick={ () => navigate(buildRoute(RoutePath.auth, { [RouteParamKey.mode]: RouteParamValue.login })) } />
 			<MenuButton label="How to play" onClick={ () => {} } />
-			<MenuButton label="Game dev" onClick={handleNewGame} />
 		</MenuButtons>
 	)
 }
