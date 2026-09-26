@@ -37,14 +37,14 @@ function TargetNumber( { x, y, combo, value } : ITargetNumber )
 	{
 		switch (combo)
 		{
-		case ExecuteCombo.ONE:
-			return element.style.setProperty('--color', "#008f00");
-		case ExecuteCombo.TWO:
-			return element.style.setProperty('--color', "#b8b800");
-		case ExecuteCombo.THREE:
-			return element.style.setProperty('--color', "#bf0000");
-		default:
-			return element.style.setProperty('--color', "#FFFF00");
+			case ExecuteCombo.ONE:
+				return element.style.setProperty('--color', "#008f00");
+			case ExecuteCombo.TWO:
+				return element.style.setProperty('--color', "#b8b800");
+			case ExecuteCombo.THREE:
+				return element.style.setProperty('--color', "#bf0000");
+			default:
+				return element.style.setProperty('--color', "#FFFF00");
 		}
 	}
 
