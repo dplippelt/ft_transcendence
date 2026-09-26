@@ -5,7 +5,7 @@ interface IOperatorsContext
 {
 	operators: number;
   saveOperators: ( ops: number ) => void;
-	getOperatorsMask: () => string;
+	resetOperators: () => void;
 }
 
 const OperatorContext = createContext<IOperatorsContext | null>(null);
@@ -19,9 +19,9 @@ export default function OperatorsProvider( { children } : { children: ReactNode 
 		setOperators(ops);
 	}
 
-	function getOperatorsMask() : string
+	function resetOperators()
 	{
-		return operators.toString(2).padStart(5, "0");
+		setOperators(parseInt(DEFAULT_OPS_MASK, 2));
 	}
 
 	return (
@@ -30,7 +30,7 @@ export default function OperatorsProvider( { children } : { children: ReactNode 
 			{{
 				operators,
         saveOperators,
-				getOperatorsMask,
+				resetOperators,
 			}}
 		>
 			{children}

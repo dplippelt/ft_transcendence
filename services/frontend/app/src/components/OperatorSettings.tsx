@@ -1,26 +1,18 @@
-import { useNavigate } from "react-router-dom";
-import { buildRoute, OperatorBit, PopupType, RouteParamKey, RoutePath } from "../utils/utils";
-import { useState } from "react";
-import { ErrorType } from "../utils/errors";
-import ErrorText from "./ErrorText";
+import React from "react";
+import { OperatorBit } from "../utils/utils";
 import Checkbox from "./Checkbox";
-import { PopupButtons } from "./ButtonContainers";
-import { MossButton } from "./Buttons";
-import styles from "./OperatorSelection.module.scss";
+import styles from "./OperatorSettings.module.scss";
 import { useOperators } from "../contexts/OperatorContext";
 
-interface IOperatorSelection
+interface IOperatorSettings
 {
-	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
+	setOps: React.Dispatch<React.SetStateAction<number>>;
+	extraStyling?: string;
 }
 
-export default function OperatorSelection( { setPopupType } : IOperatorSelection )
+export default function OperatorSettings( { setOps, extraStyling } : IOperatorSettings )
 {
-	const navigate = useNavigate();
-  const { operators, getOperatorsMask, saveOperators } = useOperators();
-
-	const [ops, setOps] = useState<number>(operators);
-	const [error, setError] = useState<ErrorType>(ErrorType.none);
+	const { operators } = useOperators();
 
 	function addOperator( op: OperatorBit )
 	{
@@ -38,29 +30,9 @@ export default function OperatorSelection( { setPopupType } : IOperatorSelection
 		else { removeOperator(op); }
 	}
 
-	function handleStart()
-	{
-		if ( !operators )
-		{
-			setError(ErrorType.noOperatorsSelected);
-			return;
-		}
-		setError(ErrorType.none);
-		setPopupType(PopupType.none);
-		saveOperators(ops);
-		navigate(buildRoute(RoutePath.game, { [RouteParamKey.ops]: getOperatorsMask() }));
-	}
-
-	function handleCancel()
-	{
-		setPopupType(PopupType.none);
-	}
-
 	return (
 		<>
-			{ error !== ErrorType.none && <ErrorText error={error} /> }
-			<div className={styles.query}>Select operators to include in game</div>
-			<div className={styles.operators}>
+			<div className={`${styles.operators} ${extraStyling}`}>
 				<Checkbox
 					label="Plus"
 					id="plus"
@@ -97,10 +69,6 @@ export default function OperatorSelection( { setPopupType } : IOperatorSelection
 					extraStyling={styles.checkbox}
 				/>
 			</div>
-			<PopupButtons>
-				<MossButton label="Cancel" onClick={handleCancel} />
-				<MossButton label="Start" onClick={handleStart} />
-			</PopupButtons>
 		</>
-	)
+	);
 }
