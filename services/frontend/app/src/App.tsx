@@ -33,7 +33,7 @@ export default function App()
       <Routes>
         <Route path={RoutePath.landingPage} element={ <LandingPage/> } />
         <Route path={RoutePath.auth} element={<Auth />} />
-        <Route path={RoutePath.gameDev} element={null} />
+        <Route path={RoutePath.game} element={null} />
         <Route element={<ProtectedRoute />}>
             <Route path={RoutePath.completeProfile} element={<CompleteProfile />} />
             <Route element={<RequireUsernameRoute />}>

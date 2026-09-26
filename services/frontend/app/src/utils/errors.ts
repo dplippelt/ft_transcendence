@@ -88,6 +88,8 @@ export enum ErrorType
     twoFactorFailed,
     clipboardCopyFailed,
 
+    noOperatorsSelected,
+
     unknown,
 }
 
@@ -128,7 +130,7 @@ export function errorMsg(error: ErrorType): string
             );
         case ErrorType.displayNameCannotBeEmpty:
             return "Display name cannot be empty.";
-        
+
         case ErrorType.displayNameTooLong:
             return "Display name cannot be longer than 50 characters.";
         case ErrorType.passwordsDontMatch:
@@ -283,6 +285,8 @@ export function errorMsg(error: ErrorType): string
             return "Two-factor authentication operation failed.";
         case ErrorType.clipboardCopyFailed:
             return "Could not copy to clipboard.";
+        case ErrorType.noOperatorsSelected:
+            return "You must select at least 1 operator";
         case ErrorType.unknown:
             return "Something went wrong!";
         default:
@@ -341,7 +345,7 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.googleEmailConflict;
         case "PASSWORD_REQUIRED_TO_UNLINK_GOOGLE":
             return ErrorType.googleUnlinkRequiresPassword;
-        
+
         case "GOOGLE_UNLINK_FAILED":
             return ErrorType.googleUnlinkFailed;
         case "PASSWORD_REQUIRED":

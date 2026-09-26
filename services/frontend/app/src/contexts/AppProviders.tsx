@@ -13,11 +13,11 @@ export default function AppProviders( { children } : { children: React.ReactNode
 			<LobbiesProvider>
 				<ChatHistoryProvider>
 					<FriendsProvider>
-							<SettingsProvider>
-								<ErrorProvider>
-									{children}
-								</ErrorProvider>
-							</SettingsProvider>
+						<SettingsProvider>
+							<ErrorProvider>
+								{children}
+							</ErrorProvider>
+						</SettingsProvider>
 					</FriendsProvider>
 				</ChatHistoryProvider>
 			</LobbiesProvider>

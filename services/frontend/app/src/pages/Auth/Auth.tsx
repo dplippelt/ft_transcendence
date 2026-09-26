@@ -6,7 +6,7 @@ import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { useAuth } from "../../contexts/AuthContext";
 import ErrorText from "../../components/ErrorText";
-import { RouteParam, RoutePath } from "../../utils/utils";
+import { buildRoute, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
 import { ErrorType, isErrorType, mapAuthApiError } from "../../utils/errors";
 import { MossButton, TextButton } from "../../components/Buttons";
 import { PasswordInput, TextInput } from "../../components/TextInput";
@@ -65,7 +65,7 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
 	const [password, setPassword] = useState<string>("");
     const [error, setError] = useState<ErrorType>(ErrorType.none);
     const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-    
+
     const navigate = useNavigate();
     const { login } = useAuth();
 
@@ -97,7 +97,7 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
                 email: validEmail,
                 password,
                 });
-            
+
             if (result.requiresTwoFactor)
             {
                 onTwoFactorRequired(result.challengeToken);
@@ -125,7 +125,7 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
             {error !== ErrorType.none &&
                 <ErrorText error={error}/>
             }
-    
+
             <TextInput
                 type="email"
                 label="Email:"
@@ -133,7 +133,7 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
                 setter={setEmail}
                 id="email"
             />
-    
+
             <PasswordInput
                 label="Password:"
                 placeholder="Enter password"
@@ -141,18 +141,18 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
                 setter={setPassword}
                 id="password"
             />
-    
+
             <MossButton
                 label="Login"
                 type="submit"
                 disabled={isSubmitting}
             />
             <GoogleAuthButton setError={setError} onTwoFactorRequired={onTwoFactorRequired}/>
-    
+
             <TextButton
                 label="Don't have an account? Sign-up"
                 onClick={() =>
-                    navigate(RoutePath.auth + RouteParam.signup)
+                    navigate(buildRoute(RoutePath.auth, { [RouteParamKey.mode]: RouteParamValue.signup }))
                 }
             />
         </form>
@@ -194,7 +194,7 @@ function TwoFactorForm({ challengeToken, onBack }: TwoFactorFormProps)
             );
             return;
         }
-        
+
         setIsSubmitting(true);
 
         try
@@ -241,7 +241,7 @@ function TwoFactorForm({ challengeToken, onBack }: TwoFactorFormProps)
             noValidate
         >
             {error !== ErrorType.none && <ErrorText error={error} />}
-            
+
             <p>
                 {useRecoveryCode
                     ? "Enter your recovery code:"
@@ -261,7 +261,7 @@ function TwoFactorForm({ challengeToken, onBack }: TwoFactorFormProps)
                 type="submit"
                 disabled={isSubmitting}
             />
-            
+
             <TextButton
                 label={useRecoveryCode ? "Use authentication code" : "Use recovery code"}
                 onClick={toggleRecoveryCode}
@@ -394,7 +394,7 @@ function SignupForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
 			<TextButton
 				label="Already have an account? Login"
 				onClick={() =>
-					navigate(RoutePath.auth + RouteParam.login)
+					navigate(buildRoute(RoutePath.auth, { [RouteParamKey.mode]: RouteParamValue.login }))
 				}
 			/>
 		</form>
@@ -433,7 +433,7 @@ export default function Auth()
     const [searchParams] = useSearchParams();
     const [challengeToken, setChallengeToken] = useState<string | null>(null);
 
-    const mode = searchParams.get("mode");
+    const mode = searchParams.get(RouteParamKey.mode);
 
     if (challengeToken)
     {
@@ -452,11 +452,11 @@ export default function Auth()
     }
     switch (mode)
     {
-        case "login":
+        case RouteParamValue.login:
             return <Login onTwoFactorRequired={setChallengeToken}/>
-        case "signup":
+        case RouteParamValue.signup:
             return <Signup onTwoFactorRequired={setChallengeToken}/>
         default:
-            return <Navigate to={RoutePath.auth + RouteParam.login} replace />;
+            return <Navigate to={buildRoute(RoutePath.auth, { [RouteParamKey.mode]: RouteParamValue.login })} replace />;
     }
 }
