@@ -89,14 +89,15 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     EventBus.removeListener(CombatEvent.getInitPlayerHp);
     EventBus.removeListener(CombatEvent.getInitPlayerMp);
     EventBus.removeListener(CombatEvent.getInitEnemyHp);
+    EventBus.removeListener(CombatEvent.getInitTargetNumbers);
     EventBus.removeListener(CombatEvent.getCurrPlayerHp);
     EventBus.removeListener(CombatEvent.getCurrPlayerMp);
     EventBus.removeListener(CombatEvent.getCurrEnemyHp);
+    EventBus.removeListener(CombatEvent.getCurrTargetNumbers);
     EventBus.removeListener(CombatEvent.getTurnTimerState);
     EventBus.removeListener(CombatEvent.attack);
     EventBus.removeListener(CombatEvent.draw);
     EventBus.removeListener(CombatEvent.completeFillHand);
-    // EventBus.removeListener(CombatEvent.reset);
     EventBus.removeListener(CombatEvent.turnEnded);
     EventBus.removeListener(CombatEvent.pauseTimer);
     setGameMenuVis(false);

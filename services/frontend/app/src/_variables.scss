@@ -85,3 +85,12 @@ $turn-timer-height: 80px;
 
 $combat-ui-down-scale-a: 0.7;
 $combat-ui-down-scale-b: 0.5;
+
+@font-face
+{
+	font-family: 'm6x11';
+	src: url('./assets/fonts/m6x11plus.ttf') format('truetype');
+	font-weight: normal;
+	font-style: normal;
+	font-display: swap;
+}

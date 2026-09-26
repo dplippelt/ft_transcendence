@@ -110,6 +110,8 @@ export enum CombatEvent
 	updateEnemyHP = "update-enemy-hp",
 	initPlayerMP = "init-player-mp",
 	updatePlayerMP = "update-player-mp",
+  initTargetNumbers = "init-target-numbers",
+  updateTargetNumbers = "update-target-numbers",
 	initTurn = "init-turn",
 	pauseTimer = "pause-timer",
 	attack = "attack",
@@ -120,9 +122,11 @@ export enum CombatEvent
 	getInitPlayerHp = "get-init-player-hp",
 	getInitPlayerMp = "get-init-player-mp",
 	getInitEnemyHp = "get-init-enemy-hp",
+  getInitTargetNumbers = "get-init-target-numbers",
 	getCurrPlayerHp = "get-curr-player-hp",
 	getCurrPlayerMp = "get-curr-player-mp",
 	getCurrEnemyHp = "get-curr-enemy-hp",
+  getCurrTargetNumbers = "get-curr-target-numbers",
 }
 
 export enum GameState
