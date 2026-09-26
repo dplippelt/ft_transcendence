@@ -9,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import app.models
-from app.api.v1 import auth, scores
+from app.api.v1 import auth, lobbies, scores
 from app.core.rate_limit import FixedWindowLimiter
 from app.core.security import create_access_token, get_password_hash
 from app.db.database import Base, get_db
@@ -57,6 +57,11 @@ def app(db, monkeypatch):
     test_app.include_router(
         auth.router,
         prefix="/auth",
+    )
+
+    test_app.include_router(
+        lobbies.router,
+        prefix="/lobbies",
     )
 
     def override_get_db():
@@ -149,6 +154,18 @@ def user(db, user_credentials):
 
 
 @pytest.fixture()
+def make_auth_headers():
+    def _make_auth_headers(user):
+        access_token = create_access_token(
+            data={"sub": str(user.id)},
+        )
+
+        return { "Authorization": f"Bearer {access_token}", }
+    
+    return _make_auth_headers
+
+
+@pytest.fixture()
 def auth_headers(user):
     access_token = create_access_token(
         data={"sub": str(user.id)},
@@ -212,3 +229,6 @@ def make_user(db):
         return user
 
     return _make_user
+
+
+
