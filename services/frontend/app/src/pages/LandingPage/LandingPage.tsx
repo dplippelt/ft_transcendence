@@ -5,7 +5,15 @@ import { MenuButtons } from "../../components/ButtonContainers";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuButton } from "../../components/Buttons";
-import { RouteParam, RoutePath } from "../../utils/utils";
+import { buildRoute, PopupType, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
+import { useState } from "react";
+import Popup from "../../components/Popup";
+import OperatorSelection from "../../components/OperatorSelection";
+
+interface IButtons
+{
+	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
+}
 
 function GameDescription()
 {
@@ -14,29 +22,37 @@ function GameDescription()
 	)
 }
 
-function Buttons()
+function Buttons( { setPopupType } : IButtons )
 {
 	const navigate = useNavigate();
 
+	function handleNewGame()
+	{
+		setPopupType(PopupType.operatorSelection);
+	}
+
+	// TODO: remove Game dev Button
 	return (
 		<MenuButtons>
-			<MenuButton label="Start game" onClick={ () => navigate(RoutePath.game) } />
-			<MenuButton label="Login" onClick={ () => navigate(RoutePath.auth + RouteParam.login) } />
+			<MenuButton label="Start game" onClick={handleNewGame} />
+			<MenuButton label="Login" onClick={ () => navigate(buildRoute(RoutePath.auth, { [RouteParamKey.mode]: RouteParamValue.login })) } />
 			<MenuButton label="How to play" onClick={ () => {} } />
-			<MenuButton label="Game dev" onClick={ () => navigate(RoutePath.gameDev) } />
 		</MenuButtons>
 	)
 }
 
 export default function LandingPage()
 {
+	const [ popupType, setPopupType ] = useState<PopupType>(PopupType.none);
+
 	return (
 		<>
-			<Background/>
+			<Background />
 			<Page>
-				<AppTitle/>
-				<GameDescription/>
-				<Buttons/>
+				<AppTitle />
+				<GameDescription />
+				<Buttons setPopupType={setPopupType} />
+				{ popupType === PopupType.operatorSelection && <Popup> <OperatorSelection setPopupType={setPopupType} /> </Popup> }
 			</Page>
 		</>
 

@@ -31,6 +31,7 @@ export enum PopupType
     twoFactor,
     createLobby,
     localCoop,
+    operatorSelection,
 }
 
 export enum Tab
@@ -57,27 +58,36 @@ export enum JoinStatus
 
 export enum RoutePath
 {
-	landingPage = "/",
-    auth = "/auth",
-    completeProfile = "/complete-profile",
-	mainMenu = "/main-menu",
-	multiplayer = "/multiplayer",
-	mpLobby = "/multiplayer/lobby",
-	mpBrowser = "/multiplayer/browser",
-	friends = "/friends",
-	profile = "/profile",
-	leaderboard = "/leaderboard",
-	howToPlay = "/how-to-play",
-	settings = "/settings",
-	gameDev = "/game-dev",
-	game = "/game-dev", //TODO: change path to just "/game" or "/sp-game" later
-	gameOver = "/game-over",
+  landingPage = "/",
+  auth = "/auth",
+  completeProfile = "/complete-profile",
+  mainMenu = "/main-menu",
+  multiplayer = "/multiplayer",
+  mpLobby = "/multiplayer/lobby",
+  mpBrowser = "/multiplayer/browser",
+  friends = "/friends",
+  profile = "/profile",
+  leaderboard = "/leaderboard",
+  howToPlay = "/how-to-play",
+  settings = "/settings",
+  game = "/game",
+  gameOver = "/game-over",
+}
+
+export enum RouteParamKey
+{
+	mode = "mode",
+	ops = "ops",
+}
+
+export enum RouteParamValue
+{
+	login = "login",
+	signup = "signup",
 }
 
 export enum RouteParam
 {
-	login = "?mode=login",
-	signup = "?mode=signup",
 	lobbyID = "/:lobbyID",
 }
 
@@ -104,8 +114,7 @@ export enum CombatEvent
 	pauseTimer = "pause-timer",
 	attack = "attack",
 	draw = "draw",
-    completeFillHand = "complete-fill-hand",
-	// reset = "reset",
+  completeFillHand = "complete-fill-hand",
 	turnEnded = "turn-ended",
 	getTurnTimerState = "turn-timer-state",
 	getInitPlayerHp = "get-init-player-hp",
@@ -145,3 +154,29 @@ export function getDisplayName( user: { username: string | null; display_name: s
 	return user.username ?? user.display_name ?? fallback;
 }
 
+export function buildRoute( path: RoutePath, params: Partial<Record<RouteParamKey, string>> ) : string
+{
+	const query = new URLSearchParams(params as Record<string, string>).toString();
+	const fullPath = query ? `${path}?${query}` : path;
+	return fullPath;
+}
+
+export enum OperatorBit
+{
+	none = 0,
+	plus = 1 << 0,
+	minus = 1 << 1,
+	multiply = 1 << 2,
+	modulo = 1 << 3,
+	divide = 1 << 4,
+}
+
+type Bit = "0" | "1";
+type OpsMaskStr = `${Bit}${Bit}${Bit}${Bit}${Bit}`;
+
+export const DEFAULT_OPS_MASK = (OperatorBit.plus | OperatorBit.minus).toString(2).padStart(5, "0");
+
+export function isValidOpsMaskStr(value: string): value is OpsMaskStr
+{
+	return /^[01]{5}$/.test(value) && parseInt(value, 2) > 0;
+}
