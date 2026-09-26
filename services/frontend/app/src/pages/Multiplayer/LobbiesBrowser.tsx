@@ -1,4 +1,5 @@
 import React, {
+	useEffect,
 	useMemo,
 	useState,
 } from "react";
@@ -223,7 +224,13 @@ function Buttons()
 
 export default function LobbiesBrowser()
 {
-	const { error } = useError();
+    const { error } = useError();
+    const { refreshLobbies } = useLobbies();
+
+    useEffect(() =>
+    {
+        void refreshLobbies();
+    }, [refreshLobbies],);
 
 	return (
 		<>
