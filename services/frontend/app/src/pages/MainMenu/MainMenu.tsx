@@ -13,7 +13,7 @@ import { ErrorType } from "../../utils/errors";
 import Popup from "../../components/Popup";
 import ErrorPopup from "../../components/ErrorPopup";
 import React, { useState } from "react";
-import OperatorSelection from "../../components/OperatorSelection";
+import OperatorSelectionPopup from "../../components/OperatorSelectionPopup";
 
 interface IButtons
 {
@@ -66,7 +66,7 @@ export default function MainMenu()
 				<Buttons setPopupType={setPopupType} />
 				<SideBar />
 				{ error !== ErrorType.none && <Popup> <ErrorPopup /> </Popup> }
-				{ popupType === PopupType.operatorSelection && <Popup> <OperatorSelection setPopupType={setPopupType} /> </Popup>}
+				{ popupType === PopupType.operatorSelection && <Popup> <OperatorSelectionPopup setPopupType={setPopupType} /> </Popup>}
 			</div>
 		</>
 	)

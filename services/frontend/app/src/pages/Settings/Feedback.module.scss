@@ -1,0 +1,8 @@
+@use '../../mixins' as *;
+@use '../../variables' as *;
+
+.feedback
+{
+	@include settingsFeedback();
+	color: $feedback-color;
+}

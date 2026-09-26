@@ -1,7 +1,22 @@
 @use '../../mixins' as *;
+@use '../../variables' as *;
 
 .settingsWindow
 {
+	position: relative;
 	@include window;
 	@include menuWindow;
+}
+
+.errorText
+{
+	@include settingsFeedback();
+}
+
+.query
+{
+	text-align: left;
+	font-family: $text-font;
+	font-size: 0.8rem;
+	font-weight: 800;
 }

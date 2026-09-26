@@ -180,3 +180,13 @@ export function isValidOpsMaskStr(value: string): value is OpsMaskStr
 {
 	return /^[01]{5}$/.test(value) && parseInt(value, 2) > 0;
 }
+
+function getOperatorsMask( ops: number ) : string
+{
+	return ops.toString(2).padStart(5, "0");
+}
+
+export function getPathToGame( ops: number ) : string
+  {
+	return buildRoute(RoutePath.game, { [RouteParamKey.ops]: getOperatorsMask(ops) });
+  }

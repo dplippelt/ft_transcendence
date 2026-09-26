@@ -1,7 +1,13 @@
 import { errorMsg, type ErrorType } from "../utils/errors"
 import styles from "./ErrorText.module.scss"
 
-export default function ErrorText( { error } : { error: ErrorType } )
+interface IErrorText
 {
-	return <div className={styles.errorText}>{ errorMsg(error) }</div>;
+  error: ErrorType;
+  extraStyling?: string;
+}
+
+export default function ErrorText( { error, extraStyling } : IErrorText )
+{
+	return <div className={`${styles.errorText} ${extraStyling}`}>{ errorMsg(error) }</div>;
 }

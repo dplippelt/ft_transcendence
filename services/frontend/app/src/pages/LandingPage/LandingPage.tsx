@@ -8,7 +8,7 @@ import { MenuButton } from "../../components/Buttons";
 import { buildRoute, PopupType, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
 import { useState } from "react";
 import Popup from "../../components/Popup";
-import OperatorSelection from "../../components/OperatorSelection";
+import OperatorSelectionPopup from "../../components/OperatorSelectionPopup";
 
 interface IButtons
 {
@@ -52,7 +52,7 @@ export default function LandingPage()
 				<AppTitle />
 				<GameDescription />
 				<Buttons setPopupType={setPopupType} />
-				{ popupType === PopupType.operatorSelection && <Popup> <OperatorSelection setPopupType={setPopupType} /> </Popup> }
+				{ popupType === PopupType.operatorSelection && <Popup> <OperatorSelectionPopup setPopupType={setPopupType} /> </Popup> }
 			</Page>
 		</>
 

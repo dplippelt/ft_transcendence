@@ -9,11 +9,12 @@ import { BottomButtons } from "../../components/ButtonContainers";
 import { MenuTitle } from "../../components/PageTitle";
 import type React from "react";
 import { useLocation } from "react-router-dom";
-import { RoutePath, getDisplayName } from "../../utils/utils";
+import { RoutePath, getDisplayName, getPathToGame } from "../../utils/utils";
 import SideBar from "../../components/SideBar";
 import { useAuth } from "../../contexts/AuthContext";
 import { getDungeonLeaderboard, getDungeons } from "../../api/leaderboardApi";
 import type { DungeonResponse, LeaderboardEntryResponse } from "../../api/leaderboardApi";
+import { useOperators } from "../../contexts/OperatorContext";
 
 interface IDungeonPicker
 {
@@ -147,11 +148,20 @@ function LeaderboardWindow( { dungeons, selectedDungeonId, setSelectedDungeonId,
 function Buttons()
 {
 	const location = useLocation();
-	const path = location.state?.from ?? RoutePath.mainMenu;
+  const { operators } = useOperators();
+
+  function getPath()
+  {
+    if ( location.state?.from === RoutePath.game )
+      return getPathToGame(operators);
+    if ( location.state?.from )
+      return location.state.from;
+    return RoutePath.mainMenu;
+  }
 
 	return (
 		<BottomButtons>
-			<BackButton path={path} />
+			<BackButton path={getPath()} />
 		</BottomButtons>
 	);
 }
