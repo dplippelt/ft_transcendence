@@ -7,7 +7,6 @@ from fastapi import WebSocket, status
 from app.schemas.game import GameSnapshot
 
 CLIENT_TIMEOUT = 10.0
-MAX_PLAYERS = 2
 EMPTY_SESSION = 0
 SEND_TIMEOUT = 0.1
 
@@ -44,14 +43,17 @@ class SessionConnectionManager:
     def __init__(self):
         self.connections: dict[int, Connection] = {}
 
-    async def accept_connection(self, user_id: int, websocket: WebSocket):
+    async def accept_connection(self, user_id: int, websocket: WebSocket) -> bool:
         previous = self.connections.get(user_id)
 
-        await websocket.accept()
-        self.connections[user_id] = Connection(user_id, websocket, monotonic())
+        try:
+            await websocket.accept()
+        except Exception:
+            return False
 
+        self.connections[user_id] = Connection(user_id, websocket, monotonic())
         if previous is None:
-            return
+            return True
 
         try:  # TODO: What code should be sent?
             await previous.websocket.close(
@@ -59,6 +61,7 @@ class SessionConnectionManager:
             )
         except Exception:
             pass
+        return True
 
     def remove_connection(self, user_id: int, websocket: WebSocket) -> None:
         if not self.is_user_connected(user_id, websocket):
@@ -110,8 +113,8 @@ class SessionConnectionManager:
 
         return timed_out_users
 
-    def is_full(self) -> bool:
-        return len(self.connections) == MAX_PLAYERS
+    def count(self) -> int:
+        return len(self.connections)
 
     def is_empty(self) -> bool:
         return len(self.connections) == EMPTY_SESSION

@@ -29,6 +29,7 @@ class JoinStatus(StrEnum):
     GAME_NOT_JOINED = "Game not joined"
     GAME_NOT_FOUND = "Game not found"
     GAME_ALREADY_JOINED = "Game already joined"
+    GAME_FAILED_TO_CONNECT = "Game failed to accept connection"
 
 
 class GameSession:
@@ -65,17 +66,26 @@ class GameSession:
                 pass
         self.task = None
 
+    def required_player_count(self):
+        return 1 if self.allowed_user_list is None else len(self.allowed_user_list)
+
     # TODO: Support spectators
     async def join(self, user_id: int, socket: WebSocket) -> JoinStatus:
         if self.allowed_user_list is not None and user_id not in self.allowed_user_list:
             return JoinStatus.GAME_NOT_JOINED
 
         async with self.lock:
-            await self.connection_manager.accept_connection(user_id, socket)
+            is_connected: bool = await self.connection_manager.accept_connection(user_id, socket)
+            if not is_connected:
+                return JoinStatus.GAME_FAILED_TO_CONNECT
+
             self.game.connect_player(user_id)
             self.update_time_since_action(user_id)
 
-            if self.connection_manager.is_full():
+            if (
+                self.state is SessionState.WAITING_FOR_PLAYERS
+                and self.connection_manager.count() == self.required_player_count()
+            ):
                 self.state = SessionState.RUNNING
 
         return JoinStatus.GAME_JOINED
