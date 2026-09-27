@@ -21,6 +21,7 @@ import {
 import type { ILobbyResponse } from "../api/lobbyApi";
 import { useAuth } from "./AuthContext";
 import { getWsUrl } from "../api/http";
+import type { PublicUser } from "../api/friendsApi";
 
 interface ILobbyChatMsg
 {
@@ -33,17 +34,26 @@ export interface LobbyData extends ILobbyResponse
 	chatHistory: ILobbyChatMsg[];
 }
 
+export interface LobbyInvite
+{
+    lobby_id: number;
+    lobby_name: string;
+    inviter: PublicUser;
+}
+
 type LobbyID = string;
 type Lobbies = Record<LobbyID, LobbyData>;
 
 interface ILobbiesContext
 {
-	lobbies: Lobbies;
+    lobbies: Lobbies;
+    lobbyInvites: LobbyInvite[];
 	resetLobbies: () => void;
 	refreshLobbies: () => Promise<void>;
 	loadLobby: (lobbyID: LobbyID,) => Promise<LobbyData>;
 	createLobby: (lobbyName: string,) => Promise<LobbyData>;
     inviteFriend: (lobbyID: LobbyID, friendID: number,) => Promise<boolean>;
+    dismissLobbyInvite: (lobbyID: string) => void;
 	joinLobby: (lobbyID: LobbyID,) => Promise<LobbyData>;
 	leaveLobby: (lobbyID: LobbyID,) => Promise<void>;
 	closeLobby: (lobbyID: LobbyID,) => Promise<void>;
@@ -81,8 +91,13 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
 {
     const [lobbies, setLobbies] = useState<Lobbies>({});
     const { auth } = useAuth();
+    const [lobbyInvites, setLobbyInvites] = useState<LobbyInvite[]>([]);
 
-    const resetLobbies = useCallback(() => {setLobbies({});}, []);
+    const resetLobbies = useCallback(() =>
+    {
+        setLobbies({});
+        setLobbyInvites([]);
+    }, []);
 
     const refreshLobbies = useCallback(async () =>
     {
@@ -164,6 +179,13 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
             );
         return result.delivered;
     }, [auth.accessToken]);
+
+    const dismissLobbyInvite = useCallback((lobbyID: number) =>
+    {
+        setLobbyInvites(prev =>
+            prev.filter(invite => invite.lobby_id !== lobbyID)
+        );
+    }, []);
 
 	const joinLobby = useCallback(async (lobbyID: string,): Promise<LobbyData> =>
     {
@@ -310,6 +332,8 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
                         type?: unknown;
                         lobby?: unknown;
                         lobby_id?: unknown;
+                        lobby_name?: unknown;
+                        inviter?: unknown;
                     };
 
                     if (message.type === "lobby_updated")
@@ -340,9 +364,36 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
                             return next;
                         });
                     }
-                    // chat_message,
-                    // conversation_read,
-                    // lobby_invite,
+                    
+                    if (message.type === "lobby_invite")
+                    {
+                        if (
+                            typeof message.lobby_id !== "number" ||
+                            typeof message.lobby_name !== "string" ||
+                            typeof message.inviter !== "object" ||
+                            message.inviter === null
+                        )
+                            return;
+                    
+                        const invite: LobbyInvite = {
+                            lobby_id: message.lobby_id,
+                            lobby_name: message.lobby_name,
+                            inviter: message.inviter as PublicUser,
+                        };
+                    
+                        setLobbyInvites(prev =>
+                        {
+                            const withoutExisting = prev.filter(
+                                current => current.lobby_id !== invite.lobby_id
+                            );
+                    
+                            return [...withoutExisting, invite];
+                        });
+                    
+                        return;
+                    }
+                // chat_message,
+                // conversation_read,
                     // are intentionally ignored here
                 },
             );
@@ -371,6 +422,7 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
             value=
             {{
                 lobbies,
+                lobbyInvites,
                 resetLobbies,
                 refreshLobbies,
                 loadLobby,
@@ -379,6 +431,7 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
                 joinLobby,
                 leaveLobby,
                 inviteFriend,
+                dismissLobbyInvite,
                 getChatHistory,
                 addChatHistory,
             }}
