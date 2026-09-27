@@ -1,3 +1,5 @@
+import ErrorText from "../../components/ErrorText";
+import { ErrorType } from "../../utils/errors";
 import styles from "./Feedback.module.scss";
 
 export enum FeedbackType
@@ -10,10 +12,17 @@ export enum FeedbackType
 interface IFeedback
 {
 	feedback: FeedbackType;
+  ops: number;
 }
 
-export default function Feedback( { feedback } : IFeedback )
+export default function Feedback( { feedback, ops } : IFeedback )
 {
+	if ( !ops )
+		return <ErrorText error={ErrorType.noOperatorsSelected} extraStyling={styles.errorText} />
+
+	if ( feedback === FeedbackType.none )
+		return;
+
 	function msg() : string
 	{
 		switch ( feedback )

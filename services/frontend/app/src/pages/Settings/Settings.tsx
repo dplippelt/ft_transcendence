@@ -35,8 +35,7 @@ function SettingsWindow( { setOps, feedback, ops } : ISettingsWindow )
 		<div className={styles.settingsWindow}>
 			<div className={styles.query}>Select operators to include in game</div>
 			<OperatorSettings setOps={setOps} />
-			{ ops === 0 && <ErrorText error={ErrorType.noOperatorsSelected} extraStyling={styles.errorText} /> }
-			{ feedback !== FeedbackType.none && <Feedback feedback={feedback} /> }
+			<Feedback feedback={feedback} ops={ops} />
 		</div>
 	);
 }

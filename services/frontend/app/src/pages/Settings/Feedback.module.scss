@@ -1,8 +1,25 @@
-@use '../../mixins' as *;
 @use '../../variables' as *;
+
+@mixin settingsFeedback
+{
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: 5%;
+	padding-left: 0.5rem;
+	padding-right: 0.5rem;
+	text-align: center;
+	font-family: $text-font;
+	font-size: 0.7rem;
+}
 
 .feedback
 {
 	@include settingsFeedback();
 	color: $feedback-color;
+}
+
+.errorText
+{
+	@include settingsFeedback();
 }
