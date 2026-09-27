@@ -65,6 +65,7 @@ export enum ErrorType
     lobbyNameAlreadyExists,
     lobbyDoesNotExist,
     lobbyFull,
+    lobbyInviteNotDelivered,
 
     chatMessageTooLong,
     chatNotFriends,
@@ -241,6 +242,8 @@ export function errorMsg(error: ErrorType): string
             return "Failed to join because the lobby does not exist";
         case ErrorType.lobbyFull:
             return "Failed to join because the lobby is full";
+        case ErrorType.lobbyInviteNotDelivered:
+            return "Friend is currently offline. The invite could not be delivered.";
         case ErrorType.chatMessageTooLong:
             return "Message is too long (max 2000 characters).";
         case ErrorType.chatNotFriends:

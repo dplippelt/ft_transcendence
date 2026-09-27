@@ -376,7 +376,8 @@ export default function Lobby()
 				{
 					popupType === PopupType.inviteFriend &&
 						<Popup>
-							<InviteFriendPopup
+                            <InviteFriendPopup
+                                lobbyID={ lobbyID! }
 								setPopupType={ setPopupType }
 							/>
 						</Popup>
