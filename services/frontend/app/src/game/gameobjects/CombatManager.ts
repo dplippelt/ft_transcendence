@@ -32,7 +32,6 @@ export default class CombatManager {
   readonly layoutManager: CombatLayoutManager;
   readonly damageToEnemyOn: DamageToEnemy = damageToEnemyConfig;
   readonly enemyData: EnemyData;
-  readonly targetNumbersText: Phaser.GameObjects.Text;
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
@@ -46,7 +45,6 @@ export default class CombatManager {
     this.events = new Phaser.Events.EventEmitter();
     this.onCombatAction();
     this.layoutManager = new CombatLayoutManager(this);
-    this.targetNumbersText = this.scene.add.text(500, 100, "targetNumbers");
     this.turnManager.turnEvents.emit(TurnEvents.STARTPLAYER);
   }
 
@@ -79,8 +77,6 @@ export default class CombatManager {
     this.fillCardHand();
     this.executeManager.reset();
     this.executeManager.generateTargetNumbersFromHand(this.cardManager.cardHand);
-    // TODO: emit an event for displaying targetNumbers
-    this.targetNumbersText.setText(this.executeManager.getTargetNumbers());
     this.executeManager.test_getValidFormula(this.scene);
   }
 
@@ -98,7 +94,6 @@ export default class CombatManager {
       this.resetHand();
       this.player.status.mana--;
     }
-    this.targetNumbersText.setText(this.executeManager.getTargetNumbers());
   }
 
   initEnemyTurn() {
@@ -122,7 +117,7 @@ export default class CombatManager {
   judgeResult() {
     if (this.executeManager.isSuccessHitTarget()) {
       this.events.emit(CombatEvents.PLAYERATTACK);
-      EventBus.emit(CombatEvent.turnEnded); // TODO: Either call it here or in CombaTurnManager.pausePlayerTurn()
+      EventBus.emit(CombatEvent.turnEnded);
     } else {
       // dealPenalty(this.playerStatus);
       // or just to ignore like the case of no cards would be fine?
@@ -189,6 +184,10 @@ export default class CombatManager {
     EventBus.emit(CombatEvent.initEnemyHP, this.enemyData.hitPoint);
   }
 
+  sendInitTargetNumbers() {
+    EventBus.emit(CombatEvent.initTargetNumbers, this.executeManager.getTargetNumbers())
+  }
+
   sendCurrPlayerHP() {
     EventBus.emit(CombatEvent.updatePlayerHP, this.player.status.hitPoint);
   }
@@ -199,6 +198,10 @@ export default class CombatManager {
 
   sendCurrEnemyHP() {
     EventBus.emit(CombatEvent.updateEnemyHP, this.enemy.hitPoint);
+  }
+
+  sendCurrTargetNumbers() {
+    EventBus.emit(CombatEvent.updateTargetNumbers, this.executeManager.getTargetNumbers())
   }
 
   sendElapsedPlayerTime() {
