@@ -4,7 +4,7 @@ import { DEFAULT_OPS_MASK } from "../utils/utils";
 interface IOperatorsContext
 {
 	operators: number;
-  saveOperators: ( ops: number ) => void;
+	saveOperators: ( ops: number ) => void;
 	resetOperators: () => void;
 }
 
@@ -29,7 +29,7 @@ export default function OperatorsProvider( { children } : { children: ReactNode 
 			value=
 			{{
 				operators,
-        saveOperators,
+				saveOperators,
 				resetOperators,
 			}}
 		>

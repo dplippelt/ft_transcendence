@@ -4,15 +4,15 @@ import styles from "./Feedback.module.scss";
 
 export enum FeedbackType
 {
-  none,
-  applied,
-  reset,
+	none,
+	applied,
+	reset,
 }
 
 interface IFeedback
 {
 	feedback: FeedbackType;
-  ops: number;
+	ops: number;
 }
 
 export default function Feedback( { feedback, ops } : IFeedback )

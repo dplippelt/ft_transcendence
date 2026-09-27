@@ -17,7 +17,7 @@ interface IOperatorSelectionPopup
 export default function OperatorSelectionPopup( { setPopupType } : IOperatorSelectionPopup )
 {
 	const navigate = useNavigate();
-  const { operators, saveOperators } = useOperators();
+	const { operators, saveOperators } = useOperators();
 
 	const [ops, setOps] = useState<number>(operators);
 	const [error, setError] = useState<ErrorType>(ErrorType.none);

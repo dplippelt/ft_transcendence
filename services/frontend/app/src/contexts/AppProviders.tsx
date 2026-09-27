@@ -16,9 +16,9 @@ export default function AppProviders( { children } : { children: React.ReactNode
 					<FriendsProvider>
 						<SettingsProvider>
 							<ErrorProvider>
-                <OperatorsProvider>
-								  {children}
-                </OperatorsProvider>
+								<OperatorsProvider>
+									{children}
+								</OperatorsProvider>
 							</ErrorProvider>
 						</SettingsProvider>
 					</FriendsProvider>

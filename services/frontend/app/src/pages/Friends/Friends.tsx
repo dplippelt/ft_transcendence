@@ -36,18 +36,18 @@ function Buttons( { mobileView, setMobileView, setPopupType } : IButtons )
 {
 	const isMobile = useIsMobile(720);
 	const location = useLocation();
-  const { operators } = useOperators();
+	const { operators } = useOperators();
 
-  function getPath() : string
-  {
-    if ( location.state?.from === RoutePath.game )
-      return getPathToGame(operators);
-    if ( location.state?.from )
-      return location.state.from;
-    if ( location.state?.gameMenu )
-      return getPathToGame(operators);
-    return RoutePath.mainMenu;
-  }
+	function getPath() : string
+	{
+		if ( location.state?.from === RoutePath.game )
+			return getPathToGame(operators);
+		if ( location.state?.from )
+			return location.state.from;
+		if ( location.state?.gameMenu )
+			return getPathToGame(operators);
+		return RoutePath.mainMenu;
+	}
 
 	return (
 		<BottomButtons>
