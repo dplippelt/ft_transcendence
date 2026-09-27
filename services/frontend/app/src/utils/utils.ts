@@ -192,5 +192,5 @@ function getOperatorsMask( ops: number ) : string
 
 export function getPathToGame( ops: number ) : string
 {
-  return buildRoute(RoutePath.game, { [RouteParamKey.ops]: getOperatorsMask(ops) });
+	return buildRoute(RoutePath.game, { [RouteParamKey.ops]: getOperatorsMask(ops) });
 }
