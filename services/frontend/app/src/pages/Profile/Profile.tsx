@@ -51,7 +51,7 @@ function Buttons()
 	// Makes sure it goes back to the game / game menu instead of main menu
 	// when the user navigates from:
 	// game menu -> profile -> leaderboard -> back to profile -> back to game menu
-	function getPath()
+	function getPath() : string
 	{
 		if ( location.state?.gameMenu )
 			return getPathToGame(operators);
@@ -63,7 +63,7 @@ function Buttons()
 	return (
 		<BottomButtons>
 			<BackButton path={getPath()} />
-			<BottomButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname, gameMenu: fromGameMenu } }) } />
+			<BottomButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname, gameMenu: fromGameMenu, viaProfile: true } }) } />
 		</BottomButtons>
 	);
 }

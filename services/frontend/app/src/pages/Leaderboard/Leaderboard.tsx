@@ -150,12 +150,16 @@ function Buttons()
 	const location = useLocation();
   const { operators } = useOperators();
 
-  function getPath()
+ function getPath() : string
   {
     if ( location.state?.from === RoutePath.game )
       return getPathToGame(operators);
     if ( location.state?.from )
       return location.state.from;
+    if ( location.state?.viaProfile )
+      return RoutePath.profile;
+    if ( location.state?.gameMenu )
+      return getPathToGame(operators);
     return RoutePath.mainMenu;
   }
 

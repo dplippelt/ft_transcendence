@@ -27,11 +27,13 @@ function SidePanelToggle( { setCollapsed } : ISidePanelToggle )
 	const isMobile = useIsMobile(480);
 	const navigate = useNavigate();
 	const location = useLocation();
+	const fromGameMenu = location.pathname === RoutePath.game || ( location.state?.gameMenu ?? false );
+	const viaProfile = location.pathname === RoutePath.profile || ( location.state?.viaProfile ?? false );
 
 	function handleClick()
 	{
 		if ( isMobile )
-			navigate(RoutePath.friends, { state: { from: location.pathname } });
+			navigate(RoutePath.friends, { state: { from: location.pathname, gameMenu: fromGameMenu, viaProfile: viaProfile } });
 		else
 			setCollapsed(prev => !prev);
 	}
