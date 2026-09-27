@@ -10,8 +10,6 @@ import { MobilePosition, RoutePath } from "../../utils/utils";
 import SideBar from "../../components/SideBar";
 import { useOperators } from "../../contexts/OperatorContext";
 import OperatorSettings from "../../components/OperatorSettings";
-import { ErrorType } from "../../utils/errors";
-import ErrorText from "../../components/ErrorText";
 import Feedback, { FeedbackType } from "./Feedback";
 
 interface ISettingsWindow
