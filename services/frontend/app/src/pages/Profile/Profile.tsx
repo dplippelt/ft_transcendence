@@ -9,8 +9,9 @@ import Page from "../../components/Page";
 import { BottomButtons } from "../../components/ButtonContainers";
 import { MenuTitle } from "../../components/PageTitle";
 import { useLocation, useNavigate } from "react-router-dom";
-import { Tab, RoutePath } from "../../utils/utils";
+import { Tab, RoutePath, getPathToGame } from "../../utils/utils";
 import SideBar from "../../components/SideBar";
+import { useOperators } from "../../contexts/OperatorContext";
 
 interface IProfileTabs
 {
@@ -44,15 +45,16 @@ function Buttons()
 {
 	const navigate = useNavigate();
 	const location = useLocation();
+  const { operators } = useOperators();
 	const fromGameMenu = location.state?.gameMenu ?? false;
 
 	// Makes sure it goes back to the game / game menu instead of main menu
 	// when the user navigates from:
 	// game menu -> profile -> leaderboard -> back to profile -> back to game menu
-	function getPath()
+	function getPath() : string
 	{
 		if ( location.state?.gameMenu )
-			return RoutePath.game;
+			return getPathToGame(operators);
 		if ( location.state?.from )
 			return location.state.from;
 		return RoutePath.mainMenu;
@@ -61,7 +63,7 @@ function Buttons()
 	return (
 		<BottomButtons>
 			<BackButton path={getPath()} />
-			<BottomButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname, gameMenu: fromGameMenu } }) } />
+			<BottomButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname, gameMenu: fromGameMenu, viaProfile: true } }) } />
 		</BottomButtons>
 	);
 }

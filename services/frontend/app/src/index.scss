@@ -3,7 +3,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel Decorative:wght@400&display=swap');
 
 
-
 /* GENERAL */
 
 *, *::before, *::after
@@ -33,7 +32,7 @@ label
 {
 	user-select: none;
 	font-family: $text-font;
-	font-size: 0.8rem;
+	font-size: 0.7rem;
 }
 
 
@@ -172,6 +171,7 @@ button
 	border-radius: 8px;
 	font-family: $button-font;
 	transition: background-color 0.2s ease;
+	user-select: none;
 }
 
 

@@ -135,8 +135,9 @@ export function BackButton( { path } : IBackButton )
 	const navigate = useNavigate();
 	const location = useLocation();
 	const fromGameMenu = location.state?.gameMenu ?? false;
+	const viaProfile = location.state?.viaProfile ?? false;
 
-	return <BottomButton label="Back" onClick={ () => navigate(path, { state: { gameMenu: fromGameMenu } }) } mobilePosition={MobilePosition.bottom} />;
+	return <BottomButton label="Back" onClick={ () => navigate(path, { state: { gameMenu: fromGameMenu, viaProfile: viaProfile } }) } mobilePosition={MobilePosition.bottom} />;
 }
 
 export function EditButton( { popupType, setPopupType } : IEditButton )

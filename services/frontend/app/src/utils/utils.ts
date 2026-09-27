@@ -58,20 +58,20 @@ export enum JoinStatus
 
 export enum RoutePath
 {
-  landingPage = "/",
-  auth = "/auth",
-  completeProfile = "/complete-profile",
-  mainMenu = "/main-menu",
-  multiplayer = "/multiplayer",
-  mpLobby = "/multiplayer/lobby",
-  mpBrowser = "/multiplayer/browser",
-  friends = "/friends",
-  profile = "/profile",
-  leaderboard = "/leaderboard",
-  howToPlay = "/how-to-play",
-  settings = "/settings",
-  game = "/game",
-  gameOver = "/game-over",
+	landingPage = "/",
+	auth = "/auth",
+	completeProfile = "/complete-profile",
+	mainMenu = "/main-menu",
+	multiplayer = "/multiplayer",
+	mpLobby = "/multiplayer/lobby",
+	mpBrowser = "/multiplayer/browser",
+	friends = "/friends",
+	profile = "/profile",
+	leaderboard = "/leaderboard",
+	howToPlay = "/how-to-play",
+	settings = "/settings",
+	game = "/game",
+	gameOver = "/game-over",
 }
 
 export enum RouteParamKey
@@ -110,19 +110,23 @@ export enum CombatEvent
 	updateEnemyHP = "update-enemy-hp",
 	initPlayerMP = "init-player-mp",
 	updatePlayerMP = "update-player-mp",
+	initTargetNumbers = "init-target-numbers",
+	updateTargetNumbers = "update-target-numbers",
 	initTurn = "init-turn",
 	pauseTimer = "pause-timer",
 	attack = "attack",
 	draw = "draw",
-  completeFillHand = "complete-fill-hand",
+	completeFillHand = "complete-fill-hand",
 	turnEnded = "turn-ended",
 	getTurnTimerState = "turn-timer-state",
 	getInitPlayerHp = "get-init-player-hp",
 	getInitPlayerMp = "get-init-player-mp",
 	getInitEnemyHp = "get-init-enemy-hp",
+	getInitTargetNumbers = "get-init-target-numbers",
 	getCurrPlayerHp = "get-curr-player-hp",
 	getCurrPlayerMp = "get-curr-player-mp",
 	getCurrEnemyHp = "get-curr-enemy-hp",
+	getCurrTargetNumbers = "get-curr-target-numbers",
 }
 
 export enum GameState
@@ -179,4 +183,14 @@ export const DEFAULT_OPS_MASK = (OperatorBit.plus | OperatorBit.minus).toString(
 export function isValidOpsMaskStr(value: string): value is OpsMaskStr
 {
 	return /^[01]{5}$/.test(value) && parseInt(value, 2) > 0;
+}
+
+export function getOperatorsMask( ops: number ) : string
+{
+	return ops.toString(2).padStart(5, "0");
+}
+
+export function getPathToGame( ops: number ) : string
+{
+	return buildRoute(RoutePath.game, { [RouteParamKey.ops]: getOperatorsMask(ops) });
 }

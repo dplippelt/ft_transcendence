@@ -5,15 +5,7 @@ import { MenuButtons } from "../../components/ButtonContainers";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuButton } from "../../components/Buttons";
-import { buildRoute, PopupType, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
-import { useState } from "react";
-import Popup from "../../components/Popup";
-import OperatorSelection from "../../components/OperatorSelection";
-
-interface IButtons
-{
-	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
-}
+import { buildRoute, DEFAULT_OPS_MASK, getPathToGame, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
 
 function GameDescription()
 {
@@ -22,16 +14,15 @@ function GameDescription()
 	)
 }
 
-function Buttons( { setPopupType } : IButtons )
+function Buttons()
 {
 	const navigate = useNavigate();
 
 	function handleNewGame()
 	{
-		setPopupType(PopupType.operatorSelection);
+		navigate(getPathToGame(parseInt(DEFAULT_OPS_MASK, 2)));
 	}
 
-	// TODO: remove Game dev Button
 	return (
 		<MenuButtons>
 			<MenuButton label="Start game" onClick={handleNewGame} />
@@ -43,16 +34,13 @@ function Buttons( { setPopupType } : IButtons )
 
 export default function LandingPage()
 {
-	const [ popupType, setPopupType ] = useState<PopupType>(PopupType.none);
-
 	return (
 		<>
 			<Background />
 			<Page>
 				<AppTitle />
 				<GameDescription />
-				<Buttons setPopupType={setPopupType} />
-				{ popupType === PopupType.operatorSelection && <Popup> <OperatorSelection setPopupType={setPopupType} /> </Popup> }
+				<Buttons />
 			</Page>
 		</>
 
