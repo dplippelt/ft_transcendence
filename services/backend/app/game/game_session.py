@@ -28,7 +28,6 @@ class JoinStatus(StrEnum):
     GAME_FULL = "Game is full"
     GAME_NOT_JOINED = "Game not joined"
     GAME_NOT_FOUND = "Game not found"
-    GAME_ALREADY_JOINED = "Game already joined"
     GAME_FAILED_TO_CONNECT = "Game failed to accept connection"
 
 
