@@ -57,7 +57,7 @@ function Buttons( { setResetKey, setFeedback, ops, canApply } : IButtons )
 
 	return (
 		<BottomButtons>
-			<BackButton path={RoutePath.mainMenu} />
+			<BackButton fallback={RoutePath.mainMenu} />
 			<BottomButton label="Reset Defaults" onClick={resetSettings} mobilePosition={MobilePosition.top} />
 			<BottomButton label="Apply" onClick={applySettings} disabled={!canApply} />
 		</BottomButtons>

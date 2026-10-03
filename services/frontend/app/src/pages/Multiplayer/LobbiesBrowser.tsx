@@ -165,7 +165,7 @@ function Buttons()
 {
 	return (
 		<BottomButtons>
-			<BackButton path={RoutePath.multiplayer} />
+			<BackButton to={RoutePath.multiplayer} />
 		</BottomButtons>
 	);
 }

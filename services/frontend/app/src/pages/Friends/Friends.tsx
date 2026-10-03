@@ -9,14 +9,12 @@ import ChatWindow from "./ChatWindow";
 import { useEffect, useState } from "react";
 import useIsMobile from "../../hooks/useIsMobile";
 import React from "react";
-import { getPathToGame, MobilePosition, MobileView, PopupType, RoutePath } from "../../utils/utils";
+import { MobilePosition, MobileView, PopupType, RoutePath } from "../../utils/utils";
 import Popup from "../../components/Popup";
 import AddFriendPopup from "./AddFriendPopup";
 import RemoveFriendPopup from "./RemoveFriendPopup";
 import InviteFriendPopup from "./InviteFriendPopup";
-import { useLocation } from "react-router-dom";
 import { useFriends } from "../../contexts/FriendsContext";
-import { useOperators } from "../../contexts/OperatorContext";
 
 interface IButtons
 {
@@ -35,25 +33,12 @@ interface IFriendsContainer
 function Buttons( { mobileView, setMobileView, setPopupType } : IButtons )
 {
 	const isMobile = useIsMobile(720);
-	const location = useLocation();
-	const { operators } = useOperators();
-
-	function getPath() : string
-	{
-		if ( location.state?.from === RoutePath.game )
-			return getPathToGame(operators);
-		if ( location.state?.from )
-			return location.state.from;
-		if ( location.state?.gameMenu )
-			return getPathToGame(operators);
-		return RoutePath.mainMenu;
-	}
 
 	return (
 		<BottomButtons>
 			{ isMobile && mobileView === MobileView.chat
 			? <BottomButton label="Back" onClick={ () => setMobileView(MobileView.friends) } mobilePosition={MobilePosition.bottom} />
-			: <BackButton path={getPath()} />}
+			: <BackButton fallback={RoutePath.mainMenu} />}
 			{ ( !isMobile || ( isMobile && mobileView === MobileView.friends )) && <BottomButton label="Add Friend" onClick={ () => setPopupType(PopupType.addFriend) } /> }
 		</BottomButtons>
 	);

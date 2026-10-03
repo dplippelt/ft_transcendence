@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import type React from "react";
 import styles from "./Buttons.module.scss";
 import { PopupType, AvatarSize, MobilePosition, RoutePath, SortBy } from "../utils/utils";
@@ -7,6 +7,7 @@ import Avatar from "./Avatar";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
 import { useLobbies } from "../contexts/LobbiesContext";
 import { useAuth } from "../contexts/AuthContext";
+import useBack from "../hooks/useBack";
 
 interface IMenuButton
 {
@@ -32,10 +33,9 @@ interface IBottomButton
 	mobilePosition?: string;
 }
 
-interface IBackButton
-{
-	path: string;
-}
+type IBackButton =
+	|	{ fallback: string; to?: never; }
+	|	{ to: string; fallback?: never; };
 
 interface IEditButton
 {
@@ -130,14 +130,26 @@ export function BottomButton( { label, onClick, disabled=false, mobilePosition="
 	return <button className={`${styles.bottomButton} ${mobilePosition}`} type="button" disabled={disabled} onClick={onClick}>{label}</button>;
 }
 
-export function BackButton( { path } : IBackButton )
+// BackButton accepts exactly one of `to` or `fallback`:
+// - `to`:				always navigates to that path.
+// - `fallback`:	uses goBack(), which navigates back in the React Router history
+//								(navigate(-1)) if there is one, otherwise to the fallback path.
+// Passing both (or neither) is a type error: the IBackButton union marks the
+// other prop as `never` in each branch.
+export function BackButton( { fallback, to } : IBackButton )
 {
 	const navigate = useNavigate();
-	const location = useLocation();
-	const fromGameMenu = location.state?.gameMenu ?? false;
-	const viaProfile = location.state?.viaProfile ?? false;
+	const goBack = useBack();
 
-	return <BottomButton label="Back" onClick={ () => navigate(path, { state: { gameMenu: fromGameMenu, viaProfile: viaProfile } }) } mobilePosition={MobilePosition.bottom} />;
+	function onClick()
+	{
+		if ( to )
+			navigate(to);
+		else
+			goBack(fallback!);
+	}
+
+	return <BottomButton label="Back" onClick={onClick} mobilePosition={MobilePosition.bottom} />;
 }
 
 export function EditButton( { popupType, setPopupType } : IEditButton )
@@ -241,7 +253,7 @@ export function JoinButton( { lobbyID } : IJoinButton )
 
 	function onClick()
 	{
-		navigate(RoutePath.mpLobby + `/${lobbyID}`, { state: { from: RoutePath.mpBrowser } });
+		navigate(RoutePath.mpLobby + `/${lobbyID}`);
 	}
 
 	return <MossButton label="Join" onClick={onClick} extraStyling={styles.joinButton} disabled={disabled} />;
