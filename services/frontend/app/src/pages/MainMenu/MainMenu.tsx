@@ -1,4 +1,4 @@
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import styles from "./MainMenu.module.scss"
 import { AppTitle } from "../../components/PageTitle";
 import { MenuButtons } from "../../components/ButtonContainers";
@@ -23,8 +23,7 @@ interface IButtons
 function Buttons( { setPopupType } : IButtons )
 {
 	const navigate = useNavigate();
-	const location = useLocation();
-    const { logout } = useAuth();
+	const { logout } = useAuth();
 	const sessionCleanup = useSessionCleanup();
 
 	function handleLogout()
@@ -43,11 +42,11 @@ function Buttons( { setPopupType } : IButtons )
 		<MenuButtons>
 			<MenuButton label="New game" onClick={handleNewGame} />
 			<MenuButton label="Multiplayer" onClick={ () => navigate(RoutePath.multiplayer) } />
-			<MenuButton label="Friends" onClick={ () => navigate(RoutePath.friends, { state: { from: location.pathname } }) } />
-			<MenuButton label="Profile" onClick={ () => navigate(RoutePath.profile, { state: { from: location.pathname } }) } />
-			<MenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname } }) } />
+			<MenuButton label="Friends" onClick={ () => navigate(RoutePath.friends) } />
+			<MenuButton label="Profile" onClick={ () => navigate(RoutePath.profile) } />
+			<MenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard) } />
 			<MenuButton label="How to play" onClick={ () => {} } />
-			<MenuButton label="Settings" onClick={ () => navigate(RoutePath.settings, { state: { from: location.pathname } }) } />
+			<MenuButton label="Settings" onClick={ () => navigate(RoutePath.settings) } />
 			<MenuButton label="Logout" onClick={ handleLogout } />
 		</MenuButtons>
 	)
