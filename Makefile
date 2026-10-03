@@ -7,113 +7,15 @@ POSTGRES_VOLUME = ft_transcendence_postgres_data
 ENV_FILE = .env
 ENV_SECRET_FILE = .env.secrets
 
-ENV_EXAMPLE = .env.example
-ENV_SECRET_EXAMPLE = .env.secrets.example
-
-MIGRATIONS_DIR = services/backend/migrations
-TWO_FACTOR_MIGRATION = $(MIGRATIONS_DIR)/20260913_add_two_factor_management_timecode.sql
-
 COMPOSE = docker compose -f $(DCOMP) \
 	--env-file $(ENV_FILE) \
 	--env-file $(ENV_SECRET_FILE)
 
 ensure-env:
-	@if [ ! -f $(ENV_FILE) ]; then \
-		if [ ! -f $(ENV_EXAMPLE) ]; then \
-			echo "Missing $(ENV_FILE) and $(ENV_EXAMPLE)."; \
-			exit 1; \
-		fi; \
-		cp $(ENV_EXAMPLE) $(ENV_FILE); \
-		echo "Created $(ENV_FILE) from $(ENV_EXAMPLE)."; \
-	fi
-	@if [ ! -f $(ENV_SECRET_FILE) ]; then \
-		if [ ! -f $(ENV_SECRET_EXAMPLE) ]; then \
-			echo "Missing $(ENV_SECRET_FILE) and $(ENV_SECRET_EXAMPLE)."; \
-			exit 1; \
-		fi; \
-		cp $(ENV_SECRET_EXAMPLE) $(ENV_SECRET_FILE); \
-		echo "Created $(ENV_SECRET_FILE) from $(ENV_SECRET_EXAMPLE)."; \
-	fi
-	@$(MAKE) --no-print-directory ensure-secrets
+	./scripts/env.sh ensure
 
-ensure-secrets:
-	@touch $(ENV_SECRET_FILE)
-	@VALUE=$$(sed -n 's/^POSTGRES_PASSWORD=//p' $(ENV_SECRET_FILE) | tail -n 1 | tr -d '\r'); \
-	if [ -z "$$VALUE" ] || \
-		[ "$$VALUE" = "replace-with-a-password" ]; then \
-		echo "Generating POSTGRES_PASSWORD..."; \
-		PASSWORD=$$(python3 -c 'import secrets; print(secrets.token_urlsafe(32))'); \
-		if grep -q '^POSTGRES_PASSWORD=' $(ENV_SECRET_FILE); then \
-			sed "s|^POSTGRES_PASSWORD=.*|POSTGRES_PASSWORD=$$PASSWORD|" \
-				$(ENV_SECRET_FILE) > $(ENV_SECRET_FILE).tmp && \
-			mv $(ENV_SECRET_FILE).tmp $(ENV_SECRET_FILE); \
-		else \
-			echo "POSTGRES_PASSWORD=$$PASSWORD" >> $(ENV_SECRET_FILE); \
-		fi; \
-		if grep -q '^DATABASE_URL=' $(ENV_SECRET_FILE); then \
-			sed "s|^DATABASE_URL=.*|DATABASE_URL=postgresql+psycopg://game_user:$$PASSWORD@db:5432/game_db|" \
-				$(ENV_SECRET_FILE) > $(ENV_SECRET_FILE).tmp && \
-			mv $(ENV_SECRET_FILE).tmp $(ENV_SECRET_FILE); \
-		else \
-			echo "DATABASE_URL=postgresql+psycopg://game_user:$$PASSWORD@db:5432/game_db" >> $(ENV_SECRET_FILE); \
-		fi; \
-	fi
-
-	@VALUE=$$(sed -n 's/^SECRET_KEY=//p' $(ENV_SECRET_FILE) | tail -n 1 | tr -d '\r'); \
-	if [ -z "$$VALUE" ] || \
-		[ "$$VALUE" = "replace-with-a-random-secret" ] || \
-		[ $${#VALUE} -lt 32 ]; then \
-		echo "Generating SECRET_KEY..."; \
-		KEY=$$(python3 -c 'import secrets; print(secrets.token_urlsafe(64))'); \
-		if grep -q '^SECRET_KEY=' $(ENV_SECRET_FILE); then \
-			sed "s|^SECRET_KEY=.*|SECRET_KEY=$$KEY|" \
-				$(ENV_SECRET_FILE) > $(ENV_SECRET_FILE).tmp && \
-			mv $(ENV_SECRET_FILE).tmp $(ENV_SECRET_FILE); \
-		else \
-			echo "SECRET_KEY=$$KEY" >> $(ENV_SECRET_FILE); \
-		fi; \
-	fi
-
-	@VALUE=$$(sed -n 's/^TWO_FACTOR_ENCRYPTION_KEY=//p' $(ENV_SECRET_FILE) | tail -n 1 | tr -d '\r'); \
-	if [ -z "$$VALUE" ] || \
-		[ "$$VALUE" = "replace-with-a-fernet-key" ] || \
-		! python3 -c 'import base64, sys; key = base64.urlsafe_b64decode(sys.argv[1].encode()); sys.exit(0 if len(key) == 32 else 1)' "$$VALUE" 2>/dev/null; then \
-		echo "Generating TWO_FACTOR_ENCRYPTION_KEY..."; \
-		KEY=$$(python3 -c 'import base64, secrets; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())'); \
-		if grep -q '^TWO_FACTOR_ENCRYPTION_KEY=' $(ENV_SECRET_FILE); then \
-			sed "s|^TWO_FACTOR_ENCRYPTION_KEY=.*|TWO_FACTOR_ENCRYPTION_KEY=$$KEY|" \
-				$(ENV_SECRET_FILE) > $(ENV_SECRET_FILE).tmp && \
-			mv $(ENV_SECRET_FILE).tmp $(ENV_SECRET_FILE); \
-	else \
-		echo "TWO_FACTOR_ENCRYPTION_KEY=$$KEY" >> $(ENV_SECRET_FILE); \
-	fi; \
-	fi
-
-	@VALUE=$$(sed -n 's/^TWO_FACTOR_RECOVERY_HMAC_KEY=//p' $(ENV_SECRET_FILE) | tail -n 1 | tr -d '\r'); \
-	if [ -z "$$VALUE" ] || \
-		[ "$$VALUE" = "replace-with-a-long-random-secret" ] || \
-		[ $${#VALUE} -lt 32 ]; then \
-		echo "Generating TWO_FACTOR_RECOVERY_HMAC_KEY..."; \
-		KEY=$$(python3 -c 'import secrets; print(secrets.token_urlsafe(64))'); \
-		if grep -q '^TWO_FACTOR_RECOVERY_HMAC_KEY=' $(ENV_SECRET_FILE); then \
-			sed "s|^TWO_FACTOR_RECOVERY_HMAC_KEY=.*|TWO_FACTOR_RECOVERY_HMAC_KEY=$$KEY|" \
-				$(ENV_SECRET_FILE) > $(ENV_SECRET_FILE).tmp && \
-			mv $(ENV_SECRET_FILE).tmp $(ENV_SECRET_FILE); \
-		else \
-			echo "TWO_FACTOR_RECOVERY_HMAC_KEY=$$KEY" >> $(ENV_SECRET_FILE); \
-		fi; \
-	fi
-
-rotate-2fa-key: ensure-env
-	@KEY=$$(python3 -c 'import base64, secrets; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())'); \
-	if grep -q '^TWO_FACTOR_ENCRYPTION_KEY=' $(ENV_SECRET_FILE); then \
-		sed "s|^TWO_FACTOR_ENCRYPTION_KEY=.*|TWO_FACTOR_ENCRYPTION_KEY=$$KEY|" \
-			$(ENV_SECRET_FILE) > $(ENV_SECRET_FILE).tmp && \
-		mv $(ENV_SECRET_FILE).tmp $(ENV_SECRET_FILE); \
-	else \
-		echo "TWO_FACTOR_ENCRYPTION_KEY=$$KEY" >> $(ENV_SECRET_FILE); \
-	fi
-	@echo "TWO_FACTOR_ENCRYPTION_KEY rotated. Existing encrypted TOTP secrets must be reset or re-encrypted."
+rotate-2fa-key:
+	./scripts/env.sh rotate-2fa-key
 
 setup: ensure-env
 	$(MAKE) build
@@ -147,34 +49,13 @@ dead-code: ensure-env
 		python -m vulture app tests --min-confidence 100
 
 migrate-db: ensure-env
-	@if [ ! -f $(TWO_FACTOR_MIGRATION) ]; then \
-		echo "Missing migration: $(TWO_FACTOR_MIGRATION)"; \
-		exit 1; \
-	fi
-	@echo "Starting PostgreSQL..."
-	@$(COMPOSE) up -d db
-	@echo "Waiting for PostgreSQL..."
-	@until $(COMPOSE) exec -T db sh -c \
-		'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' \
-		>/dev/null 2>&1; do \
-		sleep 1; \
-	done
-	@echo "Applying database migration..."
-	@$(COMPOSE) exec -T db sh -c \
-		'psql -v ON_ERROR_STOP=1 -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"' \
-		< $(TWO_FACTOR_MIGRATION)
-	@echo "Database migration applied."
+	./scripts/db.sh migrate
 
 check-users-table: ensure-env
-	@$(COMPOSE) exec -T db sh -c \
-		'psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -c "\d users"'
+	./scripts/db.sh check-users
 
 check-2fa-migration: ensure-env
-	@$(COMPOSE) exec -T db sh -c \
-		'psql -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -tAc \
-		"SELECT column_name FROM information_schema.columns \
-		WHERE table_name = '\''users'\'' \
-		AND column_name = '\''two_factor_last_management_timecode'\'';"'
+	./scripts/db.sh check-2fa
 
 up: ensure-env
 	$(COMPOSE) up -d
@@ -189,28 +70,19 @@ stop:
 	$(COMPOSE) stop
 
 test: ensure-env
-	$(COMPOSE) run --rm backend \
-		python -m pytest tests -v --maxfail=1 --disable-warnings
+	./scripts/test.sh all
 
 test-auth: ensure-env
-	$(COMPOSE) run --rm backend \
-		python -m pytest tests/test_auth.py -v --maxfail=1
+	./scripts/test.sh auth
 
 test-security: ensure-env
-	$(COMPOSE) run --rm backend \
-		python -m pytest tests/test_security.py -v --maxfail=1
+	./scripts/test.sh security
 
-test-2fa-auth: ensure-env
-	$(COMPOSE) run --rm backend \
-		python -m pytest tests/test_two_factor_auth.py -v --maxfail=1
+test-2fa: ensure-env
+	./scripts/test.sh two-factor
 
-test-2fa-service: ensure-env
-	$(COMPOSE) run --rm backend \
-		python -m pytest tests/test_two_factor_service.py -v --maxfail=1
-
-test-2fa-regeneration: ensure-env
-	$(COMPOSE) run --rm backend \
-		python -m pytest tests/test_two_factor_regeneration.py -v --maxfail=1
+test-lobby: ensure-env
+	./scripts/test.sh lobby
 
 reset-db: ensure-env
 	$(MAKE) down || true
@@ -236,9 +108,9 @@ fclean:
 
 fre: fclean setup check up
 
-.PHONY: ensure-env ensure-secrets rotate-2fa-key \
+.PHONY: ensure-env rotate-2fa-key \
 	setup build check check-frontend check-backend \
 	lint-backend lint-backend-fix dead-code \
-	test test-auth test-security test-2fa-auth test-2fa-service \
-	test-2fa-regeneration migrate-db check-2fa-migration \
+	test test-auth test-security test-2fa test-lobby \
+	migrate-db check-users-table check-2fa-migration \
 	up down start stop restart reset-db re clean fclean fre
