@@ -140,6 +140,7 @@ export enum GameState
 	lost = "lost",
 }
 
+// TODO: Consider getting game mode from url as well instead of using phaser game registry.
 export enum RegistryKey
 {
 	mode = "mode",
