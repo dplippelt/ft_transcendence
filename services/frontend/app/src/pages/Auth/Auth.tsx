@@ -29,14 +29,6 @@ function GoogleAuthButton({ setError, onTwoFactorRequired }: GoogleAuthButtonPro
     const navigate = useNavigate();
     const { loginWithGoogle } = useAuth();
 
-    const googleButtonRef = useRef<HTMLDivElement>(null);
-    const [googleButtonWidth, setGoogleButtonWidth] = useState<number>(0);
-
-    useEffect(() =>
-        {
-            const element = googleButtonRef.current;
-
-            if (!element)
     async function handleCredential(credential: string)
     {
         try
@@ -49,18 +41,15 @@ function GoogleAuthButton({ setError, onTwoFactorRequired }: GoogleAuthButtonPro
             {
                 onTwoFactorRequired(result.challengeToken);
                 return;
+            }
 
-            const observer = new ResizeObserver(entries =>
-            {
-                const width = Math.floor(entries[0].contentRect.width);
-
-                setGoogleButtonWidth(Math.min(width, 400));
-            });
-
-            observer.observe(element);
-
-            return () => observer.disconnect();
-    }, []);
+            navigate(RoutePath.mainMenu);
+        }
+        catch (error)
+        {
+            setError(mapAuthApiError(error));
+        }
+    }
 
     return (
         <GoogleCredentialButton
@@ -158,7 +147,7 @@ function LoginForm({ onTwoFactorRequired }: TwoFactorRequiredProps)
                 type="submit"
                 disabled={isSubmitting}
             />
-            <GoogleAuthButton setError={setError}/>
+            <GoogleAuthButton setError={setError} onTwoFactorRequired={onTwoFactorRequired}/>
 
             <TextButton
                 label="Don't have an account? Sign-up"

@@ -11,6 +11,7 @@ import { Passage } from "./Passage";
 import type { ExitZone } from "./ExitZone";
 import { EnemyFactory, PassageFactory, PlayerFactory } from "./factories";
 import { DungeonDecorator } from "./DungeonDecorator";
+import type { GameType } from "../../../utils/utils";
 
 type Vector2Like = Types.Math.Vector2Like;
 
@@ -48,7 +49,7 @@ export class Dungeon extends Tilemaps.Tilemap {
   private exitPoint: ExitZone | undefined;
   private passage: Passage | undefined;
 
-  constructor(scene: Scene, dungeonConfig: DungeonConfig, scale: number = 1.0, tileSize: number = 16) {
+  constructor(scene: Scene, dungeonConfig: DungeonConfig, gameType: GameType, scale: number = 1.0, tileSize: number = 16) {
     super(scene, new Tilemaps.MapData({ tileWidth: tileSize, tileHeight: tileSize }));
 
     const tileSet = this.addTilesetImage(AssetsKey.TileSet);
@@ -58,7 +59,7 @@ export class Dungeon extends Tilemaps.Tilemap {
     this.tileSet = tileSet;
 
     this.roomSetup = new RoomSetup();
-    this.spawner = new DungeonSpawner(this, new PlayerFactory(), new EnemyFactory(), new PassageFactory());
+    this.spawner = new DungeonSpawner(this, new PlayerFactory(), new EnemyFactory(), new PassageFactory(), gameType);
     this.decorator = new DungeonDecorator();
 
     this.tileSetMap = dungeonConfig.emptyRoomConfig.tileSetMap;

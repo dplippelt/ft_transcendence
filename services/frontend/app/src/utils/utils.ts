@@ -140,17 +140,10 @@ export enum GameState
 	lost = "lost",
 }
 
-// TODO: Consider getting game mode from url as well instead of using phaser game registry.
-export enum RegistryKey
-{
-	mode = "mode",
-}
-
-// TODO: check if we can just reuse RouteParamValue enum instead
-export enum GameMode
-{
-	sp = "sp",
-	coop = "coop",
+export enum GameType {
+  SinglePlayer,
+  LocalCoop,
+  OnlineCoop,
 }
 
 export const DRAFT_STORAGE_PREFIX = "draft:";

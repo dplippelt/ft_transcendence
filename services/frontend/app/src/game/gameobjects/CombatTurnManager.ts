@@ -55,13 +55,11 @@ export default class CombatTurnManager {
       this.cleanupTimers();
       this.playerTimer = this.playTurnFor(this.playerDelayMs);
       this.turnEvents.emit(TurnEvents.STARTPLAYER);
-      EventBus.emit(CombatEvent.initTurnTimer, this.turnConfig.playerDelayMs);
     } else {
       this.scene.input.enabled = false;
       this.cleanupTimers();
       this.enemyTimer = this.playTurnFor(this.enemyDelayMs);
       this.turnEvents.emit(TurnEvents.STARTENEMY);
-      EventBus.emit(CombatEvent.turnEnded);
     }
   }
 

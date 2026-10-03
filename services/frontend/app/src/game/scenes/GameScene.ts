@@ -4,8 +4,8 @@ import { Dungeon } from "../gameobjects/dungeon/Dungeon.ts";
 import { Direction, type DungeonConfig } from "../map/procedural";
 import { WallType, FloorType, PassageType, FoilageType } from "../map/TileSetMap.ts";
 import Player from "../gameobjects/Player.ts";
-import { GameMode, RegistryKey } from "../../utils/utils.ts";
 import { GameObjects } from "phaser";
+import { GameType } from "../../utils/utils.ts";
 
 const dungeonConfig: DungeonConfig = {
   emptyRoomConfig: {
@@ -77,10 +77,11 @@ const dungeonConfig: DungeonConfig = {
 export default class GameScene extends Scene {
   private _dungeon!: Dungeon;
   private _cameraTarget!: Player | GameObjects.Zone;
-  private _gameMode!: GameMode;
+  private _gameType!: GameType;
 
-  constructor() {
+  constructor(gameType: GameType) {
     super("game");
+    this._gameType = gameType;
   }
 
   preload() {
@@ -88,7 +89,7 @@ export default class GameScene extends Scene {
   }
 
   create() {
-    this._dungeon = new Dungeon(this, dungeonConfig, 1.5);
+    this._dungeon = new Dungeon(this, dungeonConfig, this._gameType, 1.5);
     this.setupCamera();
 
     // Temporarily mouse event for map generation
@@ -102,7 +103,7 @@ export default class GameScene extends Scene {
   }
 
   update(): void {
-    if ( this._gameMode === GameMode.coop ) {
+    if ( this._gameType === GameType.LocalCoop ) {
       this.updateCoopCamera();
     }
   }
@@ -124,8 +125,7 @@ export default class GameScene extends Scene {
   }
 
   setupCamera(): void {
-    this._gameMode = this._dungeon.scene.registry.get(RegistryKey.mode);
-    this._cameraTarget = this._gameMode === GameMode.sp ? this.getPlayerOne() : this.add.zone(0, 0, 1, 1);
+    this._cameraTarget = this._gameType === GameType.SinglePlayer ? this.getPlayerOne() : this.add.zone(0, 0, 1, 1);
     this.cameras.main.startFollow(this._cameraTarget);
   }
 

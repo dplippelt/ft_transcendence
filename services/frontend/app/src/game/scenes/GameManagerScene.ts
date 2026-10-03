@@ -4,7 +4,7 @@ import CombatScene from "./CombatScene";
 import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
 import { EventBus } from "../EventBus";
-import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, isValidOpsMaskStr, OperatorBit, RouteParamKey } from "../../utils/utils";
+import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, GameType, isValidOpsMaskStr, OperatorBit, RouteParamKey, RouteParamValue } from "../../utils/utils";
 import { Operator } from "../gameobjects/cards/CardBase";
 
 export enum GameEvents {
@@ -19,12 +19,6 @@ export enum GameEvents {
 
 export interface LevelExitEventData {
   player: Player;
-}
-
-enum GameType {
-  SinglePlayer,
-  LocalCoop,
-  OnlineCoop,
 }
 
 export class GameManagerScene extends Scene {
@@ -44,10 +38,10 @@ export class GameManagerScene extends Scene {
   constructor() {
     super("game-manager");
 
-    this._gameType = GameType.SinglePlayer;
     this._combatScenes = [];
     this._exitedPlayers = new Set<Player>();
     this._operators = this.getOperators();
+    this._gameType = this.getGameType();
     console.log(this._operators);
   }
 
@@ -62,7 +56,7 @@ export class GameManagerScene extends Scene {
       GameManagerScene.EventsCenter.off(GameEvents.LevelExit, this.onExitLevel, this);
     });
 
-    this._gameScene = new GameScene();
+    this._gameScene = new GameScene(this._gameType);
     this.scene.add("GameScene", this._gameScene, true);
   }
 
@@ -274,5 +268,19 @@ export class GameManagerScene extends Scene {
     if ( opsFlags & OperatorBit.divide ) ops.push(Operator.Divide);
     if ( opsFlags & OperatorBit.modulo ) ops.push(Operator.Modulo);
     return ops;
+  }
+
+  getGameType() {
+    const searchParams = new URLSearchParams(window.location.search);
+    const gameType = searchParams.get(RouteParamKey.type);
+
+    switch (gameType) {
+      case RouteParamValue.singlePlayer:
+        return GameType.SinglePlayer;
+      case RouteParamValue.localCoop:
+        return GameType.LocalCoop;
+      default:
+        return GameType.SinglePlayer;
+    }
   }
 }

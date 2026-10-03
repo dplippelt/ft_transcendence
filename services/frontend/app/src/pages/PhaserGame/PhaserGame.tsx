@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { buildRoute, CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameMode, GameState, isValidOpsMaskStr, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
+import { buildRoute, CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, isValidOpsMaskStr, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import { useAuth } from "../../contexts/AuthContext";
 import GameUI from "../../components/Game/GameUI";
@@ -24,17 +24,16 @@ interface IGame {
   currentActiveScene?: (scene_instance: Phaser.Scene) => void;
   gameRef: React.RefObject<Phaser.Game | null>;
   isGameURL: boolean;
-  gameMode: GameMode;
 }
 
-function Game( { currentActiveScene, gameRef, isGameURL, gameMode } : IGame )
+function Game( { currentActiveScene, gameRef, isGameURL } : IGame )
 {
     useLayoutEffect(() => {
       if (isGameURL && gameRef.current === null) {
         EventBus.emit(GameEvent.gameState, GameState.default);
-        gameRef.current = StartGame("game-container", gameMode);
+        gameRef.current = StartGame("game-container");
       }
-    }, [gameRef, isGameURL, gameMode]);
+    }, [gameRef, isGameURL]);
 
     useEffect(() => {
       EventBus.on("current-scene-ready", (scene_instance: Phaser.Scene) => {
@@ -65,7 +64,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
   const [searchParams] = useSearchParams();
   const isGameURL = location.pathname === RoutePath.game;
   const ops = searchParams.get(RouteParamKey.ops);
-  const gameMode = searchParams.get(RouteParamKey.type);
+  const gameType = searchParams.get(RouteParamKey.type);
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
   const [inCombat, setInCombat] = useState<boolean>(false);
   const [gameState, setGameState] = useState<GameState>(GameState.default);
@@ -146,13 +145,13 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     if ( !isGameURL )
       return;
 
-    if ( gameMode !== GameMode.sp && gameMode !== GameMode.coop )
+    if ( gameType !== RouteParamValue.singlePlayer && gameType !== RouteParamValue.localCoop )
       navigate(RoutePath.game + RouteParamValue.singlePlayer, { replace: true }); // TODO: needs to handle to ops url query param
 
     if ( auth.status === "loading" )
       return;
 
-    if ( gameMode === GameMode.coop && !loggedIn && !isLoggingOutRef.current ) {
+    if ( gameType === RouteParamValue.localCoop && !loggedIn && !isLoggingOutRef.current ) {
       navigate(RoutePath.game + RouteParamValue.singlePlayer, { replace: true }); // TODO: needs to handle to ops url query param
       cleanupGame();
     }
@@ -183,7 +182,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     }
 
     return () => cleanup();
-  }, [location.pathname, isGameURL, gameState, gameMode, loggedIn, auth.status, gameMenuVis, ops])
+  }, [location.pathname, isGameURL, gameState, gameType, loggedIn, auth.status, gameMenuVis, ops])
 
   if ( gameState !== GameState.default )
     return <GameOver loggedIn={loggedIn} gameResult={gameState} cleanupGame={cleanupGame} />;
@@ -192,7 +191,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     <>
       <div className={`${styles.gameWrapper} ${ isGameURL ? "" : styles.hidden }`}>
         <GameBackground inCombat={inCombat} />
-        <Game currentActiveScene={currentActiveScene} gameRef={gameRef} isGameURL={isGameURL} gameMode={gameMode ? gameMode as GameMode : GameMode.sp} />
+        <Game currentActiveScene={currentActiveScene} gameRef={gameRef} isGameURL={isGameURL} />
         <CombatUI inCombat={inCombat} />
         <GameUI gameMenuVis={gameMenuVis} loggedIn={loggedIn} />
       </div>
