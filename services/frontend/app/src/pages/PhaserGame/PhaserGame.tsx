@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { CombatEvent, GameEvent, GameMode, GameState, RouteParam, RoutePath } from "../../utils/utils";
+import { buildRoute, CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameMode, GameState, isValidOpsMaskStr, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import { useAuth } from "../../contexts/AuthContext";
 import GameUI from "../../components/Game/GameUI";
@@ -60,11 +60,12 @@ function Game( { currentActiveScene, gameRef, isGameURL, gameMode } : IGame )
 export default function PhaserGame( { currentActiveScene } : IPhaserGame )
 {
   const { auth } = useAuth();
-  const location = useLocation();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
-  const gameMode = searchParams.get("mode");
-  const isGameURL = location.pathname === RoutePath.gameDev;
+  const isGameURL = location.pathname === RoutePath.game;
+  const ops = searchParams.get(RouteParamKey.ops);
+  const gameMode = searchParams.get(RouteParamKey.type);
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
   const [inCombat, setInCombat] = useState<boolean>(false);
   const [gameState, setGameState] = useState<GameState>(GameState.default);
@@ -78,6 +79,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     EventBus.removeListener(GameEvent.gameVis);
     EventBus.removeListener(GameEvent.chatFocus);
     EventBus.removeListener(GameEvent.gameMenu);
+    EventBus.removeListener(GameEvent.blur);
     EventBus.removeListener(GameEvent.inCombat);
     EventBus.removeListener(GameEvent.gameState);
     EventBus.removeListener(CombatEvent.initPlayerHP);
@@ -86,11 +88,21 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     EventBus.removeListener(CombatEvent.updateEnemyHP);
     EventBus.removeListener(CombatEvent.initPlayerMP);
     EventBus.removeListener(CombatEvent.updatePlayerMP);
-    EventBus.removeListener(CombatEvent.initTurnTimer);
+    EventBus.removeListener(CombatEvent.initTurn);
+    EventBus.removeListener(CombatEvent.getInitPlayerHp);
+    EventBus.removeListener(CombatEvent.getInitPlayerMp);
+    EventBus.removeListener(CombatEvent.getInitEnemyHp);
+    EventBus.removeListener(CombatEvent.getInitTargetNumbers);
+    EventBus.removeListener(CombatEvent.getCurrPlayerHp);
+    EventBus.removeListener(CombatEvent.getCurrPlayerMp);
+    EventBus.removeListener(CombatEvent.getCurrEnemyHp);
+    EventBus.removeListener(CombatEvent.getCurrTargetNumbers);
+    EventBus.removeListener(CombatEvent.getTurnTimerState);
     EventBus.removeListener(CombatEvent.attack);
     EventBus.removeListener(CombatEvent.draw);
-    EventBus.removeListener(CombatEvent.reset);
+    EventBus.removeListener(CombatEvent.completeFillHand);
     EventBus.removeListener(CombatEvent.turnEnded);
+    EventBus.removeListener(CombatEvent.pauseTimer);
     setGameMenuVis(false);
     setInCombat(false);
     setGameState(GameState.default);
@@ -111,7 +123,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     function preserveGame() : boolean {
       switch ( location.pathname )
       {
-        case RoutePath.gameDev:
+        case RoutePath.game:
           return true;
         case RoutePath.friends:
           return true;
@@ -135,18 +147,27 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       return;
 
     if ( gameMode !== GameMode.sp && gameMode !== GameMode.coop )
-      navigate(RoutePath.game + RouteParam.sp, { replace: true });
+      navigate(RoutePath.game + RouteParamValue.singlePlayer, { replace: true }); // TODO: needs to handle to ops url query param
 
     if ( auth.status === "loading" )
       return;
 
     if ( gameMode === GameMode.coop && !loggedIn && !isLoggingOutRef.current ) {
-      navigate(RoutePath.game + RouteParam.sp, { replace: true });
+      navigate(RoutePath.game + RouteParamValue.singlePlayer, { replace: true }); // TODO: needs to handle to ops url query param
       cleanupGame();
+    }
+
+    // TODO: needs to handle the type url query param
+    if ( !ops || !isValidOpsMaskStr(ops) ) {
+      navigate(buildRoute(RoutePath.game, { [RouteParamKey.ops]: DEFAULT_OPS_MASK}));
+      return;
     }
 
     function toggleGameMenu() { setGameMenuVis(prev => !prev); }
     EventBus.addListener(GameEvent.gameMenu, toggleGameMenu);
+
+    function blur() { setGameMenuVis(true); }
+    EventBus.addListener(GameEvent.blur, blur);
 
     function updateInCombat( inCombat: boolean ) { setInCombat(inCombat); }
     EventBus.addListener(GameEvent.inCombat, updateInCombat);
@@ -158,10 +179,11 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       EventBus.removeListener(GameEvent.gameMenu, toggleGameMenu);
       EventBus.removeListener(GameEvent.inCombat, updateInCombat);
       EventBus.removeListener(GameEvent.gameState, updateGameState);
+      EventBus.removeListener(GameEvent.blur, blur);
     }
 
     return () => cleanup();
-  }, [location.pathname, isGameURL, gameState, gameMode, loggedIn, auth.status])
+  }, [location.pathname, isGameURL, gameState, gameMode, loggedIn, auth.status, gameMenuVis, ops])
 
   if ( gameState !== GameState.default )
     return <GameOver loggedIn={loggedIn} gameResult={gameState} cleanupGame={cleanupGame} />;

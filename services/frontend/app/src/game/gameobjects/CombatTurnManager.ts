@@ -1,17 +1,5 @@
 import Phaser, { type Scene } from "phaser";
 import type CombatManager from "./CombatManager";
-import { EventBus } from "../EventBus";
-import { CombatEvent } from "../../utils/utils";
-
-interface TurnConfig {
-  playerDelayMs: number;
-  enemyDelayMs: number;
-}
-
-const turnConfig: TurnConfig = {
-  playerDelayMs: 5000, // TODO: change back to intended player turn dur (was 10000)
-  enemyDelayMs: 1000,
-};
 
 export enum TurnEvents {
   SWITCH = "switch",
@@ -23,12 +11,15 @@ export default class CombatTurnManager {
   readonly combatManager: CombatManager;
   readonly scene: Scene;
   readonly clock: Phaser.Time.Clock;
-  readonly turnConfig: TurnConfig = turnConfig;
   readonly turnEvents: Phaser.Events.EventEmitter;
+  readonly playerDelayMs: number;
+  readonly enemyDelayMs: number;
   private isPlayerTurn: boolean;
   private playerTimer: Phaser.Time.TimerEvent | null;
+  // The enemy timer allows CombatTurnManager to switch turns by itself, without relying on CombatManager to explicitly trigger the switch.
+  // Currently, CombatManager normally triggers the switch before the enemy timer runs out,
+  // but the timer is kept to minimize the dependency between the two components.
   private enemyTimer: Phaser.Time.TimerEvent | null;
-  readonly timerText: Phaser.GameObjects.Text;
 
   constructor(combatManager: CombatManager) {
     this.combatManager = combatManager;
@@ -36,13 +27,24 @@ export default class CombatTurnManager {
     this.clock = this.scene.time;
     this.turnEvents = new Phaser.Events.EventEmitter();
     this.turnEvents.on(TurnEvents.SWITCH, this.switchTurn, this);
+    this.playerDelayMs = 30000;
+    this.enemyDelayMs = 5000;
     this.isPlayerTurn = true;
-    this.playerTimer = this.playTurnFor(this.turnConfig.playerDelayMs);
-    EventBus.emit(CombatEvent.initTurnTimer, this.turnConfig.playerDelayMs);
-
-    // To display, not necessary.
+    this.playerTimer = this.playTurnFor(this.playerDelayMs);
     this.enemyTimer = null;
-    this.timerText = this.scene.add.text(500, 200, "timer");
+  }
+
+  destroy() {
+    this.cleanupTimers();
+  }
+
+  cleanupTimers() {
+    if (this.playerTimer) {
+      this.playerTimer.remove();
+    }
+    if (this.enemyTimer) {
+      this.enemyTimer.remove();
+    }
   }
 
   switchTurn() {
@@ -50,24 +52,14 @@ export default class CombatTurnManager {
 
     if (this.isPlayerTurn) {
       this.scene.input.enabled = true;
-
-      if (this.playerTimer) {
-        this.playerTimer.remove();
-      }
-
-      this.playerTimer = this.playTurnFor(this.turnConfig.playerDelayMs);
+      this.cleanupTimers();
+      this.playerTimer = this.playTurnFor(this.playerDelayMs);
       this.turnEvents.emit(TurnEvents.STARTPLAYER);
       EventBus.emit(CombatEvent.initTurnTimer, this.turnConfig.playerDelayMs);
     } else {
       this.scene.input.enabled = false;
-
-      if (this.playerTimer) {
-        this.playerTimer.paused = true;
-      }
-
-      // To display, not necessary.
-      this.enemyTimer?.remove();
-      this.enemyTimer = this.playTurnFor(this.turnConfig.enemyDelayMs);
+      this.cleanupTimers();
+      this.enemyTimer = this.playTurnFor(this.enemyDelayMs);
       this.turnEvents.emit(TurnEvents.STARTENEMY);
       EventBus.emit(CombatEvent.turnEnded);
     }
@@ -84,12 +76,26 @@ export default class CombatTurnManager {
     return this.clock.addEvent(config);
   }
 
-  // TODO: for debugging/testing only - remove later
-  displayTimer() {
-    const output: string[] = [];
-    if (this.enemyTimer) {
-      output.push("Enemy time: " + this.enemyTimer.getRemaining().toString());
+  pausePlayerTurn() {
+    this.scene.input.enabled = false;
+    if (this.playerTimer) {
+      this.playerTimer.paused = true;
     }
-    this.timerText.setText(output);
+  }
+
+  unpausePlayerTurn() {
+    this.scene.input.enabled = true;
+    if (this.playerTimer) {
+      this.playerTimer.paused = false;
+    }
+  }
+
+  getElapsedPlayerTime() {
+    const timer = this.isPlayerTurn ? this.playerTimer : null;
+    return timer ? timer.getElapsed() : null;
+  }
+
+  getPlayerDelayMs() {
+    return this.playerDelayMs;
   }
 }

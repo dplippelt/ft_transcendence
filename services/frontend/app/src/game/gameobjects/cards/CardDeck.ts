@@ -1,6 +1,6 @@
 import type { CardValue } from "./CardBase";
 import CardBase, { OPERATORS } from "./CardBase";
-import type { Scene } from "phaser";
+import { Scene } from "phaser";
 
 interface CardDeckConfig {
   amount: number;
@@ -17,7 +17,7 @@ interface CardDeckConfig {
 }
 
 export const cardDeckConfig: CardDeckConfig = {
-  amount: 10,
+  amount: 20,
   numberRange: {
     min: 1,
     max: 30,
@@ -45,15 +45,18 @@ export default class CardDeck {
   readonly config: CardDeckConfig;
   readonly baseWeights: CardWeight[];
   readonly weightReduction: WeightReduction;
-  deck!: CardBase[];
-  numDealedCards: number = 0;
+  private deck!: CardBase[];
+  private cover: CardBase;
 
   constructor(scene: Scene, config: CardDeckConfig) {
     this.scene = scene;
     this.config = config;
     this.baseWeights = this.initBaseWeights(this.config);
     this.weightReduction = this.setWeightReductionFromConfig(this.config);
-    this.deck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
+    this.initDeck();
+    this.cover = new CardBase(scene);
+    this.scene.add.existing(this.cover);
+    this.cover.setDepth(1); // hard cord
   }
 
   initBaseWeights(config: CardDeckConfig) {
@@ -82,7 +85,11 @@ export default class CardDeck {
     return { number: numberWeight * factor, operator: operatorWeight * factor } as WeightReduction;
   }
 
-  generateCards(amount: number, baseWeights: CardWeight[], weightReduction: WeightReduction) {
+  initDeck() {
+    const amount = this.config.amount;
+    const baseWeights = this.baseWeights;
+    const weightReduction = this.weightReduction;
+
     if (amount < 0) throw Error("Amount for generating cards should be positive");
 
     const cards: CardBase[] = [];
@@ -96,7 +103,10 @@ export default class CardDeck {
 
     shuffle(cards);
 
-    return cards;
+    this.deck = cards;
+    if (!this.deck.length) {
+      throw Error("Could not create a new deck");
+    }
   }
 
   generateCard(cardWeights: readonly CardWeight[]) {
@@ -108,7 +118,11 @@ export default class CardDeck {
 
     const cardWeight = weightedRandom(normalizedWeights);
 
-    return new CardBase(this.scene, cardWeight.value);
+    const card = new CardBase(this.scene, cardWeight.value);
+
+    this.scene.add.existing(card);
+
+    return card;
   }
 
   adjustWeights(cardWeights: CardWeight[], target: CardBase, reduction: WeightReduction) {
@@ -118,7 +132,7 @@ export default class CardDeck {
       if (card.value !== targetValue) continue;
       if (target.isValueNumber()) card.weight -= reduction.number;
       else if (target.isValueOperator()) card.weight -= reduction.operator;
-      else throw Error("Unexpected CardValue")
+      else throw Error("Unexpected CardValue");
       break;
     }
   }
@@ -136,19 +150,20 @@ export default class CardDeck {
     return normalizedWeights;
   }
 
-  // TODO: reconsider if reusing cards is really necessary
   dealCard() {
-    const index = this.numDealedCards;
+    return this.deck.pop();
+  }
 
-    if (index >= this.deck.length) {
-      const newDeck = this.generateCards(this.config.amount, this.baseWeights, this.weightReduction);
-      if (!newDeck.length) throw Error("Could not create a new deck");
+  getDeck() {
+    return this.deck;
+  }
 
-      this.deck = this.deck.concat(newDeck);
-    }
+  getCover() {
+    return this.cover;
+  }
 
-    this.numDealedCards++;
-    return this.deck[index];
+  isEmpty() {
+    return !this.deck.length;
   }
 }
 

@@ -20,6 +20,15 @@ export default class PreloadScene extends Phaser.Scene {
       frameWidth: 16,
       frameHeight: 16
     });
+    this.load.atlas(AssetsKey.CombatPlayer, Assets[AssetsKey.CombatPlayer], Assets[AssetsKey.CombatPlayerJSON]);
+    this.load.spritesheet(AssetsKey.CombatEnemy, Assets[AssetsKey.CombatEnemy], {
+      frameWidth: 37,
+      frameHeight: 45,
+    });
+    this.load.spritesheet(AssetsKey.Cards, Assets[AssetsKey.Cards], {
+      frameWidth: 64,
+      frameHeight: 96,
+    });
   }
 
   create() {

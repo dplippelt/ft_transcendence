@@ -8,8 +8,7 @@ import Page from "../../components/Page";
 import { BottomButtons } from "../../components/ButtonContainers";
 import { MenuTitle } from "../../components/PageTitle";
 import type React from "react";
-import { useLocation } from "react-router-dom";
-import { RoutePath } from "../../utils/utils";
+import { RoutePath, getDisplayName } from "../../utils/utils";
 import SideBar from "../../components/SideBar";
 import { useAuth } from "../../contexts/AuthContext";
 import { getDungeonLeaderboard, getDungeons } from "../../api/leaderboardApi";
@@ -94,7 +93,7 @@ function ColumnTitles( { dungeonName } : IColumnTitles )
 
 function LeaderboardEntry( { entry, idx } : ILeaderboardEntry )
 {
-	const username = entry.user.username ?? entry.user.display_name ?? "Unknown";
+	const username = getDisplayName(entry.user);
 
 	return (
 		<>
@@ -146,12 +145,9 @@ function LeaderboardWindow( { dungeons, selectedDungeonId, setSelectedDungeonId,
 
 function Buttons()
 {
-	const location = useLocation();
-	const path = location.state?.from ?? RoutePath.mainMenu;
-
 	return (
 		<BottomButtons>
-			<BackButton path={path} />
+			<BackButton fallback={RoutePath.mainMenu} />
 		</BottomButtons>
 	);
 }

@@ -3,8 +3,12 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import ErrorCode, bad_request
 from app.db.utils import commit_or_bad_request
 from app.models.auth_account import AuthAccount
+from app.models.two_factor_recovery_code import (
+    TwoFactorRecoveryCode,
+)
 from app.models.user import User
 from app.schemas.user import UserUpdate
+from app.services.avatar_service import delete_local_avatar
 
 
 def get_active_user_by_id(db: Session, user_id: int) -> User | None:
@@ -16,7 +20,7 @@ def get_active_user_by_id(db: Session, user_id: int) -> User | None:
         )
         .first()
     )
-
+    
 
 def get_active_user_by_username(db: Session, username: str) -> User | None:
     return (
@@ -79,6 +83,9 @@ def deactivate_user(db: Session, user: User) -> None:
     user.is_active = False
     user.avatar_url = None
 
+    user.two_factor_enabled = False
+    user.two_factor_secret = None
+
     if user.username is not None:
         user.username = _renamed_for_deactivation(
             user.username, user.id, User.__table__.c.username.type.length
@@ -95,6 +102,11 @@ def deactivate_user(db: Session, user: User) -> None:
             auth_account.email = _renamed_for_deactivation(
                 auth_account.email, user.id, AuthAccount.__table__.c.email.type.length
             )
+
+    # Delete two-factor recovery codes
+    db.query(TwoFactorRecoveryCode).filter(
+        TwoFactorRecoveryCode.user_id == user.id
+    ).delete(synchronize_session=False)
 
     commit_or_bad_request(db, "Account could not be deactivated",)
 

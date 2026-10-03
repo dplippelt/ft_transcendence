@@ -1,0 +1,18 @@
+@use '../variables' as *;
+
+.query
+{
+	text-align: center;
+	font-family: $text-font;
+	font-size: 0.8rem;
+	font-weight: 800;
+}
+
+.checkbox
+{
+	label
+	{
+		justify-self: center;
+	}
+}
+

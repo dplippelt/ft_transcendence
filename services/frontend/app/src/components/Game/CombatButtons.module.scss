@@ -3,48 +3,53 @@
 .combatButton
 {
 	position: absolute;
-	width: 5rem;
-	height: 3rem;
-	font-size: 1rem;
-	background-color: $button-v1-bg-color;
-	padding: 0.4rem;
-	padding-top: 0.45rem;
-	text-align: center;
-
-	@media ( max-height: 420px )
-	{
-		width: 3rem;
-		height: 2rem;
-		font-size: 0.7rem;
-	}
-
-	&:hover
-	{
-		background-color: $button-v1-hover-bg-color;
-		color: $button-v1-hover-color;
-	}
-
-	&:disabled
-	{
-		opacity: 50%;
-		pointer-events: none;
-	}
+	border: none;
+	background-color: transparent;
 }
 
 .attackButton
 {
-	bottom: 30%;
-	right: 3.5%;
+	// using Deck positions passed by phaser to position the attack button symmetrically
+	top: var(--deck-y);
+	right: var(--deck-x);
+	height: var(--deck-height);
+	transform: translateX(50%) translateY(-50%) scale(90%);
+	aspect-ratio: 634 / 784; // needs to match image dimensions
+	background-image: url("../../assets/attack_button.png");
+	background-position: center;
+	background-size: cover;
+	transition: height 0.02s ease;
+
+	&:hover
+	{
+		border: 2px solid goldenrod;
+	}
+
+	&:active
+	{
+		height: calc(var(--deck-height) * 0.95);
+	}
 }
 
 .drawButton
 {
-	bottom: 30%;
-	left: 3.5%;
-}
+	top: var(--deck-y);
+	left: var(--deck-x);
+	height: var(--deck-height);
+	transform: translateX(-50%) translateY(-50%) scale(90%);
+	aspect-ratio: 633 / 817; // needs to match image dimensions
+	background-image: url("../../assets/deck_button.png");
+	background-position: center;
+	background-size: cover;
+	transition: height 0.02s ease;
 
-.resetButton
-{
-	top: 20%;
-	left: 3.5%;
+	&:hover
+	{
+		border: 2px solid goldenrod;
+	}
+
+	&:active
+	{
+		height: calc(var(--deck-height) * 0.95);
+	}
 }

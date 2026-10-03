@@ -4,7 +4,8 @@ import CombatScene from "./CombatScene";
 import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
 import { EventBus } from "../EventBus";
-import { CombatEvent, GameEvent, GameState } from "../../utils/utils";
+import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, isValidOpsMaskStr, OperatorBit, RouteParamKey } from "../../utils/utils";
+import { Operator } from "../gameobjects/cards/CardBase";
 
 export enum GameEvents {
   CombatInitiated = "combat-initiated",
@@ -38,6 +39,7 @@ export class GameManagerScene extends Scene {
   private _exitedPlayers: Set<Player>;
   private _levelCount: number = 1; // TODO: Hard-coded for now
                                     // // TODO: change back to intended max level count (was 5)
+  private _operators: Operator[];
 
   constructor() {
     super("game-manager");
@@ -45,6 +47,8 @@ export class GameManagerScene extends Scene {
     this._gameType = GameType.SinglePlayer;
     this._combatScenes = [];
     this._exitedPlayers = new Set<Player>();
+    this._operators = this.getOperators();
+    console.log(this._operators);
   }
 
   init() {
@@ -65,23 +69,20 @@ export class GameManagerScene extends Scene {
   create() {
     this.input.keyboard?.on("keydown-ESC", () => EventBus.emit(GameEvent.gameMenu));
 
-    EventBus.on(GameEvent.gameVis, (visible: boolean) => {
-      this._isGameVisible = visible;
-      this.updateGlobalCapture();
-    });
+    this.game.events.on(Core.Events.BLUR, this.onBlur, this);
+    this.game.events.on(Core.Events.HIDDEN, this.onBlur, this);
+    EventBus.addListener(GameEvent.gameVis, this.onGameVisChange, this);
+    EventBus.addListener(GameEvent.chatFocus, this.onChatFocusChange, this);
+    EventBus.addListener(GameEvent.gameMenu, this.onGameMenu, this);
+    EventBus.addListener(GameEvent.blur, this.onGameBlur, this);
 
-    EventBus.on(GameEvent.chatFocus, (focused: boolean) => {
-      this._isChatFocused = focused;
-      this.updateGlobalCapture();
-      if ( focused )
-        this.game.events.emit(Core.Events.BLUR);
-    });
-
-    EventBus.on(GameEvent.gameMenu, () => {
-      if (this._gameType === GameType.OnlineCoop)
-        return; // Do not pause game for online multiplayer games when game menu is opened.
-
-      this.togglePause();
+    this.events.once(Phaser.Scenes.Events.DESTROY, () => {
+      this.game.events.off(Core.Events.BLUR, this.onBlur, this);
+      this.game.events.off(Core.Events.HIDDEN, this.onBlur, this);
+      EventBus.removeListener(GameEvent.gameVis, this.onGameVisChange, this);
+      EventBus.removeListener(GameEvent.chatFocus, this.onChatFocusChange, this);
+      EventBus.removeListener(GameEvent.gameMenu, this.onGameMenu, this);
+      EventBus.removeListener(GameEvent.blur, this.onGameBlur, this);
     });
   }
 
@@ -141,9 +142,18 @@ export class GameManagerScene extends Scene {
     this.updateGlobalCapture();
 
     EventBus.emit(GameEvent.inCombat, false);
+    EventBus.removeListener(CombatEvent.getInitPlayerHp);
+    EventBus.removeListener(CombatEvent.getInitPlayerMp);
+    EventBus.removeListener(CombatEvent.getInitEnemyHp);
+    EventBus.removeListener(CombatEvent.getInitTargetNumbers);
+    EventBus.removeListener(CombatEvent.getCurrPlayerHp);
+    EventBus.removeListener(CombatEvent.getCurrPlayerMp);
+    EventBus.removeListener(CombatEvent.getCurrEnemyHp);
+    EventBus.removeListener(CombatEvent.getCurrTargetNumbers);
+    EventBus.removeListener(CombatEvent.getTurnTimerState);
     EventBus.removeListener(CombatEvent.attack);
     EventBus.removeListener(CombatEvent.draw);
-    EventBus.removeListener(CombatEvent.reset);
+    EventBus.removeListener(CombatEvent.completeFillHand);
   }
 
   private updateGlobalCapture() {
@@ -161,12 +171,24 @@ export class GameManagerScene extends Scene {
     }
   }
 
+  private pause() {
+    for ( const scene of this.getActiveScenes() ) {
+      if ( this.scene.isPaused(scene) ) continue;
+      this.scene.pause(scene);
+      EventBus.emit(CombatEvent.pauseTimer, true);
+    }
+  }
+
   private togglePause() {
     for ( const scene of this.getActiveScenes() ) {
-      if (this.scene.isPaused(scene))
+      if (this.scene.isPaused(scene)) {
         this.scene.resume(scene);
-      else
+        EventBus.emit(CombatEvent.pauseTimer, false);
+      }
+      else {
         this.scene.pause(scene);
+        EventBus.emit(CombatEvent.pauseTimer, true);
+      }
     }
   }
 
@@ -206,5 +228,51 @@ export class GameManagerScene extends Scene {
 
   private anyPlayerAlive() {
     return this._gameScene.getAlivePlayerCount() > 0;
+  }
+
+  private onBlur( doBlur: boolean = true ) {
+    if ( !doBlur ) return; // so it doesn't blur the game and open the game menu when BLUR is emitted by a focus on the side bar chat
+    EventBus.emit(GameEvent.blur);
+  }
+
+  private onGameVisChange(visible: boolean) {
+    this._isGameVisible = visible;
+    this.updateGlobalCapture();
+  }
+
+  private onChatFocusChange(focused: boolean) {
+      this._isChatFocused = focused;
+      this.updateGlobalCapture();
+      if (focused)
+        this.game.events.emit(Core.Events.BLUR, false);
+  }
+
+  private onGameMenu() {
+      if (this._gameType === GameType.OnlineCoop)
+        return;
+      this.togglePause();
+  }
+
+  private onGameBlur() {
+      if (this._gameType === GameType.OnlineCoop)
+        return;
+      this.pause();
+  }
+
+  // Just a temporary helper function that builds the Operator[] for you change/move it however you like
+  getOperators() {
+    const searchParams = new URLSearchParams(window.location.search);
+    let opsMaskString = searchParams.get(RouteParamKey.ops);
+    if ( !opsMaskString || !isValidOpsMaskStr(opsMaskString) )
+      opsMaskString = DEFAULT_OPS_MASK; // this should never be necessary because PhaserGame already checks and fixes the url but good to keep anyway
+
+    const opsFlags =  parseInt(opsMaskString, 2);
+    const ops: Operator[] = [];
+    if ( opsFlags & OperatorBit.plus ) ops.push(Operator.Plus);
+    if ( opsFlags & OperatorBit.minus ) ops.push(Operator.Minus);
+    if ( opsFlags & OperatorBit.multiply ) ops.push(Operator.Multiply);
+    if ( opsFlags & OperatorBit.divide ) ops.push(Operator.Divide);
+    if ( opsFlags & OperatorBit.modulo ) ops.push(Operator.Modulo);
+    return ops;
   }
 }

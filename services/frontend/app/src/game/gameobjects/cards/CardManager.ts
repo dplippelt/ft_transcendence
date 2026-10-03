@@ -1,39 +1,36 @@
-import type { Scene } from "phaser";
+import Phaser, { Scene } from "phaser";
 import CardDeck, { cardDeckConfig } from "./CardDeck";
-import CardHand, { cardHandConfig } from "./CardHand";
-import CardSelection, { cardSelectionConfig } from "./CardSelection";
+import CardHand from "./CardHand";
+import CardSelection from "./CardSelection";
 import CardBase, { CardEvents } from "./CardBase";
 import type { PlayerStatus } from "../../scenes/CombatScene";
-import { EventBus } from "../../EventBus";
-import { CombatEvent } from "../../../utils/utils";
 
-interface CardManagerConfig {
-  maxNumCardsInHand: number;
+export enum CardActionEvents {
+  DRAW = "draw",
+  SELECT = "select",
+  UNSELECT = "unselect",
+  GENERATE_DECK = "generateDeck",
+  TRASH_CARD = "trashCard",
 }
-
-export const cardManagerConfig: CardManagerConfig = {
-  maxNumCardsInHand: 8,
-};
 
 export default class CardManager {
   readonly scene: Scene;
   readonly playerStatus: PlayerStatus;
-  readonly config: CardManagerConfig;
   readonly cardDeck: CardDeck;
   readonly cardHand: CardHand;
   readonly cardSelection: CardSelection;
+  readonly events: Phaser.Events.EventEmitter;
+  readonly maxNumCardsInHand: number;
 
-  constructor(scene: Scene, playerStatus: PlayerStatus, config: CardManagerConfig) {
+  constructor(scene: Scene, playerStatus: PlayerStatus) {
     this.scene = scene;
     this.playerStatus = playerStatus;
-    this.config = config;
     this.cardDeck = new CardDeck(this.scene, cardDeckConfig);
-    this.cardHand = new CardHand(this.scene, cardHandConfig);
-    this.cardSelection = new CardSelection(this.scene, cardSelectionConfig);
-
+    this.cardHand = new CardHand(this.scene);
+    this.cardSelection = new CardSelection(this.scene);
+    this.events = new Phaser.Events.EventEmitter();
+    this.maxNumCardsInHand = 8;
     scene.input.setTopOnly(true);
-    EventBus.addListener(CombatEvent.draw, this.drawExtraCard, this);
-    EventBus.addListener(CombatEvent.reset, this.resetSelection, this);
   }
 
   resetSelection() {
@@ -41,7 +38,11 @@ export default class CardManager {
   }
 
   clearHand() {
-    this.cardHand.clearHand();
+    const cards = this.cardHand.getHandCards();
+    for (const card of cards) {
+      this.cardHand.removeCard(card);
+      this.events.emit(CardActionEvents.TRASH_CARD, card);
+    }
   }
 
   fillCardHand(amount: number) {
@@ -51,46 +52,58 @@ export default class CardManager {
   }
 
   drawCard() {
-    if (this.cardHand.numCards >= this.config.maxNumCardsInHand) {
+    if (!this.cardHand.isUnderHandLimit(this.maxNumCardsInHand)) {
       return false;
     }
 
-    const card = this.cardDeck.dealCard();
+    if (this.cardDeck.isEmpty()) {
+      this.cardDeck.initDeck();
+      this.events.emit(CardActionEvents.GENERATE_DECK);
+    }
+    const card = this.cardDeck.dealCard()!;
     card.on(CardEvents.SELECTION, this.select, this);
+
     this.cardHand.addCard(card);
+    this.events.emit(CardActionEvents.DRAW, card);
     return true;
   }
 
-  drawExtraCard() {
-    if (this.playerStatus.mana <= 0) {
-      return;
-    }
-    if (this.drawCard()) {
-      this.playerStatus.mana--;
-      EventBus.emit(CombatEvent.updatePlayerMP, this.playerStatus.mana);
+  shiftSelectedCards() {
+    const slots = this.cardSelection.getSelectionSlots();
+    const numSlots = this.cardSelection.getNumSlots();
+
+    for (let i = 0; i < numSlots - 1; i++) {
+      if (slots[i].isCardSet()) continue;
+
+      const currentSlot = slots[i];
+      const nextSlot = slots[i + 1];
+
+      if (nextSlot.isCardSet()) {
+        const nextCard = nextSlot.getCard()!;
+        nextSlot.unsetCard();
+        currentSlot.setCard(nextCard);
+      }
     }
   }
 
   select(card: CardBase) {
     if (card.getIsFocused()) {
-      this.cardHand.focusOff(card);
+      card.focusOff();
     }
 
     if (card.getIsSelected()) {
       this.cardSelection.unsetCardFromSlot(card);
-
+      this.shiftSelectedCards();
       card.setIsSelected(false);
+      this.events.emit(CardActionEvents.UNSELECT, card);
       return;
     }
 
-    if (this.cardSelection.setCardToSlot(card)) {
+    const slot = this.cardSelection.setCardToSlot(card);
+    if (slot !== null) {
       card.setIsSelected(true);
+      this.events.emit(CardActionEvents.SELECT, slot);
       return;
     }
-  }
-
-  alignAllCards() {
-    this.cardHand.align();
-    this.cardSelection.align();
   }
 }

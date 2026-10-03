@@ -1,193 +1,218 @@
 import Phaser, { type Scene } from "phaser";
-import CardManager, { cardManagerConfig } from "./cards/CardManager";
-import type CardBase from "./cards/CardBase";
-import { Operator, type CardValue } from "./cards/CardBase";
+import CardManager from "./cards/CardManager";
 import CombatTurnManager, { TurnEvents } from "./CombatTurnManager";
-import type { PlayerStatus } from "../scenes/CombatScene";
+import { initPlayerStatus, type PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
+import CombatLayoutManager from "./CombatLayoutManager";
+import CombatPlayer from "./CombatPlayer";
+import CombatExecuteManager, { damageToEnemyConfig, type DamageToEnemy } from "./CombatExecuteManager";
 import { EventBus } from "../EventBus";
 import { CombatEvent } from "../../utils/utils";
 
 export enum CombatEvents {
   ENDCOMBAT = "endCombat",
   ENDGAME = "endGame",
+  PLAYERATTACK = "playerAttack",
+  PLAYERGUARD = "PlayerGuard",
+  ENEMYATTACK = "enemyAttack",
+  TAKEDAMAGE = "takeDamage",
+  ENDTURN = "endTurn",
+  JUDGERESULT = "judgeResult",
+  COMPLETEFILLHAND = "completeFillHand",
 }
 
 export default class CombatManager {
   readonly scene: Scene;
-  readonly playerStatus: PlayerStatus;
+  readonly player: CombatPlayer;
   readonly enemy: CombatEnemy;
   readonly cardManager: CardManager;
   readonly turnManager: CombatTurnManager;
+  readonly executeManager: CombatExecuteManager;
   readonly events: Phaser.Events.EventEmitter;
+  readonly layoutManager: CombatLayoutManager;
+  readonly damageToEnemyOn: DamageToEnemy = damageToEnemyConfig;
+  readonly enemyData: EnemyData;
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
-    this.playerStatus = playerStatus;
+    this.enemyData = enemyData;
+    this.player = new CombatPlayer(scene, playerStatus);
     this.enemy = new CombatEnemy(scene, enemyData);
-    this.cardManager = new CardManager(scene, playerStatus, cardManagerConfig);
+    this.cardManager = new CardManager(scene, playerStatus);
     this.turnManager = new CombatTurnManager(this);
-    this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
-    this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.executeEnemyEffect, this);
+    this.onTurnAction();
+    this.executeManager = new CombatExecuteManager();
     this.events = new Phaser.Events.EventEmitter();
-    this.initPlayerTurn();
-    EventBus.emit(CombatEvent.initPlayerHP, this.playerStatus.hitPoint);
-    EventBus.emit(CombatEvent.initPlayerMP, this.playerStatus.mana);
-    EventBus.emit(CombatEvent.initEnemyHP, this.enemy.hitPoint);
-    EventBus.addListener(CombatEvent.attack, this.execute, this);
+    this.onCombatAction();
+    this.layoutManager = new CombatLayoutManager(this);
+    this.turnManager.turnEvents.emit(TurnEvents.STARTPLAYER);
   }
 
-  update() {
-    this.cardManager.alignAllCards();
+  update() {}
 
-    // TODO: for debugging/testing only - remove displayTimer() later
-    this.turnManager.displayTimer();
+  onTurnAction() {
+    const events = this.turnManager.turnEvents;
+    events.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
+    events.on(TurnEvents.STARTENEMY, this.initEnemyTurn, this);
+  }
+
+  onCombatAction() {
+    this.events.on(CombatEvents.PLAYERATTACK, this.playerAttack, this);
+    this.events.on(CombatEvents.PLAYERGUARD, this.playerGuard, this);
+    this.events.on(CombatEvents.ENEMYATTACK, this.enemyAttack, this);
+    this.events.on(CombatEvents.TAKEDAMAGE, this.takeDamage, this);
+    this.events.on(CombatEvents.ENDTURN, this.endTurn, this);
+    this.events.on(CombatEvents.JUDGERESULT, this.judgeResult, this);
+    this.events.on(CombatEvents.COMPLETEFILLHAND, this.completeFillHand, this);
   }
 
   initPlayerTurn() {
-    this.cardManager.resetSelection();
-    this.cardManager.clearHand();
-    this.cardManager.fillCardHand(5);
+    this.resetHand();
+    EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs());
   }
 
-  executeEnemyEffect() {
-    console.log("attack damage");
-    this.enemy.attack(this.playerStatus);
-    if (this.playerStatus.hitPoint <= 0) {
-      this.endGame();
+  resetHand() {
+    this.cardManager.resetSelection();
+    this.cardManager.clearHand();
+    this.fillCardHand();
+    this.executeManager.reset();
+    this.executeManager.generateTargetNumbersFromHand(this.cardManager.cardHand);
+    this.executeManager.test_getValidFormula(this.scene);
+  }
+
+  fillCardHand() {
+    const amount = this.cardManager.maxNumCardsInHand;
+    this.cardManager.fillCardHand(amount);
+    if (!this.executeManager.isValidCardHand(this.cardManager.cardHand)) {
+      this.cardManager.cardHand.removeAll(true);
+      this.fillCardHand();
+    }
+  }
+
+  redrawCards() {
+    if (this.player.status.mana > 0) {
+      this.resetHand();
+      this.player.status.mana--;
+    }
+  }
+
+  initEnemyTurn() {
+    EventBus.emit(CombatEvent.turnEnded);
+    if (this.executeManager.isSuccessHitTarget()) {
+      this.events.emit(CombatEvents.PLAYERGUARD);
+    } else {
+      this.events.emit(CombatEvents.ENEMYATTACK);
     }
   }
 
   execute() {
     const cards = this.cardManager.cardSelection.getSelectedCards();
-
-    if (!cards.length) {
-      console.log("no cards");
+    this.executeManager.evaluateSelectedCards(cards);
+    if (this.executeManager.getResult() === null) {
       return;
     }
+    this.events.emit(CombatEvents.JUDGERESULT);
+  }
 
-    const result = this.evaluateSelectedCards(cards);
-    console.log(result);
-    if (result === null) {
-      // dealPenalty(this.playerStatus);
-      // TODO
+  judgeResult() {
+    if (this.executeManager.isSuccessHitTarget()) {
+      this.events.emit(CombatEvents.PLAYERATTACK);
+      EventBus.emit(CombatEvent.turnEnded);
     } else {
-      this.enemy.takeDamage(result);
+      // dealPenalty(this.playerStatus);
+      // or just to ignore like the case of no cards would be fine?
     }
-    if (this.playerStatus.hitPoint <= 0) {
-      this.endGame();
-      return;
+  }
+
+  playerAttack() {
+    this.events.emit(CombatEvents.TAKEDAMAGE, this.enemy);
+  }
+
+  playerGuard() {
+    this.events.emit(CombatEvents.ENDTURN);
+  }
+
+  enemyAttack() {
+    this.events.emit(CombatEvents.TAKEDAMAGE, this.player);
+  }
+
+  takeDamage(combatant: CombatPlayer | CombatEnemy) {
+    if (combatant instanceof CombatEnemy) {
+      const combo = this.executeManager.getCombo()!;
+      combatant.takeDamage(this.damageToEnemyOn[combo]);
+      EventBus.emit(CombatEvent.updateEnemyHP, this.enemy.hitPoint);
+      if (combatant.isDead()) {
+        this.endCombat();
+        return;
+      }
+    } else {
+      combatant.takeDamage(this.enemy.enemyData.attackDamage);
+      EventBus.emit(CombatEvent.updatePlayerHP, this.player.status.hitPoint);
+      if (combatant.isDead()) {
+        this.endGame();
+        return;
+      }
     }
-    if (this.enemy.hitPoint <= 0) {
-      this.endCombat();
-      return;
-    }
+    this.events.emit(CombatEvents.ENDTURN);
+  }
+
+  endTurn() {
     this.turnManager.switchTurn();
   }
 
   endCombat() {
     this.turnManager.clock.removeAllEvents();
+    this.turnManager.destroy();
     this.events.emit(CombatEvents.ENDCOMBAT);
   }
 
   endGame() {
     this.turnManager.clock.removeAllEvents();
+    this.turnManager.destroy();
     this.events.emit(CombatEvents.ENDGAME);
   }
 
-  evaluateSelectedCards(selectedCards: CardBase[]) {
-    if (!this.isValidSelection(selectedCards)) return null;
-
-    const values = this.evaluateHighPrecedenceOperations(selectedCards);
-    if (!values) return null;
-
-    const result = this.evaluateLowPrecedenceOperations(values);
-    return result;
+  sendInitPlayerHP() {
+    EventBus.emit(CombatEvent.initPlayerHP, initPlayerStatus.hitPoint);
   }
 
-  evaluateHighPrecedenceOperations(selectedCards: CardBase[]) {
-    const values: CardValue[] = [];
-
-    for (let i = 0; i < selectedCards.length; ++i) {
-      const card = selectedCards[i];
-
-      if (i % 2 === 0) {
-        const currNum = card.getValue() as number;
-
-        if (!values.length) {
-          values.push(currNum);
-          continue;
-        }
-
-        const operator = values.pop() as Operator;
-        const preNum = values.pop() as number;
-
-        switch (operator) {
-          case Operator.Multiply:
-            values.push(preNum * currNum);
-            break;
-
-          case Operator.Divide:
-            if (currNum === 0) return null;
-            values.push(preNum / currNum);
-            break;
-
-          case Operator.Modulo:
-            if (currNum === 0) return null;
-            values.push(preNum % currNum);
-            break;
-
-          default:
-            values.push(preNum);
-            values.push(operator);
-            values.push(currNum);
-            break;
-        }
-      } else {
-        const operator = card.getValue() as Operator;
-        values.push(operator);
-      }
-    }
-
-    return values;
+  sendInitPlayerMP() {
+    EventBus.emit(CombatEvent.initPlayerMP, initPlayerStatus.mana);
   }
 
-  evaluateLowPrecedenceOperations(values: CardValue[]) {
-    let num = values[0] as number;
-
-    for (let i = 2; i < values.length; i += 2) {
-      const currNum = values[i] as number;
-      const operator = values[i - 1] as Operator;
-
-      switch (operator) {
-        case Operator.Plus:
-          num += currNum;
-          break;
-
-        case Operator.Minus:
-          num -= currNum;
-          break;
-
-        default:
-          break;
-      }
-    }
-
-    return num;
+  sendInitEnemyHP() {
+    EventBus.emit(CombatEvent.initEnemyHP, this.enemyData.hitPoint);
   }
 
-  isValidSelection(selectedCard: CardBase[]) {
-    if (selectedCard.length % 2 === 0) return false;
+  sendInitTargetNumbers() {
+    EventBus.emit(CombatEvent.initTargetNumbers, this.executeManager.getTargetNumbers())
+  }
 
-    for (let i = 0; i < selectedCard.length; ++i) {
-      const card = selectedCard[i];
+  sendCurrPlayerHP() {
+    EventBus.emit(CombatEvent.updatePlayerHP, this.player.status.hitPoint);
+  }
 
-      if (i % 2 === 0) {
-        if (!card.isValueNumber()) return false;
-      } else {
-        if (!card.isValueOperator()) return false;
-      }
+  sendCurrPlayerMP() {
+    EventBus.emit(CombatEvent.updatePlayerMP, this.player.status.mana);
+  }
+
+  sendCurrEnemyHP() {
+    EventBus.emit(CombatEvent.updateEnemyHP, this.enemy.hitPoint);
+  }
+
+  sendCurrTargetNumbers() {
+    EventBus.emit(CombatEvent.updateTargetNumbers, this.executeManager.getTargetNumbers())
+  }
+
+  sendElapsedPlayerTime() {
+    const elapsedTime = this.turnManager.getElapsedPlayerTime();
+    if (elapsedTime === null) {
+      return;
     }
-    return true;
+    EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs(), elapsedTime);
+  }
+
+  completeFillHand() {
+    EventBus.emit(CombatEvent.completeFillHand);
   }
 }

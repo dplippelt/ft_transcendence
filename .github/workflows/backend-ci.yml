@@ -1,0 +1,40 @@
+name: Backend CI
+
+on:
+  pull_request:
+    paths:
+      - "services/backend/**"
+      - ".github/workflows/backend-ci.yml"
+  push:
+    branches:
+      - master
+    paths:
+      - "services/backend/**"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/backend
+    env:
+      DATABASE_URL: "sqlite+pysqlite:///:memory:"
+      SECRET_KEY: "ci-test-secret-key"
+      TWO_FACTOR_ENCRYPTION_KEY: "7oGz1lF3z1lF3z1lF3z1lF3z1lF3z1lF3z1lF3z1lFI="
+      TWO_FACTOR_RECOVERY_HMAC_KEY: "ci-test-recovery-hmac-key"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Ruff
+        run: ruff check app tests
+
+      - name: Pytest
+        run: python -m pytest -q

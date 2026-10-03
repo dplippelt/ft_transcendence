@@ -14,7 +14,6 @@ import Popup from "../../components/Popup";
 import AddFriendPopup from "./AddFriendPopup";
 import RemoveFriendPopup from "./RemoveFriendPopup";
 import InviteFriendPopup from "./InviteFriendPopup";
-import { useLocation } from "react-router-dom";
 import { useFriends } from "../../contexts/FriendsContext";
 
 interface IButtons
@@ -34,14 +33,12 @@ interface IFriendsContainer
 function Buttons( { mobileView, setMobileView, setPopupType } : IButtons )
 {
 	const isMobile = useIsMobile(720);
-	const location = useLocation();
-	const path = location.state?.from ?? RoutePath.mainMenu;
 
 	return (
 		<BottomButtons>
 			{ isMobile && mobileView === MobileView.chat
 			? <BottomButton label="Back" onClick={ () => setMobileView(MobileView.friends) } mobilePosition={MobilePosition.bottom} />
-			: <BackButton path={path} />}
+			: <BackButton fallback={RoutePath.mainMenu} />}
 			{ ( !isMobile || ( isMobile && mobileView === MobileView.friends )) && <BottomButton label="Add Friend" onClick={ () => setPopupType(PopupType.addFriend) } /> }
 		</BottomButtons>
 	);

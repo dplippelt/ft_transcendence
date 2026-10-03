@@ -1,7 +1,6 @@
 from pathlib import Path
 from urllib.parse import urlparse
 
-
 AVATAR_DIR = Path("uploads/avatars")
 AVATAR_URL_PREFIX = "/uploads/avatars/"
 

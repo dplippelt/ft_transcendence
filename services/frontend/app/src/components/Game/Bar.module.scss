@@ -3,7 +3,7 @@
 @mixin bar
 {
 	position: absolute;
-	width: $bar-width;
+	width: min(15%, $bar-width);
 	height: $bar-height;
 	border: $bar-border;
 	border-radius: $bar-height;
@@ -34,7 +34,7 @@
 {
 	@include hpBar;
 	bottom: 1.5rem;
-	left: 1rem;
+	left: calc(var(--combat-ui-inset-x, 0px) + 1rem);
 
 	@media ( max-height: 480px )
 	{
@@ -46,7 +46,7 @@
 {
 	@include hpBar;
 	bottom: 1.5rem;
-	right: 1rem;
+	right: calc(var(--combat-ui-inset-x, 0px) + 1rem);
 
 	@media ( max-height: 480px )
 	{
@@ -58,7 +58,7 @@
 {
 	@include mpBar;
 	bottom: 2.7rem;
-	left: 1rem;
+	left: calc(var(--combat-ui-inset-x, 0px) + 1rem);
 
 	@media ( max-height: 480px )
 	{

@@ -61,7 +61,10 @@ class ConnectionManager:
                 try:
                     await websocket.close()
                 except Exception:
-                    pass
+                    logger.debug(
+                        "Failed to close websocket",
+                        exc_info=True,
+                    )
 
         return delivered
 

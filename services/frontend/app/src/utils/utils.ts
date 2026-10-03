@@ -21,15 +21,17 @@ export enum AvatarSize
 export enum PopupType
 {
 	none,
-	addFriend,
-	removeFriend,
-	inviteFriend,
-	editAvatar,
+    addFriend,
+    removeFriend,
+    inviteFriend,
+    editAvatar,
     editUsername,
     editDisplayName,
-	editPassword,
-	createLobby,
-	localCoop,
+    editPassword,
+    twoFactor,
+    createLobby,
+    localCoop,
+    operatorSelection,
 }
 
 export enum Tab
@@ -57,8 +59,8 @@ export enum JoinStatus
 export enum RoutePath
 {
 	landingPage = "/",
-    auth = "/auth",
-    completeProfile = "/complete-profile",
+	auth = "/auth",
+	completeProfile = "/complete-profile",
 	mainMenu = "/main-menu",
 	multiplayer = "/multiplayer",
 	mpLobby = "/multiplayer/lobby",
@@ -68,17 +70,27 @@ export enum RoutePath
 	leaderboard = "/leaderboard",
 	howToPlay = "/how-to-play",
 	settings = "/settings",
-	gameDev = "/game-dev",
-	game = "/game-dev", //TODO: change path to just "/game" or "/sp-game" later
+	game = "/game",
 	gameOver = "/game-over",
+}
+
+export enum RouteParamKey
+{
+	mode = "mode",
+	ops = "ops",
+	type = "type",
+}
+
+export enum RouteParamValue
+{
+	login = "login",
+	signup = "signup",
+	singlePlayer = "sp",
+	localCoop = "coop",
 }
 
 export enum RouteParam
 {
-	login = "?mode=login",
-	signup = "?mode=signup",
-	sp = "?mode=sp",
-	coop = "?mode=coop",
 	lobbyID = "/:lobbyID",
 }
 
@@ -89,7 +101,9 @@ export enum GameEvent
 	chatFocus = "chat-focused",
 	gameState = "game-state",
 	inCombat = "in-combat",
-	logout = "logout",
+  logout = "logout",
+	pause = "pause",
+	blur = "blur",
 }
 
 export enum CombatEvent
@@ -100,11 +114,23 @@ export enum CombatEvent
 	updateEnemyHP = "update-enemy-hp",
 	initPlayerMP = "init-player-mp",
 	updatePlayerMP = "update-player-mp",
-	initTurnTimer = "init-turn-timer",
+	initTargetNumbers = "init-target-numbers",
+	updateTargetNumbers = "update-target-numbers",
+	initTurn = "init-turn",
+	pauseTimer = "pause-timer",
 	attack = "attack",
 	draw = "draw",
-	reset = "reset",
+	completeFillHand = "complete-fill-hand",
 	turnEnded = "turn-ended",
+	getTurnTimerState = "turn-timer-state",
+	getInitPlayerHp = "get-init-player-hp",
+	getInitPlayerMp = "get-init-player-mp",
+	getInitEnemyHp = "get-init-enemy-hp",
+	getInitTargetNumbers = "get-init-target-numbers",
+	getCurrPlayerHp = "get-curr-player-hp",
+	getCurrPlayerMp = "get-curr-player-mp",
+	getCurrEnemyHp = "get-curr-enemy-hp",
+	getCurrTargetNumbers = "get-curr-target-numbers",
 }
 
 export enum GameState
@@ -119,6 +145,7 @@ export enum RegistryKey
 	mode = "mode",
 }
 
+// TODO: check if we can just reuse RouteParamValue enum instead
 export enum GameMode
 {
 	sp = "sp",
@@ -139,3 +166,47 @@ export function getLobbyDraftKey( userID: string, lobbyID: string ) : string
 	return DRAFT_STORAGE_PREFIX + LOBBY_DRAFT + userID + ":" + lobbyID;
 }
 
+// Shared username/display_name fallback chain -- used anywhere a user needs
+// to be shown as a single display string, so the precedence (and fallback
+// text) can't silently drift between call sites.
+export function getDisplayName( user: { username: string | null; display_name: string | null }, fallback = "Unknown" ) : string
+{
+	return user.username ?? user.display_name ?? fallback;
+}
+
+export function buildRoute( path: RoutePath, params: Partial<Record<RouteParamKey, string>> ) : string
+{
+	const query = new URLSearchParams(params as Record<string, string>).toString();
+	const fullPath = query ? `${path}?${query}` : path;
+	return fullPath;
+}
+
+export enum OperatorBit
+{
+	none = 0,
+	plus = 1 << 0,
+	minus = 1 << 1,
+	multiply = 1 << 2,
+	modulo = 1 << 3,
+	divide = 1 << 4,
+}
+
+type Bit = "0" | "1";
+type OpsMaskStr = `${Bit}${Bit}${Bit}${Bit}${Bit}`;
+
+export const DEFAULT_OPS_MASK = (OperatorBit.plus | OperatorBit.minus).toString(2).padStart(5, "0");
+
+export function isValidOpsMaskStr(value: string): value is OpsMaskStr
+{
+	return /^[01]{5}$/.test(value) && parseInt(value, 2) > 0;
+}
+
+export function getOperatorsMask( ops: number ) : string
+{
+	return ops.toString(2).padStart(5, "0");
+}
+
+export function getPathToGame( ops: number ) : string
+{
+	return buildRoute(RoutePath.game, { [RouteParamKey.ops]: getOperatorsMask(ops) });
+}

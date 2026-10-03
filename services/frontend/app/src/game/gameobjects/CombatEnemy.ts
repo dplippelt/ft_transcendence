@@ -1,7 +1,5 @@
-import type { Scene } from "phaser";
-import BoxedText from "./utils/BoxedText";
-import { cardConfig } from "./utils/cardConfig";
-import type { PlayerStatus } from "../scenes/CombatScene";
+import Phaser, { Scene } from "phaser";
+import { AssetsKey } from "../Assets";
 import { EventBus } from "../EventBus";
 import { CombatEvent } from "../../utils/utils";
 
@@ -20,27 +18,30 @@ export type EnemyTypes = Record<EnemyLevel, EnemyData>;
 
 export const enemyTypes: EnemyTypes = {
   [EnemyLevel.EASY]: {
-    hitPoint: 100,
-    attackDamage: 10,
+    hitPoint: 5,
+    attackDamage: 2,
   },
   [EnemyLevel.NORMAL]: {
-    hitPoint: 200,
-    attackDamage: 30,
+    hitPoint: 16,
+    attackDamage: 4,
   },
   [EnemyLevel.HARD]: {
-    hitPoint: 300,
-    attackDamage: 50,
+    hitPoint: 25,
+    attackDamage: 5,
   },
 };
 
-export default class CombatEnemy extends BoxedText {
+export default class CombatEnemy extends Phaser.GameObjects.Sprite {
   readonly enemyData: EnemyData;
   hitPoint: number;
 
   constructor(scene: Scene, enemyData: EnemyData) {
-    super(scene, "enemy", cardConfig.cardContentConfig, cardConfig.cardStyleConfig);
+    super(scene, 0, 0, AssetsKey.CombatEnemy);
     this.enemyData = enemyData;
     this.hitPoint = enemyData.hitPoint;
+    this.scene.add.existing(this);
+    this.setFlipX(true);
+    this.setOrigin(0.5, 1);
   }
 
   takeDamage(damage: number) {
@@ -48,8 +49,7 @@ export default class CombatEnemy extends BoxedText {
     EventBus.emit(CombatEvent.updateEnemyHP, this.hitPoint);
   }
 
-  attack(playerStatus: PlayerStatus) {
-    playerStatus.hitPoint -= this.enemyData.attackDamage;
-    EventBus.emit(CombatEvent.updatePlayerHP, playerStatus.hitPoint);
+  isDead() {
+    return this.hitPoint <= 0;
   }
 }

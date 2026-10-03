@@ -4,10 +4,16 @@ import CombatManager, { CombatEvents } from "../gameobjects/CombatManager";
 import { type CombatEventData } from "../events/CombatEventData";
 import { GameManagerScene, GameEvents } from "./GameManagerScene";
 import { EnemyLevel, enemyTypes, type EnemyData } from "../gameobjects/CombatEnemy";
+import { CombatEvent } from "../../utils/utils";
 
 export interface PlayerStatus {
   hitPoint: number;
   mana: number;
+}
+
+export const initPlayerStatus: PlayerStatus = {
+	hitPoint: 10,
+	mana: 5,
 }
 
 export default class CombatScene extends Phaser.Scene {
@@ -27,10 +33,6 @@ export default class CombatScene extends Phaser.Scene {
   }
 
   preload() {
-    // load images for the combat scene
-    // needs to know which enemy the player is going to fight
-    // needs to know the status such as health point or the items (?) it has
-
     this.input.on("pointerdown", () => {
       if (this.input.activePointer.rightButtonDown()) {
         console.assert(this.eventData !== undefined, "this.eventData is undefined");
@@ -41,8 +43,8 @@ export default class CombatScene extends Phaser.Scene {
 
   create() {
     this.playerStatus = {
-      hitPoint: 100,
-      mana: 5,
+      hitPoint: initPlayerStatus.hitPoint,
+      mana: initPlayerStatus.mana,
     };
 
     this.enemyData = enemyTypes[EnemyLevel.NORMAL];
@@ -57,6 +59,18 @@ export default class CombatScene extends Phaser.Scene {
         console.assert(this.eventData !== undefined, "this.eventData is undefined");
         this.endGame(this.eventData!);
     }, this);
+
+    EventBus.addListener(CombatEvent.getInitPlayerHp, this.combatManager.sendInitPlayerHP, this.combatManager);
+    EventBus.addListener(CombatEvent.getInitPlayerMp, this.combatManager.sendInitPlayerMP, this.combatManager);
+    EventBus.addListener(CombatEvent.getInitEnemyHp, this.combatManager.sendInitEnemyHP, this.combatManager);
+    EventBus.addListener(CombatEvent.getInitTargetNumbers, this.combatManager.sendInitTargetNumbers, this.combatManager);
+    EventBus.addListener(CombatEvent.getCurrPlayerHp, this.combatManager.sendCurrPlayerHP, this.combatManager);
+    EventBus.addListener(CombatEvent.getCurrPlayerMp, this.combatManager.sendCurrPlayerMP, this.combatManager);
+    EventBus.addListener(CombatEvent.getCurrEnemyHp, this.combatManager.sendCurrEnemyHP, this.combatManager);
+    EventBus.addListener(CombatEvent.getCurrTargetNumbers, this.combatManager.sendCurrTargetNumbers, this.combatManager);
+    EventBus.addListener(CombatEvent.getTurnTimerState, this.combatManager.sendElapsedPlayerTime, this.combatManager)
+    EventBus.addListener(CombatEvent.attack, this.combatManager.execute, this.combatManager);
+    EventBus.addListener(CombatEvent.draw, this.combatManager.redrawCards, this.combatManager);
 
     EventBus.emit("current-scene-ready", this);
   }
