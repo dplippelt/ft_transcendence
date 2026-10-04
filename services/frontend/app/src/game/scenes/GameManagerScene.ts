@@ -31,7 +31,7 @@ export class GameManagerScene extends Scene {
   private _gameType: GameType;
   private _pendingCombatScene: Phaser.Scene | null = null;
   private _exitedPlayers: Set<Player>;
-  private _levelCount: number = 1; // TODO: Hard-coded for now
+  private _levelCount: number = 2; // TODO: Hard-coded for now
                                     // // TODO: change back to intended max level count (was 5)
   private _operators: Operator[];
 
@@ -114,7 +114,7 @@ export class GameManagerScene extends Scene {
 
   private onCombatOver(combatEventData: CombatEventData) {
     if (!combatEventData.player.isAlive) {
-      combatEventData.player.disableBody(true, true);
+      combatEventData.player.destroy(true); // this fixes the bug where the enemy would keep trying to follow the dead player (it was just disabling and hiding the player object before)
       if (!this.anyPlayerAlive()) {
         this.onGameOver(GameState.lost);
         return;
