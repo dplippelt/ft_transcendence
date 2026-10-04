@@ -5,7 +5,7 @@ import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
 import { EventBus } from "../EventBus";
 import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, GameType, isValidOpsMaskStr, OperatorBit, RouteParamKey, RouteParamValue } from "../../utils/utils";
-import { Operator } from "../gameobjects/cards/CardBase";
+import { Operator, OPERATORS } from "../gameobjects/cards/CardBase";
 
 export enum GameEvents {
   CombatInitiated = "combat-initiated",
@@ -43,7 +43,7 @@ export class GameManagerScene extends Scene {
     this._operators = this.getOperators();
     this._gameType = this.getGameType();
     console.log(this._gameType);
-    console.log(this._operators);
+    OPERATORS.splice(0, OPERATORS.length, ...this._operators);
   }
 
   init() {
