@@ -105,7 +105,7 @@ export class GameManagerScene extends Scene {
     this._pendingCombatScene = combatScene;
 
     this.scene.moveUp(combatScene);
-    if (this._gameType === GameType.SinglePlayer) {
+    if (this._gameType !== GameType.OnlineCoop) {
       this.scene.sleep(this._gameScene);
     }
 
@@ -127,7 +127,7 @@ export class GameManagerScene extends Scene {
 
     this.scene.moveDown(combatEventData.sceneInvoker);
     this.scene.stop(combatEventData.sceneInvoker);
-    if (this._gameType === GameType.SinglePlayer) {
+    if (this._gameType !== GameType.OnlineCoop) {
       this.scene.wake(this._gameScene);
     }
 
