@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { PopupType, RouteParam, RoutePath } from "../../utils/utils";
+import { PopupType } from "../../utils/utils";
 import { ErrorType, isErrorType } from "../../utils/errors";
-import { useNavigate } from "react-router-dom";
 import ErrorText from "../../components/ErrorText";
 import { TextInput } from "../../components/TextInput";
 import { PopupButtons } from "../../components/ButtonContainers";
@@ -16,7 +15,7 @@ interface ILocalCoopPopup
 
 export default function LocalCoopPopup( { setPopupType } : ILocalCoopPopup )
 {
-	const navigate = useNavigate();
+	// const navigate = useNavigate();
 	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const [coopPlayerName, setCoopPlayerName] = useState<string>("");
 	const user = useCurrentUser();
@@ -41,8 +40,8 @@ export default function LocalCoopPopup( { setPopupType } : ILocalCoopPopup )
 		void validCoopUsername;
 		void user.username;
 
-		navigate(RoutePath.game + RouteParam.coop);
-		setPopupType(PopupType.none);
+		// navigate(RoutePath.game + RouteParam.coop);
+		setPopupType(PopupType.operatorSelection);
 	}
 
 	return (
@@ -50,7 +49,7 @@ export default function LocalCoopPopup( { setPopupType } : ILocalCoopPopup )
 			{ error !== ErrorType.none && <ErrorText error={error}/> }
 			<TextInput label="Player 2 username:" placeholder="New username" setter={setCoopPlayerName} id="newCoopUsername" />
 			<PopupButtons>
-				<MossButton label="Start game" onClick={ usernameCheck } />
+				<MossButton label="Ok" onClick={ usernameCheck } />
 				<MossButton label="Cancel" onClick={ () => setPopupType(PopupType.none) } />
 			</PopupButtons>
 		</>

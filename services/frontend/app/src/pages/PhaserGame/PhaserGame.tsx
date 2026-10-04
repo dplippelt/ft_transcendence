@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { buildRoute, CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, isValidOpsMaskStr, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
+import { buildRoute, CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, GameType, getPathToGame, isValidGameType, isValidOpsMaskStr, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import { useAuth } from "../../contexts/AuthContext";
 import GameUI from "../../components/Game/GameUI";
@@ -63,7 +63,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const isGameURL = location.pathname === RoutePath.game;
-  const ops = searchParams.get(RouteParamKey.ops);
+  const opsMask = searchParams.get(RouteParamKey.ops);
   const gameType = searchParams.get(RouteParamKey.type);
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
   const [inCombat, setInCombat] = useState<boolean>(false);
@@ -71,6 +71,40 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
   const gameRef = useRef<Phaser.Game | null>(null!);
   const loggedIn = auth.status === "authenticated";
   const isLoggingOutRef = useRef<boolean>(false);
+
+  function isValidGameUrl() : boolean {
+    if ( !gameType || !opsMask )
+      return false;
+    if ( !isValidGameType(gameType) || !isValidOpsMaskStr(opsMask) )
+      return false;
+    return true;
+  }
+
+  function navToValidGameUrl() {
+    let validGameType = undefined;
+    let validOpsMask = undefined;
+
+    if ( !gameType || !isValidGameType(gameType) )
+      validGameType = GameType.SinglePlayer;
+    else
+      validGameType = gameType as GameType;
+
+    if ( !opsMask || !isValidOpsMaskStr(opsMask) )
+      validOpsMask = DEFAULT_OPS_MASK;
+    else
+      validOpsMask = opsMask;
+
+    const validOps = parseInt(validOpsMask, 2);
+    navigate(getPathToGame(validOps, validGameType), { replace: true });
+  }
+
+  function coopAllowed() : boolean {
+    if ( !loggedIn )
+      return false;
+    if ( isLoggingOutRef.current )
+      return false;
+    return true
+  }
 
   function cleanupGame() {
     gameRef.current!.destroy(true);
@@ -145,21 +179,20 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     if ( !isGameURL )
       return;
 
-    if ( gameType !== RouteParamValue.singlePlayer && gameType !== RouteParamValue.localCoop )
-      navigate(RoutePath.game + RouteParamValue.singlePlayer, { replace: true }); // TODO: needs to handle to ops url query param
-
-    if ( auth.status === "loading" )
+    if ( !isValidGameUrl() ) {
+      navToValidGameUrl();
       return;
-
-    if ( gameType === RouteParamValue.localCoop && !loggedIn && !isLoggingOutRef.current ) {
-      navigate(RoutePath.game + RouteParamValue.singlePlayer, { replace: true }); // TODO: needs to handle to ops url query param
-      cleanupGame();
     }
 
-    // TODO: needs to handle the type url query param
-    if ( !ops || !isValidOpsMaskStr(ops) ) {
-      navigate(buildRoute(RoutePath.game, { [RouteParamKey.ops]: DEFAULT_OPS_MASK}));
-      return;
+    if ( gameType === RouteParamValue.localCoop ) {
+      if ( auth.status === "loading" )
+        return;
+      if ( !coopAllowed() ) {
+        console.log("NOT ALLOWED");
+        const ops = parseInt(opsMask!, 2);
+        navigate(getPathToGame(ops, GameType.SinglePlayer), { replace: true });
+        cleanupGame();
+      }
     }
 
     function toggleGameMenu() { setGameMenuVis(prev => !prev); }
@@ -182,7 +215,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     }
 
     return () => cleanup();
-  }, [location.pathname, isGameURL, gameState, gameType, loggedIn, auth.status, gameMenuVis, ops])
+  }, [location.pathname, isGameURL, gameState, gameType, loggedIn, auth.status, gameMenuVis, opsMask])
 
   if ( gameState !== GameState.default )
     return <GameOver loggedIn={loggedIn} gameResult={gameState} cleanupGame={cleanupGame} />;

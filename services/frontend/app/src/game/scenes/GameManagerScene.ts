@@ -42,7 +42,6 @@ export class GameManagerScene extends Scene {
     this._exitedPlayers = new Set<Player>();
     this._operators = this.getOperators();
     this._gameType = this.getGameType();
-    console.log(this._gameType);
     OPERATORS.splice(0, OPERATORS.length, ...this._operators);
   }
 

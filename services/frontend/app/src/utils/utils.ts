@@ -190,7 +190,7 @@ type OpsMaskStr = `${Bit}${Bit}${Bit}${Bit}${Bit}`;
 
 export const DEFAULT_OPS_MASK = (OperatorBit.plus | OperatorBit.minus).toString(2).padStart(5, "0");
 
-export function isValidOpsMaskStr(value: string): value is OpsMaskStr
+export function isValidOpsMaskStr( value: string ) : value is OpsMaskStr
 {
 	return /^[01]{5}$/.test(value) && parseInt(value, 2) > 0;
 }
@@ -198,6 +198,22 @@ export function isValidOpsMaskStr(value: string): value is OpsMaskStr
 export function getOperatorsMask( ops: number ) : string
 {
 	return ops.toString(2).padStart(5, "0");
+}
+
+// Checks if the 'type' url query parameter matches a valid gameType
+// online coop is not covered here as this is likely handled by the backend
+// code elsewhere by José
+export function isValidGameType( gameType: string ) : boolean
+{
+	switch (gameType)
+	{
+		case RouteParamValue.singlePlayer:
+			return true;
+		case RouteParamValue.localCoop:
+			return true;
+		default:
+			return false;
+	}
 }
 
 export function getPathToGame( ops: number, type: GameType ) : string
