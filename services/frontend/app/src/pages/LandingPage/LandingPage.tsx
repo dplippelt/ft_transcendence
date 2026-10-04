@@ -5,7 +5,7 @@ import { MenuButtons } from "../../components/ButtonContainers";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuButton } from "../../components/Buttons";
-import { buildRoute, DEFAULT_OPS_MASK, getPathToGame, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
+import { buildRoute, DEFAULT_OPS_MASK, GameType, getPathToGame, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
 
 function GameDescription()
 {
@@ -23,7 +23,8 @@ function Buttons()
 	// RouteParam.sp was "?mode=sp"
 	function handleNewGame()
 	{
-		navigate(getPathToGame(parseInt(DEFAULT_OPS_MASK, 2)));
+		const ops = parseInt(DEFAULT_OPS_MASK, 2);
+		navigate(getPathToGame(ops, GameType.SinglePlayer));
 	}
 
 	return (

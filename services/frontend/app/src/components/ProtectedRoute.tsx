@@ -9,8 +9,6 @@ import { buildRoute, RouteParamKey, RouteParamValue, RoutePath, } from "../utils
 
 import styles from "./ProtectedRoute.module.scss";
 
-import styles from "./ProtectedRoute.module.scss";
-
 export default function ProtectedRoute()
 {
     const { auth } = useAuth();

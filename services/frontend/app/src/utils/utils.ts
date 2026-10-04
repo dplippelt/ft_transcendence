@@ -141,9 +141,9 @@ export enum GameState
 }
 
 export enum GameType {
-  SinglePlayer,
-  LocalCoop,
-  OnlineCoop,
+  SinglePlayer = "sp",
+  LocalCoop = "coop",
+  OnlineCoop = "online",
 }
 
 export const DRAFT_STORAGE_PREFIX = "draft:";
@@ -200,7 +200,10 @@ export function getOperatorsMask( ops: number ) : string
 	return ops.toString(2).padStart(5, "0");
 }
 
-export function getPathToGame( ops: number ) : string
+export function getPathToGame( ops: number, type: GameType ) : string
 {
-	return buildRoute(RoutePath.game, { [RouteParamKey.ops]: getOperatorsMask(ops) });
+	return buildRoute(RoutePath.game, {
+		[RouteParamKey.ops]: getOperatorsMask(ops),
+		[RouteParamKey.type]: type
+	});
 }
