@@ -1,4 +1,5 @@
 import threading
+import weakref
 from datetime import datetime, timedelta
 
 from sqlalchemy import func
@@ -36,6 +37,7 @@ INVITE_RATE_LIMIT_MAX = 5
 _recent_invites: dict[tuple[int, int], datetime] = {}
 _invite_send_times: dict[int, list[datetime]] = {}
 _recent_invites_lock = threading.Lock()
+_active_lobbies = weakref.WeakValueDictionary()
 
 
 def _lobby_query(db: Session):
@@ -397,6 +399,9 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
 
 
 def start_game_session(db: Session, user: User, lobby_id: int) -> GameSession:
+    if lobby_id in _active_lobbies.keys():
+        raise forbidden("Lobby already runs a game session.", code=ErrorCode.LOBBY_ALREADY_RUNS_GAME_SESSION)
+
     host = get_member(db, lobby_id, user.id)
     if host is None:
         raise forbidden("You are not a member of this lobby.", code=ErrorCode.NOT_LOBBY_MEMBER)
@@ -409,4 +414,9 @@ def start_game_session(db: Session, user: User, lobby_id: int) -> GameSession:
         raise forbidden("You cannot host the game alone.", code=ErrorCode.LOBBY_MISSING_PLAYERS)
 
     user_ids.append(host.id)
-    return game_session_manager.create(set(user_ids))
+
+    game_session = game_session_manager.create(set(user_ids))
+
+    _active_lobbies[lobby_id] = game_session
+
+    return game_session
