@@ -223,3 +223,25 @@ export function getPathToGame( ops: number, type: GameType ) : string
 		[RouteParamKey.type]: type
 	});
 }
+
+export type GameURL =
+{
+  opsMask: string,
+  gameType: GameType,
+}
+
+export function parseGameURL(opsMask: string | null, gameType: string | null) : GameURL | null
+{
+	if ( !opsMask
+		|| !gameType
+		|| !isValidOpsMaskStr(opsMask)
+		|| !isValidGameType(gameType)
+	) return null;
+
+	const gameURL: GameURL = {
+		opsMask: opsMask,
+		gameType: gameType as GameType,
+	}
+
+	return gameURL;
+}
