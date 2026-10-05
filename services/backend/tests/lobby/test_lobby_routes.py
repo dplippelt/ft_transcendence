@@ -1,3 +1,4 @@
+import app.api.v1.lobbies as lobbies_module
 from app.core.exceptions import ErrorCode
 
 
@@ -324,7 +325,7 @@ def test_leave_lobby_notifies_members(client, auth_headers, make_user, make_auth
     assert notified == [lobby_id]
 
 
-def test_close_lobby_notifies_members(client, auth_headers, monkeypatch,):
+def test_close_lobby_notifies_closed(client, auth_headers, monkeypatch):
     # Arrange
     create_response = client.post(
         "/lobbies",
@@ -335,11 +336,12 @@ def test_close_lobby_notifies_members(client, auth_headers, monkeypatch,):
 
     notified = []
 
-    def fake_notify_lobby_closed(closed_lobby_id, member_ids):
+    def fake_notify_lobby_closed(closed_lobby_id):
         notified.append(closed_lobby_id)
 
     monkeypatch.setattr(
-        "app.api.v1.lobbies.notify_lobby_closed",
+        lobbies_module,
+        "notify_lobby_closed",
         fake_notify_lobby_closed,
     )
 
