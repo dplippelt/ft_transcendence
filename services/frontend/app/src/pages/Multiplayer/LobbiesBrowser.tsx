@@ -29,7 +29,7 @@ import {
 	type LobbyData,
 } from "../../contexts/LobbiesContext";
 
-import { ErrorType } from "../../utils/errors";
+import { ErrorType, mapLobbyApiError } from "../../utils/errors";
 import Popup from "../../components/Popup";
 import ErrorPopup from "../../components/ErrorPopup";
 import { useError } from "../../contexts/ErrorContext";
@@ -44,14 +44,13 @@ interface ILobbies
 interface IColumnTitles
 {
 	sortBy: SortBy;
-	setSortBy: React.Dispatch<React.SetStateAction<SortBy>>;
+    setSortBy: React.Dispatch<React.SetStateAction<SortBy>>;
+    onRefresh: () => void;
 }
 
 
-function ColumnTitles({ sortBy, setSortBy }: IColumnTitles,)
+function ColumnTitles({ sortBy, setSortBy, onRefresh }: IColumnTitles,)
 {
-    const { refreshLobbies } = useLobbies();
-    
 	function onSortByName()
 	{
 		setSortBy(prev =>
@@ -102,26 +101,26 @@ function ColumnTitles({ sortBy, setSortBy }: IColumnTitles,)
 		return SortBy.noSort;
 	}
 
-	return (
-		<div className={styles.columnTitles}>
-			<ColumnButton
-				label="Name"
-				onClick={onSortByName}
-				sortBy={getNameSortBy()}
-			/>
+    return (
+        <div className={styles.columnTitles}>
+            <ColumnButton
+                label="Name"
+                onClick={onSortByName}
+                sortBy={getNameSortBy()}
+            />
 
-			<ColumnButton
-				label="Players"
-				onClick={onSortByPlayers}
-				sortBy={getPlayersSortBy()}
-				extraStyling={styles.players}
-			/>
+            <ColumnButton
+                label="Players"
+                onClick={onSortByPlayers}
+                sortBy={getPlayersSortBy()}
+                extraStyling={styles.players}
+            />
 
-			<RefreshButton
-				onClick={refreshLobbies}
-			/>
-		</div>
-	);
+            <RefreshButton
+                onClick={onRefresh}
+            />
+        </div>
+    );
 }
 
 
@@ -156,7 +155,12 @@ function Lobbies({ lobbiesArr }: ILobbies,)
 	);
 }
 
-function BrowserWindow()
+interface IBrowserWindow
+{
+    onRefresh: () => void;
+}
+
+function BrowserWindow({ onRefresh }: IBrowserWindow)
 {
 	const { lobbies } = useLobbies();
 	const [sortBy, setSortBy] = useState<SortBy>(SortBy.noSort,);
@@ -201,16 +205,17 @@ function BrowserWindow()
 		}
 	}
 
-	return (
-		<div className={styles.browserWindow}>
-			<ColumnTitles
-				sortBy={sortBy}
-				setSortBy={setSortBy}
-			/>
+    return (
+        <div className={styles.browserWindow}>
+            <ColumnTitles
+                sortBy={sortBy}
+                setSortBy={setSortBy}
+                onRefresh={onRefresh}
+            />
 
-			<Lobbies lobbiesArr={lobbiesArr}/>
-		</div>
-	);
+            <Lobbies lobbiesArr={lobbiesArr}/>
+        </div>
+    );
 }
 
 function Buttons()
@@ -224,30 +229,46 @@ function Buttons()
 
 export default function LobbiesBrowser()
 {
-    const { error } = useError();
+    const { error, setError } = useError();
     const { refreshLobbies } = useLobbies();
+
+    const handleRefresh = React.useCallback(async () =>
+    {
+        try
+        {
+            await refreshLobbies();
+        }
+        catch (error)
+        {
+            console.error("Failed to refresh lobbies:", error);
+            setError(mapLobbyApiError(error));
+        }
+    }, [refreshLobbies, setError]);
 
     useEffect(() =>
     {
-        void refreshLobbies();
-    }, [refreshLobbies],);
+        void handleRefresh();
+    }, [handleRefresh]);
 
-	return (
-		<>
-			<Background/>
+    return (
+        <>
+            <Background/>
 
-			<Page>
-				<MenuTitle title="Lobbies Browser" />
-				<BrowserWindow/>
-				<Buttons/>
-				<SideBar/>
-				{
-					error !== ErrorType.none &&
-						<Popup>
-							<ErrorPopup/>
-						</Popup>
-				}
-			</Page>
-		</>
-	);
+            <Page>
+                <MenuTitle title="Lobbies Browser" />
+
+                <BrowserWindow onRefresh={() => void handleRefresh()} />
+
+                <Buttons/>
+                <SideBar/>
+
+                {
+                    error !== ErrorType.none &&
+                    <Popup>
+                        <ErrorPopup/>
+                    </Popup>
+                }
+            </Page>
+        </>
+    );
 }

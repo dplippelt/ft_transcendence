@@ -279,7 +279,8 @@ export default function Lobby()
 	const location = useLocation();
 	const lobby = lobbyID ? lobbies[lobbyID] : undefined
 	const host = lobby ? getHost(lobby) : undefined;
-	const isHost = host?.user.id === user.id;
+	const isMember = lobby?.members.some( member => member.user.id === user.id,) ?? false;
+    const isHost = host?.user.id === user.id;
 	const isClosingRef = useRef(false);
 	const [joinStatus, setJoinStatus,] = useState<JoinStatus>(JoinStatus.pending,);
 	const [popupType,setPopupType,] = useState<PopupType>(PopupType.none,);
@@ -368,7 +369,7 @@ export default function Lobby()
 				}
 
 				{
-					!isHost && <GuestButtons lobbyID={ lobbyID! } />
+					isMember && !isHost && <GuestButtons lobbyID={lobbyID!} />
 				}
 
 				<SideBar/>

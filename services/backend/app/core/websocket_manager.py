@@ -68,6 +68,16 @@ class ConnectionManager:
 
         return delivered
 
+    async def send_to_all(self, payload: dict) -> None:
+        for user_id in list(self.active_connections):
+            await self.send_to_user(user_id, payload)
+
+    def notify_all(self, payload: dict) -> None:
+        try:
+            anyio.from_thread.run(self.send_to_all, payload)
+        except Exception:
+            logger.warning("Failed to broadcast websocket message", exc_info=True)
+
     def notify(self, user_id: int, payload: dict) -> bool:
         # Sync-callable, best-effort wrapper for use from non-async route
         # handlers: bridges to the event loop and never raises, so a

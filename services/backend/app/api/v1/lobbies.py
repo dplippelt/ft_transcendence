@@ -22,7 +22,6 @@ from app.services.lobby_service import (
     create_lobby,
     get_lobby_by_id,
     get_lobby_messages,
-    get_member_ids,
     get_other_member_ids,
     invite_friend_to_lobby,
     join_lobby,
@@ -81,35 +80,21 @@ def notify_invite(friend_id: int, lobby: Lobby, inviter: User) -> bool:
     )
 
 
-def notify_lobby_updated(lobby: Lobby, member_ids: list[int] | None = None) -> None:
+def notify_lobby_updated(lobby: Lobby) -> None:
     payload = connection_manager.build_payload_safely(
         "lobby_updated",
         lambda: {
-            "lobby": (
-                LobbyResponse
+            "lobby": LobbyResponse
                 .model_validate(lobby)
-                .model_dump(mode="json")
-            ),
+                .model_dump(mode="json"),
         },
     )
 
-    if payload is None:
-        return
-
-    recipients = (
-        member_ids
-        if member_ids is not None
-        else [
-            member.user_id
-            for member in lobby.members
-        ]
-    )
-
-    for member_id in set(recipients):
-        connection_manager.notify(member_id, payload,)
+    if payload is not None:
+        connection_manager.notify_all(payload)
 
 
-def notify_lobby_closed(lobby_id: int, member_ids: list[int]) -> None:
+def notify_lobby_closed(lobby_id: int) -> None:
     payload = connection_manager.build_payload_safely(
         "lobby_closed",
         lambda: {
@@ -117,11 +102,9 @@ def notify_lobby_closed(lobby_id: int, member_ids: list[int]) -> None:
         },
     )
 
-    if payload is None:
-        return
+    if payload is not None:
+        connection_manager.notify_all(payload)
 
-    for member_id in set(member_ids):
-        connection_manager.notify(member_id, payload,)
 
 @router.get("", response_model=list[LobbyResponse])
 def get_lobbies(current_user: CompletedUser, db: DbSession):
@@ -130,7 +113,9 @@ def get_lobbies(current_user: CompletedUser, db: DbSession):
 
 @router.post("", response_model=LobbyResponse, status_code=status.HTTP_201_CREATED)
 def post_lobby(lobby_data: LobbyCreate, current_user: CompletedUser, db: DbSession):
-    return create_lobby(db, current_user, lobby_data.name)
+    lobby = create_lobby(db, current_user, lobby_data.name)
+    notify_lobby_updated(lobby)
+    return lobby
 
 
 @router.get("/{lobby_id}", response_model=LobbyResponse)
@@ -156,21 +141,19 @@ def join(lobby_id: int, current_user: CompletedUser, db: DbSession):
 # we still want B's other tabs to receive the update too
 @router.post("/{lobby_id}/leave", status_code=status.HTTP_204_NO_CONTENT)
 def leave(lobby_id: int, current_user: CompletedUser, db: DbSession):
-    member_ids = get_member_ids(db, lobby_id,)
-    leave_lobby(db, current_user, lobby_id,)
-    lobby = get_lobby_by_id(db, lobby_id,)
+    leave_lobby(db, current_user, lobby_id)
+    lobby = get_lobby_by_id(db, lobby_id)
     if lobby is None:
-        notify_lobby_closed(lobby_id, member_ids,)
+        notify_lobby_closed(lobby_id)
         return
-    notify_lobby_updated(lobby, member_ids,)
+    notify_lobby_updated(lobby)
 
 
 
 @router.delete("/{lobby_id}", status_code=status.HTTP_204_NO_CONTENT)
 def close(lobby_id: int, current_user: CompletedUser, db: DbSession):
-    member_ids = get_member_ids(db, lobby_id,)
-    close_lobby(db, current_user, lobby_id,  )
-    notify_lobby_closed(lobby_id, member_ids,)
+    close_lobby(db, current_user, lobby_id)
+    notify_lobby_closed(lobby_id)
 
 
 
