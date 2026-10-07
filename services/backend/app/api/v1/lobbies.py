@@ -89,7 +89,7 @@ def notify_invite(friend_id: int, lobby: Lobby, inviter: User) -> bool:
     )
 
 
-async def notify_game_start(db: Session, user_id: int, lobby_id: int, game_session: GameSession) -> None:
+def notify_game_start(db: Session, user_id: int, lobby_id: int, game_session: GameSession) -> None:
     try:
         member_ids = get_other_member_ids(db, lobby_id, user_id)
     except Exception:
@@ -100,21 +100,17 @@ async def notify_game_start(db: Session, user_id: int, lobby_id: int, game_sessi
         )
         return
 
-    payload = connection_manager.build_payload_safely(
-        "lobby_start",
-        lambda: {
-            "lobby_id": lobby_id,
-            "game": LobbyGameResponse(game_session_id=game_session.id).model_dump(
-                mode="json"
-            ),
-        },
-    )
-
-    if payload is None:
-        return
-
     for member_id in member_ids:
-        await connection_manager.send_to_user(member_id, payload)
+        connection_manager.notify_safely(
+            member_id, 
+            "lobby_start",
+            lambda: {
+                "lobby_id": lobby_id,
+                "game": LobbyGameResponse(game_session_id=game_session.id).model_dump(
+                    mode="json"
+                ),
+            },
+        )
 
 @router.get("", response_model=list[LobbyResponse])
 def get_lobbies(current_user: CompletedUser, db: DbSession):
@@ -193,9 +189,9 @@ def invite(
 
 
 @router.post("/{lobby_id}/start", response_model=LobbyGameResponse, status_code=status.HTTP_201_CREATED)
-async def start_game(lobby_id: int, current_user: CompletedUser, db: DbSession):
+def start_game(lobby_id: int, current_user: CompletedUser, db: DbSession):
     game_session = start_game_session(db, current_user, lobby_id)
 
-    await notify_game_start(db, current_user.id, lobby_id, game_session)
+    notify_game_start(db, current_user.id, lobby_id, game_session)
 
     return LobbyGameResponse(game_session_id=game_session.id)
