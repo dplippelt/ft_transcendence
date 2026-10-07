@@ -333,9 +333,19 @@ export default function Lobby()
 		return <Background/>;
 
 	if (joinStatus === JoinStatus.pending)
-	{
 		return <Background/>;
-	}
+    
+    if (joinStatus === JoinStatus.ok && !isMember)
+    {
+        const path = location.state?.from ?? RoutePath.mainMenu;
+    
+        return (
+            <Navigate
+                to={path}
+                replace
+            />
+        );
+    }
 
 	if (joinStatus === JoinStatus.failed || !lobby)
 	{

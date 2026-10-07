@@ -2,7 +2,8 @@ import {
 	createContext,
 	useCallback,
 	useContext,
-	useEffect,
+    useEffect,
+    useRef,
 	useState,
 } from "react";
 
@@ -80,6 +81,7 @@ function isLobbyResponse(value: unknown,): value is ILobbyResponse
 export default function LobbiesProvider( { children } : {children: ReactNode} )
 {
     const [lobbies, setLobbies] = useState<Lobbies>({});
+    const lobbyVersionRef = useRef(0);
     const { auth } = useAuth();
 
     const resetLobbies = useCallback(() => {setLobbies({});}, []);
@@ -91,7 +93,10 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
         if (!accessToken)
             return;
 
+        const versionAtStart = lobbyVersionRef.current;
         const lobbyList = await getLobbies(accessToken);
+        if (lobbyVersionRef.current !== versionAtStart)
+            return;
 
         setLobbies(prev =>
             Object.fromEntries(
@@ -198,8 +203,8 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
 
 		await leaveLobbyRequest(Number(lobbyID), accessToken,);
 
-		await refreshLobbies();
-	}, [auth.accessToken, refreshLobbies,]);
+		lobbyVersionRef.current += 1;
+	}, [auth.accessToken,]);
 
 
 	const closeLobby = useCallback(async (lobbyID: string,): Promise<void> =>
@@ -211,6 +216,7 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
 
 		await closeLobbyRequest(Number(lobbyID), accessToken,);
 
+		lobbyVersionRef.current += 1;
 		setLobbies(prev =>
 		{
 			if (!prev[lobbyID])
@@ -229,6 +235,7 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
 	function addChatHistory( lobbyID: LobbyID, username: string, message: string )
 	{
 		const newMsg: ILobbyChatMsg = { username, message, };
+		lobbyVersionRef.current += 1;
 
 		setLobbies(prev =>
         {
@@ -317,6 +324,7 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
                         if (!isLobbyResponse(message.lobby,))
                             return;
 
+                        lobbyVersionRef.current += 1;
                         const lobby = message.lobby;
                         const lobbyID = String(lobby.id);
                         setLobbies(prev => ({
@@ -330,7 +338,7 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
                     {
                         if (typeof message.lobby_id !== "number")
                             return;
-
+                        lobbyVersionRef.current += 1;
                         const lobbyID = String(message.lobby_id);
                         setLobbies(prev => {
                             if (!prev[lobbyID])
