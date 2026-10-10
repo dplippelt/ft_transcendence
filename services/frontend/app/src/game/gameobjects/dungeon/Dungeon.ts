@@ -169,6 +169,13 @@ export class Dungeon extends Tilemaps.Tilemap {
     return this.playerGroup.getFirstNth(index + 1, true);
   }
 
+  untetherPlayers(): void {
+    (this.playerGroup.getChildren() as Player[])
+      .forEach((player) =>
+        player.movement.setTetherTarget(undefined)
+    );
+  }
+
   getAlivePlayerCount(): number {
     return (this.playerGroup.getChildren() as Player[]).reduce((aliveCount, player) => {
       return player.isAlive ? aliveCount + 1 : aliveCount;

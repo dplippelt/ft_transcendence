@@ -115,6 +115,7 @@ export class GameManagerScene extends Scene {
   private onCombatOver(combatEventData: CombatEventData) {
     if (!combatEventData.player.isAlive) {
       combatEventData.player.destroy(true); // this fixes the bug where the enemy would keep trying to follow the dead player (it was just disabling and hiding the player object before)
+      this._gameScene.untetherPlayers(); // so the remaining player isn't tethered to the dead player's last position
       if (!this.anyPlayerAlive()) {
         this.onGameOver(GameState.lost);
         return;
@@ -201,6 +202,7 @@ export class GameManagerScene extends Scene {
     }
     this._exitedPlayers.add(player);
     player.disableBody(true, true);
+    this._gameScene.untetherPlayers(); // so the remaining player can't get stuck when the path to the exit leads more than a screen away from it
 
     if (this.allPlayersExited()) {
       this._exitedPlayers.clear();

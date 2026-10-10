@@ -115,6 +115,10 @@ export default class GameScene extends Scene {
     return this._dungeon.getAlivePlayerCount();
   }
 
+  untetherPlayers(): void {
+    this._dungeon.untetherPlayers();
+  }
+
   getEnemyCount(): number {
     return this._dungeon.getEnemyCount();
   }
