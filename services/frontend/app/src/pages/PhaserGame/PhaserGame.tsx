@@ -220,7 +220,11 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     }
 
     return () => cleanup();
-  }, [location.pathname, isGameURL, gameState, gameType, isCoop, loggedIn, auth.status, opsMask, gameURLParams, redirectToGameUrl, cleanupGame]);
+  },
+  // gameState is in the dependency list because cleanupGame() removes all
+  // listeners for these events and resets gameState, so this forces
+  // re-registration when a new game starts from the Game Over screen
+  [location.pathname, isGameURL, gameState, gameType, isCoop, loggedIn, auth.status, opsMask, gameURLParams, redirectToGameUrl, cleanupGame]);
 
   if ( gameState !== GameState.default )
     return <GameOver loggedIn={loggedIn} gameResult={gameState} cleanupGame={cleanupGame} />;
