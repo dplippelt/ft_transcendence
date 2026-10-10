@@ -47,7 +47,7 @@ export default function Multiplayer()
 				<SideBar />
 				{ popupType === PopupType.createLobby && <Popup> <CreateLobbyPopup setPopupType={setPopupType} /> </Popup> }
 				{ popupType === PopupType.localCoop && <Popup> <LocalCoopPopup setPopupType={setPopupType} /> </Popup> }
-        { popupType === PopupType.operatorSelection && <Popup> <OperatorSelectionPopup setPopupType={setPopupType} gameType={GameType.LocalCoop} /> </Popup> }
+				{ popupType === PopupType.operatorSelection && <Popup> <OperatorSelectionPopup setPopupType={setPopupType} gameType={GameType.LocalCoop} /> </Popup> }
 			</Page>
 		</>
 	);
