@@ -4,6 +4,7 @@ import { Dungeon } from "./Dungeon";
 import { PlayerFactory, EnemyFactory, PassageFactory } from "./factories";
 import type { Passage } from "./Passage";
 import { GameType } from "../../../utils/utils";
+import { PlayerNum } from "../Player";
 
 type Vector2Like = Types.Math.Vector2Like;
 
@@ -62,11 +63,11 @@ export class DungeonSpawner {
       spawnPoint: this.tileToWorldPosition(room.tileNode!.position),
     }
 
-    const player_1 = this._playerFactory.createPlayer(0, spawnLocation);
+    const player_1 = this._playerFactory.createPlayer(PlayerNum.One, spawnLocation);
     this._dungeon.addPlayer(player_1);
 
     if ( this._gameType === GameType.LocalCoop ) {
-      const player_2 = this._playerFactory.createPlayer(1, spawnLocation);
+      const player_2 = this._playerFactory.createPlayer(PlayerNum.Two, spawnLocation);
       this._dungeon.addPlayer(player_2);
       player_1.movement.setTetherTarget(() => new PhaserMath.Vector2(player_2.x, player_2.y));
       player_2.movement.setTetherTarget(() => new PhaserMath.Vector2(player_1.x, player_1.y));
