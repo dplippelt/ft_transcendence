@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import jwt
 from jwt.exceptions import ExpiredSignatureError, InvalidTokenError
@@ -25,9 +25,9 @@ def create_access_token(data: dict, expires_delta: timedelta | None = None) -> s
     to_encode = data.copy()
 
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire = datetime.now(UTC) + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(
+        expire = datetime.now(UTC) + timedelta(
             minutes=settings.access_token_expire_minutes
         )
 
@@ -55,7 +55,7 @@ def decode_token(token: str) -> dict | None:
 
 
 def create_two_factor_challenge_token(user_id: int,) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(
+    expire = datetime.now(UTC) + timedelta(
         minutes=TWO_FACTOR_CHALLENGE_EXPIRE_MINUTES
     )
 

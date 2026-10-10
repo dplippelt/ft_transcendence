@@ -6,7 +6,7 @@ import { ArrowDown01, ArrowDown10, ArrowDownAZ, ArrowDownZA, ChevronLeft, Dot, M
 import Avatar from "./Avatar";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
 import { useLobbies } from "../contexts/LobbiesContext";
-import { useAuth } from "../contexts/AuthContext";
+import { useAuth, useCurrentUser } from "../contexts/AuthContext";
 
 interface IMenuButton
 {
@@ -235,9 +235,12 @@ export function SideBarBackButton( { onClick } : ISideBarBackButton )
 export function JoinButton( { lobbyID } : IJoinButton )
 {
 	const navigate = useNavigate();
-	const { lobbies } = useLobbies();
-	const lobby = lobbies[lobbyID];
-	const disabled: boolean = !lobby || lobby.guestID !== null ? true : false;
+    const { lobbies } = useLobbies();
+    const user = useCurrentUser();
+    const lobby = lobbies[lobbyID];
+    const isMember = lobby?.members.some(member => member.user.id === user.id) ?? false;
+
+    const disabled = !lobby ||  (lobby.members.length >= 2 && !isMember);
 
 	function onClick()
 	{
