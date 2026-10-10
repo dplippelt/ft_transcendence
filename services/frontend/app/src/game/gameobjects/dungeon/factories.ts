@@ -1,15 +1,14 @@
-import Player from "../Player";
+import Player, { playerConfigs, PlayerNum } from "../Player";
 import { Enemy, skeletonData } from "../Enemy";
 import { ExitZone } from "./ExitZone";
 import { Passage } from "./Passage";
 import type { SpawnLocation } from "./Dungeon";
-import { playerOne } from "../../components/KeyboardComponent";
 import { Direction } from "../../map/procedural";
 import { AssetsKey } from "../../Assets";
 
 export class PlayerFactory {
-  createPlayer(_index: number, spawnLocation: SpawnLocation): Player {
-    return new Player(spawnLocation.dungeon.scene, playerOne, spawnLocation);
+  createPlayer(playerNum: PlayerNum, spawnLocation: SpawnLocation): Player {
+    return new Player(spawnLocation.dungeon.scene, playerConfigs[playerNum], spawnLocation);
   }
 }
 

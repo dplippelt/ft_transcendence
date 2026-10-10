@@ -61,7 +61,7 @@ export class EnemySightSensor extends Component {
       return false;
     }
 
-    const playerBody = bodies.find((body) => body.gameObject.name === "player");
+    const playerBody = bodies.find((body) => body.gameObject.name.startsWith("player"));
     if (playerBody === undefined) {
       return false;
     }

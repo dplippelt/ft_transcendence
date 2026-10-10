@@ -50,7 +50,7 @@ export function DrawButton()
         EventBus.emit(CombatEvent.draw);
     }
 
-    useEffect(() => 
+    useEffect(() =>
     {
         function enableDraw() { setDisabled(false); }
         EventBus.addListener(CombatEvent.completeFillHand, enableDraw);

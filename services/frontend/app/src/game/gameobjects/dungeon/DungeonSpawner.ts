@@ -1,8 +1,10 @@
-import { type Types } from "phaser";
+import { Math as PhaserMath, type Types } from "phaser";
 import { TileNodeType, type RoomGraph, type Room, Direction } from "../../map/procedural";
 import { Dungeon } from "./Dungeon";
 import { PlayerFactory, EnemyFactory, PassageFactory } from "./factories";
 import type { Passage } from "./Passage";
+import { GameType } from "../../../utils/utils";
+import { PlayerNum } from "../Player";
 
 type Vector2Like = Types.Math.Vector2Like;
 
@@ -11,17 +13,20 @@ export class DungeonSpawner {
   private _playerFactory: PlayerFactory;
   private _enemyFactory: EnemyFactory;
   private _passageFactory: PassageFactory;
+  private _gameType: GameType;
 
   constructor(
     dungeon: Dungeon,
     playerFactory: PlayerFactory,
     enemyFactory: EnemyFactory,
     passageFactory: PassageFactory,
+    gameType: GameType,
   ) {
     this._dungeon = dungeon;
     this._playerFactory = playerFactory;
     this._enemyFactory = enemyFactory;
     this._passageFactory = passageFactory;
+    this._gameType = gameType;
   }
 
   apply(graph: RoomGraph): void {
@@ -52,12 +57,21 @@ export class DungeonSpawner {
   }
 
   private spawnPlayers(room: Room) {
-    const player = this._playerFactory.createPlayer(0, {
+    const spawnLocation = {
       dungeon: this._dungeon,
       startingRoom: room,
       spawnPoint: this.tileToWorldPosition(room.tileNode!.position),
-    });
-    this._dungeon.addPlayer(player);
+    }
+
+    const player_1 = this._playerFactory.createPlayer(PlayerNum.One, spawnLocation);
+    this._dungeon.addPlayer(player_1);
+
+    if ( this._gameType === GameType.LocalCoop ) {
+      const player_2 = this._playerFactory.createPlayer(PlayerNum.Two, spawnLocation);
+      this._dungeon.addPlayer(player_2);
+      player_1.movement.setTetherTarget(() => new PhaserMath.Vector2(player_2.x, player_2.y));
+      player_2.movement.setTetherTarget(() => new PhaserMath.Vector2(player_1.x, player_1.y));
+    }
   }
 
   private spawnEnemy(room: Room) {
