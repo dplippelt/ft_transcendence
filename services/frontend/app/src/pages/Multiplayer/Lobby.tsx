@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
@@ -193,7 +193,6 @@ export default function Lobby()
 	const { lobbies, joinLobby } = useLobbies();
 	const { lobbyID } = useParams();
 	const user  = useCurrentUser();
-	const location = useLocation();
 
 	const hostID = lobbyID ? lobbies[lobbyID]?.hostID : undefined;
 	const isHost = String(user.id) === hostID;
@@ -231,10 +230,7 @@ export default function Lobby()
 	if ( isClosingRef.current === true )
 		return <Background />;
 	if ( !isValidLobby || joinStatus === JoinStatus.failed )
-	{
-		const path = location.state && location.state.from ? location.state.from : RoutePath.mainMenu;
-		return <Navigate to={path} replace />;
-	}
+		return <Navigate to={RoutePath.mpBrowser} replace />;
 	if ( joinStatus === JoinStatus.pending )
 		return <Background />;
 
