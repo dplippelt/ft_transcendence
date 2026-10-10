@@ -161,14 +161,6 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       }
     }
 
-    function coopAllowed() : boolean {
-      if ( !loggedIn )
-        return false;
-      if ( isLoggingOutRef.current )
-        return false;
-      return true
-    }
-
     function navToValidGameUrl() {
       const validGameType = gameType && isValidGameType(gameType)
         ? gameType as GameType
@@ -195,7 +187,10 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     if ( isCoop && auth.status === "loading" )
       return;
 
-    if ( isCoop && !coopAllowed() ) {
+    if ( isCoop && isLoggingOutRef.current )
+      return;
+
+    if ( isCoop && !loggedIn ) {
       redirectToGameUrl(gameURLParams.opsMask, GameType.SinglePlayer);
       return;
     }
