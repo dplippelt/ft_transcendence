@@ -1,10 +1,10 @@
 import threading
 from collections.abc import Hashable
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 
 def _utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 # How many allow() calls between opportunistic cleanups of expired keys.
