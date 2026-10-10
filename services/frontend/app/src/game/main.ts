@@ -29,6 +29,5 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
 };
 
 export default function StartGame(parent: string) {
-  const game = new Phaser.Game({ ...gameConfig, parent });
-  return game;
+  return new Phaser.Game({ ...gameConfig, parent });
 }

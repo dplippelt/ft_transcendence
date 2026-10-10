@@ -31,16 +31,18 @@ export default function LocalCoopPopup( { setPopupType } : ILocalCoopPopup )
 		if ( validCoopUsername === user.username )
 			return setError(ErrorType.usernameCannotBeTheSame);
 
-		// TODO: navigate to game and pass relevant info to game.
-		// Coop player does not have their progress saved, no need to link to an account if they have one.
-		// Just any username - no need to check for overlap with existing usernames in backend.
+		// TODO: might want to add an intermediate screen showing controls for player 1 and player 2 (part of how to play issue)
 
-		// TODO: might want to add an intermediate screen showing controls for player 1 and player 2
+		// NOTE: nothing actually uses these usernames in coop. My initial idea was to pass them to
+		// the game so they could be displayed above the avatars' heads but we decided against this
+		// in a meeting from a while back. The only reason I've left the LocalCoopPopup in
+		// and ask for coop/player2 username is just in case we want to do something with it later after all.
 
+		// TODO: either pass these usernames to the game and display them, or get rid of LocalCoopPopup entirely
+		// and skip to the OperatorSelectionPopup straight away
 		void validCoopUsername;
 		void user.username;
 
-		// navigate(RoutePath.game + RouteParam.coop);
 		setPopupType(PopupType.operatorSelection);
 	}
 

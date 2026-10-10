@@ -147,6 +147,7 @@ export default class GameScene extends Scene {
   nextLevel(): void {
     this.cameras.main.stopFollow();
     this._dungeon.build(dungeonConfig, 1.5);
+    this._coopCamera?.destroy();
     this.setupCamera();
   }
 }

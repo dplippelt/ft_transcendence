@@ -18,9 +18,6 @@ function Buttons()
 {
 	const navigate = useNavigate();
 
-	// TODO: pass url query param for game type
-	// WAS THIS: <MenuButton label="Start game" onClick={ () => navigate(RoutePath.game + RouteParam.sp) } />
-	// RouteParam.sp was "?mode=sp"
 	function handleNewGame()
 	{
 		const ops = parseInt(DEFAULT_OPS_MASK, 2);
