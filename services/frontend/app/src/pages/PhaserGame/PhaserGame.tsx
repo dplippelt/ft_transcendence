@@ -156,8 +156,6 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
           return true;
         case RoutePath.howToPlay:
           return true;
-        case RoutePath.settings:
-          return true;
         default:
           return false;
       }
@@ -222,7 +220,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     }
 
     return () => cleanup();
-  }, [location.pathname, isGameURL, gameState, gameType, isCoop, loggedIn, auth.status, gameMenuVis, opsMask, gameURLParams, redirectToGameUrl, cleanupGame])
+  }, [location.pathname, isGameURL, gameState, gameType, isCoop, loggedIn, auth.status, opsMask, gameURLParams, redirectToGameUrl, cleanupGame]);
 
   if ( gameState !== GameState.default )
     return <GameOver loggedIn={loggedIn} gameResult={gameState} cleanupGame={cleanupGame} />;
