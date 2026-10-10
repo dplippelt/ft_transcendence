@@ -1,6 +1,5 @@
 import React, {
 	useEffect,
-	useRef,
 	useState,
 } from "react";
 import {
@@ -47,17 +46,14 @@ import { useCurrentUser, } from "../../contexts/AuthContext";
 interface IHostButtons
 {
 	lobbyID: string;
-
-	setPopupType:
-		React.Dispatch<React.SetStateAction<PopupType>>;
-
-	isClosingRef:
-		React.RefObject<boolean>;
+    setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
+    setIsExiting: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 interface IGuestButtons
 {
 	lobbyID: string;
+    setIsExiting: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 interface IPlayer
@@ -164,7 +160,7 @@ function LobbyWindow({ lobbyID }: ILobbyWindow,)
 }
 
 
-function HostButtons({ lobbyID, setPopupType, isClosingRef, }: IHostButtons,)
+function HostButtons({ lobbyID, setPopupType,  setIsExiting, }: IHostButtons,)
 {
 	const navigate = useNavigate();
 	const { setError } = useError();
@@ -175,7 +171,7 @@ function HostButtons({ lobbyID, setPopupType, isClosingRef, }: IHostButtons,)
     
 	async function onCloseLobby()
 	{
-		isClosingRef.current = true;
+		setIsExiting(true);
 
 		try
 		{
@@ -188,12 +184,11 @@ function HostButtons({ lobbyID, setPopupType, isClosingRef, }: IHostButtons,)
 				),
 			);
 
-			navigate(RoutePath.mainMenu, { replace: true, },);
+			navigate(RoutePath.mpBrowser, { replace: true, },);
 		}
 		catch (error)
 		{
-			isClosingRef.current = false;
-
+			setIsExiting(false);
 			setError(mapLobbyApiError(error),);
 		}
 	}
@@ -231,7 +226,7 @@ function HostButtons({ lobbyID, setPopupType, isClosingRef, }: IHostButtons,)
 	);
 }
 
-function GuestButtons({ lobbyID }: IGuestButtons,)
+function GuestButtons({ lobbyID, setIsExiting  }: IGuestButtons,)
 {
 	const navigate = useNavigate();
 	const user = useCurrentUser();
@@ -239,7 +234,8 @@ function GuestButtons({ lobbyID }: IGuestButtons,)
 	const { leaveLobby } = useLobbies();
 
 	async function onLeaveLobby()
-	{
+    {
+        setIsExiting(true);
 		try
 		{
 			await leaveLobby(lobbyID);
@@ -251,10 +247,11 @@ function GuestButtons({ lobbyID }: IGuestButtons,)
 				),
 			);
 
-			navigate(RoutePath.mainMenu,);
+			navigate(RoutePath.mpBrowser, { replace: true });
 		}
 		catch (error)
-		{
+        {
+            setIsExiting(false);
 			setError(mapLobbyApiError(error),);
 		}
 	}
@@ -281,7 +278,7 @@ export default function Lobby()
 	const host = lobby ? getHost(lobby) : undefined;
 	const isMember = lobby?.members.some( member => member.user.id === user.id,) ?? false;
     const isHost = host?.user.id === user.id;
-	const isClosingRef = useRef(false);
+	const [isExiting, setIsExiting] = useState(false);
 	const [joinStatus, setJoinStatus,] = useState<JoinStatus>(JoinStatus.pending,);
 	const [popupType,setPopupType,] = useState<PopupType>(PopupType.none,);
 
@@ -328,36 +325,25 @@ export default function Lobby()
 		};
 	}, [lobbyID, user.id, loadLobby, joinLobby, setError,]);
 
-
-	if (isClosingRef.current)
-		return <Background/>;
-
-	if (joinStatus === JoinStatus.pending)
-		return <Background/>;
+	if (isExiting)
+        return <Background/>;
+    
+    if (joinStatus === JoinStatus.pending)
+        return <Background/>;
     
     if (joinStatus === JoinStatus.ok && !isMember)
     {
         const path = location.state?.from ?? RoutePath.mainMenu;
     
-        return (
-            <Navigate
-                to={path}
-                replace
-            />
-        );
+        return <Navigate to={path} replace />;
     }
-
-	if (joinStatus === JoinStatus.failed || !lobby)
-	{
-		const path = location.state?.from ?? RoutePath.mainMenu;
-
-		return (
-			<Navigate
-				to={path}
-				replace
-			/>
-		);
-	}
+    
+    if (joinStatus === JoinStatus.failed || !lobby)
+    {
+        const path = location.state?.from ?? RoutePath.mainMenu;
+    
+        return <Navigate to={path} replace />;
+    }
 
 
 	return (
@@ -374,13 +360,17 @@ export default function Lobby()
 						<HostButtons
 							lobbyID={ lobbyID! }
 							setPopupType={ setPopupType }
-							isClosingRef={ isClosingRef }
+							setIsExiting={ setIsExiting }
 						/>
 				}
 
-				{
-					isMember && !isHost && <GuestButtons lobbyID={lobbyID!} />
-				}
+                {
+                    isMember && !isHost &&
+                        <GuestButtons
+                            lobbyID={lobbyID!}
+                            setIsExiting={setIsExiting}
+                        />
+                }
 
 				<SideBar/>
 
