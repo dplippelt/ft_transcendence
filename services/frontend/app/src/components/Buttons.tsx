@@ -144,7 +144,7 @@ export function BackButton( { fallback, to } : IBackButton )
 	function onClick()
 	{
 		if ( to )
-			navigate(to);
+			navigate(to, { replace: true });
 		else
 			goBack(fallback!);
 	}

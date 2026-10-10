@@ -12,6 +12,7 @@ import Popup from "../../components/Popup";
 import CreateLobbyPopup from "./CreateLobbyPopup";
 import LocalCoopPopup from "./LocalCoopPopup";
 import OperatorSelectionPopup from "../../components/OperatorSelectionPopup";
+import useBack from "../../hooks/useBack";
 
 interface IButtons
 {
@@ -21,13 +22,14 @@ interface IButtons
 function Buttons( { setPopupType } : IButtons )
 {
 	const navigate = useNavigate();
+	const goBack = useBack();
 
 	return (
 		<MenuButtons extraStyling={styles.buttonsOffset}>
 			<MenuButton label="Create game" onClick={() => setPopupType(PopupType.createLobby) } />
 			<MenuButton label="Browse games" onClick={ () => navigate(RoutePath.mpBrowser) } />
 			<MenuButton label="Local co-op" onClick={ () => setPopupType(PopupType.localCoop) } />
-			<MenuButton label="Back" onClick={ () => navigate(RoutePath.mainMenu) } />
+			<MenuButton label="Back" onClick={ () => goBack(RoutePath.mainMenu) } />
 		</MenuButtons>
 	);
 }
