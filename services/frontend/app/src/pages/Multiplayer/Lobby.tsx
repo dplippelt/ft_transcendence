@@ -1,13 +1,5 @@
-import React, {
-	useEffect,
-	useState,
-} from "react";
-import {
-	Navigate,
-	useLocation,
-	useNavigate,
-	useParams,
-} from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
@@ -345,6 +337,19 @@ export default function Lobby()
         return <Navigate to={path} replace />;
     }
 
+	// I'm returning Background instead of null to prevent a jarring screen flash.
+	// It essentially serves as an intermediary 'loading' screen.
+	// From what AI's been telling me: this is because React Router v7 wraps navigate()'s
+	// internal state update in React's startTransition by default. That makes it a
+	// deferred, low-priority update, so it no longer lands in the same commit as
+	// closeLobby's setLobbies (an immediate update) — the two used to batch together
+	// in RR6, but don't anymore.
+	if ( isClosingRef.current === true )
+		return <Background />;
+	if ( !isValidLobby || joinStatus === JoinStatus.failed )
+		return <Navigate to={RoutePath.mpBrowser} replace />;
+	if ( joinStatus === JoinStatus.pending )
+		return <Background />;
 
 	return (
 		<>
