@@ -1,3 +1,5 @@
+import itertools
+
 import pyotp
 import pytest
 from fastapi import FastAPI
@@ -7,7 +9,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 import app.models
-from app.api.v1 import auth, scores
+from app.api.v1 import auth, lobbies, scores
 from app.core.rate_limit import FixedWindowLimiter
 from app.core.security import create_access_token, get_password_hash
 from app.db.database import Base, get_db
@@ -55,6 +57,11 @@ def app(db, monkeypatch):
     test_app.include_router(
         auth.router,
         prefix="/auth",
+    )
+
+    test_app.include_router(
+        lobbies.router,
+        prefix="/lobbies",
     )
 
     def override_get_db():
@@ -147,6 +154,18 @@ def user(db, user_credentials):
 
 
 @pytest.fixture()
+def make_auth_headers():
+    def _make_auth_headers(user):
+        access_token = create_access_token(
+            data={"sub": str(user.id)},
+        )
+
+        return { "Authorization": f"Bearer {access_token}", }
+    
+    return _make_auth_headers
+
+
+@pytest.fixture()
 def auth_headers(user):
     access_token = create_access_token(
         data={"sub": str(user.id)},
@@ -179,3 +198,37 @@ def two_factor_enabled_user(db, two_factor_secret_user,):
     db.refresh(user)
 
     return user, secret
+
+
+@pytest.fixture()
+def make_user(db):
+    counter = itertools.count(1)
+
+    def _make_user(
+        *,
+        username: str | None = None,
+        display_name: str | None = None,
+        is_guest: bool = False,
+        is_active: bool = True,
+    ) -> User:
+        user_number = next(counter)
+
+        user = User(
+            username=username or f"testuser{user_number}",
+            display_name=display_name or f"Test User {user_number}",
+            is_guest=is_guest,
+            is_active=is_active,
+            two_factor_enabled=False,
+            two_factor_secret=None,
+        )
+
+        db.add(user)
+        db.commit()
+        db.refresh(user)
+
+        return user
+
+    return _make_user
+
+
+

@@ -59,7 +59,7 @@ class ConnectionManager:
                 self.disconnect(user_id, websocket)
 
                 try:
-                    await websocket.close()
+                    await asyncio.wait_for(websocket.close(), timeout=SEND_TIMEOUT_SECONDS)
                 except Exception:
                     logger.debug(
                         "Failed to close websocket",
@@ -67,6 +67,16 @@ class ConnectionManager:
                     )
 
         return delivered
+
+    async def send_to_all(self, payload: dict) -> None:
+        user_ids = list(self.active_connections)
+        await asyncio.gather(*(self.send_to_user(user_id, payload) for user_id in user_ids))
+
+    def notify_all(self, payload: dict) -> None:
+        try:
+            anyio.from_thread.run(self.send_to_all, payload)
+        except Exception:
+            logger.warning("Failed to broadcast websocket message", exc_info=True)
 
     def notify(self, user_id: int, payload: dict) -> bool:
         # Sync-callable, best-effort wrapper for use from non-async route
