@@ -89,28 +89,35 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
     const refreshLobbies = useCallback(async () =>
     {
         const accessToken = auth.accessToken;
-
+    
         if (!accessToken)
             return;
-
-        const versionAtStart = lobbyVersionRef.current;
-        const lobbyList = await getLobbies(accessToken);
-        if (lobbyVersionRef.current !== versionAtStart)
+    
+        for (let attempt = 0; attempt < 2; attempt++)
+        {
+            const versionAtStart = lobbyVersionRef.current;
+            const lobbyList = await getLobbies(accessToken);
+    
+            if (lobbyVersionRef.current !== versionAtStart)
+                continue;
+    
+            setLobbies(prev =>
+                Object.fromEntries(
+                    lobbyList.map(lobby => [
+                        String(lobby.id),
+                        toLobbyData(
+                            lobby,
+                            prev[String(lobby.id)],
+                        ),
+                    ])
+                )
+            );
+    
             return;
-
-        setLobbies(prev =>
-            Object.fromEntries(
-                lobbyList.map(lobby =>
-                [
-                    String(lobby.id),
-                    toLobbyData(
-                        lobby,
-                        prev[String(lobby.id)],
-                    ),
-                ]
-            )
-        ));
-    },[auth.accessToken]);
+        }
+    
+        throw new Error("Lobby list changed during refresh. Please retry.");
+    }, [auth.accessToken]);
 
     const loadLobby = useCallback(async (lobbyID: string): Promise<LobbyData> =>
     {

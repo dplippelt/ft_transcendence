@@ -22,6 +22,7 @@ import { LobbyChatBox, } from "../../components/Chat/ChatBox";
 import useIsMobile from "../../hooks/useIsMobile";
 import InviteFriendPopup from "./LobbyInviteFriendPopup";
 import Popup from "../../components/Popup";
+import ErrorPopup from "../../components/ErrorPopup";
 import {
 	useLobbies,
 	type LobbyData,
@@ -261,7 +262,7 @@ function GuestButtons({ lobbyID, setIsExiting  }: IGuestButtons,)
 
 export default function Lobby()
 {
-	const { setError } = useError();
+	const { error, setError } = useError();
 	const { lobbies, loadLobby, joinLobby, } = useLobbies();
 	const { lobbyID } = useParams();
 	const user = useCurrentUser();
@@ -333,23 +334,8 @@ export default function Lobby()
     if (joinStatus === JoinStatus.failed || !lobby)
     {
         const path = location.state?.from ?? RoutePath.mainMenu;
-    
         return <Navigate to={path} replace />;
     }
-
-	// I'm returning Background instead of null to prevent a jarring screen flash.
-	// It essentially serves as an intermediary 'loading' screen.
-	// From what AI's been telling me: this is because React Router v7 wraps navigate()'s
-	// internal state update in React's startTransition by default. That makes it a
-	// deferred, low-priority update, so it no longer lands in the same commit as
-	// closeLobby's setLobbies (an immediate update) — the two used to batch together
-	// in RR6, but don't anymore.
-	if ( isClosingRef.current === true )
-		return <Background />;
-	if ( !isValidLobby || joinStatus === JoinStatus.failed )
-		return <Navigate to={RoutePath.mpBrowser} replace />;
-	if ( joinStatus === JoinStatus.pending )
-		return <Background />;
 
 	return (
 		<>
@@ -380,13 +366,18 @@ export default function Lobby()
 				<SideBar/>
 
 				{
-					popupType === PopupType.inviteFriend &&
-						<Popup>
-							<InviteFriendPopup
-								setPopupType={ setPopupType }
-							/>
-						</Popup>
-				}
+                    error !== ErrorType.none ?
+                        <Popup>
+                            <ErrorPopup/>
+                        </Popup>
+                    :
+                    popupType === PopupType.inviteFriend &&
+                        <Popup>
+                            <InviteFriendPopup
+                                setPopupType={setPopupType}
+                            />
+                        </Popup>
+                }
 			</Page>
 		</>
 	);
