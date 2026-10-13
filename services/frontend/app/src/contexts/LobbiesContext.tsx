@@ -84,7 +84,11 @@ export default function LobbiesProvider( { children } : {children: ReactNode} )
     const lobbyVersionRef = useRef(0);
     const { auth } = useAuth();
 
-    const resetLobbies = useCallback(() => {setLobbies({});}, []);
+    const resetLobbies = useCallback(() =>
+    {
+        lobbyVersionRef.current += 1;
+        setLobbies({});
+    }, []);
 
     const refreshLobbies = useCallback(async () =>
     {
