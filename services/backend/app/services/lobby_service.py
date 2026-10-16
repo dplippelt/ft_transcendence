@@ -1,5 +1,6 @@
 import threading
 import weakref
+import asyncio
 from datetime import datetime, timedelta
 
 from sqlalchemy import func
@@ -15,6 +16,9 @@ from app.models.user import User
 from app.services.friend_service import get_friendship, utc_now
 from app.game.game_session import GameSession
 from app.game.game_session_manager import game_session_manager
+from app.db.database import SessionLocal
+from app.core.websocket_manager import connection_manager
+from app.schemas.lobby import LobbyGameResponse
 
 HOST = "host"
 GUEST = "guest"
@@ -38,7 +42,6 @@ _recent_invites: dict[tuple[int, int], datetime] = {}
 _invite_send_times: dict[int, list[datetime]] = {}
 _recent_invites_lock = threading.Lock()
 _active_lobbies = weakref.WeakValueDictionary()
-_active_lobbies_lock = threading.Lock()
 
 
 def _lobby_query(db: Session):
@@ -399,11 +402,8 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
     return lobby
 
 
-def start_game_session(db: Session, user: User, lobby_id: int) -> GameSession:
-    with _active_lobbies_lock:
-        if lobby_id in _active_lobbies.keys():
-            raise forbidden("Lobby already runs a game session.", code=ErrorCode.LOBBY_ALREADY_RUNS_GAME_SESSION)
-
+def get_user_ids_in_a_lobby(user: User, lobby_id: int) -> list[int]:
+    with SessionLocal() as db:
         host = get_member(db, lobby_id, user.id)
         if host is None:
             raise forbidden("You are not a member of this lobby.", code=ErrorCode.NOT_LOBBY_MEMBER)
@@ -417,8 +417,17 @@ def start_game_session(db: Session, user: User, lobby_id: int) -> GameSession:
 
         user_ids.append(host.id)
 
-        game_session = game_session_manager.create(set(user_ids))
+        return user_ids
 
-        _active_lobbies[lobby_id] = game_session
 
-    return game_session
+async def start_game_session(user: User, lobby_id: int) -> tuple[list[int], GameSession]:
+    user_ids = await asyncio.to_thread(get_user_ids_in_a_lobby, user, lobby_id)
+
+    if lobby_id in _active_lobbies.keys():
+        raise forbidden("Lobby already runs a game session.", code=ErrorCode.LOBBY_ALREADY_RUNS_GAME_SESSION)
+
+    game_session = game_session_manager.create(set(user_ids))
+
+    _active_lobbies[lobby_id] = game_session
+
+    return (user_ids, game_session)
