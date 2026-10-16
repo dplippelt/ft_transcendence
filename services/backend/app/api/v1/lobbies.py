@@ -89,28 +89,23 @@ def notify_invite(friend_id: int, lobby: Lobby, inviter: User) -> bool:
     )
 
 
-def notify_game_start(db: Session, user_id: int, lobby_id: int, game_session: GameSession) -> None:
-    try:
-        member_ids = get_other_member_ids(db, lobby_id, user_id)
-    except Exception:
-        logger.warning(
-            "Failed to look up lobby members to notify for lobby %s",
-            lobby_id,
-            exc_info=True,
-        )
+async def notify_game_start(user_ids: list[int], lobby_id: int, game_session: GameSession) -> None:
+    payload = connection_manager.build_payload_safely(
+        "lobby_start",
+        lambda: {
+            "lobby_id": lobby_id,
+            "game": LobbyGameResponse(game_session_id=game_session.id).model_dump(
+                mode="json"
+            ),
+        },
+    )
+
+    if payload is None:
         return
 
-    for member_id in member_ids:
-        connection_manager.notify_safely(
-            member_id, 
-            "lobby_start",
-            lambda: {
-                "lobby_id": lobby_id,
-                "game": LobbyGameResponse(game_session_id=game_session.id).model_dump(
-                    mode="json"
-                ),
-            },
-        )
+    for id in user_ids:
+        await connection_manager.send_to_user(id, payload)
+
 
 @router.get("", response_model=list[LobbyResponse])
 def get_lobbies(current_user: CompletedUser, db: DbSession):
@@ -189,9 +184,9 @@ def invite(
 
 
 @router.post("/{lobby_id}/start", response_model=LobbyGameResponse, status_code=status.HTTP_201_CREATED)
-def start_game(lobby_id: int, current_user: CompletedUser, db: DbSession):
-    game_session = start_game_session(db, current_user, lobby_id)
+async def start_game(lobby_id: int, current_user: CompletedUser):
+    user_ids, game_session = await start_game_session(current_user, lobby_id)
 
-    notify_game_start(db, current_user.id, lobby_id, game_session)
+    await notify_game_start(user_ids, lobby_id, game_session)
 
     return LobbyGameResponse(game_session_id=game_session.id)
