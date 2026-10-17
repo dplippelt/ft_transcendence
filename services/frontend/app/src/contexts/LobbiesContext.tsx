@@ -127,6 +127,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
     const lobbyVersionRef = useRef(0);
     const lobbyRevisionsRef = useRef<Record<LobbyID, number>>({});
     const sessionRef = useRef(0);
+    const inviteVersionRef = useRef(0);
     const nextRefreshIDRef = useRef(0);
     const lastAppliedRefreshIDRef = useRef(0);
 
@@ -141,6 +142,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         sessionRef.current += 1;
         lobbyVersionRef.current = 0;
         lobbyRevisionsRef.current = {};
+        inviteVersionRef.current = 0;
         setLobbies({});
         setLobbyInvites([]);
     }, []);
@@ -153,6 +155,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
 
         const session = sessionRef.current;
         const startedAt = lobbyVersionRef.current;
+        const inviteVersion = inviteVersionRef.current;
         const refreshID = ++nextRefreshIDRef.current;
         const lobbyList = await getLobbies(accessToken);
 
@@ -160,6 +163,14 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
             return;
 
         lastAppliedRefreshIDRef.current = refreshID;
+        // An invite from a lobby that has disappeared while we were offline
+        // should not remain visible after reconnect. Don't discard invites
+        // received while this snapshot request was in flight.
+        if (inviteVersion === inviteVersionRef.current)
+        {
+            const currentIDs = new Set(lobbyList.map(lobby => lobby.id));
+            setLobbyInvites(previous => previous.filter(invite => currentIDs.has(invite.lobby_id)));
+        }
         setLobbies(previous =>
         {
             if (session !== sessionRef.current || refreshID < lastAppliedRefreshIDRef.current)
@@ -204,15 +215,19 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         if (!accessToken)
             throw new Error("No authenticated session");
 
+        const session = sessionRef.current;
         const lobby = await createLobbyRequest(lobbyName, accessToken);
         const lobbyID = String(lobby.id);
         const lobbyData = toLobbyData(lobby);
 
-        markLobbyChanged(lobbyID);
-        setLobbies(previous => ({
-            ...previous,
-            [lobbyID]: toLobbyData(lobby, previous[lobbyID]),
-        }));
+        if (session === sessionRef.current)
+        {
+            markLobbyChanged(lobbyID);
+            setLobbies(previous => session === sessionRef.current ? ({
+                ...previous,
+                [lobbyID]: toLobbyData(lobby, previous[lobbyID]),
+            }) : previous);
+        }
         return lobbyData;
     }, [auth.accessToken, markLobbyChanged]);
 
@@ -239,15 +254,19 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         if (!accessToken)
             throw new Error("No authenticated session");
 
+        const session = sessionRef.current;
         const lobby = await joinLobbyRequest(Number(lobbyID), accessToken);
         const lobbyData = toLobbyData(lobby);
 
-        markLobbyChanged(lobbyID);
-        setLobbies(previous => ({
-            ...previous,
-            [lobbyID]: toLobbyData(lobby, previous[lobbyID]),
-        }));
-        dismissLobbyInvite(lobbyID);
+        if (session === sessionRef.current)
+        {
+            markLobbyChanged(lobbyID);
+            setLobbies(previous => session === sessionRef.current ? ({
+                ...previous,
+                [lobbyID]: toLobbyData(lobby, previous[lobbyID]),
+            }) : previous);
+            dismissLobbyInvite(lobbyID);
+        }
         return lobbyData;
     }, [auth.accessToken, markLobbyChanged, dismissLobbyInvite]);
 
@@ -257,9 +276,41 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         if (!accessToken)
             throw new Error("No authenticated session");
 
+        const session = sessionRef.current;
         await leaveLobbyRequest(Number(lobbyID), accessToken);
-        await refreshLobbies();
-    }, [auth.accessToken, refreshLobbies]);
+
+        if (session !== sessionRef.current)
+            return;
+
+        // The mutation succeeded even if the subsequent browser refresh fails.
+        const currentUserID = auth.user?.id;
+        markLobbyChanged(lobbyID);
+        setLobbies(previous =>
+        {
+            const lobby = previous[lobbyID];
+            if (session !== sessionRef.current || !lobby || currentUserID === undefined)
+                return previous;
+
+            const leavingMember = lobby.members.find(member => member.user.id === currentUserID);
+            if (leavingMember?.role === "host")
+            {
+                const next = { ...previous };
+                delete next[lobbyID];
+                return next;
+            }
+
+            return {
+                ...previous,
+                [lobbyID]: {
+                    ...lobby,
+                    members: lobby.members.filter(member => member.user.id !== currentUserID),
+                },
+            };
+        });
+        void refreshLobbies().catch(error => {
+            console.warn("Lobby list refresh failed after leaving:", error);
+        });
+    }, [auth.accessToken, auth.user, refreshLobbies, markLobbyChanged]);
 
     const closeLobby = useCallback(async (lobbyID: LobbyID): Promise<void> =>
     {
@@ -267,12 +318,15 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         if (!accessToken)
             throw new Error("No authenticated session");
 
+        const session = sessionRef.current;
         await closeLobbyRequest(Number(lobbyID), accessToken);
+        if (session !== sessionRef.current)
+            return;
 
         markLobbyChanged(lobbyID);
         setLobbies(previous =>
         {
-            if (!previous[lobbyID])
+            if (session !== sessionRef.current || !previous[lobbyID])
                 return previous;
             const next = { ...previous };
             delete next[lobbyID];
@@ -415,6 +469,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                         inviter: message.inviter as PublicUser,
                     };
 
+                    inviteVersionRef.current += 1;
                     setLobbyInvites(previous => [
                         ...previous.filter(existing => existing.lobby_id !== invite.lobby_id),
                         invite,

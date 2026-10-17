@@ -17,13 +17,13 @@ interface IInvitePopup
 	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-// This is just a placeholder popup component for now.
 export default function InviteFriendPopup( { lobbyID, setPopupType } : IInvitePopup )
 {
     const { friends } = useFriends();
     const { inviteFriend } = useLobbies();
 	const [ error, setError ] = useState<ErrorType>(ErrorType.none);
 	const [ selectedFriendID, setSelectedFriendID ] = useState<string | undefined>(undefined);
+    const [sending, setSending] = useState(false);
 
 	function closePopup()
 	{
@@ -38,6 +38,7 @@ export default function InviteFriendPopup( { lobbyID, setPopupType } : IInvitePo
             return;
         }
 
+        setSending(true);
         try
         {
             const delivered = await inviteFriend(lobbyID, Number(selectedFriendID),);
@@ -53,6 +54,10 @@ export default function InviteFriendPopup( { lobbyID, setPopupType } : IInvitePo
         catch (error)
         {
             setError(mapLobbyApiError(error));
+        }
+        finally
+        {
+            setSending(false);
         }
     }
 
@@ -74,7 +79,7 @@ export default function InviteFriendPopup( { lobbyID, setPopupType } : IInvitePo
 			{ error !== ErrorType.none && <ErrorText error={error} /> }
 			<Dropdown extraStyling={styles.dropdown} label="Select friend" id="friend" options={friendOptions} setting={DEFAULT_VALUE} onChange={handleChange} />
 			<PopupButtons>
-				<MossButton label="Invite" onClick={handleInvite} />
+				<MossButton label={sending ? "Sending..." : "Invite"} disabled={sending} onClick={handleInvite} />
 				<MossButton label="Cancel" onClick={closePopup} />
 			</PopupButtons>
 		</>

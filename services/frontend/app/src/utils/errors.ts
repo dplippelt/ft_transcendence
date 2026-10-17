@@ -68,6 +68,7 @@ export enum ErrorType
     lobbyInviteNotDelivered,
     lobbyInviteAlreadySent,
     lobbyInviteRateLimited,
+    lobbyAlreadyMember,
 
     chatMessageTooLong,
     chatNotFriends,
@@ -201,7 +202,7 @@ export function errorMsg(error: ErrorType): string
             return "Password is required to unlink Google account.";
         case ErrorType.googleUnlinkFailed:
             return "Failed to unlink Google account.";
-        
+
         case ErrorType.avatarBadFileType:
             return "Avatar must be JPEG, PNG, or WebP!";
         case ErrorType.avatarTooLarge:
@@ -246,12 +247,14 @@ export function errorMsg(error: ErrorType): string
         case ErrorType.lobbyFull:
             return "Failed to join because the lobby is full";
         case ErrorType.lobbyInviteNotDelivered:
-            return "Friend is currently offline. The invite could not be delivered.";
+            return "Invitation could not be delivered. Your friend may be offline.";
         case ErrorType.lobbyInviteAlreadySent:
             return "You already invited this friend recently.";
         case ErrorType.lobbyInviteRateLimited:
             return "You're sending invites too quickly. Try again shortly.";
-        
+        case ErrorType.lobbyAlreadyMember:
+            return "This friend has already joined the lobby.";
+
         case ErrorType.chatMessageTooLong:
             return "Message is too long (max 2000 characters).";
         case ErrorType.chatNotFriends:
@@ -483,6 +486,8 @@ export function mapLobbyApiError(error: unknown): ErrorType
             return ErrorType.lobbyDoesNotExist;
         case "LOBBY_FULL":
             return ErrorType.lobbyFull;
+        case "ALREADY_LOBBY_MEMBER":
+            return ErrorType.lobbyAlreadyMember;
         case "INVITE_ALREADY_SENT":
             return ErrorType.lobbyInviteAlreadySent;
         case "INVITE_RATE_LIMIT_EXCEEDED":
