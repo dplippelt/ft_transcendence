@@ -78,12 +78,15 @@ export enum RouteParamKey
 {
 	mode = "mode",
 	ops = "ops",
+	type = "type",
 }
 
 export enum RouteParamValue
 {
 	login = "login",
 	signup = "signup",
+	singlePlayer = "sp",
+	localCoop = "coop",
 }
 
 export enum RouteParam
@@ -98,6 +101,7 @@ export enum GameEvent
 	chatFocus = "chat-focused",
 	gameState = "game-state",
 	inCombat = "in-combat",
+  logout = "logout",
 	pause = "pause",
 	blur = "blur",
 }
@@ -134,6 +138,12 @@ export enum GameState
 	default = "default",
 	won = "won",
 	lost = "lost",
+}
+
+export enum GameType {
+  SinglePlayer = "sp",
+  LocalCoop = "coop",
+  OnlineCoop = "online",
 }
 
 export const DRAFT_STORAGE_PREFIX = "draft:";
@@ -180,7 +190,7 @@ type OpsMaskStr = `${Bit}${Bit}${Bit}${Bit}${Bit}`;
 
 export const DEFAULT_OPS_MASK = (OperatorBit.plus | OperatorBit.minus).toString(2).padStart(5, "0");
 
-export function isValidOpsMaskStr(value: string): value is OpsMaskStr
+export function isValidOpsMaskStr( value: string ) : value is OpsMaskStr
 {
 	return /^[01]{5}$/.test(value) && parseInt(value, 2) > 0;
 }
@@ -190,7 +200,48 @@ export function getOperatorsMask( ops: number ) : string
 	return ops.toString(2).padStart(5, "0");
 }
 
-export function getPathToGame( ops: number ) : string
+// Checks if the 'type' url query parameter matches a valid gameType
+// online coop is not covered here as this is likely handled by the backend
+// code elsewhere by José
+export function isValidGameType( gameType: string ) : boolean
 {
-	return buildRoute(RoutePath.game, { [RouteParamKey.ops]: getOperatorsMask(ops) });
+	switch (gameType)
+	{
+		case RouteParamValue.singlePlayer:
+			return true;
+		case RouteParamValue.localCoop:
+			return true;
+		default:
+			return false;
+	}
+}
+
+export function getPathToGame( ops: number, type: GameType ) : string
+{
+	return buildRoute(RoutePath.game, {
+		[RouteParamKey.ops]: getOperatorsMask(ops),
+		[RouteParamKey.type]: type
+	});
+}
+
+export type GameURL =
+{
+  opsMask: string,
+  gameType: GameType,
+}
+
+export function parseGameURL(opsMask: string | null, gameType: string | null) : GameURL | null
+{
+	if ( !opsMask
+		|| !gameType
+		|| !isValidOpsMaskStr(opsMask)
+		|| !isValidGameType(gameType)
+	) return null;
+
+	const gameURL: GameURL = {
+		opsMask: opsMask,
+		gameType: gameType as GameType,
+	}
+
+	return gameURL;
 }

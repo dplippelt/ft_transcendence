@@ -1,9 +1,10 @@
-import { Scene } from "phaser";
+import { Scene, Scenes, GameObjects } from "phaser";
 import { EventBus } from "../EventBus";
 import { Dungeon } from "../gameobjects/dungeon/Dungeon.ts";
 import { Direction, type DungeonConfig } from "../map/procedural";
 import { WallType, FloorType, PassageType, FoilageType } from "../map/TileSetMap.ts";
 import Player from "../gameobjects/Player.ts";
+import { GameType } from "../../utils/utils.ts";
 
 const dungeonConfig: DungeonConfig = {
   emptyRoomConfig: {
@@ -74,9 +75,12 @@ const dungeonConfig: DungeonConfig = {
 // TODO: GameSession structure (local / network) -> thruth sayer; player hp, position etc, syncs up with the game itself
 export default class GameScene extends Scene {
   private _dungeon!: Dungeon;
+  private _coopCamera!: GameObjects.Zone;
+  private _gameType!: GameType;
 
-  constructor() {
+  constructor(gameType: GameType) {
     super("game");
+    this._gameType = gameType;
   }
 
   preload() {
@@ -84,8 +88,10 @@ export default class GameScene extends Scene {
   }
 
   create() {
-    this._dungeon = new Dungeon(this, dungeonConfig, 1.5);
-    this.cameras.main.startFollow(this.getPlayerOne());
+    this._dungeon = new Dungeon(this, dungeonConfig, this._gameType, 1.5);
+    this.setupCamera();
+    if ( this._gameType === GameType.LocalCoop )
+      this.events.on(Scenes.Events.PRE_RENDER, this.updateCoopCamera, this); // using PRE_RENDER event instead of calling it inside update() to prevent ghosting
 
     // Temporarily mouse event for map generation
     this.input.on("pointerdown", () => {
@@ -109,13 +115,43 @@ export default class GameScene extends Scene {
     return this._dungeon.getAlivePlayerCount();
   }
 
+  untetherPlayers(): void {
+    this._dungeon.untetherPlayers();
+  }
+
   getEnemyCount(): number {
     return this._dungeon.getEnemyCount();
+  }
+
+  setupCamera(): void {
+    if ( this._gameType === GameType.SinglePlayer ) {
+      this.cameras.main.startFollow(this.getPlayerOne());
+      return;
+    }
+    this._coopCamera = this.add.zone(0, 0, 1, 1);
+    this.cameras.main.startFollow(this._coopCamera);
+  }
+
+  updateCoopCamera(): void {
+    const player_1 = this._dungeon.getPlayer(0);
+    const player_2 = this._dungeon.getPlayer(1);
+
+    if ( player_1  && player_2 ) {
+      this._coopCamera.setPosition(
+        (player_1.x + player_2.x) / 2,
+        (player_1.y + player_2.y) / 2,
+      );
+    } else if ( player_1 ) {
+      this._coopCamera.setPosition(player_1.x, player_1.y);
+    } else if ( player_2 ) {
+      this._coopCamera.setPosition(player_2.x, player_2.y);
+    }
   }
 
   nextLevel(): void {
     this.cameras.main.stopFollow();
     this._dungeon.build(dungeonConfig, 1.5);
-    this.cameras.main.startFollow(this.getPlayerOne());
+    this._coopCamera?.destroy();
+    this.setupCamera();
   }
 }
