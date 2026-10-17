@@ -184,7 +184,7 @@ def get_member_ids(db: Session, lobby_id: int) -> list[int]:
 def get_other_member_ids(db: Session, lobby_id: int, user_id: int) -> list[int]:
     return [
         member_id
-        for (member_id,) in get_member_ids(db, lobby_id)
+        for member_id in get_member_ids(db, lobby_id)
         if member_id != user_id
     ]
 

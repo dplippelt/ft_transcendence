@@ -130,7 +130,9 @@ def get_lobbies(current_user: CompletedUser, db: DbSession):
 
 @router.post("", response_model=LobbyResponse, status_code=status.HTTP_201_CREATED)
 def post_lobby(lobby_data: LobbyCreate, current_user: CompletedUser, db: DbSession):
-    return create_lobby(db, current_user, lobby_data.name)
+    lobby = create_lobby(db, current_user, lobby_data.name)
+    notify_lobby_updated(lobby)
+    return lobby
 
 
 @router.get("/{lobby_id}", response_model=LobbyResponse)

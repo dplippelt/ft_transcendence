@@ -68,7 +68,6 @@ export enum ErrorType
     lobbyInviteNotDelivered,
     lobbyInviteAlreadySent,
     lobbyInviteRateLimited,
-    lobbyInviteNoteDelivered,
 
     chatMessageTooLong,
     chatNotFriends,
@@ -252,8 +251,6 @@ export function errorMsg(error: ErrorType): string
             return "You already invited this friend recently.";
         case ErrorType.lobbyInviteRateLimited:
             return "You're sending invites too quickly. Try again shortly.";
-        case ErrorType.lobbyInviteNotDelivered:
-            return "Friend is currently offline. The invite could not be delivered.";
         
         case ErrorType.chatMessageTooLong:
             return "Message is too long (max 2000 characters).";

@@ -1,3 +1,4 @@
+import app.api.v1.lobbies as lobbies_module
 from app.core.exceptions import ErrorCode
 
 
@@ -324,7 +325,7 @@ def test_leave_lobby_notifies_members(client, auth_headers, make_user, make_auth
     assert notified == [lobby_id]
 
 
-def test_close_lobby_notifies_members(client, auth_headers, monkeypatch,):
+def test_close_lobby_notifies_closed(client, auth_headers, monkeypatch):
     # Arrange
     create_response = client.post(
         "/lobbies",
@@ -336,10 +337,11 @@ def test_close_lobby_notifies_members(client, auth_headers, monkeypatch,):
     notified = []
 
     def fake_notify_lobby_closed(closed_lobby_id, member_ids):
-        notified.append(closed_lobby_id)
+        notified.append((closed_lobby_id, member_ids))
 
     monkeypatch.setattr(
-        "app.api.v1.lobbies.notify_lobby_closed",
+        lobbies_module,
+        "notify_lobby_closed",
         fake_notify_lobby_closed,
     )
 
@@ -351,7 +353,9 @@ def test_close_lobby_notifies_members(client, auth_headers, monkeypatch,):
 
     # Assert
     assert response.status_code == 204
-    assert notified == [lobby_id]
+    assert len(notified) == 1
+    assert notified[0][0] == lobby_id
+    assert len(notified[0][1]) == 1
 
 
 def test_failed_join_does_not_notify_members(client, auth_headers, make_user, make_auth_headers, monkeypatch,):

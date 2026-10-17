@@ -171,14 +171,12 @@ export default class CombatLayoutManager {
   }
 
   onCardActions() {
-    this.cardManager.events.off(CardActionEvents.SELECT);
-    this.cardManager.events.on(CardActionEvents.SELECT, () => this.updateSelectionSlots(false), this);
-    this.cardManager.events.off(CardActionEvents.UNSELECT);
-    this.cardManager.events.on(CardActionEvents.UNSELECT, () => this.updateSelectionSlots(false), this);
-    this.cardManager.events.off(CardActionEvents.GENERATE_DECK);
-    this.cardManager.events.on(CardActionEvents.GENERATE_DECK, this.updateDeck, this);
-    this.cardManager.events.off(CardActionEvents.TRASH_CARD);
-    this.cardManager.events.on(CardActionEvents.TRASH_CARD, this.trashCard, this);
+    const events = this.cardManager.events;
+    events.on(CardActionEvents.SELECT, () => this.updateSelectionSlots(false), this);
+    events.on(CardActionEvents.UNSELECT, () => this.updateSelectionSlots(false), this);
+    events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
+    events.on(CardActionEvents.GENERATE_DECK, this.updateDeck, this);
+    events.on(CardActionEvents.TRASH_CARD, this.trashCard, this);
   }
 
   onLayoutActions() {

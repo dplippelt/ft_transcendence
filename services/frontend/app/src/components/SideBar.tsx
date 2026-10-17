@@ -6,7 +6,7 @@ import ChatHistory from "./Chat/ChatHistory";
 import ChatBox from "./Chat/ChatBox";
 import { ChatTitleSideBar } from "./Chat/ChatTitle";
 import useIsMobile from "../hooks/useIsMobile";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { RoutePath } from "../utils/utils";
 import { useChatHistory } from "../contexts/ChatHistoryContext";
 import { useFriends } from "../contexts/FriendsContext";
@@ -26,14 +26,11 @@ function SidePanelToggle( { setCollapsed } : ISidePanelToggle )
 	const { hasNewMsg } = useChatHistory();
 	const isMobile = useIsMobile(480);
 	const navigate = useNavigate();
-	const location = useLocation();
-	const fromGameMenu = location.pathname === RoutePath.game || ( location.state?.gameMenu ?? false );
-	const viaProfile = location.pathname === RoutePath.profile || ( location.state?.viaProfile ?? false );
 
 	function handleClick()
 	{
 		if ( isMobile )
-			navigate(RoutePath.friends, { state: { from: location.pathname, gameMenu: fromGameMenu, viaProfile: viaProfile } });
+			navigate(RoutePath.friends);
 		else
 			setCollapsed(prev => !prev);
 	}
