@@ -65,6 +65,10 @@ export enum ErrorType
     lobbyNameAlreadyExists,
     lobbyDoesNotExist,
     lobbyFull,
+    lobbyInviteNotDelivered,
+    lobbyInviteAlreadySent,
+    lobbyInviteRateLimited,
+    lobbyAlreadyMember,
 
     chatMessageTooLong,
     chatNotFriends,
@@ -198,6 +202,7 @@ export function errorMsg(error: ErrorType): string
             return "Password is required to unlink Google account.";
         case ErrorType.googleUnlinkFailed:
             return "Failed to unlink Google account.";
+
         case ErrorType.avatarBadFileType:
             return "Avatar must be JPEG, PNG, or WebP!";
         case ErrorType.avatarTooLarge:
@@ -241,6 +246,15 @@ export function errorMsg(error: ErrorType): string
             return "Failed to join because the lobby does not exist";
         case ErrorType.lobbyFull:
             return "Failed to join because the lobby is full";
+        case ErrorType.lobbyInviteNotDelivered:
+            return "Invitation could not be delivered. Your friend may be offline.";
+        case ErrorType.lobbyInviteAlreadySent:
+            return "You already invited this friend recently.";
+        case ErrorType.lobbyInviteRateLimited:
+            return "You're sending invites too quickly. Try again shortly.";
+        case ErrorType.lobbyAlreadyMember:
+            return "This friend has already joined the lobby.";
+
         case ErrorType.chatMessageTooLong:
             return "Message is too long (max 2000 characters).";
         case ErrorType.chatNotFriends:
@@ -459,24 +473,28 @@ export function mapChatApiError(error: unknown): ErrorType
     return ErrorType.unknown;
 }
 
-
 export function mapLobbyApiError(error: unknown): ErrorType
 {
-	if (!(error instanceof ApiError))
-		return ErrorType.unknown;
+    if (!(error instanceof ApiError))
+        return ErrorType.unknown;
 
-	switch (error.code)
-	{
-		case "LOBBY_NAME_ALREADY_EXISTS":
-			return ErrorType.lobbyNameAlreadyExists;
-
-		case "LOBBY_NOT_FOUND":
-			return ErrorType.lobbyDoesNotExist;
-
-		case "LOBBY_FULL":
-			return ErrorType.lobbyFull;
-
-		default:
-			return ErrorType.unknown;
-	}
+    switch (error.code)
+    {
+        case "LOBBY_NAME_ALREADY_EXISTS":
+            return ErrorType.lobbyNameAlreadyExists;
+        case "LOBBY_NOT_FOUND":
+            return ErrorType.lobbyDoesNotExist;
+        case "LOBBY_FULL":
+            return ErrorType.lobbyFull;
+        case "ALREADY_LOBBY_MEMBER":
+            return ErrorType.lobbyAlreadyMember;
+        case "INVITE_ALREADY_SENT":
+            return ErrorType.lobbyInviteAlreadySent;
+        case "INVITE_RATE_LIMIT_EXCEEDED":
+            return ErrorType.lobbyInviteRateLimited;
+        case "FRIENDSHIP_NOT_FOUND":
+            return ErrorType.friendshipNotFound;
+        default:
+            return ErrorType.unknown;
+    }
 }

@@ -13,6 +13,7 @@ import Lobby from "./pages/Multiplayer/Lobby"
 import LobbiesBrowser from "./pages/Multiplayer/LobbiesBrowser"
 import PageNotFound from "./pages/PageNotFound/PageNotFound"
 import ProtectedRoute from "./components/ProtectedRoute";
+import LobbyInviteNotifications from "./components/LobbyInviteNotifications";
 import RequireUsernameRoute from "./components/RequireUsernameRoute";
 import CompleteProfile from "./pages/Profile/CompleteProfile";
 // import GameOver from "./pages/GameOver/GameOver"
@@ -49,6 +50,7 @@ export default function App()
         </Route>
         <Route path="*" element={ <PageNotFound /> } />
       </Routes>
+      <LobbyInviteNotifications />
     </BrowserRouter>
   )
 }
