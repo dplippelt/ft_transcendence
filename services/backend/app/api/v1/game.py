@@ -51,9 +51,9 @@ async def game_websocket(
         await websocket.close(code=status.WS_1008_POLICY_VIOLATION, reason=joined.value)
         return
 
-    await websocket.send_json(game_session.get_snapshot(current_user_id).model_dump())
-
     try:
+        await websocket.send_json(game_session.get_snapshot(current_user_id).model_dump())
+
         while True:
             message = await websocket.receive()
             if message["type"] == "websocket.disconnect":

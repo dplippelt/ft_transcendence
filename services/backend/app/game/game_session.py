@@ -55,15 +55,15 @@ class GameSession:
         self.state = SessionState.WAITING_FOR_PLAYERS
 
     async def stop(self):
-        if self.task is None:
-            return
-
-        if self.task.cancel():
+        if self.task and self.task.cancel():
             try:
                 await self.task
             except CancelledError:
                 pass
-        self.task = None
+            self.task = None
+
+        async with self.lock:
+            await self.connection_manager.drop_connections("Game session has stopped")
 
     def required_player_count(self):
         return 1 if self.allowed_user_list is None else len(self.allowed_user_list)

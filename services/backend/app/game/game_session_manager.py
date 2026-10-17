@@ -33,10 +33,7 @@ class GameSessionManager:
         self.task.add_done_callback(self.task_ended)
 
     async def stop(self):
-        if self.task is None:
-            return
-
-        if self.task.cancel():
+        if self.task and self.task.cancel():
             try:
                 await self.task
             except CancelledError:

@@ -80,12 +80,21 @@ class SessionConnectionManager:
 
         try:
             await user_websocket.close(
-                code=status.WS_1001_GOING_AWAY, reason="connection time out"
+                code=status.WS_1000_NORMAL_CLOSURE, reason="connection time out"
             )
         except Exception:
             pass
 
         del self.connections[user_id]
+
+    async def drop_connections(self, reason: str) -> None:
+        for connection in self.connections.values():
+            try:
+                await connection.websocket.close(code=status.WS_1000_NORMAL_CLOSURE, reason=reason)
+            except:
+                pass
+
+        self.connections.clear()
 
     def get_user_connections(self) -> list[Connection]:
         return list(self.connections.values())
