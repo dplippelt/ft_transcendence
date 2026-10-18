@@ -60,7 +60,7 @@ class GameSession:
                 await self.task
             except CancelledError:
                 pass
-            self.task = None
+        self.task = None
 
         async with self.lock:
             await self.connection_manager.drop_connections("Game session has stopped")

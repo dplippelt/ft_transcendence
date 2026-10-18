@@ -12,7 +12,7 @@ class GameState(IntEnum):
 
 
 class ActionType(IntEnum):
-    NONE = auto()
+    NONE = 0
     MOVE = auto()
     PICK_CARD = auto()
     DRAW_CARD = auto()
@@ -28,7 +28,7 @@ class Direction(IntFlag):
 
 
 class PlayerState(IntFlag):
-    NONE = auto()
+    NONE = 0
     WAITING = auto()
     ALIVE = auto()
     IN_COMBAT = auto()

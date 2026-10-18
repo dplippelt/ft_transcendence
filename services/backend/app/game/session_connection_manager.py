@@ -55,7 +55,7 @@ class SessionConnectionManager:
         if previous is None:
             return True
 
-        try:  # TODO: What code should be sent?
+        try:
             await previous.websocket.close(
                 code=status.WS_1000_NORMAL_CLOSURE, reason="new connection is made"
             )
