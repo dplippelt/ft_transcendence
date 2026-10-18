@@ -120,7 +120,8 @@ class GameSession:
                 await self.connection_manager.close_connection(
                     user.user_id, user.websocket
                 )
-                self.game.disconnect_player(user.user_id)
+                if not self.connection_manager.is_user_connected(user.user_id):
+                    self.game.disconnect_player(user.user_id)
 
             if self.connection_manager.is_empty():
                 self.state = SessionState.WAITING_FOR_PLAYERS
