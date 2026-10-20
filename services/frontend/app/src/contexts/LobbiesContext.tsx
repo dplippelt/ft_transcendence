@@ -42,6 +42,9 @@ export interface LobbyInvite
     inviter: PublicUser;
 }
 
+// Keep in sync with the backend MAX_MEMBERS for lobby availability.
+const MAX_LOBBY_MEMBERS = 2;
+
 type LobbyID = string;
 type Lobbies = Record<LobbyID, LobbyData>;
 
@@ -163,13 +166,21 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
             return;
 
         lastAppliedRefreshIDRef.current = refreshID;
-        // An invite from a lobby that has disappeared while we were offline
-        // should not remain visible after reconnect. Don't discard invites
-        // received while this snapshot request was in flight.
+        // Discard invites for closed or full lobbies after reconnect.
+        // Preserve invites received while this snapshot was in flight.
         if (inviteVersion === inviteVersionRef.current)
         {
-            const currentIDs = new Set(lobbyList.map(lobby => lobby.id));
-            setLobbyInvites(previous => previous.filter(invite => currentIDs.has(invite.lobby_id)));
+            const availableIDs = new Set(
+                lobbyList
+                    .filter(lobby =>
+                        lobby.members.length < MAX_LOBBY_MEMBERS ||
+                        lobby.members.some(member => member.user.id === auth.user?.id)
+                    )
+                    .map(lobby => lobby.id)
+            );
+            setLobbyInvites(previous =>
+                previous.filter(invite => availableIDs.has(invite.lobby_id))
+            );
         }
         setLobbies(previous =>
         {
@@ -183,7 +194,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                 startedAt,
             );
         });
-    }, [auth.accessToken]);
+    }, [auth.accessToken, auth.user?.id]);
 
     const loadLobby = useCallback(async (lobbyID: LobbyID): Promise<LobbyData> =>
     {
@@ -431,6 +442,14 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                         ...previous,
                         [lobbyID]: toLobbyData(lobby, previous[lobbyID]),
                     }));
+
+                    // A public lobby can fill after the invite was sent.
+                    // It is no longer joinable by someone outside its members.
+                    if (
+                        lobby.members.length >= MAX_LOBBY_MEMBERS &&
+                        !lobby.members.some(member => member.user.id === auth.user?.id)
+                    )
+                        dismissLobbyInvite(lobbyID);
                     return;
                 }
 
@@ -495,7 +514,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
             window.clearTimeout(reconnectTimeoutID);
             socket?.close();
         };
-    }, [auth.status, auth.accessToken, refreshLobbies, markLobbyChanged, dismissLobbyInvite]);
+    }, [auth.status, auth.accessToken, auth.user?.id, refreshLobbies, markLobbyChanged, dismissLobbyInvite]);
 
     return (
         <LobbiesContext.Provider value={{
