@@ -14,24 +14,27 @@ const DEFAULT_VALUE = "None selected";
 interface IInvitePopup
 {
     lobbyID: string;
-	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
+    setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
 export default function InviteFriendPopup( { lobbyID, setPopupType } : IInvitePopup )
 {
     const { friends } = useFriends();
     const { inviteFriend } = useLobbies();
-	const [ error, setError ] = useState<ErrorType>(ErrorType.none);
-	const [ selectedFriendID, setSelectedFriendID ] = useState<string | undefined>(undefined);
+    const [ error, setError ] = useState<ErrorType>(ErrorType.none);
+    const [ selectedFriendID, setSelectedFriendID ] = useState<string | undefined>(undefined);
     const [sending, setSending] = useState(false);
 
-	function closePopup()
-	{
-		setPopupType(PopupType.none);
-	}
-
-	async function handleInvite()
+    function closePopup()
     {
+        setPopupType(PopupType.none);
+    }
+
+    async function handleInvite()
+    {
+        if (sending)
+            return;
+
         if (!selectedFriendID)
         {
             setError(ErrorType.noFriendSelected);
@@ -51,9 +54,9 @@ export default function InviteFriendPopup( { lobbyID, setPopupType } : IInvitePo
 
             closePopup();
         }
-        catch (error)
+        catch (cause)
         {
-            setError(mapLobbyApiError(error));
+            setError(mapLobbyApiError(cause));
         }
         finally
         {
@@ -61,27 +64,27 @@ export default function InviteFriendPopup( { lobbyID, setPopupType } : IInvitePo
         }
     }
 
-	function handleChange( e: React.ChangeEvent<HTMLSelectElement, Element> )
-	{
-		const friendID = e.target.value === DEFAULT_VALUE ? undefined : e.target.value;
+    function handleChange( e: React.ChangeEvent<HTMLSelectElement, Element> )
+    {
+        const friendID = e.target.value === DEFAULT_VALUE ? undefined : e.target.value;
 
         setSelectedFriendID(friendID);
         setError(ErrorType.none);
-	}
+    }
 
-	const friendOptions = [
-		{ value: DEFAULT_VALUE, label: DEFAULT_VALUE },
-		...Object.entries(friends).map(([friendID, { username }]) => ({ value: friendID, label: username, }))
-	];
+    const friendOptions = [
+        { value: DEFAULT_VALUE, label: DEFAULT_VALUE },
+        ...Object.entries(friends).map(([friendID, { username }]) => ({ value: friendID, label: username, }))
+    ];
 
-	return (
-		<>
-			{ error !== ErrorType.none && <ErrorText error={error} /> }
-			<Dropdown extraStyling={styles.dropdown} label="Select friend" id="friend" options={friendOptions} setting={DEFAULT_VALUE} onChange={handleChange} />
-			<PopupButtons>
-				<MossButton label={sending ? "Sending..." : "Invite"} disabled={sending} onClick={handleInvite} />
-				<MossButton label="Cancel" onClick={closePopup} />
-			</PopupButtons>
-		</>
-	)
+    return (
+        <>
+            { error !== ErrorType.none && <ErrorText error={error} /> }
+            <Dropdown extraStyling={styles.dropdown} label="Select friend" id="friend" options={friendOptions} setting={DEFAULT_VALUE} onChange={handleChange} />
+            <PopupButtons>
+                <MossButton label={sending ? "Sending..." : "Invite"} disabled={sending} onClick={handleInvite} />
+                <MossButton label="Cancel" onClick={closePopup} />
+            </PopupButtons>
+        </>
+    )
 }
