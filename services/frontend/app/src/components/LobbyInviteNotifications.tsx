@@ -2,27 +2,27 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useAuth } from "../contexts/AuthContext";
-import { useLobbies } from "../contexts/LobbiesContext";
+import { useLobbies, type LobbyInvite } from "../contexts/LobbiesContext";
 import { ErrorType, mapLobbyApiError } from "../utils/errors";
 import { RoutePath } from "../utils/utils";
 import { MossButton } from "./Buttons";
 import ErrorText from "./ErrorText";
 import styles from "./LobbyInviteNotifications.module.scss";
 
-// Mounted inside BrowserRouter so invitations are visible on any page,
-// not only when the recipient is already browsing lobbies.
-export default function LobbyInviteNotifications()
+interface IInviteNotificationCard
 {
-    const { auth } = useAuth();
-    const { lobbyInvites, joinLobby, dismissLobbyInvite } = useLobbies();
+    invite: LobbyInvite;
+    remainingInvites: number;
+}
+
+// A keyed component keeps loading/error state scoped to this invitation.
+// When A disappears and B becomes first, B starts with a clean state.
+function InviteNotificationCard({ invite, remainingInvites }: IInviteNotificationCard)
+{
+    const { joinLobby, dismissLobbyInvite } = useLobbies();
     const navigate = useNavigate();
     const [joining, setJoining] = useState(false);
     const [error, setError] = useState<ErrorType>(ErrorType.none);
-
-    if (auth.status !== "authenticated" || lobbyInvites.length === 0)
-        return null;
-
-    const invite = lobbyInvites[0];
 
     async function accept()
     {
@@ -40,8 +40,12 @@ export default function LobbyInviteNotifications()
         catch (cause)
         {
             const mapped = mapLobbyApiError(cause);
-
-            if (mapped === ErrorType.lobbyDoesNotExist || mapped === ErrorType.lobbyFull)
+            // Closed or full lobbies cannot be joined. Remove those stale invites,
+            // but keep the invite for retryable failures (e.g. a network error).
+            if (
+                mapped === ErrorType.lobbyDoesNotExist ||
+                mapped === ErrorType.lobbyFull
+            )
             {
                 dismissLobbyInvite(invite.lobby_id);
                 setError(ErrorType.none);
@@ -75,7 +79,27 @@ export default function LobbyInviteNotifications()
                 <MossButton label={joining ? "Joining..." : "Join"} disabled={joining} onClick={() => void accept()} />
                 <MossButton label="Dismiss" disabled={joining} onClick={dismiss} />
             </div>
-            {lobbyInvites.length > 1 && <small>{lobbyInvites.length - 1} more invitation(s)</small>}
+            {remainingInvites > 0 && <small>{remainingInvites} more invitation(s)</small>}
         </aside>
+    );
+}
+
+// Mounted inside BrowserRouter so invitations are visible on any page,
+// not only when the recipient is already browsing lobbies.
+export default function LobbyInviteNotifications()
+{
+    const { auth } = useAuth();
+    const { lobbyInvites } = useLobbies();
+
+    if (auth.status !== "authenticated" || lobbyInvites.length === 0)
+        return null;
+
+    const invite = lobbyInvites[0];
+    return (
+        <InviteNotificationCard
+            key={invite.lobby_id}
+            invite={invite}
+            remainingInvites={lobbyInvites.length - 1}
+        />
     );
 }
