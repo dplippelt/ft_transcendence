@@ -69,6 +69,8 @@ export enum ErrorType
     lobbyInviteAlreadySent,
     lobbyInviteRateLimited,
     lobbyAlreadyMember,
+    lobbyInviteNotMember,
+    lobbyCannotInviteSelf,
 
     chatMessageTooLong,
     chatNotFriends,
@@ -243,9 +245,9 @@ export function errorMsg(error: ErrorType): string
         case ErrorType.lobbyNameAlreadyExists:
             return "A lobby with this name already exists!";
         case ErrorType.lobbyDoesNotExist:
-            return "Failed to join because the lobby does not exist";
+            return "This lobby no longer exists.";
         case ErrorType.lobbyFull:
-            return "Failed to join because the lobby is full";
+            return "This lobby is full.";
         case ErrorType.lobbyInviteNotDelivered:
             return "Invitation could not be delivered. Your friend may be offline. Try again in 30 seconds.";
         case ErrorType.lobbyInviteAlreadySent:
@@ -253,7 +255,11 @@ export function errorMsg(error: ErrorType): string
         case ErrorType.lobbyInviteRateLimited:
             return "You're sending invites too quickly. Try again shortly.";
         case ErrorType.lobbyAlreadyMember:
-            return "This friend has already joined the lobby.";
+            return "This user is already a member of the lobby.";
+        case ErrorType.lobbyInviteNotMember:
+            return "You must be a lobby member to invite friends.";
+        case ErrorType.lobbyCannotInviteSelf:
+            return "You cannot invite yourself.";
         
         case ErrorType.chatMessageTooLong:
             return "Message is too long (max 2000 characters).";
@@ -488,6 +494,10 @@ export function mapLobbyApiError(error: unknown): ErrorType
             return ErrorType.lobbyFull;
         case "ALREADY_LOBBY_MEMBER":
             return ErrorType.lobbyAlreadyMember;
+        case "NOT_LOBBY_MEMBER":
+            return ErrorType.lobbyInviteNotMember;
+        case "CANNOT_INVITE_SELF":
+            return ErrorType.lobbyCannotInviteSelf;
         case "INVITE_ALREADY_SENT":
             return ErrorType.lobbyInviteAlreadySent;
         case "INVITE_RATE_LIMIT_EXCEEDED":

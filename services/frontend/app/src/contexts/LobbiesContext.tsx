@@ -131,6 +131,9 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
     const lobbyRevisionsRef = useRef<Record<LobbyID, number>>({});
     const sessionRef = useRef(0);
     const inviteVersionRef = useRef(0);
+    // Last received invite version for each lobby. A fresh invite should not be
+    // removed by an older lobby-list snapshot that was already in flight.
+    const inviteRevisionsRef = useRef<Record<LobbyID, number>>({});
     const nextRefreshIDRef = useRef(0);
     const lastAppliedRefreshIDRef = useRef(0);
 
@@ -146,6 +149,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         lobbyVersionRef.current = 0;
         lobbyRevisionsRef.current = {};
         inviteVersionRef.current = 0;
+        inviteRevisionsRef.current = {};
         setLobbies({});
         setLobbyInvites([]);
     }, []);
@@ -158,7 +162,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
 
         const session = sessionRef.current;
         const startedAt = lobbyVersionRef.current;
-        const inviteVersion = inviteVersionRef.current;
+        const inviteVersionAtStart = inviteVersionRef.current;
         const refreshID = ++nextRefreshIDRef.current;
         const lobbyList = await getLobbies(accessToken);
 
@@ -166,22 +170,26 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
             return;
 
         lastAppliedRefreshIDRef.current = refreshID;
-        // Discard invites for closed or full lobbies after reconnect.
-        // Preserve invites received while this snapshot was in flight.
-        if (inviteVersion === inviteVersionRef.current)
+        // Remove stale invites present when the request started, but preserve
+        // invites received or refreshed while the snapshot was in flight.
+        const joinableIDs = new Set(
+            lobbyList
+                .filter(lobby =>
+                    lobby.members.length < MAX_LOBBY_MEMBERS &&
+                    !lobby.members.some(member => member.user.id === auth.user?.id)
+                )
+                .map(lobby => lobby.id)
+        );
+        setLobbyInvites(previous =>
         {
-            const availableIDs = new Set(
-                lobbyList
-                    .filter(lobby =>
-                        lobby.members.length < MAX_LOBBY_MEMBERS ||
-                        lobby.members.some(member => member.user.id === auth.user?.id)
-                    )
-                    .map(lobby => lobby.id)
+            if (session !== sessionRef.current || refreshID < lastAppliedRefreshIDRef.current)
+                return previous;
+
+            return previous.filter(invite =>
+                (inviteRevisionsRef.current[String(invite.lobby_id)] ?? 0) > inviteVersionAtStart ||
+                joinableIDs.has(invite.lobby_id)
             );
-            setLobbyInvites(previous =>
-                previous.filter(invite => availableIDs.has(invite.lobby_id))
-            );
-        }
+        });
         setLobbies(previous =>
         {
             if (session !== sessionRef.current || refreshID < lastAppliedRefreshIDRef.current)
@@ -443,11 +451,11 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                         [lobbyID]: toLobbyData(lobby, previous[lobbyID]),
                     }));
 
-                    // A public lobby can fill after the invite was sent.
-                    // It is no longer joinable by someone outside its members.
+                    // The invite is no longer actionable if the lobby is full
+                    // or the current user has already joined (possibly elsewhere).
                     if (
-                        lobby.members.length >= MAX_LOBBY_MEMBERS &&
-                        !lobby.members.some(member => member.user.id === auth.user?.id)
+                        lobby.members.length >= MAX_LOBBY_MEMBERS ||
+                        lobby.members.some(member => member.user.id === auth.user?.id)
                     )
                         dismissLobbyInvite(lobbyID);
                     return;
@@ -488,7 +496,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                         inviter: message.inviter as PublicUser,
                     };
 
-                    inviteVersionRef.current += 1;
+                    inviteRevisionsRef.current[String(invite.lobby_id)] = ++inviteVersionRef.current;
                     setLobbyInvites(previous => [
                         ...previous.filter(existing => existing.lobby_id !== invite.lobby_id),
                         invite,
