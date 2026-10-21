@@ -169,6 +169,7 @@ function HostButtons({ lobbyID, setPopupType,  setIsExiting, }: IHostButtons,)
 	const user = useCurrentUser();
 	const numPlayers = lobbies[lobbyID] ?.members.length ?? 0;
     const startDisabled = numPlayers !== 2;
+    const inviteDisabled = numPlayers >= 2;
 
 	async function onCloseLobby()
 	{
@@ -215,6 +216,7 @@ function HostButtons({ lobbyID, setPopupType,  setIsExiting, }: IHostButtons,)
 			<BottomButton
 				label="Invite friend"
 				onClick={ () => setPopupType(PopupType.inviteFriend,) }
+				disabled={inviteDisabled}
 			/>
 
 			<BottomButton
