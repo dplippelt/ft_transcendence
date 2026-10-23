@@ -23,6 +23,7 @@ function InviteNotificationCard({ invite, remainingInvites }: IInviteNotificatio
     const navigate = useNavigate();
     const [joining, setJoining] = useState(false);
     const [error, setError] = useState<ErrorType>(ErrorType.none);
+    const cannotJoin = error === ErrorType.lobbyDoesNotExist || error === ErrorType.lobbyFull;
 
     async function accept()
     {
@@ -40,18 +41,8 @@ function InviteNotificationCard({ invite, remainingInvites }: IInviteNotificatio
         catch (cause)
         {
             const mapped = mapLobbyApiError(cause);
-            // Closed or full lobbies cannot be joined. Remove those stale invites,
-            // but keep the invite for retryable failures (e.g. a network error).
-            if (
-                mapped === ErrorType.lobbyDoesNotExist ||
-                mapped === ErrorType.lobbyFull
-            )
-            {
-                dismissLobbyInvite(invite.lobby_id);
-                setError(ErrorType.none);
-                return;
-            }
-
+            // Keep the invitation visible so the recipient can read the error.
+            // Known-invalid invitations cannot be retried, but can be dismissed.
             setError(mapped);
         }
         finally
@@ -76,7 +67,7 @@ function InviteNotificationCard({ invite, remainingInvites }: IInviteNotificatio
             </p>
             {error !== ErrorType.none && <ErrorText error={error} />}
             <div className={styles.actions}>
-                <MossButton label={joining ? "Joining..." : "Join"} disabled={joining} onClick={() => void accept()} />
+                <MossButton label={joining ? "Joining..." : "Join"} disabled={joining || cannotJoin} onClick={() => void accept()} />
                 <MossButton label="Dismiss" disabled={joining} onClick={dismiss} />
             </div>
             {remainingInvites > 0 && <small>{remainingInvites} more invitation(s)</small>}

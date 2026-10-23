@@ -257,7 +257,7 @@ export function errorMsg(error: ErrorType): string
         case ErrorType.lobbyAlreadyMember:
             return "This user is already a member of the lobby.";
         case ErrorType.lobbyInviteNotMember:
-            return "You must be a lobby member to invite friends.";
+            return "You are not a member of this lobby.";
         case ErrorType.lobbyCannotInviteSelf:
             return "You cannot invite yourself.";
         
