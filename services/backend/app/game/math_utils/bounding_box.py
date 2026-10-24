@@ -8,7 +8,6 @@ class Bound2D(NamedTuple):
     max: int
 
 
-# TODO: This is a int based box instead of using floats
 class BoundingBox:
     def __init__(self, min: Vector2, size: Vector2):  # renamed argument position to min
         self.min: Vector2 = min.clone()

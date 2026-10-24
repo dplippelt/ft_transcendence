@@ -49,7 +49,7 @@ export class Dungeon extends Tilemaps.Tilemap {
   private passage: Passage | undefined;
 
   private map: Map;
-  private tiledMap: number[][]; // TODO: store this elsewhere
+  private tiledMap: number[][];
   private mapBuilder: MapBuilder;
   private tileMapper: TileMapper;
 

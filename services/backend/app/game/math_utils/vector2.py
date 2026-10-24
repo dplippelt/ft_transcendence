@@ -7,7 +7,6 @@ class Point2D(NamedTuple):
     y: int
 
 
-# TODO: this an int vector instead of float vector (issues?)
 class Vector2:
     def __init__(self, x: int = 0, y: int = 0):
         self.x: int = x
