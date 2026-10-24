@@ -1,14 +1,16 @@
 import { Tilemaps } from "phaser";
-import { RoomType, type RoomGraph, type Room, type MapData } from "../../map/procedural";
 import { PassageType, type TileSetMap } from "../../map/TileSetMap";
 import { Dungeon } from "./Dungeon";
 import { random, randomPoint, weightedRandom, type weight } from "../../map/math";
 import { DepthOrder } from "../../Assets";
+import { gRandom } from "../../map/random";
+import { RoomGraph } from "../../map/RoomGraph";
+import { Room, RoomType } from "../../map/DungeonModels";
 
 export class DungeonDecorator {
-  apply(dungeon: Dungeon, mapData: MapData, tileSetMap: TileSetMap): void {
-    this.createLevelLayer(dungeon, mapData);
-    this.createRoomLayer(dungeon, mapData.graph, tileSetMap);
+  apply(dungeon: Dungeon, tiledMap: number[][], tileSetMap: TileSetMap, roomGraph: RoomGraph): void {
+    this.createLevelLayer(dungeon, tiledMap);
+    this.createRoomLayer(dungeon, roomGraph, tileSetMap);
     dungeon.setLayer("map");
   }
 
@@ -31,9 +33,9 @@ export class DungeonDecorator {
     return layer;
   }
 
-  private createLevelLayer(dungeon: Dungeon, mapData: MapData): void {
+  private createLevelLayer(dungeon: Dungeon, tiledMap: number[][]): void {
     const layer = this.createBlankLayer("map", DepthOrder.background, dungeon);
-    layer.putTilesAt(mapData.map, 0, 0);
+    layer.putTilesAt(tiledMap, 0, 0);
     layer.setCollisionBetween(2, 5);
     layer.setCollisionBetween(15, 18);
     layer.setCollisionBetween(28, 31);
@@ -47,16 +49,16 @@ export class DungeonDecorator {
     }
 
     const layer = this.createBlankLayer(`layer-0`, DepthOrder.layer0, dungeon);
-    for (const room of roomGraph.keys()) {
-      switch (room.type) {
+    for (const roomNode of roomGraph.graph.keys()) {
+      switch (roomNode.room.type) {
         case RoomType.Entrance:
-          this.entranceRoom(layer, tileSetMap, room);
+          this.entranceRoom(layer, tileSetMap, roomNode.room);
           break;
         case RoomType.Exit:
-          this.exitRoom(layer, tileSetMap, room);
+          this.exitRoom(layer, tileSetMap, roomNode.room);
           break;
         case RoomType.Standard:
-          this.standardRoom(layer, tileSetMap, room);
+          this.standardRoom(layer, tileSetMap, roomNode.room);
           break;
         default:
           throw new Error("DungeonDecorator: Unknown room type");
@@ -76,7 +78,7 @@ export class DungeonDecorator {
   }
 
   private standardRoom(layer: Tilemaps.TilemapLayer, tileSetMap: TileSetMap, room: Room): void {
-    if (Math.random() < 0.6) {
+    if (gRandom.random_value() < 0.6) {
       return;
     }
 

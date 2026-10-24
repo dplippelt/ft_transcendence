@@ -1,8 +1,8 @@
 import type { GameObjects, Physics } from "phaser";
 import type { Dungeon } from "../gameobjects/dungeon/Dungeon";
-import type { Room } from "../map/procedural";
 import { Vector2, randomPoint } from "../map/math";
 import Component from "./Component";
+import type { Room } from "../map/DungeonModels";
 
 export class DungeonLocation extends Component {
   private _currentRoom: Room | undefined;

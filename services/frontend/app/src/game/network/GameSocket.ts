@@ -89,3 +89,6 @@ function make_connection(json) {
   player_0 = new GameSocket(0, json.game_id);
   player_1 = new GameSocket(1, json.game_id);
 }
+
+void player_0;
+void player_1;

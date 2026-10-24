@@ -4,8 +4,8 @@ import { ExitZone } from "./ExitZone";
 import { Passage } from "./Passage";
 import type { SpawnLocation } from "./Dungeon";
 import { playerOne } from "../../components/KeyboardComponent";
-import { Direction } from "../../map/procedural";
 import { AssetsKey } from "../../Assets";
+import { Direction } from "../../map/DungeonModels";
 
 export class PlayerFactory {
   createPlayer(_index: number, spawnLocation: SpawnLocation): Player {
