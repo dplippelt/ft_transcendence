@@ -1,5 +1,13 @@
-import React, { useEffect, useState } from "react";
-import { Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
+import React, {
+	useEffect,
+	useState,
+} from "react";
+import {
+	Navigate,
+	useLocation,
+	useNavigate,
+	useParams,
+} from "react-router-dom";
 import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
@@ -161,7 +169,8 @@ function HostButtons({ lobbyID, setPopupType,  setIsExiting, }: IHostButtons,)
 	const user = useCurrentUser();
 	const numPlayers = lobbies[lobbyID] ?.members.length ?? 0;
     const startDisabled = numPlayers !== 2;
-    
+    const inviteDisabled = numPlayers >= 2;
+
 	async function onCloseLobby()
 	{
 		setIsExiting(true);
@@ -207,6 +216,7 @@ function HostButtons({ lobbyID, setPopupType,  setIsExiting, }: IHostButtons,)
 			<BottomButton
 				label="Invite friend"
 				onClick={ () => setPopupType(PopupType.inviteFriend,) }
+				disabled={inviteDisabled}
 			/>
 
 			<BottomButton
@@ -291,6 +301,9 @@ export default function Lobby()
 			{
                 const loadedLobby = await loadLobby( lobbyID!, );
 
+                if (cancelled)
+                    return;
+
 				const alreadyMember = loadedLobby.members.some( member => member.user.id === user.id,);
 
 				if (!alreadyMember)
@@ -320,17 +333,17 @@ export default function Lobby()
 
 	if (isExiting)
         return <Background/>;
-    
+
     if (joinStatus === JoinStatus.pending)
         return <Background/>;
-    
+
     if (joinStatus === JoinStatus.ok && !isMember)
     {
         const path = location.state?.from ?? RoutePath.mainMenu;
-    
+
         return <Navigate to={path} replace />;
     }
-    
+
     if (joinStatus === JoinStatus.failed || !lobby)
     {
         const path = location.state?.from ?? RoutePath.mainMenu;
@@ -374,6 +387,7 @@ export default function Lobby()
                     popupType === PopupType.inviteFriend &&
                         <Popup>
                             <InviteFriendPopup
+                                lobbyID={lobbyID!}
                                 setPopupType={setPopupType}
                             />
                         </Popup>

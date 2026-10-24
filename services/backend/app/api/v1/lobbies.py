@@ -81,12 +81,12 @@ def notify_invite(friend_id: int, lobby: Lobby, inviter: User) -> bool:
 
 
 def notify_lobby_updated(lobby: Lobby) -> None:
+    # Lobbies are public to authenticated users. Browsers that aren't members
+    # must also hear about creations, joins, and leaves.
     payload = connection_manager.build_payload_safely(
         "lobby_updated",
         lambda: {
-            "lobby": LobbyResponse
-                .model_validate(lobby)
-                .model_dump(mode="json"),
+            "lobby": LobbyResponse.model_validate(lobby).model_dump(mode="json"),
         },
     )
 
@@ -95,11 +95,11 @@ def notify_lobby_updated(lobby: Lobby) -> None:
 
 
 def notify_lobby_closed(lobby_id: int) -> None:
+    # Also reach people browsing the public lobby list and invited friends
+    # who are not members yet, so the listing/invitation disappears.
     payload = connection_manager.build_payload_safely(
         "lobby_closed",
-        lambda: {
-            "lobby_id": lobby_id,
-        },
+        lambda: {"lobby_id": lobby_id},
     )
 
     if payload is not None:
@@ -128,8 +128,7 @@ def get_lobby(lobby_id: int, current_user: CompletedUser, db: DbSession):
     return lobby
 
 
-# B joins -> DB becomes [A,B] -> A & B receive lobby_updated
-# sending it to B too is useful as B could have another browser tab open
+# All authenticated viewers (including people browsing) get the updated listing.
 @router.post("/{lobby_id}/join", response_model=LobbyResponse)
 def join(lobby_id: int, current_user: CompletedUser, db: DbSession):
     lobby = join_lobby(db, current_user, lobby_id)
@@ -137,12 +136,11 @@ def join(lobby_id: int, current_user: CompletedUser, db: DbSession):
     return lobby
 
 
-# saving member_ids first as before B leaves [A, B], but after leave_lobby() [A]
-# we still want B's other tabs to receive the update too
+# The public broadcast includes the departing user's other tabs too.
 @router.post("/{lobby_id}/leave", status_code=status.HTTP_204_NO_CONTENT)
 def leave(lobby_id: int, current_user: CompletedUser, db: DbSession):
-    leave_lobby(db, current_user, lobby_id)
-    lobby = get_lobby_by_id(db, lobby_id)
+    leave_lobby(db, current_user, lobby_id,)
+    lobby = get_lobby_by_id(db, lobby_id,)
     if lobby is None:
         notify_lobby_closed(lobby_id)
         return
