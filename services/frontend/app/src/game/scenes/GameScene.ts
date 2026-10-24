@@ -4,6 +4,7 @@ import { Dungeon } from "../gameobjects/dungeon/Dungeon.ts";
 import { Direction, type DungeonConfig } from "../map/procedural";
 import { WallType, FloorType, PassageType, FoilageType } from "../map/TileSetMap.ts";
 import Player from "../gameobjects/Player.ts";
+import { call_create_session } from "../network/GameSocket.ts";
 
 const dungeonConfig: DungeonConfig = {
   emptyRoomConfig: {
@@ -91,6 +92,10 @@ export default class GameScene extends Scene {
     this.input.on("pointerdown", () => {
       if (this.input.activePointer.leftButtonDown()) {
         this.nextLevel();
+      }
+
+      if (this.input.activePointer.rightButtonDown()) {
+        call_create_session()
       }
     });
 

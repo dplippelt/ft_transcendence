@@ -1,4 +1,6 @@
+import asyncio
 import threading
+import weakref
 from datetime import datetime, timedelta
 
 from sqlalchemy import func
@@ -6,7 +8,10 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.exceptions import ErrorCode, bad_request, conflict, forbidden, not_found
+from app.db.database import SessionLocal
 from app.db.utils import commit_or_bad_request
+from app.game.game_session import GameSession
+from app.game.game_session_manager import game_session_manager
 from app.models.lobby import Lobby
 from app.models.lobby_member import LobbyMember
 from app.models.lobby_message import LobbyMessage
@@ -34,6 +39,7 @@ INVITE_RATE_LIMIT_MAX = 5
 _recent_invites: dict[tuple[int, int], datetime] = {}
 _invite_send_times: dict[int, list[datetime]] = {}
 _recent_invites_lock = threading.Lock()
+_active_lobbies = weakref.WeakValueDictionary()
 
 
 def _lobby_query(db: Session):
@@ -105,7 +111,7 @@ def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby:
         raise not_found("Lobby not found.", code=ErrorCode.LOBBY_NOT_FOUND)
 
     if get_member(db, lobby_id, user.id) is not None:
-        return get_lobby_by_id(db, lobby_id)
+        return get_lobby_or_404(db, lobby_id)
 
     member_count = (
         db.query(LobbyMember)
@@ -119,7 +125,7 @@ def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby:
     db.add(LobbyMember(lobby=lobby, user=user, role=GUEST))
     commit_or_bad_request(db, "Could not join lobby.")
 
-    return get_lobby_by_id(db, lobby_id)
+    return get_lobby_or_404(db, lobby_id)
 
 
 def get_lobby_or_404(db: Session, lobby_id: int) -> Lobby:
@@ -399,3 +405,36 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
         raise not_found("Friendship not found.", code=ErrorCode.FRIENDSHIP_NOT_FOUND)
 
     return lobby
+
+
+def get_user_ids_in_a_lobby(user: User, lobby_id: int) -> list[int]:
+    with SessionLocal() as db:
+        get_lobby_or_404(db, lobby_id);
+
+        host = get_member(db, lobby_id, user.id)
+        if host is None:
+            raise forbidden("You are not a member of this lobby.", code=ErrorCode.NOT_LOBBY_MEMBER)
+
+        if host.role != HOST:
+            raise forbidden("You are not the host of this lobby.", code=ErrorCode.NOT_LOBBY_HOST)
+
+        user_ids = get_other_member_ids(db, lobby_id, user.id)
+        if not user_ids:
+            raise forbidden("You cannot host the game alone.", code=ErrorCode.LOBBY_MISSING_PLAYERS)
+
+        user_ids.append(host.user_id)
+
+        return user_ids
+
+
+async def start_game_session(user: User, lobby_id: int) -> tuple[list[int], GameSession]:
+    user_ids = await asyncio.to_thread(get_user_ids_in_a_lobby, user, lobby_id)
+
+    if lobby_id in _active_lobbies:
+        raise forbidden("Lobby already runs a game session.", code=ErrorCode.LOBBY_ALREADY_RUNS_GAME_SESSION)
+
+    game_session = game_session_manager.create(set(user_ids))
+
+    _active_lobbies[lobby_id] = game_session
+
+    return (user_ids, game_session)
