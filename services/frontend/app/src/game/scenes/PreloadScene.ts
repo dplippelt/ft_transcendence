@@ -8,10 +8,11 @@ export default class PreloadScene extends Phaser.Scene {
 
   preload() {
     // load game assets
-    this.load.spritesheet(AssetsKey.Player, Assets[AssetsKey.Player], {
+    this.load.spritesheet(AssetsKey.Knight, Assets[AssetsKey.Knight], {
       frameWidth: 16,
       frameHeight: 16,
     });
+    this.load.image(AssetsKey.Soldier, Assets[AssetsKey.Soldier]); // is 18 x 18px - doesn't seem to cause any issues - can downscale it but would loose some detail
     this.load.spritesheet(AssetsKey.Skeleton, Assets[AssetsKey.Skeleton], {
       frameWidth: 16,
       frameHeight: 16,
