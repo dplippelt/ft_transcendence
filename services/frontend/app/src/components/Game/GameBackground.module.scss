@@ -1,0 +1,36 @@
+// TODO: change background image to the one that doesn't have the player and enemy characters baked in
+// TODO: delete combat_bg_preview.png from assets folder
+
+@mixin background
+{
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100vw;
+	height: 100%;
+	z-index: -1;
+}
+
+// .combatBackground
+// {
+// 	@include background;
+// 	background-size: cover;
+// 	background-position: center;
+// 	background-image: url("../../assets/combat_bg.png");
+// }
+
+.combatBackground
+{
+	@include background;
+	background-size: contain;
+	background-position: center;
+	background-image: url("../../assets/combat_bg_2-1.png");
+	background-repeat: no-repeat;
+	background-color: black;
+}
+
+.dungeonBackground
+{
+	@include background;
+	background-color: black;
+}

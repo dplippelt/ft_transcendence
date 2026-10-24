@@ -1,19 +1,13 @@
 import Phaser, { type Scene } from "phaser";
 import CardManager from "./cards/CardManager";
-import Button from "./utils/Button";
-import type { ButtonConfig } from "./utils/Button";
-import { buttonContentConfig, buttonStyleConfig } from "./utils/buttonConfig";
 import CombatTurnManager, { TurnEvents } from "./CombatTurnManager";
-import type { PlayerStatus } from "../scenes/CombatScene";
+import { initPlayerStatus, type PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
 import CombatLayoutManager from "./CombatLayoutManager";
 import CombatPlayer from "./CombatPlayer";
-import CombatExecuteManager, { ExecuteCombo } from "./CombatExecuteManager";
-
-const executeButtonConfig: ButtonConfig = {
-  styleConfig: buttonStyleConfig,
-  textConfig: buttonContentConfig,
-};
+import CombatExecuteManager, { damageToEnemyConfig, type DamageToEnemy } from "./CombatExecuteManager";
+import { EventBus } from "../EventBus";
+import { CombatEvent } from "../../utils/utils";
 
 export enum CombatEvents {
   ENDCOMBAT = "endCombat",
@@ -23,9 +17,9 @@ export enum CombatEvents {
   ENEMYATTACK = "enemyAttack",
   TAKEDAMAGE = "takeDamage",
   ENDTURN = "endTurn",
+  JUDGERESULT = "judgeResult",
+  COMPLETEFILLHAND = "completeFillHand",
 }
-
-type DamageToEnemy = Record<ExecuteCombo, number>;
 
 export default class CombatManager {
   readonly scene: Scene;
@@ -35,58 +29,76 @@ export default class CombatManager {
   readonly turnManager: CombatTurnManager;
   readonly executeManager: CombatExecuteManager;
   readonly events: Phaser.Events.EventEmitter;
-  readonly executeButton: Button;
   readonly layoutManager: CombatLayoutManager;
-  readonly hitpointsText: Phaser.GameObjects.Text;
-  readonly damageToEnemyOn: DamageToEnemy = {
-    [ExecuteCombo.ONE]: 2,
-    [ExecuteCombo.TWO]: 4,
-    [ExecuteCombo.THREE]: 8,
-  };
+  readonly damageToEnemyOn: DamageToEnemy = damageToEnemyConfig;
+  readonly enemyData: EnemyData;
 
   constructor(scene: Scene, playerStatus: PlayerStatus, enemyData: EnemyData) {
     this.scene = scene;
+    this.enemyData = enemyData;
     this.player = new CombatPlayer(scene, playerStatus);
     this.enemy = new CombatEnemy(scene, enemyData);
     this.cardManager = new CardManager(scene, playerStatus);
     this.turnManager = new CombatTurnManager(this);
-    this.turnManager.turnEvents.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
-    this.turnManager.turnEvents.on(TurnEvents.STARTENEMY, this.initEnemyTurn, this);
+    this.onTurnAction();
     this.executeManager = new CombatExecuteManager();
     this.events = new Phaser.Events.EventEmitter();
+    this.onCombatAction();
+    this.layoutManager = new CombatLayoutManager(this);
+    this.turnManager.turnEvents.emit(TurnEvents.STARTPLAYER);
+  }
+
+  update() {}
+
+  onTurnAction() {
+    const events = this.turnManager.turnEvents;
+    events.on(TurnEvents.STARTPLAYER, this.initPlayerTurn, this);
+    events.on(TurnEvents.STARTENEMY, this.initEnemyTurn, this);
+  }
+
+  onCombatAction() {
     this.events.on(CombatEvents.PLAYERATTACK, this.playerAttack, this);
     this.events.on(CombatEvents.PLAYERGUARD, this.playerGuard, this);
     this.events.on(CombatEvents.ENEMYATTACK, this.enemyAttack, this);
     this.events.on(CombatEvents.TAKEDAMAGE, this.takeDamage, this);
     this.events.on(CombatEvents.ENDTURN, this.endTurn, this);
-    this.executeButton = new Button(scene, "Execute", executeButtonConfig);
-    this.executeButton.on("pointerdown", this.execute, this);
-    this.layoutManager = new CombatLayoutManager(this);
-    this.turnManager.turnEvents.emit(TurnEvents.STARTPLAYER);
-    // show player's hit point and enemy's hitpoint -> to be rendered with React
-    this.hitpointsText = this.scene.add.text(500, 100, "hitpoints");
-  }
-
-  update() {
-    // show a timer
-    this.turnManager.displayTimer();
-
-    // show player's hit point and enemy's hitpoint -> to be rendered with React
-    const output: string[] = [];
-    output.push("player hitPoint = " + this.player.status.hitPoint + " player mana: " + this.player.status.mana);
-    output.push("enemy hitPoint = " + this.enemy.hitPoint);
-    this.hitpointsText.setText(output);
+    this.events.on(CombatEvents.JUDGERESULT, this.judgeResult, this);
+    this.events.on(CombatEvents.COMPLETEFILLHAND, this.completeFillHand, this);
   }
 
   initPlayerTurn() {
+    this.resetHand();
+    EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs());
+  }
+
+  resetHand() {
     this.cardManager.resetSelection();
     this.cardManager.clearHand();
-    this.cardManager.fillCardHand(this.cardManager.maxNumCardsInHand);
+    this.fillCardHand();
     this.executeManager.reset();
+    this.executeManager.generateTargetNumbersFromHand(this.cardManager.cardHand);
+    this.executeManager.test_getValidFormula(this.scene);
+  }
+
+  fillCardHand() {
+    const amount = this.cardManager.maxNumCardsInHand;
+    this.cardManager.fillCardHand(amount);
+    if (!this.executeManager.isValidCardHand(this.cardManager.cardHand)) {
+      this.cardManager.cardHand.removeAll(true);
+      this.fillCardHand();
+    }
+  }
+
+  redrawCards() {
+    if (this.player.status.mana > 0) {
+      this.resetHand();
+      this.player.status.mana--;
+    }
   }
 
   initEnemyTurn() {
-    if (this.executeManager.getResult() !== null) {
+    EventBus.emit(CombatEvent.turnEnded);
+    if (this.executeManager.isSuccessHitTarget()) {
       this.events.emit(CombatEvents.PLAYERGUARD);
     } else {
       this.events.emit(CombatEvents.ENEMYATTACK);
@@ -95,13 +107,17 @@ export default class CombatManager {
 
   execute() {
     const cards = this.cardManager.cardSelection.getSelectedCards();
-
     this.executeManager.evaluateSelectedCards(cards);
-    // TODO: make the logic to determine the value of combo in the executeManager
-    this.executeManager.setCombo(ExecuteCombo.TWO);
-    const points = this.executeManager.getResult();
-    if (points !== null) {
+    if (this.executeManager.getResult() === null) {
+      return;
+    }
+    this.events.emit(CombatEvents.JUDGERESULT);
+  }
+
+  judgeResult() {
+    if (this.executeManager.isSuccessHitTarget()) {
       this.events.emit(CombatEvents.PLAYERATTACK);
+      EventBus.emit(CombatEvent.turnEnded);
     } else {
       // dealPenalty(this.playerStatus);
       // or just to ignore like the case of no cards would be fine?
@@ -124,13 +140,17 @@ export default class CombatManager {
     if (combatant instanceof CombatEnemy) {
       const combo = this.executeManager.getCombo()!;
       combatant.takeDamage(this.damageToEnemyOn[combo]);
+      EventBus.emit(CombatEvent.updateEnemyHP, this.enemy.hitPoint);
       if (combatant.isDead()) {
         this.endCombat();
+        return;
       }
     } else {
       combatant.takeDamage(this.enemy.enemyData.attackDamage);
+      EventBus.emit(CombatEvent.updatePlayerHP, this.player.status.hitPoint);
       if (combatant.isDead()) {
         this.endGame();
+        return;
       }
     }
     this.events.emit(CombatEvents.ENDTURN);
@@ -142,11 +162,57 @@ export default class CombatManager {
 
   endCombat() {
     this.turnManager.clock.removeAllEvents();
+    this.turnManager.destroy();
     this.events.emit(CombatEvents.ENDCOMBAT);
   }
 
   endGame() {
     this.turnManager.clock.removeAllEvents();
+    this.turnManager.destroy();
     this.events.emit(CombatEvents.ENDGAME);
+  }
+
+  sendInitPlayerHP() {
+    EventBus.emit(CombatEvent.initPlayerHP, initPlayerStatus.hitPoint);
+  }
+
+  sendInitPlayerMP() {
+    EventBus.emit(CombatEvent.initPlayerMP, initPlayerStatus.mana);
+  }
+
+  sendInitEnemyHP() {
+    EventBus.emit(CombatEvent.initEnemyHP, this.enemyData.hitPoint);
+  }
+
+  sendInitTargetNumbers() {
+    EventBus.emit(CombatEvent.initTargetNumbers, this.executeManager.getTargetNumbers())
+  }
+
+  sendCurrPlayerHP() {
+    EventBus.emit(CombatEvent.updatePlayerHP, this.player.status.hitPoint);
+  }
+
+  sendCurrPlayerMP() {
+    EventBus.emit(CombatEvent.updatePlayerMP, this.player.status.mana);
+  }
+
+  sendCurrEnemyHP() {
+    EventBus.emit(CombatEvent.updateEnemyHP, this.enemy.hitPoint);
+  }
+
+  sendCurrTargetNumbers() {
+    EventBus.emit(CombatEvent.updateTargetNumbers, this.executeManager.getTargetNumbers())
+  }
+
+  sendElapsedPlayerTime() {
+    const elapsedTime = this.turnManager.getElapsedPlayerTime();
+    if (elapsedTime === null) {
+      return;
+    }
+    EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs(), elapsedTime);
+  }
+
+  completeFillHand() {
+    EventBus.emit(CombatEvent.completeFillHand);
   }
 }

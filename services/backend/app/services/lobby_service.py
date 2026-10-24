@@ -1,6 +1,6 @@
+import asyncio
 import threading
 import weakref
-import asyncio
 from datetime import datetime, timedelta
 
 from sqlalchemy import func
@@ -8,17 +8,15 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from app.core.exceptions import ErrorCode, bad_request, conflict, forbidden, not_found
+from app.db.database import SessionLocal
 from app.db.utils import commit_or_bad_request
+from app.game.game_session import GameSession
+from app.game.game_session_manager import game_session_manager
 from app.models.lobby import Lobby
 from app.models.lobby_member import LobbyMember
 from app.models.lobby_message import LobbyMessage
 from app.models.user import User
 from app.services.friend_service import get_friendship, utc_now
-from app.game.game_session import GameSession
-from app.game.game_session_manager import game_session_manager
-from app.db.database import SessionLocal
-from app.core.websocket_manager import connection_manager
-from app.schemas.lobby import LobbyGameResponse
 
 HOST = "host"
 GUEST = "guest"
@@ -182,11 +180,18 @@ def require_lobby_member(db: Session, lobby_id: int, user_id: int) -> LobbyMembe
     return member
 
 
+def get_member_ids(db: Session, lobby_id: int) -> list[int]:
+    return [
+        user_id
+        for (user_id,) in db.query(LobbyMember.user_id).filter(LobbyMember.lobby_id == lobby_id).all()
+    ]
+
+
 def get_other_member_ids(db: Session, lobby_id: int, user_id: int) -> list[int]:
     return [
-        member.user_id
-        for member in db.query(LobbyMember).filter(LobbyMember.lobby_id == lobby_id).all()
-        if member.user_id != user_id
+        member_id
+        for member_id in get_member_ids(db, lobby_id)
+        if member_id != user_id
     ]
 
 

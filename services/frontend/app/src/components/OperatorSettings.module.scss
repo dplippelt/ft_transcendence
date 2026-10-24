@@ -1,0 +1,10 @@
+@use '../variables' as *;
+
+.operators
+{
+	display: flex;
+	flex-direction: column;
+	gap: 0.4rem;
+	padding-top: 0.2rem;
+	padding-bottom: 0.4rem;
+}

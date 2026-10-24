@@ -32,6 +32,8 @@ export enum ErrorType
     incorrectCreds,
     accountInactive,
     registrationFailed,
+    loginRateLimitExceeded,
+    registrationRateLimitExceeded,
 
     googleLoginFailed,
     googleLoginUnavailable,
@@ -63,6 +65,15 @@ export enum ErrorType
     lobbyNameAlreadyExists,
     lobbyDoesNotExist,
     lobbyFull,
+    lobbyInviteNotDelivered,
+    lobbyInviteAlreadySent,
+    lobbyInviteRateLimited,
+    lobbyAlreadyMember,
+    lobbyInviteNotMember,
+    lobbyCannotInviteSelf,
+
+    chatMessageTooLong,
+    chatNotFriends,
 
     currentPasswordRequired,
     invalidCurrentPassword,
@@ -70,6 +81,20 @@ export enum ErrorType
     passwordEmailConflict,
     passwordUpdateFailed,
     passwordSameAsCurrent,
+
+    twoFactorCodeRequired,
+    twoFactorRecoveryCodeRequired,
+    invalidTwoFactorCode,
+    invalidTwoFactorRecoveryCode,
+    twoFactorChallengeInvalid,
+    twoFactorNotEnabled,
+    twoFactorAlreadyEnabled,
+    twoFactorSetupRequired,
+    twoFactorRateLimitExceeded,
+    twoFactorFailed,
+    clipboardCopyFailed,
+
+    noOperatorsSelected,
 
     unknown,
 }
@@ -111,7 +136,7 @@ export function errorMsg(error: ErrorType): string
             );
         case ErrorType.displayNameCannotBeEmpty:
             return "Display name cannot be empty.";
-        
+
         case ErrorType.displayNameTooLong:
             return "Display name cannot be longer than 50 characters.";
         case ErrorType.passwordsDontMatch:
@@ -134,6 +159,16 @@ export function errorMsg(error: ErrorType): string
             return "This account is inactive.";
         case ErrorType.registrationFailed:
             return "Failed to create account.";
+        case ErrorType.loginRateLimitExceeded:
+            return (
+                "Too many authentication attempts. " +
+                "Please try again shortly."
+            );
+        case ErrorType.registrationRateLimitExceeded:
+            return (
+                "Too many registration attempts. " +
+                "Please try again shortly."
+            );
         case ErrorType.googleLoginFailed:
             return "Google login failed.";
         case ErrorType.googleLoginUnavailable:
@@ -169,6 +204,7 @@ export function errorMsg(error: ErrorType): string
             return "Password is required to unlink Google account.";
         case ErrorType.googleUnlinkFailed:
             return "Failed to unlink Google account.";
+        
         case ErrorType.avatarBadFileType:
             return "Avatar must be JPEG, PNG, or WebP!";
         case ErrorType.avatarTooLarge:
@@ -209,9 +245,26 @@ export function errorMsg(error: ErrorType): string
         case ErrorType.lobbyNameAlreadyExists:
             return "A lobby with this name already exists!";
         case ErrorType.lobbyDoesNotExist:
-            return "Failed to join because the lobby does not exist";
+            return "This lobby no longer exists.";
         case ErrorType.lobbyFull:
-            return "Failed to join because the lobby is full";
+            return "This lobby is full.";
+        case ErrorType.lobbyInviteNotDelivered:
+            return "Invitation could not be delivered. Your friend may be offline. Try again in 30 seconds.";
+        case ErrorType.lobbyInviteAlreadySent:
+            return "You already invited this friend recently.";
+        case ErrorType.lobbyInviteRateLimited:
+            return "You're sending invites too quickly. Try again shortly.";
+        case ErrorType.lobbyAlreadyMember:
+            return "This user is already a member of the lobby.";
+        case ErrorType.lobbyInviteNotMember:
+            return "You are not a member of this lobby.";
+        case ErrorType.lobbyCannotInviteSelf:
+            return "You cannot invite yourself.";
+        
+        case ErrorType.chatMessageTooLong:
+            return "Message is too long (max 2000 characters).";
+        case ErrorType.chatNotFriends:
+            return "You're no longer friends, so this message wasn't sent.";
         case ErrorType.currentPasswordRequired:
             return "Current password is required.";
         case ErrorType.invalidCurrentPassword:
@@ -224,6 +277,36 @@ export function errorMsg(error: ErrorType): string
             return "Failed to update password.";
         case ErrorType.passwordSameAsCurrent:
             return "New password must be different from your current password.";
+        case ErrorType.twoFactorCodeRequired:
+            return "Authentication code is required.";
+        case ErrorType.twoFactorRecoveryCodeRequired:
+            return "Recovery code is required.";
+        case ErrorType.invalidTwoFactorCode:
+            return "Invalid authentication code.";
+        case ErrorType.invalidTwoFactorRecoveryCode:
+            return "Invalid or already used recovery code.";
+        case ErrorType.twoFactorChallengeInvalid:
+            return (
+                "Your login session has expired. " +
+                "Go back and sign in again."
+            );
+        case ErrorType.twoFactorNotEnabled:
+            return "Two-factor authentication is not enabled.";
+        case ErrorType.twoFactorAlreadyEnabled:
+            return "Two-factor authentication is already enabled.";
+        case ErrorType.twoFactorSetupRequired:
+            return "Two-factor authentication setup is incomplete.";
+        case ErrorType.twoFactorRateLimitExceeded:
+            return (
+                "Too many authentication attempts. " +
+                "Please try again shortly."
+            );
+        case ErrorType.twoFactorFailed:
+            return "Two-factor authentication operation failed.";
+        case ErrorType.clipboardCopyFailed:
+            return "Could not copy to clipboard.";
+        case ErrorType.noOperatorsSelected:
+            return "You must select at least 1 operator";
         case ErrorType.unknown:
             return "Something went wrong!";
         default:
@@ -255,6 +338,10 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.avatarTooLarge;
         case "REGISTRATION_FAILED":
             return ErrorType.registrationFailed;
+        case "LOGIN_RATE_LIMIT_EXCEEDED":
+            return ErrorType.loginRateLimitExceeded;
+        case "REGISTRATION_RATE_LIMIT_EXCEEDED":
+            return ErrorType.registrationRateLimitExceeded;
         case "GOOGLE_NOT_CONFIGURED":
             return ErrorType.googleLoginUnavailable;
         case "INVALID_GOOGLE_CREDENTIALS":
@@ -278,7 +365,7 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.googleEmailConflict;
         case "PASSWORD_REQUIRED_TO_UNLINK_GOOGLE":
             return ErrorType.googleUnlinkRequiresPassword;
-        
+
         case "GOOGLE_UNLINK_FAILED":
             return ErrorType.googleUnlinkFailed;
         case "PASSWORD_REQUIRED":
@@ -295,6 +382,22 @@ export function mapAuthApiError(error: unknown): ErrorType
             return ErrorType.passwordSameAsCurrent;
         case "PASSWORD_ALREADY_SET":
             return ErrorType.passwordAlreadySet;
+        case "INVALID_TWO_FACTOR_CODE":
+            return ErrorType.invalidTwoFactorCode;
+        case "INVALID_TWO_FACTOR_RECOVERY_CODE":
+            return ErrorType.invalidTwoFactorRecoveryCode;
+        case "TWO_FACTOR_CHALLENGE_INVALID":
+            return ErrorType.twoFactorChallengeInvalid;
+        case "TWO_FACTOR_NOT_ENABLED":
+            return ErrorType.twoFactorNotEnabled;
+        case "TWO_FACTOR_ALREADY_ENABLED":
+            return ErrorType.twoFactorAlreadyEnabled;
+        case "TWO_FACTOR_SETUP_REQUIRED":
+            return ErrorType.twoFactorSetupRequired;
+        case "TWO_FACTOR_RATE_LIMIT_EXCEEDED":
+            return ErrorType.twoFactorRateLimitExceeded;
+        case "TWO_FACTOR_FAILED":
+            return ErrorType.twoFactorFailed;
     }
     if (error.status === 422 && error.validationErrors)
     {
@@ -315,6 +418,10 @@ export function mapAuthApiError(error: unknown): ErrorType
                     if (validationError.type === "string_too_long")
                         return ErrorType.displayNameTooLong;
                     return ErrorType.displayNameCannotBeEmpty;
+                case "code":
+                    return ErrorType.invalidTwoFactorCode;
+                case "recovery_code":
+                    return ErrorType.invalidTwoFactorRecoveryCode;
             }
         }
     }
@@ -347,4 +454,57 @@ export function mapFriendsApiError(error: unknown): ErrorType
             return ErrorType.friendshipNotFound;
     }
     return ErrorType.unknown;
+}
+
+export function mapChatApiError(error: unknown): ErrorType
+{
+    if (!(error instanceof ApiError))
+        return ErrorType.unknown;
+
+    switch (error.code)
+    {
+        case "NOT_FRIENDS":
+            return ErrorType.chatNotFriends;
+    }
+
+    if (error.status === 422 && error.validationErrors)
+    {
+        for (const validationError of error.validationErrors)
+        {
+            if (validationError.loc?.[validationError.loc.length - 1] === "content")
+                return ErrorType.chatMessageTooLong;
+        }
+    }
+
+    return ErrorType.unknown;
+}
+
+export function mapLobbyApiError(error: unknown): ErrorType
+{
+    if (!(error instanceof ApiError))
+        return ErrorType.unknown;
+
+    switch (error.code)
+    {
+        case "LOBBY_NAME_ALREADY_EXISTS":
+            return ErrorType.lobbyNameAlreadyExists;
+        case "LOBBY_NOT_FOUND":
+            return ErrorType.lobbyDoesNotExist;
+        case "LOBBY_FULL":
+            return ErrorType.lobbyFull;
+        case "ALREADY_LOBBY_MEMBER":
+            return ErrorType.lobbyAlreadyMember;
+        case "NOT_LOBBY_MEMBER":
+            return ErrorType.lobbyInviteNotMember;
+        case "CANNOT_INVITE_SELF":
+            return ErrorType.lobbyCannotInviteSelf;
+        case "INVITE_ALREADY_SENT":
+            return ErrorType.lobbyInviteAlreadySent;
+        case "INVITE_RATE_LIMIT_EXCEEDED":
+            return ErrorType.lobbyInviteRateLimited;
+        case "FRIENDSHIP_NOT_FOUND":
+            return ErrorType.friendshipNotFound;
+        default:
+            return ErrorType.unknown;
+    }
 }

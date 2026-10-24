@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from dataclasses import dataclass
 from time import monotonic
 
@@ -9,6 +10,8 @@ from app.schemas.game import GameSnapshot
 CLIENT_TIMEOUT = 10.0
 EMPTY_SESSION = 0
 SEND_TIMEOUT = 0.1
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -30,6 +33,7 @@ class Connection:
                 timeout=SEND_TIMEOUT,
             )
         except Exception:
+            logger.exception(f"Failed to send snapshot to {self.user_id}")
             return False
         return True
 
@@ -49,6 +53,7 @@ class SessionConnectionManager:
         try:
             await websocket.accept()
         except Exception:
+            logger.exception(f"Failed to accept websocket connection from {user_id}")
             return False
 
         self.connections[user_id] = Connection(user_id, websocket, monotonic())
@@ -60,7 +65,7 @@ class SessionConnectionManager:
                 code=status.WS_1000_NORMAL_CLOSURE, reason="new connection is made"
             )
         except Exception:
-            pass
+            logger.exception(f"Failed to close previous websocket from {user_id}")
         return True
 
     def remove_connection(self, user_id: int, websocket: WebSocket) -> None:
@@ -83,7 +88,7 @@ class SessionConnectionManager:
                 code=status.WS_1000_NORMAL_CLOSURE, reason="connection time out"
             )
         except Exception:
-            pass
+            logger.exception(f"Failed to close websocket from {user_id}")
 
         del self.connections[user_id]
 
@@ -91,8 +96,8 @@ class SessionConnectionManager:
         for connection in self.connections.values():
             try:
                 await connection.websocket.close(code=status.WS_1000_NORMAL_CLOSURE, reason=reason)
-            except:
-                pass
+            except Exception:
+                logger.exception(f"Failed to drop websocket from {connection.user_id}")
 
         self.connections.clear()
 

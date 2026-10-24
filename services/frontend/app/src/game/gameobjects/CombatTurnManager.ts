@@ -20,7 +20,6 @@ export default class CombatTurnManager {
   // Currently, CombatManager normally triggers the switch before the enemy timer runs out,
   // but the timer is kept to minimize the dependency between the two components.
   private enemyTimer: Phaser.Time.TimerEvent | null;
-  readonly timerText: Phaser.GameObjects.Text;
 
   constructor(combatManager: CombatManager) {
     this.combatManager = combatManager;
@@ -28,12 +27,24 @@ export default class CombatTurnManager {
     this.clock = this.scene.time;
     this.turnEvents = new Phaser.Events.EventEmitter();
     this.turnEvents.on(TurnEvents.SWITCH, this.switchTurn, this);
-    this.playerDelayMs = 10000;
+    this.playerDelayMs = 30000;
     this.enemyDelayMs = 5000;
     this.isPlayerTurn = true;
     this.playerTimer = this.playTurnFor(this.playerDelayMs);
     this.enemyTimer = null;
-    this.timerText = this.scene.add.text(100, 200, "timer");
+  }
+
+  destroy() {
+    this.cleanupTimers();
+  }
+
+  cleanupTimers() {
+    if (this.playerTimer) {
+      this.playerTimer.remove();
+    }
+    if (this.enemyTimer) {
+      this.enemyTimer.remove();
+    }
   }
 
   switchTurn() {
@@ -41,23 +52,12 @@ export default class CombatTurnManager {
 
     if (this.isPlayerTurn) {
       this.scene.input.enabled = true;
-
-      if (this.playerTimer) {
-        this.playerTimer.remove();
-      }
-      if (this.enemyTimer) {
-        this.enemyTimer.remove();
-      }
-
+      this.cleanupTimers();
       this.playerTimer = this.playTurnFor(this.playerDelayMs);
       this.turnEvents.emit(TurnEvents.STARTPLAYER);
     } else {
-      this.pausePlayerTurn();
-
-      if (this.enemyTimer) {
-        this.enemyTimer.remove();
-      }
-
+      this.scene.input.enabled = false;
+      this.cleanupTimers();
       this.enemyTimer = this.playTurnFor(this.enemyDelayMs);
       this.turnEvents.emit(TurnEvents.STARTENEMY);
     }
@@ -81,15 +81,19 @@ export default class CombatTurnManager {
     }
   }
 
-  displayTimer() {
-    // TODO: need to align with other objects
-    const output: string[] = [];
+  unpausePlayerTurn() {
+    this.scene.input.enabled = true;
     if (this.playerTimer) {
-      output.push("Player time: " + this.playerTimer.getRemaining().toString());
+      this.playerTimer.paused = false;
     }
-    if (this.enemyTimer) {
-      output.push("Enemy time: " + this.enemyTimer.getRemaining().toString());
-    }
-    this.timerText.setText(output);
+  }
+
+  getElapsedPlayerTime() {
+    const timer = this.isPlayerTurn ? this.playerTimer : null;
+    return timer ? timer.getElapsed() : null;
+  }
+
+  getPlayerDelayMs() {
+    return this.playerDelayMs;
   }
 }

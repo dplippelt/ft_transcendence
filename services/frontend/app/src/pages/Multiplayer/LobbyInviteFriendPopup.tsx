@@ -5,57 +5,86 @@ import React, { useState } from "react";
 import { useFriends  } from "../../contexts/FriendsContext";
 import Dropdown from "../../components/Dropdown";
 import styles from "./LobbyInviteFriendPopup.module.scss";
-import { ErrorType } from "../../utils/errors";
 import ErrorText from "../../components/ErrorText";
+import { useLobbies } from "../../contexts/LobbiesContext";
+import { ErrorType,mapLobbyApiError, } from "../../utils/errors";
 
 const DEFAULT_VALUE = "None selected";
 
 interface IInvitePopup
 {
-	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
+    lobbyID: string;
+    setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-// This is just a placeholder popup component for now.
-export default function InviteFriendPopup( { setPopupType } : IInvitePopup )
+export default function InviteFriendPopup( { lobbyID, setPopupType } : IInvitePopup )
 {
-	const { friends } = useFriends();
-	const [ error, setError ] = useState<ErrorType>(ErrorType.none);
-	const [ selectedFriendID, setSelectedFriendID ] = useState<string | undefined>(undefined);
+    const { friends } = useFriends();
+    const { inviteFriend } = useLobbies();
+    const [ error, setError ] = useState<ErrorType>(ErrorType.none);
+    const [ selectedFriendID, setSelectedFriendID ] = useState<string | undefined>(undefined);
+    const [sending, setSending] = useState(false);
 
-	function closePopup()
-	{
-		setPopupType(PopupType.none);
-	}
+    function closePopup()
+    {
+        setPopupType(PopupType.none);
+    }
 
-	function handleInvite()
-	{
-		if ( !selectedFriendID )
-			return setError(ErrorType.noFriendSelected);
+    async function handleInvite()
+    {
+        if (sending)
+            return;
 
-		// implement later
-		closePopup();
-	}
+        if (!selectedFriendID)
+        {
+            setError(ErrorType.noFriendSelected);
+            return;
+        }
 
-	function handleChange( e: React.ChangeEvent<HTMLSelectElement, Element> )
-	{
-		const friendID = e.target.value === DEFAULT_VALUE ? undefined : e.target.value;
+        setSending(true);
+        try
+        {
+            const delivered = await inviteFriend(lobbyID, Number(selectedFriendID),);
 
-		setSelectedFriendID(friendID);
-	}
+            if (!delivered)
+            {
+                setError(ErrorType.lobbyInviteNotDelivered);
+                return;
+            }
 
-	const friendOptions = [
-		{ value: DEFAULT_VALUE, label: DEFAULT_VALUE },
-		...Object.entries(friends).map(([friendID, { username }]) => ({ value: friendID, label: username, }))
-	];
+            closePopup();
+        }
+        catch (cause)
+        {
+            setError(mapLobbyApiError(cause));
+        }
+        finally
+        {
+            setSending(false);
+        }
+    }
 
-	return (
-		<>
-			{ error !== ErrorType.none && <ErrorText error={error} /> }
-			<Dropdown extraStyling={styles.dropdown} label="Select friend" id="friend" options={friendOptions} setting={DEFAULT_VALUE} onChange={handleChange} />
-			<PopupButtons>
-				<MossButton label="Invite" onClick={handleInvite} />
-				<MossButton label="Cancel" onClick={closePopup} />
-			</PopupButtons>
-		</>
-	)
+    function handleChange( e: React.ChangeEvent<HTMLSelectElement, Element> )
+    {
+        const friendID = e.target.value === DEFAULT_VALUE ? undefined : e.target.value;
+
+        setSelectedFriendID(friendID);
+        setError(ErrorType.none);
+    }
+
+    const friendOptions = [
+        { value: DEFAULT_VALUE, label: DEFAULT_VALUE },
+        ...Object.entries(friends).map(([friendID, { username }]) => ({ value: friendID, label: username, }))
+    ];
+
+    return (
+        <>
+            { error !== ErrorType.none && <ErrorText error={error} /> }
+            <Dropdown extraStyling={styles.dropdown} label="Select friend" id="friend" options={friendOptions} setting={DEFAULT_VALUE} onChange={handleChange} />
+            <PopupButtons>
+                <MossButton label={sending ? "Sending..." : "Invite"} disabled={sending} onClick={handleInvite} />
+                <MossButton label="Cancel" onClick={closePopup} />
+            </PopupButtons>
+        </>
+    )
 }

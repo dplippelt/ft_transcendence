@@ -8,7 +8,7 @@ import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { BottomButtons } from "../../components/ButtonContainers";
 import { MenuTitle } from "../../components/PageTitle";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { Tab, RoutePath } from "../../utils/utils";
 import SideBar from "../../components/SideBar";
 
@@ -43,25 +43,11 @@ function ProfileWindow()
 function Buttons()
 {
 	const navigate = useNavigate();
-	const location = useLocation();
-	const fromGameMenu = location.state?.gameMenu ?? false;
-
-	// Makes sure it goes back to the game / game menu instead of main menu
-	// when the user navigates from:
-	// game menu -> profile -> leaderboard -> back to profile -> back to game menu
-	function getPath()
-	{
-		if ( location.state?.gameMenu )
-			return RoutePath.game;
-		if ( location.state?.from )
-			return location.state.from;
-		return RoutePath.mainMenu;
-	}
 
 	return (
 		<BottomButtons>
-			<BackButton path={getPath()} />
-			<BottomButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard, { state: { from: location.pathname, gameMenu: fromGameMenu } }) } />
+			<BackButton fallback={RoutePath.mainMenu} />
+			<BottomButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard) } />
 		</BottomButtons>
 	);
 }

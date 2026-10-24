@@ -1,20 +1,26 @@
-
 from contextlib import asynccontextmanager
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
-from pathlib import Path
 
 from fastapi import FastAPI
-
-from app.api.v1 import auth, chat, dungeons, leaderboard, lobbies, scores, users, friends, game
-from app.db.database import Base, engine
-from app.core.settings import get_settings
-from app.game.game_session_manager import game_session_manager
-from app.services.avatar_service import AVATAR_DIR
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 # Import model modules so SQLAlchemy registers their tables in Base.metadata.
-import app.models  # noqa: F401
-
+import app.models
+from app.api.v1 import (
+    auth,
+    chat,
+    dungeons,
+    friends,
+    game,
+    leaderboard,
+    lobbies,
+    scores,
+    users,
+)
+from app.core.settings import get_settings
+from app.db.database import Base, engine
+from app.game.game_session_manager import game_session_manager
+from app.services.avatar_service import AVATAR_DIR
 
 settings = get_settings()
 AVATAR_DIR.mkdir(parents=True, exist_ok=True)

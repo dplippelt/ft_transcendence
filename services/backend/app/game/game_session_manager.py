@@ -5,8 +5,6 @@ from asyncio.exceptions import CancelledError
 
 from fastapi import WebSocket
 
-from app.core.websocket_manager import ConnectionManager
-
 from .game_session import GameSession, JoinStatus
 
 logger = logging.getLogger(__name__)

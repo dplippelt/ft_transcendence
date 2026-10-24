@@ -4,7 +4,8 @@ import CombatScene from "./CombatScene";
 import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
 import { EventBus } from "../EventBus";
-import { GameEvent } from "../../utils/utils";
+import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, isValidOpsMaskStr, OperatorBit, RouteParamKey } from "../../utils/utils";
+import { Operator, OPERATORS } from "../gameobjects/cards/CardBase";
 
 export enum GameEvents {
   CombatInitiated = "combat-initiated",
@@ -36,7 +37,9 @@ export class GameManagerScene extends Scene {
   private _gameType: GameType;
   private _pendingCombatScene: Phaser.Scene | null = null;
   private _exitedPlayers: Set<Player>;
-  private _levelCount: number = 5; // TODO: Hard-coded for now
+  private _levelCount: number = 1; // TODO: Hard-coded for now
+                                    // // TODO: change back to intended max level count (was 5)
+  private _operators: Operator[];
 
   constructor() {
     super("game-manager");
@@ -44,6 +47,8 @@ export class GameManagerScene extends Scene {
     this._gameType = GameType.SinglePlayer;
     this._combatScenes = [];
     this._exitedPlayers = new Set<Player>();
+    this._operators = this.getOperators();
+    OPERATORS.splice(0, OPERATORS.length, ...this._operators);
   }
 
   init() {
@@ -54,6 +59,7 @@ export class GameManagerScene extends Scene {
     this.events.once(Phaser.Scenes.Events.DESTROY, () => {
       GameManagerScene.EventsCenter.off(GameEvents.CombatInitiated, this.onCombatInitiated, this);
       GameManagerScene.EventsCenter.off(GameEvents.CombatOver, this.onCombatOver, this);
+      GameManagerScene.EventsCenter.off(GameEvents.LevelExit, this.onExitLevel, this);
     });
 
     this._gameScene = new GameScene();
@@ -63,23 +69,20 @@ export class GameManagerScene extends Scene {
   create() {
     this.input.keyboard?.on("keydown-ESC", () => EventBus.emit(GameEvent.gameMenu));
 
-    EventBus.on(GameEvent.gameVis, (visible: boolean) => {
-      this._isGameVisible = visible;
-      this.updateGlobalCapture();
-    });
+    this.game.events.on(Core.Events.BLUR, this.onBlur, this);
+    this.game.events.on(Core.Events.HIDDEN, this.onBlur, this);
+    EventBus.addListener(GameEvent.gameVis, this.onGameVisChange, this);
+    EventBus.addListener(GameEvent.chatFocus, this.onChatFocusChange, this);
+    EventBus.addListener(GameEvent.gameMenu, this.onGameMenu, this);
+    EventBus.addListener(GameEvent.blur, this.onGameBlur, this);
 
-    EventBus.on(GameEvent.chatFocus, (focused: boolean) => {
-      this._isChatFocused = focused;
-      this.updateGlobalCapture();
-      if ( focused )
-        this.game.events.emit(Core.Events.BLUR);
-    });
-
-    EventBus.on(GameEvent.gameMenu, () => {
-      if (this._gameType === GameType.OnlineCoop)
-        return; // Do not pause game for online multiplayer games when game menu is opened.
-
-      this.togglePause();
+    this.events.once(Phaser.Scenes.Events.DESTROY, () => {
+      this.game.events.off(Core.Events.BLUR, this.onBlur, this);
+      this.game.events.off(Core.Events.HIDDEN, this.onBlur, this);
+      EventBus.removeListener(GameEvent.gameVis, this.onGameVisChange, this);
+      EventBus.removeListener(GameEvent.chatFocus, this.onChatFocusChange, this);
+      EventBus.removeListener(GameEvent.gameMenu, this.onGameMenu, this);
+      EventBus.removeListener(GameEvent.blur, this.onGameBlur, this);
     });
   }
 
@@ -111,16 +114,21 @@ export class GameManagerScene extends Scene {
     if (this._gameType === GameType.SinglePlayer) {
       this.scene.sleep(this._gameScene);
     }
+
+    EventBus.emit(GameEvent.inCombat, true);
   }
 
   private onCombatOver(combatEventData: CombatEventData) {
-    // TODO: player specific event, Win/Lose, progession
     if (!combatEventData.player.isAlive) {
       combatEventData.player.disableBody(true, true);
       if (!this.anyPlayerAlive()) {
-        this.onGameOver();
+        this.onGameOver(GameState.lost);
         return;
       }
+    }
+
+    if (this.allEnemiesDefeated()) {
+      GameManagerScene.EventsCenter.emit(GameEvents.LevelComplete);
     }
 
     this.scene.moveDown(combatEventData.sceneInvoker);
@@ -132,6 +140,20 @@ export class GameManagerScene extends Scene {
     /* Update global capture for game scene
      * No need for an event as the game scene is never stopped */
     this.updateGlobalCapture();
+
+    EventBus.emit(GameEvent.inCombat, false);
+    EventBus.removeListener(CombatEvent.getInitPlayerHp);
+    EventBus.removeListener(CombatEvent.getInitPlayerMp);
+    EventBus.removeListener(CombatEvent.getInitEnemyHp);
+    EventBus.removeListener(CombatEvent.getInitTargetNumbers);
+    EventBus.removeListener(CombatEvent.getCurrPlayerHp);
+    EventBus.removeListener(CombatEvent.getCurrPlayerMp);
+    EventBus.removeListener(CombatEvent.getCurrEnemyHp);
+    EventBus.removeListener(CombatEvent.getCurrTargetNumbers);
+    EventBus.removeListener(CombatEvent.getTurnTimerState);
+    EventBus.removeListener(CombatEvent.attack);
+    EventBus.removeListener(CombatEvent.draw);
+    EventBus.removeListener(CombatEvent.completeFillHand);
   }
 
   private updateGlobalCapture() {
@@ -149,28 +171,34 @@ export class GameManagerScene extends Scene {
     }
   }
 
+  private pause() {
+    for ( const scene of this.getActiveScenes() ) {
+      if ( this.scene.isPaused(scene) ) continue;
+      this.scene.pause(scene);
+      EventBus.emit(CombatEvent.pauseTimer, true);
+    }
+  }
+
   private togglePause() {
     for ( const scene of this.getActiveScenes() ) {
-      if (this.scene.isPaused(scene))
+      if (this.scene.isPaused(scene)) {
         this.scene.resume(scene);
-      else
+        EventBus.emit(CombatEvent.pauseTimer, false);
+      }
+      else {
         this.scene.pause(scene);
+        EventBus.emit(CombatEvent.pauseTimer, true);
+      }
     }
   }
 
   private getActiveScenes() : Phaser.Scene[] {
     return [this._gameScene, ...this._combatScenes]
       .filter((scene) => this.scene.isActive(scene) || this.scene.isPaused(scene));
-
-    if (this.allEnemiesDefeated()) {
-      GameManagerScene.EventsCenter.emit(GameEvents.LevelComplete);
-    }
   }
 
-  private onGameOver(): void {
-    // TODO: Transition to the game over screen (Victory/ Loss)
-    this._levelCount = 5;
-    console.error("Game Over!!!");
+  private onGameOver( state: GameState ): void {
+    EventBus.emit(GameEvent.gameState, state);
   }
 
   private onExitLevel(player: Player): void {
@@ -185,7 +213,7 @@ export class GameManagerScene extends Scene {
       if (--this._levelCount) {
         this._gameScene.nextLevel();
       } else {
-        this.onGameOver();
+        this.onGameOver(GameState.won);
       }
     }
   }
@@ -200,5 +228,51 @@ export class GameManagerScene extends Scene {
 
   private anyPlayerAlive() {
     return this._gameScene.getAlivePlayerCount() > 0;
+  }
+
+  private onBlur( doBlur: boolean = true ) {
+    if ( !doBlur ) return; // so it doesn't blur the game and open the game menu when BLUR is emitted by a focus on the side bar chat
+    EventBus.emit(GameEvent.blur);
+  }
+
+  private onGameVisChange(visible: boolean) {
+    this._isGameVisible = visible;
+    this.updateGlobalCapture();
+  }
+
+  private onChatFocusChange(focused: boolean) {
+      this._isChatFocused = focused;
+      this.updateGlobalCapture();
+      if (focused)
+        this.game.events.emit(Core.Events.BLUR, false);
+  }
+
+  private onGameMenu() {
+      if (this._gameType === GameType.OnlineCoop)
+        return;
+      this.togglePause();
+  }
+
+  private onGameBlur() {
+      if (this._gameType === GameType.OnlineCoop)
+        return;
+      this.pause();
+  }
+
+  // Just a temporary helper function that builds the Operator[] for you change/move it however you like
+  getOperators() {
+    const searchParams = new URLSearchParams(window.location.search);
+    let opsMaskString = searchParams.get(RouteParamKey.ops);
+    if ( !opsMaskString || !isValidOpsMaskStr(opsMaskString) )
+      opsMaskString = DEFAULT_OPS_MASK; // this should never be necessary because PhaserGame already checks and fixes the url but good to keep anyway
+
+    const opsFlags =  parseInt(opsMaskString, 2);
+    const ops: Operator[] = [];
+    if ( opsFlags & OperatorBit.plus ) ops.push(Operator.Plus);
+    if ( opsFlags & OperatorBit.minus ) ops.push(Operator.Minus);
+    if ( opsFlags & OperatorBit.multiply ) ops.push(Operator.Multiply);
+    if ( opsFlags & OperatorBit.divide ) ops.push(Operator.Divide);
+    if ( opsFlags & OperatorBit.modulo ) ops.push(Operator.Modulo);
+    return ops;
   }
 }

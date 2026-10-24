@@ -1,0 +1,36 @@
+@use '../variables' as *;
+
+.notification
+{
+    position: fixed;
+    z-index: 1000;
+    right: 1rem;
+    bottom: 1rem;
+    width: min(21rem, calc(100vw - 2rem));
+    padding: 0.75rem;
+    background: $window-bg-color;
+    border: $window-border;
+    border-radius: $window-border-radius;
+    box-shadow: 0 0.3rem 1rem rgba(0, 0, 0, 0.6);
+    font-family: $text-font;
+    font-size: 0.7rem;
+    display: grid;
+    gap: 0.5rem;
+
+    p
+    {
+        overflow-wrap: anywhere;
+    }
+
+    small
+    {
+        font-size: 0.6rem;
+    }
+}
+
+.actions
+{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}

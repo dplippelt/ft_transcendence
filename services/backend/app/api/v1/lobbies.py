@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.api.dependencies import CompletedUser, DbSession
 from app.core.exceptions import ErrorCode, not_found
 from app.core.websocket_manager import connection_manager
+from app.game.game_session import GameSession
 from app.models.lobby import Lobby
 from app.models.user import User
 from app.schemas.lobby import (
@@ -31,7 +32,6 @@ from app.services.lobby_service import (
     send_lobby_message,
     start_game_session,
 )
-from app.game.game_session import GameSession
 
 logger = logging.getLogger(__name__)
 
@@ -107,6 +107,32 @@ async def notify_game_start(user_ids: list[int], lobby_id: int, game_session: Ga
         await connection_manager.send_to_user(id, payload)
 
 
+def notify_lobby_updated(lobby: Lobby) -> None:
+    # Lobbies are public to authenticated users. Browsers that aren't members
+    # must also hear about creations, joins, and leaves.
+    payload = connection_manager.build_payload_safely(
+        "lobby_updated",
+        lambda: {
+            "lobby": LobbyResponse.model_validate(lobby).model_dump(mode="json"),
+        },
+    )
+
+    if payload is not None:
+        connection_manager.notify_all(payload)
+
+
+def notify_lobby_closed(lobby_id: int) -> None:
+    # Also reach people browsing the public lobby list and invited friends
+    # who are not members yet, so the listing/invitation disappears.
+    payload = connection_manager.build_payload_safely(
+        "lobby_closed",
+        lambda: {"lobby_id": lobby_id},
+    )
+
+    if payload is not None:
+        connection_manager.notify_all(payload)
+
+
 @router.get("", response_model=list[LobbyResponse])
 def get_lobbies(current_user: CompletedUser, db: DbSession):
     return list_lobbies(db)
@@ -114,7 +140,9 @@ def get_lobbies(current_user: CompletedUser, db: DbSession):
 
 @router.post("", response_model=LobbyResponse, status_code=status.HTTP_201_CREATED)
 def post_lobby(lobby_data: LobbyCreate, current_user: CompletedUser, db: DbSession):
-    return create_lobby(db, current_user, lobby_data.name)
+    lobby = create_lobby(db, current_user, lobby_data.name)
+    notify_lobby_updated(lobby)
+    return lobby
 
 
 @router.get("/{lobby_id}", response_model=LobbyResponse)
@@ -127,23 +155,31 @@ def get_lobby(lobby_id: int, current_user: CompletedUser, db: DbSession):
     return lobby
 
 
+# All authenticated viewers (including people browsing) get the updated listing.
 @router.post("/{lobby_id}/join", response_model=LobbyResponse)
 def join(lobby_id: int, current_user: CompletedUser, db: DbSession):
-    return join_lobby(db, current_user, lobby_id)
+    lobby = join_lobby(db, current_user, lobby_id)
+    notify_lobby_updated(lobby)
+    return lobby
 
 
+# The public broadcast includes the departing user's other tabs too.
 @router.post("/{lobby_id}/leave", status_code=status.HTTP_204_NO_CONTENT)
 def leave(lobby_id: int, current_user: CompletedUser, db: DbSession):
-    leave_lobby(db, current_user, lobby_id)
+    leave_lobby(db, current_user, lobby_id,)
+    lobby = get_lobby_by_id(db, lobby_id,)
+    if lobby is None:
+        notify_lobby_closed(lobby_id)
+        return
+    notify_lobby_updated(lobby)
 
-    return None
 
 
 @router.delete("/{lobby_id}", status_code=status.HTTP_204_NO_CONTENT)
 def close(lobby_id: int, current_user: CompletedUser, db: DbSession):
     close_lobby(db, current_user, lobby_id)
+    notify_lobby_closed(lobby_id)
 
-    return None
 
 
 @router.get("/{lobby_id}/messages", response_model=list[LobbyMessageResponse])

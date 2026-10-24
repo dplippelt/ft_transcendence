@@ -5,10 +5,9 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
 from app.core.exceptions import ErrorCode, forbidden, unauthorized
-from app.core.security import decode_access_token
+from app.core.security import decode_token
 from app.db.database import SessionLocal, get_db
 from app.models.user import User
-
 
 DbSession = Annotated[Session, Depends(get_db)]
 
@@ -20,9 +19,12 @@ def get_user_from_token(token: str | None, db: Session) -> User | None:
     if token is None:
         return None
 
-    payload = decode_access_token(token)
+    payload = decode_token(token)
 
     if payload is None:
+        return None
+
+    if payload.get("purpose") != "access":
         return None
 
     user_id = payload.get("sub")
@@ -43,10 +45,10 @@ def get_current_user(token: BearerToken, db: DbSession) -> User:
     user = get_user_from_token(token, db)
 
     if user is None:
-        raise unauthorized("Invalid authentication credentials",)
+        raise unauthorized("Invalid authentication credentials", code=ErrorCode.INVALID_TOKEN)
 
     if not user.is_active:
-        raise forbidden("User account is inactive",)
+        raise forbidden("User account is inactive", code=ErrorCode.ACCOUNT_INACTIVE)
 
     return user
 
@@ -69,7 +71,7 @@ CompletedUser = Annotated[User, Depends(get_completed_user),]
 
 def get_current_user_matching_path(user_id: int, current_user: CurrentUser) -> User:
     if user_id != current_user.id:
-        raise forbidden("You can only modify your own account")
+        raise forbidden("You can only modify your own account", code=ErrorCode.NOT_SELF_ACCOUNT)
 
     return current_user
 

@@ -1,0 +1,7 @@
+@use '../variables' as *;
+
+.text
+{
+	font-family: $text-font;
+	background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 30%, transparent 70%);
+}

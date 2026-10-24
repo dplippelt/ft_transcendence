@@ -167,7 +167,7 @@ class GameSession:
             task.result()
         except CancelledError:
             pass
-        except Exception as ex:
+        except Exception:
             logger.exception(f"session {self.id} failed")
 
         self.state = SessionState.SESSION_OVER

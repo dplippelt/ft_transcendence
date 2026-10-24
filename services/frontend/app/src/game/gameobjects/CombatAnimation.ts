@@ -101,7 +101,7 @@ interface SpriteSheetFrame {
   repeat: number;
 }
 
-const enemyAnimationFram: Record<EnemyAnimation, SpriteSheetFrame> = {
+const enemyAnimationFrame: Record<EnemyAnimation, SpriteSheetFrame> = {
   [EnemyAnimation.WALK]: {
     frameRate: 8,
     repeat: -1,
@@ -136,11 +136,10 @@ export default class CombatAnimation {
 
   onCardAnimation() {
     const events = this.cardManager.events;
+    const layoutManager = this.combatLayoutManager;
     events.off(CardActionEvents.DRAW);
     events.on(CardActionEvents.DRAW, this.draw, this);
-    events.off(CardActionEvents.SELECT);
-    events.on(CardActionEvents.SELECT, this.setCardToSlot, this);
-    events.off(CardActionEvents.UNSELECT);
+    events.off(CardActionEvents.UNSELECT, layoutManager.setCardPosition, layoutManager);
     events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
   }
 
@@ -160,6 +159,10 @@ export default class CombatAnimation {
     events.on(LayoutEvents.SET_CARD_TO_SLOT, this.setCardToSlot, this);
     events.off(LayoutEvents.SET_CARD_POS);
     events.on(LayoutEvents.SET_CARD_POS, this.setCardPosition, this);
+    events.off(LayoutEvents.SET_CARD_POS_IN_HAND);
+    events.on(LayoutEvents.SET_CARD_POS_IN_HAND, this.setCardPositionInHand, this);
+    events.off(LayoutEvents.SET_CARD_POS_AND_REMOVE);
+    events.on(LayoutEvents.SET_CARD_POS_AND_REMOVE, this.setCardPositionAndDestroy, this);
   }
 
   setCardPosition(card: CardBase) {
@@ -174,14 +177,33 @@ export default class CombatAnimation {
     });
   }
 
+  setCardPositionInHand(card: CardBase, index: number) {
+    this.scene.tweens.add({
+      targets: card,
+      x: card.getData(TransformInLayout.X),
+      y: card.getData(TransformInLayout.Y),
+      angle: card.getData(TransformInLayout.ANGLE),
+      scale: card.getData(TransformInLayout.SCALE),
+      duration: 400,
+      ease: "Cubic.easeOut",
+      onComplete: () => {
+        if (index == this.cardManager.maxNumCardsInHand - 1) {
+          this.combatManager.events.emit(CombatEvents.COMPLETEFILLHAND);
+        }
+      },
+    });
+  }
+
   setCardToSlot(slot: CardSlot) {
     const card = slot.getCard()!;
+    const bgScale = this.combatLayoutManager.background.scale;
+    const cellScale = this.combatLayoutManager.layout.cards.selection.cellScale;
     this.scene.tweens.add({
       targets: card,
       x: slot.x,
       y: slot.y,
       angle: 0,
-      scale: card.getData(TransformInLayout.SCALE) * 0.7,
+      scale: bgScale * cellScale,
       ease: "Cubic.easeOut",
       duration: 200,
     });
@@ -194,13 +216,15 @@ export default class CombatAnimation {
   }
 
   HoverUp(card: CardBase) {
+    const liftDistance = 30 * this.combatLayoutManager.display.scale;
+
     if (card.input?.hitArea instanceof Geom.Rectangle) {
       card.input.hitArea.right += 0;
-      card.input.hitArea.bottom += 30;
+      card.input.hitArea.bottom += liftDistance / card.scale;
     }
     this.scene.tweens.add({
       targets: card,
-      y: card.getData(TransformInLayout.Y) - 30,
+      y: card.getData(TransformInLayout.Y) - liftDistance,
       angle: 0,
       duration: 50,
       ease: "Cubic.easeOut",
@@ -208,9 +232,11 @@ export default class CombatAnimation {
   }
 
   HoverDown(card: CardBase) {
+    const liftDistance = 30 * this.combatLayoutManager.display.scale;
+
     if (card.input?.hitArea instanceof Geom.Rectangle) {
       card.input.hitArea.right -= 0;
-      card.input.hitArea.bottom -= 30;
+      card.input.hitArea.bottom -= liftDistance / card.scale;
     }
     this.scene.tweens.add({
       targets: card,
@@ -330,9 +356,24 @@ export default class CombatAnimation {
       anims.create({
         key: animKey,
         frames: anims.generateFrameNumbers(AssetsKey.CombatEnemy),
-        frameRate: enemyAnimationFram[animKey].frameRate,
-        repeat: enemyAnimationFram[animKey].repeat,
+        frameRate: enemyAnimationFrame[animKey].frameRate,
+        repeat: enemyAnimationFrame[animKey].repeat,
       });
     }
+  }
+
+  setCardPositionAndDestroy(card: CardBase) {
+    this.scene.tweens.add({
+      targets: card,
+      x: card.getData(TransformInLayout.X),
+      y: card.getData(TransformInLayout.Y),
+      angle: card.getData(TransformInLayout.ANGLE),
+      scale: card.getData(TransformInLayout.SCALE),
+      duration: 400,
+      ease: "Cubic.easeOut",
+      onComplete: () => {
+        card.destroy();
+      },
+    });
   }
 }

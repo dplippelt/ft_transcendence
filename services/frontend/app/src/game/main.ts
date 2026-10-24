@@ -6,6 +6,7 @@ import { GameManagerScene } from "./scenes/GameManagerScene";
 const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
   disableContextMenu: true,
+  transparent: true,
   scale: {
     mode: Phaser.Scale.RESIZE,
     autoCenter: Phaser.Scale.CENTER_BOTH,

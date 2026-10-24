@@ -5,7 +5,9 @@ import Page from "./Page";
 import { MenuTitle } from "./PageTitle";
 
 import { useAuth } from "../contexts/AuthContext";
-import { RouteParam, RoutePath, } from "../utils/utils";
+import { buildRoute, RouteParamKey, RouteParamValue, RoutePath, } from "../utils/utils";
+
+import styles from "./ProtectedRoute.module.scss";
 
 export default function ProtectedRoute()
 {
@@ -22,8 +24,8 @@ export default function ProtectedRoute()
                 <Background />
                 <Page>
                     <MenuTitle title="Connection error" />
-                    <p>
-                        Your session could not be restored.
+                    <p className={styles.text}>
+                        Your session could not be restored.<br />
                         Please check the backend connection
                         and refresh the page.
                     </p>
@@ -36,7 +38,7 @@ export default function ProtectedRoute()
     {
         return (
             <Navigate
-                to={ RoutePath.auth + RouteParam.login }
+                to={buildRoute(RoutePath.auth, { [RouteParamKey.mode]: RouteParamValue.login })}
                 state={{ from: location.pathname, }}
                 replace
             />
