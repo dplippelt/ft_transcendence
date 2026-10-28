@@ -60,7 +60,7 @@ def list_lobbies(db: Session) -> list[Lobby]:
 def get_lobby_by_id(db: Session, lobby_id: int) -> Lobby | None:
     return (
         _lobby_query(db)
-        .filter(Lobby.id == lobby_id)
+        .filter(Lobby.id == lobby_id) 
         .first()
     )
 
@@ -77,6 +77,14 @@ def get_member(db: Session, lobby_id: int, user_id: int) -> LobbyMember | None:
 
 
 def create_lobby(db: Session, user: User, name: str) -> Lobby:
+    membership = get_user_lobby_membership(db, user.id)
+
+    if membership is not None:
+        raise conflict(
+                "You must leave your current lobby before creating another.",
+                code=ErrorCode.ALREADY_IN_ANOTHER_LOBBY,
+            )
+    
     existing = db.query(Lobby).filter(func.lower(Lobby.name) == name.lower()).first()
 
     if existing:
@@ -112,6 +120,17 @@ def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby:
 
     if get_member(db, lobby_id, user.id) is not None:
         return get_lobby_or_404(db, lobby_id)
+
+    membership = get_user_lobby_membership(db, user.id)
+
+    if membership is not None:
+        if membership.lobby_id == lobby_id:
+            return lobby
+
+        raise conflict(
+            "You must leave your current lobby before joining another.",
+            code=ErrorCode.ALREADY_IN_ANOTHER_LOBBY,
+        )
 
     member_count = (
         db.query(LobbyMember)
@@ -206,6 +225,14 @@ def get_lobby_messages(db: Session, user: User, lobby_id: int) -> list[LobbyMess
         .limit(MAX_MESSAGE_HISTORY)
         .all()
     )[::-1]
+
+
+def get_user_lobby_membership(db: Session, user_id: int,) -> LobbyMember | None:
+    return (
+            db.query(LobbyMember)
+            .filter(LobbyMember(LobbyMember.user_id == user_id))
+            .first()
+        )
 
 
 def send_lobby_message(db: Session, user: User, lobby_id: int, content: str) -> LobbyMessage:
@@ -438,3 +465,4 @@ async def start_game_session(user: User, lobby_id: int) -> tuple[list[int], Game
     _active_lobbies[lobby_id] = game_session
 
     return (user_ids, game_session)
+
