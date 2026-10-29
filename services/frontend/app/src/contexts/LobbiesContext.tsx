@@ -17,9 +17,10 @@ import {
     leaveLobby as leaveLobbyRequest,
     closeLobby as closeLobbyRequest,
     inviteToLobby as inviteToLobbyRequest,
+    lobbyStartGame as lobbyStartGameRequest,
 } from "../api/lobbyApi";
 
-import type { ILobbyResponse } from "../api/lobbyApi";
+import type { ILobbyGame, ILobbyResponse } from "../api/lobbyApi";
 import type { PublicUser } from "../api/friendsApi";
 import { useAuth } from "./AuthContext";
 import { getWsUrl } from "../api/http";
@@ -61,6 +62,7 @@ interface ILobbiesContext
     joinLobby: (lobbyID: LobbyID) => Promise<LobbyData>;
     leaveLobby: (lobbyID: LobbyID) => Promise<void>;
     closeLobby: (lobbyID: LobbyID) => Promise<void>;
+    lobbyStartGame: (lobbyID: LobbyID) => Promise<ILobbyGame>;
     getChatHistory: (lobbyID: LobbyID) => ILobbyChatMsg[] | undefined;
     addChatHistory: (
         lobbyID: LobbyID,
@@ -354,6 +356,16 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         dismissLobbyInvite(lobbyID);
     }, [auth.accessToken, markLobbyChanged, dismissLobbyInvite]);
 
+    const lobbyStartGame = useCallback(async (lobbyId: LobbyID): Promise<ILobbyGame> =>
+    {
+        const accessToken = auth.accessToken;
+        if (!accessToken)
+            throw new Error("No authenticated session");
+
+        return await lobbyStartGameRequest(Number(lobbyId), accessToken);
+
+    }, [auth.accessToken]);
+
     function getChatHistory(lobbyID: LobbyID): ILobbyChatMsg[] | undefined
     {
         return lobbies[lobbyID]?.chatHistory;
@@ -436,6 +448,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                     lobby_id?: unknown;
                     lobby_name?: unknown;
                     inviter?: unknown;
+                    game?: unknown;
                 };
 
                 if (message.type === "lobby_updated")
@@ -504,6 +517,21 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                     return;
                 }
 
+                if(message.type === "lobby_start")
+                {
+                    if (
+                      typeof message.lobby_id !== "number" ||
+                      typeof message.game !== "object" ||
+                      message.game === null
+                    )
+                        return ;
+
+                    const lobbyGame = message.game as ILobbyGame;
+                    // to navigate to the multiplayer game mode, and passing the game session id.
+
+
+                }
+
                 // chat_message and conversation_read belong to the chat context.
             });
 
@@ -535,6 +563,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
             closeLobby,
             joinLobby,
             leaveLobby,
+            lobbyStartGame,
             inviteFriend,
             dismissLobbyInvite,
             getChatHistory,

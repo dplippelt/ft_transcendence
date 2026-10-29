@@ -165,7 +165,7 @@ function HostButtons({ lobbyID, setPopupType,  setIsExiting, }: IHostButtons,)
 {
 	const navigate = useNavigate();
 	const { setError } = useError();
-	const { lobbies, closeLobby, } = useLobbies();
+	const { lobbies, closeLobby, lobbyStartGame} = useLobbies();
 	const user = useCurrentUser();
 	const numPlayers = lobbies[lobbyID] ?.members.length ?? 0;
     const startDisabled = numPlayers !== 2;
@@ -201,7 +201,7 @@ function HostButtons({ lobbyID, setPopupType,  setIsExiting, }: IHostButtons,)
 		if (startDisabled)
 			return;
 
-		// Game-session bridge comes later.
+        lobbyStartGame(lobbyID);
 	}
 
 

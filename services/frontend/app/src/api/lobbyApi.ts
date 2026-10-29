@@ -32,6 +32,11 @@ export interface ILobbyInviteResponse
 	delivered: boolean;
 }
 
+export interface ILobbyGame
+{
+    game_sesion_id: string;
+}
+
 export function getLobbies(accessToken: string,): Promise<ILobbyResponse[]>
 {
     return apiRequest<ILobbyResponse[]>("/lobbies", {}, accessToken);
@@ -102,4 +107,14 @@ export function inviteToLobby(lobbyId: number, friendId: number, accessToken: st
             body: JSON.stringify({ friend_id: friendId }),
         },
         accessToken);
+}
+
+export function lobbyStartGame(lobbyId: number, accessToken: string): Promise<ILobbyGame>
+{
+    return apiRequest<ILobbyGame>(`/lobbies/${lobbyId}/start`, 
+        {
+            method: "POST",
+        },
+        accessToken);
+
 }
