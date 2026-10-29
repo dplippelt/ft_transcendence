@@ -69,6 +69,9 @@ start: ensure-env
 stop:
 	$(COMPOSE) stop
 
+ps: ensure-env
+	$(COMPOSE) ps
+
 test: ensure-env
 	./scripts/test.sh all
 
@@ -113,4 +116,4 @@ fre: fclean setup check up
 	lint-backend lint-backend-fix dead-code \
 	test test-auth test-security test-2fa test-lobby \
 	migrate-db check-users-table check-2fa-migration \
-	up down start stop restart reset-db re clean fclean fre
+	up down start stop restart reset-db re clean fclean fre ps
