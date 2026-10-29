@@ -60,8 +60,8 @@ class GameSocket {
   }
 }
 
-let player_0: GameSocket;
-let player_1: GameSocket;
+// let player_0: GameSocket;
+// let player_1: GameSocket;
 let g_game_id: string | undefined = undefined;
 
 export function call_create_session() {
@@ -83,9 +83,9 @@ export function call_create_session() {
     .catch((err) => console.error(`Fetch problem: ${err.message}`));
 }
 
-function make_connection(json) {
+function make_connection(json: { game_id: string }) {
   console.log(json);
   g_game_id = json.game_id;
-  player_0 = new GameSocket(0, json.game_id);
-  player_1 = new GameSocket(1, json.game_id);
+  new GameSocket(0, json.game_id);
+  new GameSocket(1, json.game_id);
 }
