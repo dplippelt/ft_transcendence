@@ -36,19 +36,25 @@ def test_create_lobby(client, auth_headers, user):
 
 
 # LIST
-def test_get_lobbies(client, auth_headers):
+def test_get_lobbies(client, auth_headers, make_user, make_auth_headers,):
     # Arrange
-    client.post(
+    response1 = client.post(
         "/lobbies",
         json={"name": "Lobby One"},
         headers=auth_headers,
     )
 
-    client.post(
+    another_user = make_user()
+    another_headers = make_auth_headers(another_user)
+
+    response2 = client.post(
         "/lobbies",
         json={"name": "Lobby Two"},
-        headers=auth_headers,
+        headers=another_headers,
     )
+
+    assert response1.status_code == 201
+    assert response2.status_code == 201
 
     # Act
     response = client.get(
@@ -505,3 +511,27 @@ def test_invite_rejects_non_friend_and_self_without_notification(
     assert self_invite.status_code == 400
     assert self_invite.json()["detail"]["code"] == ErrorCode.CANNOT_INVITE_SELF
     assert sent == []
+
+
+def test_create_lobby_rejects_user_already_in_lobby(client, auth_headers):
+    # Arrange
+    response = client.post(
+        "/lobbies",
+        json={"name": "Lobby A"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 201
+
+    # Act
+    response = client.post(
+        "/lobbies",
+        json={"name": "Lobby B"},
+        headers=auth_headers,
+    )
+
+    # Assert
+    assert response.status_code == 409
+    assert (
+        response.json()["detail"]["code"]
+        == ErrorCode.ALREADY_IN_ANOTHER_LOBBY
+    )
