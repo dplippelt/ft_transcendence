@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session, joinedload
 
 from app.core.exceptions import ErrorCode, bad_request, conflict, forbidden, not_found
 from app.db.database import SessionLocal
-from app.db.utils import commit_or_bad_request
 from app.game.game_session import GameSession
 from app.game.game_session_manager import game_session_manager
 from app.models.lobby import Lobby
@@ -76,6 +75,15 @@ def get_member(db: Session, lobby_id: int, user_id: int) -> LobbyMember | None:
     )
 
 
+# helper for extracting PostgreSQL's constraint name
+def get_constraint_name(exc: IntegrityError) -> str | None:
+    return getattr(
+        getattr(exc.orig, "diag", None),
+        "constraint_name",
+        None,
+    )
+
+
 def create_lobby(db: Session, user: User, name: str) -> Lobby:
     membership = get_user_lobby_membership(db, user.id)
 
@@ -96,9 +104,21 @@ def create_lobby(db: Session, user: User, name: str) -> Lobby:
 
     try:
         db.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.rollback()
-        raise conflict("A lobby with this name already exists.", code=ErrorCode.LOBBY_NAME_ALREADY_EXISTS)
+        constraint_name = get_constraint_name(exc)
+        if constraint_name == "uq_lobby_members_user_id":
+            raise conflict(
+                "You must leave your current lobby before creating another.",
+                code=ErrorCode.ALREADY_IN_ANOTHER_LOBBY,
+            ) from exc
+
+        if constraint_name == "uq_lobbies_name_lower":
+            raise conflict(
+                "A lobby with this name already exists.",
+                code=ErrorCode.LOBBY_NAME_ALREADY_EXISTS,
+            ) from exc
+        raise
 
     db.refresh(lobby)
 
@@ -118,14 +138,11 @@ def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby:
     if lobby is None:
         raise not_found("Lobby not found.", code=ErrorCode.LOBBY_NOT_FOUND)
 
-    if get_member(db, lobby_id, user.id) is not None:
-        return get_lobby_or_404(db, lobby_id)
-
     membership = get_user_lobby_membership(db, user.id)
 
     if membership is not None:
         if membership.lobby_id == lobby_id:
-            return lobby
+            return get_lobby_or_404(db, lobby_id)
 
         raise conflict(
             "You must leave your current lobby before joining another.",
@@ -142,8 +159,17 @@ def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby:
         raise conflict("This lobby is full.", code=ErrorCode.LOBBY_FULL)
 
     db.add(LobbyMember(lobby=lobby, user=user, role=GUEST))
-    commit_or_bad_request(db, "Could not join lobby.")
+    try:
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
 
+        if get_constraint_name(exc) == "uq_lobby_members_user_id":
+            raise conflict(
+                "You must leave your current lobby before joining another.",
+                code=ErrorCode.ALREADY_IN_ANOTHER_LOBBY,
+            ) from exc
+        raise
     return get_lobby_or_404(db, lobby_id)
 
 
@@ -230,7 +256,7 @@ def get_lobby_messages(db: Session, user: User, lobby_id: int) -> list[LobbyMess
 def get_user_lobby_membership(db: Session, user_id: int,) -> LobbyMember | None:
     return (
             db.query(LobbyMember)
-            .filter(LobbyMember(LobbyMember.user_id == user_id))
+            .filter(LobbyMember.user_id == user_id)
             .first()
         )
 
