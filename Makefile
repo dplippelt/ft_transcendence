@@ -69,9 +69,6 @@ start: ensure-env
 stop:
 	$(COMPOSE) stop
 
-ps: ensure-env
-	$(COMPOSE) ps
-
 test: ensure-env
 	./scripts/test.sh all
 
