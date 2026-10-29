@@ -535,3 +535,38 @@ def test_create_lobby_rejects_user_already_in_lobby(client, auth_headers):
         response.json()["detail"]["code"]
         == ErrorCode.ALREADY_IN_ANOTHER_LOBBY
     )
+
+
+def test_join_lobby_rejects_user_already_in_another_lobby(client, auth_headers, make_user, make_auth_headers):
+    # Arrange
+    response = client.post(
+        "/lobbies",
+        json={"name": "Lobby A"},
+        headers=auth_headers,
+    )
+    assert response.status_code == 201
+
+    another_user = make_user()
+    another_headers = make_auth_headers(another_user)
+
+    response = client.post(
+        "/lobbies",
+        json={"name": "Lobby B"},
+        headers=another_headers,
+    )
+    assert response.status_code == 201
+
+    lobby_b_id = response.json()["id"]
+
+    # Act
+    response = client.post(
+        f"/lobbies/{lobby_b_id}/join",
+        headers=auth_headers,
+    )
+
+    # Assert
+    assert response.status_code == 409
+    assert (
+        response.json()["detail"]["code"]
+        == ErrorCode.ALREADY_IN_ANOTHER_LOBBY
+    )
