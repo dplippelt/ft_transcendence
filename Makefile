@@ -113,4 +113,4 @@ fre: fclean setup check up
 	lint-backend lint-backend-fix dead-code \
 	test test-auth test-security test-2fa test-lobby \
 	migrate-db check-users-table check-2fa-migration \
-	up down start stop restart reset-db re clean fclean fre ps
+	up down start stop restart reset-db re clean fclean fre
