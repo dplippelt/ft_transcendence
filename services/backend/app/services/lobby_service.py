@@ -118,7 +118,7 @@ def create_lobby(db: Session, user: User, name: str) -> Lobby:
                 "A lobby with this name already exists.",
                 code=ErrorCode.LOBBY_NAME_ALREADY_EXISTS,
             ) from exc
-        raise
+        raise bad_request("Could not create lobby.") from exc
 
     db.refresh(lobby)
 
@@ -171,7 +171,7 @@ def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby:
                 "You must leave your current lobby before joining another.",
                 code=ErrorCode.ALREADY_IN_ANOTHER_LOBBY,
             ) from exc
-        raise
+        raise bad_request("Could not join lobby.") from exc
     return get_lobby_or_404(db, lobby_id)
 
 
