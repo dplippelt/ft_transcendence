@@ -138,12 +138,14 @@ def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby:
     if lobby is None:
         raise not_found("Lobby not found.", code=ErrorCode.LOBBY_NOT_FOUND)
 
+    # Joining the same lobby remains idempotent.
+    if get_member(db, lobby_id, user.id) is not None:
+        return get_lobby_or_404(db, lobby_id)
+
+    # Reject membership in any other lobby.
     membership = get_user_lobby_membership(db, user.id)
 
     if membership is not None:
-        if membership.lobby_id == lobby_id:
-            return get_lobby_or_404(db, lobby_id)
-
         raise conflict(
             "You must leave your current lobby before joining another.",
             code=ErrorCode.ALREADY_IN_ANOTHER_LOBBY,
