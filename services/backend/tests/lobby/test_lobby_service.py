@@ -32,26 +32,28 @@ def test_create_lobby_creates_lobby_with_host(db, user):
     assert member.role == HOST
 
 
-def test_create_lobby_rejects_duplicate_name(db, user):
+def test_create_lobby_rejects_duplicate_name(db, user, make_user):
     # Arrange
     create_lobby(db, user, "Test Lobby",)
-
+    another_user = make_user()
+    
     # Act
     with pytest.raises(HTTPException) as exc_info:
-        create_lobby(db, user, "Test Lobby",)
+        create_lobby(db, another_user, "Test Lobby",)
 
     # Assert
     assert exc_info.value.status_code == 409
     assert exc_info.value.detail["code"] == ErrorCode.LOBBY_NAME_ALREADY_EXISTS
 
 
-def test_create_lobby_rejects_duplicate_name_case_insensitive(db, user):
+def test_create_lobby_rejects_duplicate_name_case_insensitive(db, user, make_user):
     # Arrange
     create_lobby(db, user, "Test Lobby",)
+    another_user = make_user()
 
     # Act
     with pytest.raises(HTTPException) as exc_info:
-        create_lobby(db, user, "test lobby",)
+        create_lobby(db, another_user, "test lobby",)
 
     # Assert
     assert exc_info.value.status_code == 409
@@ -189,3 +191,76 @@ def test_close_lobby_rejects_non_host(db, user, make_user):
     # Assert
     assert exc_info.value.status_code == 403
     assert exc_info.value.detail["code"] == ErrorCode.NOT_LOBBY_HOST
+
+
+def test_create_lobby_rejects_user_already_in_lobby(db, user):
+    # Arrange
+    create_lobby(db, user, "Lobby A")
+
+    # Act
+    with pytest.raises(HTTPException) as exc_info:
+        create_lobby(db, user, "Lobby B")
+
+    # Assert
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail["code"] == ErrorCode.ALREADY_IN_ANOTHER_LOBBY
+
+
+def test_join_lobby_rejects_host_already_in_another_lobby(db, user, make_user):
+    # Arrange
+    lobby_a = create_lobby(db, user, "Lobby A")
+
+    another_host = make_user()
+    lobby_b = create_lobby(db, another_host, "Lobby B")
+
+    # Act
+    with pytest.raises(HTTPException) as exc_info:
+        join_lobby(db, user, lobby_b.id)
+
+    # Assert
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail["code"] == ErrorCode.ALREADY_IN_ANOTHER_LOBBY
+
+    assert get_member(db, lobby_a.id, user.id) is not None
+    assert get_member(db, lobby_b.id, user.id) is None
+
+
+def test_join_lobby_rejects_guest_already_in_another_lobby(db, user, make_user):
+    # Arrange
+    lobby_a = create_lobby(db, user, "Lobby A")
+
+    another_host = make_user()
+    lobby_b = create_lobby(db, another_host, "Lobby B")
+
+    guest = make_user()
+    join_lobby(db, guest, lobby_a.id)
+
+    # Act
+    with pytest.raises(HTTPException) as exc_info:
+        join_lobby(db, guest, lobby_b.id)
+
+    # Assert
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail["code"] == ErrorCode.ALREADY_IN_ANOTHER_LOBBY
+
+    assert get_member(db, lobby_a.id, guest.id) is not None
+    assert get_member(db, lobby_b.id, guest.id) is None
+
+
+def test_guest_can_join_another_lobby_after_leaving(db, user, make_user):
+    # Arrange
+    lobby_a = create_lobby(db, user, "Lobby A")
+
+    another_host = make_user()
+    lobby_b = create_lobby(db, another_host, "Lobby B")
+
+    guest = make_user()
+    join_lobby(db, guest, lobby_a.id)
+
+    # Act
+    leave_lobby(db, guest, lobby_a.id)
+    join_lobby(db, guest, lobby_b.id)
+
+    # Assert
+    assert get_member(db, lobby_a.id, guest.id) is None
+    assert get_member(db, lobby_b.id, guest.id) is not None

@@ -344,7 +344,10 @@ export default function Lobby()
         return <Navigate to={path} replace />;
     }
 
-    if (joinStatus === JoinStatus.failed || !lobby)
+    if (joinStatus === JoinStatus.failed)
+        return <Navigate to={RoutePath.mpBrowser} replace />;
+    
+    if (!lobby)
     {
         const path = location.state?.from ?? RoutePath.mainMenu;
         return <Navigate to={path} replace />;
