@@ -78,6 +78,7 @@ export enum RouteParamKey
 {
 	mode = "mode",
 	ops = "ops",
+    session = "session"
 }
 
 export enum RouteParamValue
@@ -100,7 +101,6 @@ export enum GameEvent
 	inCombat = "in-combat",
 	pause = "pause",
 	blur = "blur",
-    multiplayer = "multi-player"
 }
 
 export enum CombatEvent
