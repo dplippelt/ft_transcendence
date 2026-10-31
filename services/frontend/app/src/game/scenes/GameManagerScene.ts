@@ -6,6 +6,7 @@ import type { CombatEventData } from "../events/CombatEventData";
 import { EventBus } from "../EventBus";
 import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, isValidOpsMaskStr, OperatorBit, RouteParamKey } from "../../utils/utils";
 import { Operator, OPERATORS } from "../gameobjects/cards/CardBase";
+import MultiGameScene from "./MultiGameScene";
 
 export enum GameEvents {
   CombatInitiated = "combat-initiated",
@@ -40,6 +41,7 @@ export class GameManagerScene extends Scene {
   private _levelCount: number = 1; // TODO: Hard-coded for now
                                     // // TODO: change back to intended max level count (was 5)
   private _operators: Operator[];
+  private _multiGameScene: MultiGameScene | null = null;
 
   constructor() {
     super("game-manager");
@@ -75,6 +77,7 @@ export class GameManagerScene extends Scene {
     EventBus.addListener(GameEvent.chatFocus, this.onChatFocusChange, this);
     EventBus.addListener(GameEvent.gameMenu, this.onGameMenu, this);
     EventBus.addListener(GameEvent.blur, this.onGameBlur, this);
+    EventBus.addListener(GameEvent.multiplayer, this.startMultiGameScene, this);
 
     this.events.once(Phaser.Scenes.Events.DESTROY, () => {
       this.game.events.off(Core.Events.BLUR, this.onBlur, this);
@@ -83,6 +86,7 @@ export class GameManagerScene extends Scene {
       EventBus.removeListener(GameEvent.chatFocus, this.onChatFocusChange, this);
       EventBus.removeListener(GameEvent.gameMenu, this.onGameMenu, this);
       EventBus.removeListener(GameEvent.blur, this.onGameBlur, this);
+      EventBus.removeListener(GameEvent.multiplayer, this.startMultiGameScene, this);
     });
   }
 
@@ -274,5 +278,12 @@ export class GameManagerScene extends Scene {
     if ( opsFlags & OperatorBit.divide ) ops.push(Operator.Divide);
     if ( opsFlags & OperatorBit.modulo ) ops.push(Operator.Modulo);
     return ops;
+  }
+
+  private startMultiGameScene(user_id: number, game_session_id: string) {
+    this._multiGameScene = new MultiGameScene(user_id, game_session_id);
+    this.scene.add("MultiGameScene", this._multiGameScene, true);
+
+
   }
 }
