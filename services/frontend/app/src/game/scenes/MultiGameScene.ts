@@ -5,7 +5,7 @@ export default class MultiGameScene extends Scene {
   private readonly gameSocket: GameSocket;
 
   constructor(user_id: number, game_session_id: string) {
-    super("multi-game");
+    super("MultiGameScene");
     this.gameSocket = new GameSocket(user_id, game_session_id);
   }
 }
