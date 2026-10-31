@@ -3,7 +3,7 @@ import { EventBus } from "../EventBus";
 import { Dungeon } from "../gameobjects/dungeon/Dungeon.ts";
 import { WallType, FloorType, PassageType, FoilageType, type TileSetMap } from "../map/TileSetMap.ts";
 import Player from "../gameobjects/Player.ts";
-import { call_create_session } from "../network/GameSocket.ts";
+// import { call_create_session } from "../network/GameSocket.ts";
 import { Direction, type DungeonConfig } from "../map/DungeonModels.ts";
 
 const dungeonConfig: DungeonConfig = {
@@ -94,9 +94,9 @@ export default class GameScene extends Scene {
         this.nextLevel();
       }
 
-      if (this.input.activePointer.rightButtonDown()) {
-        call_create_session()
-      }
+    //   if (this.input.activePointer.rightButtonDown()) {
+    //     call_create_session()
+    //   }
     });
 
     EventBus.emit("current-scene-ready", this);
