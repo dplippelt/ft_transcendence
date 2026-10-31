@@ -34,7 +34,7 @@ export interface ILobbyInviteResponse
 
 export interface ILobbyGame
 {
-    game_sesion_id: string;
+    game_session_id: string;
 }
 
 export function getLobbies(accessToken: string,): Promise<ILobbyResponse[]>
