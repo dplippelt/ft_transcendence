@@ -24,6 +24,8 @@ import type { ILobbyGame, ILobbyResponse } from "../api/lobbyApi";
 import type { PublicUser } from "../api/friendsApi";
 import { useAuth } from "./AuthContext";
 import { getWsUrl } from "../api/http";
+import { EventBus } from "../game/EventBus";
+import { GameEvent } from "../utils/utils";
 
 interface ILobbyChatMsg
 {
@@ -528,8 +530,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
 
                     const lobbyGame = message.game as ILobbyGame;
                     // to navigate to the multiplayer game mode, and passing the game session id.
-
-
+                    EventBus.emit(GameEvent.multiplayer, auth.user!.id, lobbyGame.game_session_id);
                 }
 
                 // chat_message and conversation_read belong to the chat context.
