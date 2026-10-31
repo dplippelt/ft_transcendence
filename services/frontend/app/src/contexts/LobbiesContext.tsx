@@ -24,8 +24,6 @@ import type { ILobbyGame, ILobbyResponse } from "../api/lobbyApi";
 import type { PublicUser } from "../api/friendsApi";
 import { useAuth } from "./AuthContext";
 import { getWsUrl } from "../api/http";
-import { EventBus } from "../game/EventBus";
-import { GameEvent } from "../utils/utils";
 
 interface ILobbyChatMsg
 {
@@ -43,6 +41,12 @@ export interface LobbyInvite
     lobby_id: number;
     lobby_name: string;
     inviter: PublicUser;
+}
+
+export interface StartedMultiGame
+{
+    lobbyId: LobbyID;
+    gameSessionId: string;
 }
 
 // Keep in sync with the backend MAX_MEMBERS for lobby availability.
@@ -71,6 +75,8 @@ interface ILobbiesContext
         username: string,
         message: string,
     ) => void;
+    startedMultiGame: StartedMultiGame | null;
+    clearStartedMultiGame: () => void;
 }
 
 const LobbiesContext = createContext<ILobbiesContext | null>(null);
@@ -130,6 +136,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
     const { auth } = useAuth();
     const [lobbies, setLobbies] = useState<Lobbies>({});
     const [lobbyInvites, setLobbyInvites] = useState<LobbyInvite[]>([]);
+    const [startedMultiGame, setStartedMultiGame] = useState<StartedMultiGame | null>(null);
 
     const lobbyVersionRef = useRef(0);
     const lobbyRevisionsRef = useRef<Record<LobbyID, number>>({});
@@ -156,6 +163,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         inviteRevisionsRef.current = {};
         setLobbies({});
         setLobbyInvites([]);
+        setStartedMultiGame(null);
     }, []);
 
     const refreshLobbies = useCallback(async () =>
@@ -392,6 +400,8 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         });
     }
 
+    const clearStartedMultiGame = useCallback(() => setStartedMultiGame(null), []);
+
     useEffect(() =>
     {
         if (auth.status === "authenticated")
@@ -526,11 +536,17 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                       typeof message.game !== "object" ||
                       message.game === null
                     )
-                        return ;
+                        return;
 
                     const lobbyGame = message.game as ILobbyGame;
-                    // to navigate to the multiplayer game mode, and passing the game session id.
-                    EventBus.emit(GameEvent.multiplayer, auth.user!.id, lobbyGame.game_session_id);
+                    if (typeof lobbyGame.game_session_id !== "string")
+                        return;
+
+                    setStartedMultiGame({
+                        lobbyId: String(message.lobby_id),
+                        gameSessionId: lobbyGame.game_session_id,
+                    });
+                    return;
                 }
 
                 // chat_message and conversation_read belong to the chat context.
@@ -557,6 +573,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         <LobbiesContext.Provider value={{
             lobbies,
             lobbyInvites,
+            startedMultiGame,
             resetLobbies,
             refreshLobbies,
             loadLobby,
@@ -569,6 +586,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
             dismissLobbyInvite,
             getChatHistory,
             addChatHistory,
+            clearStartedMultiGame,
         }}>
             {children}
         </LobbiesContext.Provider>
