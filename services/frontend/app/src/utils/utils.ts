@@ -100,6 +100,7 @@ export enum GameEvent
 	inCombat = "in-combat",
 	pause = "pause",
 	blur = "blur",
+    multiplayer = "multi-player"
 }
 
 export enum CombatEvent
