@@ -15,6 +15,7 @@ import {
 } from "../../utils/utils";
 import { Operator, OPERATORS } from "../gameobjects/cards/CardBase";
 import MultiGameScene from "./MultiGameScene";
+import GameSocket from "../network/GameSocket";
 
 export enum GameEvents {
   CombatInitiated = "combat-initiated",
@@ -50,6 +51,7 @@ export class GameManagerScene extends Scene {
   // // TODO: change back to intended max level count (was 5)
   private _operators: Operator[];
   private _sessionId: string | null = null;
+  private _gameSocket: GameSocket | null = null;
   private _multiGameScene: MultiGameScene | null = null;
 
   constructor() {
@@ -71,12 +73,15 @@ export class GameManagerScene extends Scene {
       GameManagerScene.EventsCenter.off(GameEvents.CombatInitiated, this.onCombatInitiated, this);
       GameManagerScene.EventsCenter.off(GameEvents.CombatOver, this.onCombatOver, this);
       GameManagerScene.EventsCenter.off(GameEvents.LevelExit, this.onExitLevel, this);
+    //   this._gameSocket?.close(); // TODO
+      this._gameSocket = null;
     });
 
     if (this._sessionId) {
       this._gameType = GameType.OnlineCoop;
       const userId = this.registry.get("userId") as number;
-      this._multiGameScene = new MultiGameScene(userId, this._sessionId);
+      this._gameSocket = new GameSocket(userId, this._sessionId);
+      this._multiGameScene = new MultiGameScene(this._gameSocket);
       this.scene.add("MultiGameScene", this._multiGameScene, true);
     } else {
       this._gameType = GameType.SinglePlayer;

@@ -4,8 +4,8 @@ import GameSocket from "../network/GameSocket";
 export default class MultiGameScene extends Scene {
   private readonly gameSocket: GameSocket;
 
-  constructor(user_id: number, game_session_id: string) {
+  constructor(gameSocket: GameSocket) {
     super("MultiGameScene");
-    this.gameSocket = new GameSocket(user_id, game_session_id);
+    this.gameSocket = gameSocket;
   }
 }
