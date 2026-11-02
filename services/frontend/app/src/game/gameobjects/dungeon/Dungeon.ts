@@ -49,8 +49,8 @@ export class Dungeon extends Tilemaps.Tilemap {
   private exitPoint: ExitZone | undefined;
   private passage: Passage | undefined;
 
-  private map: Map;
-  private tiledMap: number[][];
+  private map!: Map;
+  private tiledMap!: number[][];
   private mapBuilder: MapBuilder;
   private tileMapper: TileMapper;
 
