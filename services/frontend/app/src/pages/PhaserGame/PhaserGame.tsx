@@ -32,7 +32,6 @@ function Game( { currentActiveScene, gameRef, canStartGame } : IGame )
       if (canStartGame && gameRef.current === null) {
         EventBus.emit(GameEvent.gameState, GameState.default);
         gameRef.current = StartGame("game-container");
-        gameRef.current.registry.set("userId", userId);
       }
     }, [gameRef, canStartGame]);
 

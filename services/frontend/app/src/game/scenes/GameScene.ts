@@ -4,6 +4,7 @@ import { Dungeon } from "../gameobjects/dungeon/Dungeon.ts";
 import { WallType, FloorType, PassageType, FoilageType, type TileSetMap } from "../map/TileSetMap.ts";
 import Player from "../gameobjects/Player.ts";
 import { GameType } from "../../utils/utils.ts";
+import { Direction, type DungeonConfig } from "../map/DungeonModels.ts";
 
 const dungeonConfig: DungeonConfig = {
     doorCount: { min: 2, max: 4 },
@@ -86,7 +87,8 @@ export default class GameScene extends Scene {
   }
 
   create() {
-    this._dungeon = new Dungeon(this, dungeonConfig, this._gameType, 1.5);
+    this._dungeon = new Dungeon(this, this._gameType);
+    this._dungeon.build(dungeonConfig, tileSetMap, 1.5);
     this.setupCamera();
     if ( this._gameType === GameType.LocalCoop )
       this.events.on(Scenes.Events.PRE_RENDER, this.updateCoopCamera, this); // using PRE_RENDER event instead of calling it inside update() to prevent ghosting
@@ -152,7 +154,7 @@ export default class GameScene extends Scene {
 
   nextLevel(): void {
     this.cameras.main.stopFollow();
-    this._dungeon.build(dungeonConfig, 1.5);
+    this._dungeon.build(dungeonConfig, tileSetMap, 1.5);
     this._coopCamera?.destroy();
     this.setupCamera();
   }

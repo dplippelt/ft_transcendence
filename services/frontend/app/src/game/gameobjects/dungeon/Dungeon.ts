@@ -54,7 +54,7 @@ export class Dungeon extends Tilemaps.Tilemap {
   private mapBuilder: MapBuilder;
   private tileMapper: TileMapper;
 
-  constructor(scene: Scene, tileSize: number = 16) {
+  constructor(scene: Scene, gameType: GameType, tileSize: number = 16) {
     super(scene, new Tilemaps.MapData({ tileWidth: tileSize, tileHeight: tileSize }));
 
     const tileSet = this.addTilesetImage(AssetsKey.TileSet);
