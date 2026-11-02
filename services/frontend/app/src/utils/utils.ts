@@ -79,6 +79,7 @@ export enum RouteParamKey
 	mode = "mode",
 	ops = "ops",
 	type = "type",
+    session = "session",
 }
 
 export enum RouteParamValue
@@ -87,6 +88,7 @@ export enum RouteParamValue
 	signup = "signup",
 	singlePlayer = "sp",
 	localCoop = "coop",
+    onlineCoop = "online"
 }
 
 export enum RouteParam
@@ -146,6 +148,11 @@ export enum GameType {
   OnlineCoop = "online",
 }
 
+export enum RegistryKey {
+  gameURL = "gameURL",
+  userId = "userId",
+}
+
 export const DRAFT_STORAGE_PREFIX = "draft:";
 const FRIEND_DRAFT = "friend:"
 const LOBBY_DRAFT = "lobby:";
@@ -200,9 +207,6 @@ export function getOperatorsMask( ops: number ) : string
 	return ops.toString(2).padStart(5, "0");
 }
 
-// Checks if the 'type' url query parameter matches a valid gameType
-// online coop is not covered here as this is likely handled by the backend
-// code elsewhere by José
 export function isValidGameType( gameType: string ) : boolean
 {
 	switch (gameType)
@@ -211,26 +215,33 @@ export function isValidGameType( gameType: string ) : boolean
 			return true;
 		case RouteParamValue.localCoop:
 			return true;
+        case RouteParamValue.onlineCoop:
+            return true;
 		default:
 			return false;
 	}
 }
 
-export function getPathToGame( ops: number, type: GameType ) : string
+export function getPathToGame( ops: number, type: GameType, sessionId?: string | null) : string
 {
-	return buildRoute(RoutePath.game, {
-		[RouteParamKey.ops]: getOperatorsMask(ops),
-		[RouteParamKey.type]: type
-	});
+    const params: Partial<Record<RouteParamKey, string>> = {
+        [RouteParamKey.ops]: getOperatorsMask(ops),
+        [RouteParamKey.type]: type,
+    };
+    if (type === GameType.OnlineCoop && sessionId) {
+        params[RouteParamKey.session] = sessionId;
+    }
+	return buildRoute(RoutePath.game, params);
 }
 
 export type GameURL =
 {
   opsMask: string,
   gameType: GameType,
+  sessionId: string | null;
 }
 
-export function parseGameURL(opsMask: string | null, gameType: string | null) : GameURL | null
+export function parseGameURL(opsMask: string | null, gameType: string | null, sessionId: string | null) : GameURL | null
 {
 	if ( !opsMask
 		|| !gameType
@@ -238,9 +249,14 @@ export function parseGameURL(opsMask: string | null, gameType: string | null) : 
 		|| !isValidGameType(gameType)
 	) return null;
 
+    if (gameType === GameType.OnlineCoop && !sessionId) {
+        return null;
+    }
+
 	const gameURL: GameURL = {
 		opsMask: opsMask,
 		gameType: gameType as GameType,
+        sessionId: gameType === GameType.OnlineCoop ? sessionId : null,
 	}
 
 	return gameURL;
