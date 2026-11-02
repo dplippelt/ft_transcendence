@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { Assets, AssetsKey } from "../Assets";
+import { GameType, RegistryKey, type GameURL } from "../../utils/utils";
 
 export default class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -19,7 +20,7 @@ export default class PreloadScene extends Phaser.Scene {
     });
     this.load.spritesheet(AssetsKey.TileSet, Assets[AssetsKey.TileSet], {
       frameWidth: 16,
-      frameHeight: 16
+      frameHeight: 16,
     });
     this.load.atlas(AssetsKey.CombatPlayer, Assets[AssetsKey.CombatPlayer], Assets[AssetsKey.CombatPlayerJSON]);
     this.load.spritesheet(AssetsKey.CombatEnemy, Assets[AssetsKey.CombatEnemy], {
@@ -33,6 +34,7 @@ export default class PreloadScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start("game-manager");
+    const gameURL = this.registry.get(RegistryKey.gameURL) as GameURL;
+    this.scene.start(gameURL.gameType === GameType.OnlineCoop ? "multi-game-manager" : "game-manager");
   }
 }
