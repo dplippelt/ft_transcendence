@@ -5,7 +5,7 @@ import { MenuButtons } from "../../components/ButtonContainers";
 import Background from "../../components/Background";
 import { useAuth } from "../../contexts/AuthContext";
 import { MenuButton } from "../../components/Buttons";
-import { PopupType, RoutePath } from "../../utils/utils";
+import { GameType, PopupType, RoutePath } from "../../utils/utils";
 import SideBar from "../../components/SideBar";
 import useSessionCleanup from "../../hooks/useSessionCleanup";
 import { useError } from "../../contexts/ErrorContext";
@@ -64,8 +64,20 @@ export default function MainMenu()
 				<AppTitle />
 				<Buttons setPopupType={setPopupType} />
 				<SideBar />
-				{ error !== ErrorType.none && <Popup> <ErrorPopup /> </Popup> }
-				{ popupType === PopupType.operatorSelection && <Popup> <OperatorSelectionPopup setPopupType={setPopupType} /> </Popup>}
+
+				{
+					error !== ErrorType.none &&
+					<Popup>
+						<ErrorPopup />
+					</Popup>
+				}
+
+				{
+					popupType === PopupType.operatorSelection &&
+					<Popup>
+						<OperatorSelectionPopup setPopupType={setPopupType} gameType={GameType.SinglePlayer} />
+					</Popup>
+				}
 			</div>
 		</>
 	)

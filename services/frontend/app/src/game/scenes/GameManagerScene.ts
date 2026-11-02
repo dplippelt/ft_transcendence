@@ -4,18 +4,8 @@ import CombatScene from "./CombatScene";
 import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
 import { EventBus } from "../EventBus";
-import {
-  CombatEvent,
-  DEFAULT_OPS_MASK,
-  GameEvent,
-  GameState,
-  isValidOpsMaskStr,
-  OperatorBit,
-  RouteParamKey,
-} from "../../utils/utils";
+import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, GameType, isValidOpsMaskStr, OperatorBit, RouteParamKey, RouteParamValue } from "../../utils/utils";
 import { Operator, OPERATORS } from "../gameobjects/cards/CardBase";
-import MultiGameScene from "./MultiGameScene";
-import GameSocket from "../network/GameSocket";
 
 export enum GameEvents {
   CombatInitiated = "combat-initiated",
@@ -31,28 +21,19 @@ export interface LevelExitEventData {
   player: Player;
 }
 
-enum GameType {
-  SinglePlayer,
-  LocalCoop,
-  OnlineCoop,
-}
-
 export class GameManagerScene extends Scene {
   static readonly EventsCenter = new Phaser.Events.EventEmitter();
 
   private _isGameVisible = true;
   private _isChatFocused = false;
-  private _gameScene: GameScene | null = null;
+  private _gameScene!: GameScene;
   private _combatScenes: CombatScene[];
   private _gameType!: GameType;
   private _pendingCombatScene: Phaser.Scene | null = null;
   private _exitedPlayers: Set<Player>;
-  private _levelCount: number = 1; // TODO: Hard-coded for now
-  // // TODO: change back to intended max level count (was 5)
+  private _levelCount: number = 2; // TODO: Hard-coded for now
+                                    // // TODO: change back to intended max level count (was 5)
   private _operators: Operator[];
-  private _sessionId: string | null = null;
-  private _gameSocket: GameSocket | null = null;
-  private _multiGameScene: MultiGameScene | null = null;
 
   constructor() {
     super("game-manager");
@@ -60,8 +41,8 @@ export class GameManagerScene extends Scene {
     this._combatScenes = [];
     this._exitedPlayers = new Set<Player>();
     this._operators = this.getOperators();
+    this._gameType = this.getGameType();
     OPERATORS.splice(0, OPERATORS.length, ...this._operators);
-    this._sessionId = this.getSessionId();
   }
 
   init() {
@@ -73,21 +54,10 @@ export class GameManagerScene extends Scene {
       GameManagerScene.EventsCenter.off(GameEvents.CombatInitiated, this.onCombatInitiated, this);
       GameManagerScene.EventsCenter.off(GameEvents.CombatOver, this.onCombatOver, this);
       GameManagerScene.EventsCenter.off(GameEvents.LevelExit, this.onExitLevel, this);
-    //   this._gameSocket?.close(); // TODO
-      this._gameSocket = null;
     });
 
-    if (this._sessionId) {
-      this._gameType = GameType.OnlineCoop;
-      const userId = this.registry.get("userId") as number;
-      this._gameSocket = new GameSocket(userId, this._sessionId);
-      this._multiGameScene = new MultiGameScene(this._gameSocket);
-      this.scene.add("MultiGameScene", this._multiGameScene, true);
-    } else {
-      this._gameType = GameType.SinglePlayer;
-      this._gameScene = new GameScene();
-      this.scene.add("GameScene", this._gameScene, true);
-    }
+    this._gameScene = new GameScene(this._gameType);
+    this.scene.add("GameScene", this._gameScene, true);
   }
 
   create() {
@@ -135,7 +105,7 @@ export class GameManagerScene extends Scene {
     this._pendingCombatScene = combatScene;
 
     this.scene.moveUp(combatScene);
-    if (this._gameType === GameType.SinglePlayer && this._gameScene) {
+    if (this._gameType !== GameType.OnlineCoop) {
       this.scene.sleep(this._gameScene);
     }
 
@@ -144,7 +114,8 @@ export class GameManagerScene extends Scene {
 
   private onCombatOver(combatEventData: CombatEventData) {
     if (!combatEventData.player.isAlive) {
-      combatEventData.player.disableBody(true, true);
+      combatEventData.player.destroy(true); // this fixes the bug where the enemy would keep trying to follow the dead player (it was just disabling and hiding the player object before)
+      this._gameScene.untetherPlayers(); // so the remaining player isn't tethered to the dead player's last position
       if (!this.anyPlayerAlive()) {
         this.onGameOver(GameState.lost);
         return;
@@ -157,7 +128,7 @@ export class GameManagerScene extends Scene {
 
     this.scene.moveDown(combatEventData.sceneInvoker);
     this.scene.stop(combatEventData.sceneInvoker);
-    if (this._gameType === GameType.SinglePlayer && this._gameScene) {
+    if (this._gameType !== GameType.OnlineCoop) {
       this.scene.wake(this._gameScene);
     }
 
@@ -212,7 +183,7 @@ export class GameManagerScene extends Scene {
   }
 
   private getActiveScenes(): Phaser.Scene[] {
-    return [this._gameScene, this._multiGameScene, ...this._combatScenes]
+    return [this._gameScene, ...this._combatScenes]
       .filter((scene) => scene !== null)
       .filter((scene) => this.scene.isActive(scene) || this.scene.isPaused(scene));
   }
@@ -230,6 +201,7 @@ export class GameManagerScene extends Scene {
     }
     this._exitedPlayers.add(player);
     player.disableBody(true, true);
+    this._gameScene.untetherPlayers(); // so the remaining player can't get stuck when the path to the exit leads more than a screen away from it
 
     if (this.allPlayersExited()) {
       this._exitedPlayers.clear();
@@ -295,8 +267,17 @@ export class GameManagerScene extends Scene {
     return ops;
   }
 
-  getSessionId() {
+  getGameType() {
     const searchParams = new URLSearchParams(window.location.search);
-    return searchParams.get(RouteParamKey.session);
+    const gameType = searchParams.get(RouteParamKey.type);
+
+    switch (gameType) {
+      case RouteParamValue.singlePlayer:
+        return GameType.SinglePlayer;
+      case RouteParamValue.localCoop:
+        return GameType.LocalCoop;
+      default:
+        return GameType.SinglePlayer;
+    }
   }
 }

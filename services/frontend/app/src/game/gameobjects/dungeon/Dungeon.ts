@@ -13,6 +13,7 @@ import { DungeonDecorator } from "./DungeonDecorator";
 import { type Map, MapBuilder } from "../../map/MapBuilder";
 import { TileMapper } from "../../map/TileMapper";
 import type { DungeonConfig, Room } from "../../map/DungeonModels";
+import type { GameType } from "../../../utils/utils";
 
 type Vector2Like = Types.Math.Vector2Like;
 
@@ -65,7 +66,7 @@ export class Dungeon extends Tilemaps.Tilemap {
     this.mapBuilder = new MapBuilder();
     this.tileMapper = new TileMapper();
     this.roomSetup = new RoomSetup();
-    this.spawner = new DungeonSpawner(this, new PlayerFactory(), new EnemyFactory(), new PassageFactory());
+    this.spawner = new DungeonSpawner(this, new PlayerFactory(), new EnemyFactory(), new PassageFactory(), gameType);
     this.decorator = new DungeonDecorator();
 
     this.mapColliders = [];
@@ -170,7 +171,14 @@ export class Dungeon extends Tilemaps.Tilemap {
   }
 
   getPlayer(index: number): Player | undefined {
-    return this.playerGroup.getFirstNth(index, true, false);
+    return this.playerGroup.getFirstNth(index + 1, true);
+  }
+
+  untetherPlayers(): void {
+    (this.playerGroup.getChildren() as Player[])
+      .forEach((player) =>
+        player.movement.setTetherTarget(undefined)
+    );
   }
 
   getAlivePlayerCount(): number {

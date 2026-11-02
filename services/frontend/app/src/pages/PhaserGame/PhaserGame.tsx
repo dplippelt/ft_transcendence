@@ -1,8 +1,8 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { buildRoute, CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, isValidOpsMaskStr, RouteParamKey, RoutePath } from "../../utils/utils";
+import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, GameType, getPathToGame, isValidGameType, isValidOpsMaskStr, parseGameURL as parseGameURLParams, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import { useAuth } from "../../contexts/AuthContext";
 import GameUI from "../../components/Game/GameUI";
@@ -23,19 +23,18 @@ interface IPhaserGame
 interface IGame {
   currentActiveScene?: (scene_instance: Phaser.Scene) => void;
   gameRef: React.RefObject<Phaser.Game | null>;
-  isGameURL: boolean;
-  userId: number | undefined;
+  canStartGame: boolean;
 }
 
-function Game( { currentActiveScene, gameRef, isGameURL, userId } : IGame )
+function Game( { currentActiveScene, gameRef, canStartGame } : IGame )
 {
     useLayoutEffect(() => {
-      if (isGameURL && gameRef.current === null) {
+      if (canStartGame && gameRef.current === null) {
         EventBus.emit(GameEvent.gameState, GameState.default);
         gameRef.current = StartGame("game-container");
         gameRef.current.registry.set("userId", userId);
       }
-    }, [gameRef, isGameURL, userId]);
+    }, [gameRef, canStartGame]);
 
     useEffect(() => {
       EventBus.on("current-scene-ready", (scene_instance: Phaser.Scene) => {
@@ -65,15 +64,18 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const isGameURL = location.pathname === RoutePath.game;
-  const ops = searchParams.get(RouteParamKey.ops);
-  const session = searchParams.get(RouteParamKey.session);
+  const opsMask = searchParams.get(RouteParamKey.ops);
+  const gameType = searchParams.get(RouteParamKey.type);
+  const isCoop = gameType === RouteParamValue.localCoop;
+  const gameURLParams = useMemo(() => parseGameURLParams(opsMask, gameType), [opsMask, gameType]);
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
   const [inCombat, setInCombat] = useState<boolean>(false);
   const [gameState, setGameState] = useState<GameState>(GameState.default);
   const gameRef = useRef<Phaser.Game | null>(null!);
   const loggedIn = auth.status === "authenticated";
+  const isLoggingOutRef = useRef<boolean>(false);
 
-  function cleanupGame() {
+  const cleanupGame = useCallback(() => {
     gameRef.current!.destroy(true);
     gameRef.current = null;
     EventBus.removeListener(GameEvent.gameVis);
@@ -106,7 +108,37 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     setGameMenuVis(false);
     setInCombat(false);
     setGameState(GameState.default);
+    isLoggingOutRef.current = false;
+  }, []);
+
+  const redirectToGameUrl = useCallback(( opsMask: string, gameType: GameType ) => {
+    const ops = parseInt(opsMask, 2);
+    navigate(getPathToGame(ops, gameType), { replace: true });
+    if ( gameRef.current )
+      cleanupGame();
+  }, [navigate, cleanupGame]);
+
+  function checkStartGame() : boolean {
+    if ( !isGameURL )
+      return false;
+    if ( gameURLParams === null )
+      return false;
+    if ( isCoop && !loggedIn )
+      return false;
+    return true;
   }
+
+  /* Only create the game once the URL is valid and the requested game type is
+   * allowed, so redirects (bad params, coop while logged out) flip this from
+   * false to true and the game gets (re)created with the corrected URL. */
+  const canStartGame = checkStartGame();
+
+  useEffect(() =>
+  {
+    function isLoggingOut() { isLoggingOutRef.current = true }
+    EventBus.addListener(GameEvent.logout, isLoggingOut);
+    return () => { EventBus.removeListener(GameEvent.logout, isLoggingOut) };
+  }, []);
 
   useEffect(() =>
   {
@@ -125,11 +157,21 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
           return true;
         case RoutePath.howToPlay:
           return true;
-        case RoutePath.settings:
-          return true;
         default:
           return false;
       }
+    }
+
+    function navToValidGameUrl() {
+      const validGameType = gameType && isValidGameType(gameType)
+        ? gameType as GameType
+        : GameType.SinglePlayer;
+
+      const validOpsMask = opsMask && isValidOpsMaskStr(opsMask)
+        ? opsMask
+        : DEFAULT_OPS_MASK;
+
+      redirectToGameUrl(validOpsMask, validGameType);
     }
 
     if ( gameRef.current && !preserveGame() )
@@ -138,14 +180,19 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     if ( !isGameURL )
       return;
 
-    if ( !ops || !isValidOpsMaskStr(ops) ) {
-      const params: Partial<Record<RouteParamKey, string>> = {
-        [RouteParamKey.ops]: DEFAULT_OPS_MASK
-      };
-      if (session) {
-        params[RouteParamKey.session] = session;
-      }
-      navigate(buildRoute(RoutePath.game, params));
+    if ( !gameURLParams ) {
+      navToValidGameUrl();
+      return;
+    }
+
+    if ( isCoop && auth.status === "loading" )
+      return;
+
+    if ( isCoop && isLoggingOutRef.current )
+      return;
+
+    if ( isCoop && !loggedIn ) {
+      redirectToGameUrl(gameURLParams.opsMask, GameType.SinglePlayer);
       return;
     }
 
@@ -169,7 +216,11 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     }
 
     return () => cleanup();
-  }, [location.pathname, isGameURL, gameState, gameMenuVis, ops, session])
+  },
+  // gameState is in the dependency list because cleanupGame() removes all
+  // listeners for these events and resets gameState, so this forces
+  // re-registration when a new game starts from the Game Over screen
+  [location.pathname, isGameURL, gameState, gameType, isCoop, loggedIn, auth.status, opsMask, gameURLParams, redirectToGameUrl, cleanupGame]);
 
   if ( gameState !== GameState.default )
     return <GameOver loggedIn={loggedIn} gameResult={gameState} cleanupGame={cleanupGame} />;
@@ -178,7 +229,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     <>
       <div className={`${styles.gameWrapper} ${ isGameURL ? "" : styles.hidden }`}>
         <GameBackground inCombat={inCombat} />
-        <Game currentActiveScene={currentActiveScene} gameRef={gameRef} isGameURL={isGameURL} userId={auth.user?.id} />
+        <Game currentActiveScene={currentActiveScene} gameRef={gameRef} canStartGame={canStartGame} />
         <CombatUI inCombat={inCombat} />
         <GameUI gameMenuVis={gameMenuVis} loggedIn={loggedIn} />
       </div>
