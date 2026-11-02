@@ -2,7 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, GameType, getPathToGame, isValidGameType, isValidOpsMaskStr, parseGameURL as parseGameURLParams, RouteParamKey, RouteParamValue, RoutePath } from "../../utils/utils";
+import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, GameType, getPathToGame, isValidGameType, isValidOpsMaskStr, parseGameURL as parseGameURLParams, RouteParam, RouteParamKey, RouteParamValue, RoutePath, type GameURL } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import { useAuth } from "../../contexts/AuthContext";
 import GameUI from "../../components/Game/GameUI";
@@ -24,16 +24,30 @@ interface IGame {
   currentActiveScene?: (scene_instance: Phaser.Scene) => void;
   gameRef: React.RefObject<Phaser.Game | null>;
   canStartGame: boolean;
+  gameURL: GameURL | null;
+  userId: number | undefined;
+  cleanupGame: () => void;
 }
 
-function Game( { currentActiveScene, gameRef, canStartGame } : IGame )
+function Game( { currentActiveScene, gameRef, canStartGame, gameURL, userId, cleanupGame } : IGame )
 {
+    const startedSessionRef = useRef<string | null>(null);
+
     useLayoutEffect(() => {
-      if (canStartGame && gameRef.current === null) {
-        EventBus.emit(GameEvent.gameState, GameState.default);
-        gameRef.current = StartGame("game-container");
+      if (!canStartGame || !gameURL) {
+        return ;
       }
-    }, [gameRef, canStartGame]);
+
+      if (gameRef.current && startedSessionRef.current != gameURL.sessionId) {
+        cleanupGame();
+      }
+
+      if (gameRef.current === null) {
+        EventBus.emit(GameEvent.gameState, GameState.default);
+        gameRef.current = StartGame("game-container", {gameURL, userId});
+        startedSessionRef.current = gameURL.sessionId;
+      }
+    }, [gameRef, canStartGame, gameURL, userId, cleanupGame]);
 
     useEffect(() => {
       EventBus.on("current-scene-ready", (scene_instance: Phaser.Scene) => {
@@ -65,8 +79,11 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
   const isGameURL = location.pathname === RoutePath.game;
   const opsMask = searchParams.get(RouteParamKey.ops);
   const gameType = searchParams.get(RouteParamKey.type);
+  const sessionId = searchParams.get(RouteParamKey.session);
   const isCoop = gameType === RouteParamValue.localCoop;
-  const gameURLParams = useMemo(() => parseGameURLParams(opsMask, gameType), [opsMask, gameType]);
+  const isOnline = gameType === RouteParamValue.onlineCoop;
+  const requiresLogin = isCoop || isOnline;
+  const gameURLParams = useMemo(() => parseGameURLParams(opsMask, gameType, sessionId), [opsMask, gameType, sessionId]);
   const [gameMenuVis, setGameMenuVis] = useState<boolean>(false);
   const [inCombat, setInCombat] = useState<boolean>(false);
   const [gameState, setGameState] = useState<GameState>(GameState.default);
@@ -122,7 +139,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       return false;
     if ( gameURLParams === null )
       return false;
-    if ( isCoop && !loggedIn )
+    if ( requiresLogin && !loggedIn )
       return false;
     return true;
   }
@@ -162,6 +179,10 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     }
 
     function navToValidGameUrl() {
+      if (isOnline && !sessionId) {
+        navigate(RoutePath.multiplayer, {replace: true});
+        return ;
+      }
       const validGameType = gameType && isValidGameType(gameType)
         ? gameType as GameType
         : GameType.SinglePlayer;
@@ -184,13 +205,13 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
       return;
     }
 
-    if ( isCoop && auth.status === "loading" )
+    if ( requiresLogin && auth.status === "loading" )
       return;
 
-    if ( isCoop && isLoggingOutRef.current )
+    if ( requiresLogin && isLoggingOutRef.current )
       return;
 
-    if ( isCoop && !loggedIn ) {
+    if ( requiresLogin && !loggedIn ) {
       redirectToGameUrl(gameURLParams.opsMask, GameType.SinglePlayer);
       return;
     }
@@ -228,7 +249,14 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     <>
       <div className={`${styles.gameWrapper} ${ isGameURL ? "" : styles.hidden }`}>
         <GameBackground inCombat={inCombat} />
-        <Game currentActiveScene={currentActiveScene} gameRef={gameRef} canStartGame={canStartGame} />
+        <Game 
+          currentActiveScene={currentActiveScene}
+          gameRef={gameRef}
+          canStartGame={canStartGame}
+          gameURL={gameURLParams}
+          userId={auth.user?.id}
+          cleanupGame={cleanupGame}
+        />
         <CombatUI inCombat={inCombat} />
         <GameUI gameMenuVis={gameMenuVis} loggedIn={loggedIn} />
       </div>
