@@ -42,6 +42,16 @@ migrate()
         fi
     done
 
+    # Migrating while the backend is running can leave in-memory sessions
+    # pointing at lobbies removed by the legacy-data cleanup.
+    local running_backend
+    running_backend="$("${COMPOSE[@]}" ps --status running --services backend)"
+    if [[ "$running_backend" == "backend" ]]; then
+        echo "Refusing to migrate while the backend is running." >&2
+        echo "Stop it first: docker compose --env-file .env --env-file .env.secrets stop backend" >&2
+        exit 1
+    fi
+
     echo "Starting PostgreSQL..."
     "${COMPOSE[@]}" up -d db
 
