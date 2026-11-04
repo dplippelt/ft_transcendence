@@ -127,9 +127,9 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     isLoggingOutRef.current = false;
   }, []);
 
-  const redirectToGameUrl = useCallback(( opsMask: string, gameType: GameType ) => {
+  const redirectToGameUrl = useCallback(( opsMask: string, gameType: GameType, sessionId?: string | null ) => {
     const ops = parseInt(opsMask, 2);
-    navigate(getPathToGame(ops, gameType), { replace: true });
+    navigate(getPathToGame(ops, gameType, sessionId), { replace: true });
     if ( gameRef.current )
       cleanupGame();
   }, [navigate, cleanupGame]);
@@ -191,7 +191,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
         ? opsMask
         : DEFAULT_OPS_MASK;
 
-      redirectToGameUrl(validOpsMask, validGameType);
+      redirectToGameUrl(validOpsMask, validGameType, sessionId);
     }
 
     if ( gameRef.current && !preserveGame() )
