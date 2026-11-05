@@ -15,6 +15,7 @@ class LobbyMember(Base):
     __tablename__ = "lobby_members"
     __table_args__ = (
         UniqueConstraint("lobby_id", "user_id", name="uq_lobby_member"),
+        UniqueConstraint("user_id", name="uq_lobby_members_user_id"),
     )
 
     id: Mapped[int] = mapped_column(
