@@ -168,7 +168,8 @@ function HostButtons({ lobbyID, setPopupType,  setIsExiting, }: IHostButtons,)
 	const { lobbies, closeLobby, lobbyStartGame} = useLobbies();
 	const user = useCurrentUser();
 	const numPlayers = lobbies[lobbyID] ?.members.length ?? 0;
-    const startDisabled = numPlayers !== 2;
+    const [startPending, setStartPending] = useState(false);
+    const startDisabled = numPlayers !== 2 || startPending;
     const inviteDisabled = numPlayers >= 2;
 
 	async function onCloseLobby()
@@ -196,12 +197,24 @@ function HostButtons({ lobbyID, setPopupType,  setIsExiting, }: IHostButtons,)
 	}
 
 
-	function onStartGame()
+	async function onStartGame()
 	{
 		if (startDisabled)
 			return;
 
-        lobbyStartGame(lobbyID);
+        setStartPending(true);
+        try
+        {
+            await lobbyStartGame(lobbyID);
+        }
+        catch (error)
+        {
+            setError(mapLobbyApiError(error));
+        }
+        finally
+        {
+            setStartPending(false);
+        }
 	}
 
 
