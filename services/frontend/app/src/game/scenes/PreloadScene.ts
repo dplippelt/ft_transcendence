@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { Assets, AssetsKey } from "../Assets";
+import { GameType, RegistryKey, type GameURL } from "../../utils/utils";
 
 export default class PreloadScene extends Phaser.Scene {
   constructor() {
@@ -8,17 +9,18 @@ export default class PreloadScene extends Phaser.Scene {
 
   preload() {
     // load game assets
-    this.load.spritesheet(AssetsKey.Player, Assets[AssetsKey.Player], {
+    this.load.spritesheet(AssetsKey.Knight, Assets[AssetsKey.Knight], {
       frameWidth: 16,
       frameHeight: 16,
     });
+    this.load.image(AssetsKey.Soldier, Assets[AssetsKey.Soldier]); // is 18 x 18px - doesn't seem to cause any issues - can downscale it but would loose some detail
     this.load.spritesheet(AssetsKey.Skeleton, Assets[AssetsKey.Skeleton], {
       frameWidth: 16,
       frameHeight: 16,
     });
     this.load.spritesheet(AssetsKey.TileSet, Assets[AssetsKey.TileSet], {
       frameWidth: 16,
-      frameHeight: 16
+      frameHeight: 16,
     });
     this.load.atlas(AssetsKey.CombatPlayer, Assets[AssetsKey.CombatPlayer], Assets[AssetsKey.CombatPlayerJSON]);
     this.load.spritesheet(AssetsKey.CombatEnemy, Assets[AssetsKey.CombatEnemy], {
@@ -32,6 +34,7 @@ export default class PreloadScene extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start("game-manager");
+    const gameURL = this.registry.get(RegistryKey.gameURL) as GameURL;
+    this.scene.start(gameURL.gameType === GameType.OnlineCoop ? "multi-game-manager" : "game-manager");
   }
 }

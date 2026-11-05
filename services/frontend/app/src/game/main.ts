@@ -2,6 +2,13 @@ import Phaser from "phaser";
 import BootScene from "./scenes/BootScene";
 import PreloadScene from "./scenes/PreloadScene";
 import { GameManagerScene } from "./scenes/GameManagerScene";
+import { RegistryKey, type GameURL } from "../utils/utils";
+import { MultiGameManagerScene } from "./scenes/MultiGameManagerScene";
+
+export interface StartGameOptions {
+  gameURL: GameURL;
+  userId?: number;
+}
 
 const gameConfig: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -16,7 +23,7 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
   loader: {
     path: "./assets",
   },
-  scene: [BootScene, PreloadScene, GameManagerScene],
+  scene: [BootScene, PreloadScene, GameManagerScene, MultiGameManagerScene],
   physics: {
     default: "arcade",
     arcade: {
@@ -28,6 +35,15 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
   },
 };
 
-export default function StartGame(parent: string) {
-  return new Phaser.Game({ ...gameConfig, parent });
+export default function StartGame(parent: string, opts: StartGameOptions) {
+  return new Phaser.Game({
+    ...gameConfig,
+    parent,
+    callbacks: {
+      preBoot: (game) => {
+        game.registry.set(RegistryKey.gameURL, opts.gameURL);
+        game.registry.set(RegistryKey.userId, opts.userId);
+      },
+    },
+  });
 }

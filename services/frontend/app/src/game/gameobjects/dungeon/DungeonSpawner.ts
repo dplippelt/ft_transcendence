@@ -1,8 +1,11 @@
-import { type Types } from "phaser";
-import { TileNodeType, type RoomGraph, type Room, Direction } from "../../map/procedural";
+import { Math as PhaserMath, type Types } from "phaser";
 import { Dungeon } from "./Dungeon";
 import { PlayerFactory, EnemyFactory, PassageFactory } from "./factories";
 import type { Passage } from "./Passage";
+import type { RoomGraph } from "../../map/RoomGraph";
+import { Direction, Room, TileNodeType } from "../../map/DungeonModels";
+import { GameType } from "../../../utils/utils";
+import { PlayerNum } from "../Player";
 
 type Vector2Like = Types.Math.Vector2Like;
 
@@ -11,34 +14,37 @@ export class DungeonSpawner {
   private _playerFactory: PlayerFactory;
   private _enemyFactory: EnemyFactory;
   private _passageFactory: PassageFactory;
+  private _gameType: GameType;
 
   constructor(
     dungeon: Dungeon,
     playerFactory: PlayerFactory,
     enemyFactory: EnemyFactory,
     passageFactory: PassageFactory,
+    gameType: GameType,
   ) {
     this._dungeon = dungeon;
     this._playerFactory = playerFactory;
     this._enemyFactory = enemyFactory;
     this._passageFactory = passageFactory;
+    this._gameType = gameType;
   }
 
   apply(graph: RoomGraph): void {
-    for (const room of graph.keys()) {
-      switch (room.tileNode!.type) {
+    for (const roomNode of graph.graph.keys()) {
+      switch (roomNode.room.tileNode!.type) {
         case TileNodeType.EnterPoint:
-          this.spawnPlayers(room);
+          this.spawnPlayers(roomNode.room);
           break;
         case TileNodeType.SpawnPoint:
-          this.spawnEnemy(room);
+          this.spawnEnemy(roomNode.room);
           break;
         case TileNodeType.ExitPoint:
-          this.spawnExitNode(room);
-          this.spawnDoor(room);
+          this.spawnExitNode(roomNode.room);
+          this.spawnDoor(roomNode.room);
           break;
         default:
-          throw new Error(`${room.tileNode} is not implemented`);
+          throw new Error(`${roomNode.room.tileNode} is not implemented`);
       }
     }
   }
@@ -52,12 +58,21 @@ export class DungeonSpawner {
   }
 
   private spawnPlayers(room: Room) {
-    const player = this._playerFactory.createPlayer(0, {
+    const spawnLocation = {
       dungeon: this._dungeon,
       startingRoom: room,
       spawnPoint: this.tileToWorldPosition(room.tileNode!.position),
-    });
-    this._dungeon.addPlayer(player);
+    }
+
+    const player_1 = this._playerFactory.createPlayer(PlayerNum.One, spawnLocation);
+    this._dungeon.addPlayer(player_1);
+
+    if ( this._gameType === GameType.LocalCoop ) {
+      const player_2 = this._playerFactory.createPlayer(PlayerNum.Two, spawnLocation);
+      this._dungeon.addPlayer(player_2);
+      player_1.movement.setTetherTarget(() => new PhaserMath.Vector2(player_2.x, player_2.y));
+      player_2.movement.setTetherTarget(() => new PhaserMath.Vector2(player_1.x, player_1.y));
+    }
   }
 
   private spawnEnemy(room: Room) {
