@@ -1,8 +1,9 @@
 import { type Types } from "phaser";
-import { TileNodeType, type RoomGraph, type Room, Direction } from "../../map/procedural";
 import { Dungeon } from "./Dungeon";
 import { PlayerFactory, EnemyFactory, PassageFactory } from "./factories";
 import type { Passage } from "./Passage";
+import type { RoomGraph } from "../../map/RoomGraph";
+import { Direction, Room, TileNodeType } from "../../map/DungeonModels";
 
 type Vector2Like = Types.Math.Vector2Like;
 
@@ -25,20 +26,20 @@ export class DungeonSpawner {
   }
 
   apply(graph: RoomGraph): void {
-    for (const room of graph.keys()) {
-      switch (room.tileNode!.type) {
+    for (const roomNode of graph.graph.keys()) {
+      switch (roomNode.room.tileNode!.type) {
         case TileNodeType.EnterPoint:
-          this.spawnPlayers(room);
+          this.spawnPlayers(roomNode.room);
           break;
         case TileNodeType.SpawnPoint:
-          this.spawnEnemy(room);
+          this.spawnEnemy(roomNode.room);
           break;
         case TileNodeType.ExitPoint:
-          this.spawnExitNode(room);
-          this.spawnDoor(room);
+          this.spawnExitNode(roomNode.room);
+          this.spawnDoor(roomNode.room);
           break;
         default:
-          throw new Error(`${room.tileNode} is not implemented`);
+          throw new Error(`${roomNode.room.tileNode} is not implemented`);
       }
     }
   }

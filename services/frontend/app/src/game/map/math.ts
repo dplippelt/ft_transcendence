@@ -1,3 +1,5 @@
+import { gRandom } from "./random";
+
 export class Vector2 {
   x: number;
   y: number;
@@ -120,6 +122,7 @@ export class Vector2 {
   }
 }
 
+// size, min, max (all the stuff is going to be done from topleft/min)
 export class BoundingBox {
   position: Vector2;
   min: Vector2;
@@ -127,12 +130,13 @@ export class BoundingBox {
   halfSize: Vector2;
   size: Vector2;
 
-  constructor(position: Vector2, size: Vector2) {
+  constructor(min: Vector2, size: Vector2) {
+    this.min = min.clone();
     this.size = size.clone();
+    this.max = Vector2.add(min, size);
+
     this.halfSize = size.clone().scale(0.5);
-    this.position = Vector2.add(position, this.halfSize);
-    this.min = Vector2.sub(this.position, this.halfSize);
-    this.max = Vector2.add(this.position, this.halfSize);
+    this.position = Vector2.add(min, this.halfSize)
   }
 
   isOverlap(other: BoundingBox): boolean {
@@ -144,22 +148,35 @@ export class BoundingBox {
     );
   }
 
+  isIntOverlap(other: BoundingBox): boolean {
+    return !(
+      this.min.x > other.max.x - 1 ||
+      this.max.x - 1 < other.min.x ||
+      this.min.y > other.max.y - 1 ||
+      this.max.y - 1 < other.min.y
+    );
+  }
+
   isPointWithin(point: Vector2) {
     return !(point.x < this.min.x || point.x > this.max.x || point.y < this.min.y || point.y > this.max.y);
   }
 
+  isIntPointWithin(point: Vector2) {
+    return !(point.x < this.min.x || point.x > this.max.x - 1 || point.y < this.min.y || point.y > this.max.y - 1)
+  }
+
   place(position: Vector2): BoundingBox {
-    this.position = position.clone();
-    this.min = Vector2.sub(this.position, this.halfSize);
-    this.max = Vector2.add(this.position, this.halfSize);
+    this.min = position.clone();
+    this.max = Vector2.add(position, this.size)
+    this.position = Vector2.add(this.min, this.halfSize)
 
     return this;
   }
 
   move(offset: Vector2): BoundingBox {
-    this.position.add(offset);
-    this.min = Vector2.sub(this.position, this.halfSize);
-    this.max = Vector2.add(this.position, this.halfSize);
+    this.min.add(offset);
+    this.max.add(offset);
+    this.position = Vector2.add(this.min, this.halfSize);
 
     return this;
   }
@@ -187,14 +204,23 @@ export class BoundingBox {
     return this;
   }
 
-  clone(): BoundingBox {
-    return new BoundingBox(this.position.clone().sub(this.halfSize), this.size);
+  area(): number {
+    return this.size.x * this.size.y;
   }
+
+  clone(): BoundingBox {
+    return new BoundingBox(this.min.clone(), this.size.clone());
+  }
+}
+
+export interface Bound2D {
+  min: number;
+  max: number;
 }
 
 // min inclusive and max exclusive integer => [min, max)
 export function random(min: number, max: number): number {
-  return Math.floor(min + Math.random() * (max - min));
+  return min + Math.floor(gRandom.random_value() * (max - min));
 }
 
 // random integer point between two values => [min, max)
@@ -209,7 +235,7 @@ export interface weight {
 
 /// source: https://blog.bruce-hill.com/a-faster-weighted-random-choice
 export function weightedRandom(weights: weight[]): weight {
-  let remaining: number = Math.random() * weights.reduce((sum: number, curr: weight) => sum + curr.weight, 0);
+  let remaining: number = gRandom.random_value() * weights.reduce((sum: number, curr: weight) => sum + curr.weight, 0);
 
   for (const element of weights) {
     remaining -= element.weight;
@@ -217,7 +243,7 @@ export function weightedRandom(weights: weight[]): weight {
       return element;
     }
   }
-  throw new Error("Unreachable code reached");
+  throw new Error("Invalid weight values used");
 }
 
 // Fisher–Yates shuffle
