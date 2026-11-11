@@ -22,11 +22,19 @@ export class RoomGraph {
   }
 
   getRoomNode(room: Room): RoomNode {
-    return this.idToNode.get(room.id);
+    const node = this.idToNode.get(room.id);
+    if (node === undefined) {
+      throw new Error(`No RoomNode found for ${room.id}`);
+    }
+    return node;
   }
 
   get(roomNode: RoomNode): Set<RoomNode> {
-    return this.graph.get(roomNode);
+    const nodes = this.graph.get(roomNode);
+    if (nodes === undefined) {
+      throw new Error("RoomNode not found in graph");
+    }
+    return nodes;
   }
 
   addConnection(roomA: Room, roomB: Room): void {
@@ -36,7 +44,7 @@ export class RoomGraph {
       this.idToNode.set(roomA.id, roomNodeA);
     }
 
-    let roomNodeB: RoomNode = this.idToNode.get(roomB.id);
+    let roomNodeB = this.idToNode.get(roomB.id);
     if (roomNodeB === undefined) {
       roomNodeB = new RoomNode(roomB);
       this.idToNode.set(roomB.id, roomNodeB);

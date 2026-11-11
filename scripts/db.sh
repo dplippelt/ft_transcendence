@@ -13,7 +13,11 @@ COMPOSE=(
 )
 
 MIGRATIONS_DIR="services/backend/migrations"
-TWO_FACTOR_MIGRATION="$MIGRATIONS_DIR/20260913_add_two_factor_management_timecode.sql"
+
+MIGRATIONS=(
+    "$MIGRATIONS_DIR/20260913_add_two_factor_management_timecode.sql"
+    "$MIGRATIONS_DIR/20261028_unique_lobby_membership.sql"
+)
 
 
 wait_for_db()
@@ -31,23 +35,37 @@ wait_for_db()
 
 migrate()
 {
-	if [ ! -f "$TWO_FACTOR_MIGRATION" ]; then
-		echo "Missing migration: $TWO_FACTOR_MIGRATION"
-		exit 1
-	fi
+    for migration in "${MIGRATIONS[@]}"; do
+        if [ ! -f "$migration" ]; then
+            echo "Missing migration: $migration"
+            exit 1
+        fi
+    done
 
-	echo "Starting PostgreSQL..."
-	"${COMPOSE[@]}" up -d db
+    # Migrating while the backend is running can leave in-memory sessions
+    # pointing at lobbies removed by the legacy-data cleanup.
+    local running_backend
+    running_backend="$("${COMPOSE[@]}" ps --status running --services backend)"
+    if [[ "$running_backend" == "backend" ]]; then
+        echo "Refusing to migrate while the backend is running." >&2
+        echo "Stop it first: docker compose --env-file .env --env-file .env.secrets stop backend" >&2
+        exit 1
+    fi
 
-	wait_for_db
+    echo "Starting PostgreSQL..."
+    "${COMPOSE[@]}" up -d db
 
-	echo "Applying database migration..."
+    wait_for_db
 
-	"${COMPOSE[@]}" exec -T db sh -c \
-		'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
-		< "$TWO_FACTOR_MIGRATION"
+    for migration in "${MIGRATIONS[@]}"; do
+        echo "Applying migration: $migration"
 
-	echo "Database migration applied."
+        "${COMPOSE[@]}" exec -T db sh -c \
+            'psql -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB"' \
+            < "$migration"
+    done
+
+    echo "Database migrations applied."
 }
 
 check_users()

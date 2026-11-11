@@ -50,7 +50,7 @@ export class Dungeon extends Tilemaps.Tilemap {
   private passage: Passage | undefined;
 
   private map!: Map;
-  private tiledMap!: number[][];
+  private tiledMap: number[][];
   private mapBuilder: MapBuilder;
   private tileMapper: TileMapper;
 
@@ -69,6 +69,7 @@ export class Dungeon extends Tilemaps.Tilemap {
     this.spawner = new DungeonSpawner(this, new PlayerFactory(), new EnemyFactory(), new PassageFactory(), gameType);
     this.decorator = new DungeonDecorator();
 
+    this.tiledMap = [];
     this.mapColliders = [];
     this.enemies = [];
     this.playerGroup = scene.physics.add.group();

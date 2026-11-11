@@ -259,7 +259,14 @@ export function JoinButton( { lobbyID } : IJoinButton )
 		navigate(RoutePath.mpLobby + `/${lobbyID}`);
 	}
 
-	return <MossButton label="Join" onClick={onClick} extraStyling={styles.joinButton} disabled={disabled} />;
+	return (
+        <MossButton
+            label={isMember ? "Return" : "Join"}
+            onClick={onClick}
+            extraStyling={styles.joinButton}
+            disabled={disabled}
+        />
+    );
 }
 
 export default function ColumnButton( { label, onClick, sortBy, extraStyling="" } : IColumnButton )
