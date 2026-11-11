@@ -78,12 +78,17 @@ export enum RouteParamKey
 {
 	mode = "mode",
 	ops = "ops",
+	type = "type",
+    session = "session",
 }
 
 export enum RouteParamValue
 {
 	login = "login",
 	signup = "signup",
+	singlePlayer = "sp",
+	localCoop = "coop",
+    onlineCoop = "online"
 }
 
 export enum RouteParam
@@ -98,6 +103,7 @@ export enum GameEvent
 	chatFocus = "chat-focused",
 	gameState = "game-state",
 	inCombat = "in-combat",
+  logout = "logout",
 	pause = "pause",
 	blur = "blur",
 }
@@ -134,6 +140,17 @@ export enum GameState
 	default = "default",
 	won = "won",
 	lost = "lost",
+}
+
+export enum GameType {
+  SinglePlayer = "sp",
+  LocalCoop = "coop",
+  OnlineCoop = "online",
+}
+
+export enum RegistryKey {
+  gameURL = "gameURL",
+  userId = "userId",
 }
 
 export const DRAFT_STORAGE_PREFIX = "draft:";
@@ -180,7 +197,7 @@ type OpsMaskStr = `${Bit}${Bit}${Bit}${Bit}${Bit}`;
 
 export const DEFAULT_OPS_MASK = (OperatorBit.plus | OperatorBit.minus).toString(2).padStart(5, "0");
 
-export function isValidOpsMaskStr(value: string): value is OpsMaskStr
+export function isValidOpsMaskStr( value: string ) : value is OpsMaskStr
 {
 	return /^[01]{5}$/.test(value) && parseInt(value, 2) > 0;
 }
@@ -190,7 +207,57 @@ export function getOperatorsMask( ops: number ) : string
 	return ops.toString(2).padStart(5, "0");
 }
 
-export function getPathToGame( ops: number ) : string
+export function isValidGameType( gameType: string ) : boolean
 {
-	return buildRoute(RoutePath.game, { [RouteParamKey.ops]: getOperatorsMask(ops) });
+	switch (gameType)
+	{
+		case RouteParamValue.singlePlayer:
+			return true;
+		case RouteParamValue.localCoop:
+			return true;
+        case RouteParamValue.onlineCoop:
+            return true;
+		default:
+			return false;
+	}
+}
+
+export function getPathToGame( ops: number, type: GameType, sessionId?: string | null) : string
+{
+    const params: Partial<Record<RouteParamKey, string>> = {
+        [RouteParamKey.ops]: getOperatorsMask(ops),
+        [RouteParamKey.type]: type,
+    };
+    if (type === GameType.OnlineCoop && sessionId) {
+        params[RouteParamKey.session] = sessionId;
+    }
+	return buildRoute(RoutePath.game, params);
+}
+
+export type GameURL =
+{
+  opsMask: string,
+  gameType: GameType,
+  sessionId: string | null;
+}
+
+export function parseGameURL(opsMask: string | null, gameType: string | null, sessionId: string | null) : GameURL | null
+{
+	if ( !opsMask
+		|| !gameType
+		|| !isValidOpsMaskStr(opsMask)
+		|| !isValidGameType(gameType)
+	) return null;
+
+    if (gameType === GameType.OnlineCoop && !sessionId) {
+        return null;
+    }
+
+	const gameURL: GameURL = {
+		opsMask: opsMask,
+		gameType: gameType as GameType,
+        sessionId: gameType === GameType.OnlineCoop ? sessionId : null,
+	}
+
+	return gameURL;
 }

@@ -16,6 +16,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import LobbyInviteNotifications from "./components/LobbyInviteNotifications";
 import RequireUsernameRoute from "./components/RequireUsernameRoute";
 import CompleteProfile from "./pages/Profile/CompleteProfile";
+import MultiGameLauncher from "./components/MultiGameLauncher"
 // import GameOver from "./pages/GameOver/GameOver"
 
 export default function App()
@@ -51,6 +52,7 @@ export default function App()
         <Route path="*" element={ <PageNotFound /> } />
       </Routes>
       <LobbyInviteNotifications />
+      <MultiGameLauncher />
     </BrowserRouter>
   )
 }

@@ -3,7 +3,7 @@ import Background from "../../components/Background";
 import Page from "../../components/Page";
 import { MenuTitle } from "../../components/PageTitle";
 import SideBar from "../../components/SideBar";
-import { PopupType, RoutePath } from "../../utils/utils";
+import { GameType, PopupType, RoutePath } from "../../utils/utils";
 import { MenuButtons } from "../../components/ButtonContainers";
 import { MenuButton } from "../../components/Buttons";
 import styles from "./Multiplayer.module.scss";
@@ -11,6 +11,7 @@ import { useState } from "react";
 import Popup from "../../components/Popup";
 import CreateLobbyPopup from "./CreateLobbyPopup";
 import LocalCoopPopup from "./LocalCoopPopup";
+import OperatorSelectionPopup from "../../components/OperatorSelectionPopup";
 import useBack from "../../hooks/useBack";
 
 interface IButtons
@@ -46,6 +47,7 @@ export default function Multiplayer()
 				<SideBar />
 				{ popupType === PopupType.createLobby && <Popup> <CreateLobbyPopup setPopupType={setPopupType} /> </Popup> }
 				{ popupType === PopupType.localCoop && <Popup> <LocalCoopPopup setPopupType={setPopupType} /> </Popup> }
+				{ popupType === PopupType.operatorSelection && <Popup> <OperatorSelectionPopup setPopupType={setPopupType} gameType={GameType.LocalCoop} /> </Popup> }
 			</Page>
 		</>
 	);

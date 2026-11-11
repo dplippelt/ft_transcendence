@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { getPathToGame, PopupType } from "../utils/utils";
+import { GameType, getPathToGame, PopupType } from "../utils/utils";
 import { useState } from "react";
 import { ErrorType } from "../utils/errors";
 import ErrorText from "./ErrorText";
@@ -11,10 +11,11 @@ import OperatorSettings from "./OperatorSettings";
 
 interface IOperatorSelectionPopup
 {
+  gameType: GameType;
 	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-export default function OperatorSelectionPopup( { setPopupType } : IOperatorSelectionPopup )
+export default function OperatorSelectionPopup( { gameType, setPopupType } : IOperatorSelectionPopup )
 {
 	const navigate = useNavigate();
 	const { operators, saveOperators } = useOperators();
@@ -32,7 +33,7 @@ export default function OperatorSelectionPopup( { setPopupType } : IOperatorSele
 		setError(ErrorType.none);
 		setPopupType(PopupType.none);
 		saveOperators(ops);
-		navigate(getPathToGame(ops));
+		navigate(getPathToGame(ops, gameType));
 	}
 
 	function handleCancel()

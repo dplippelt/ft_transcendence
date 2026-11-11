@@ -4,7 +4,7 @@ import CombatScene from "./CombatScene";
 import Player from "../gameobjects/Player";
 import type { CombatEventData } from "../events/CombatEventData";
 import { EventBus } from "../EventBus";
-import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, isValidOpsMaskStr, OperatorBit, RouteParamKey } from "../../utils/utils";
+import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, GameType, isValidOpsMaskStr, OperatorBit, RouteParamKey, RouteParamValue } from "../../utils/utils";
 import { Operator, OPERATORS } from "../gameobjects/cards/CardBase";
 
 export enum GameEvents {
@@ -21,12 +21,6 @@ export interface LevelExitEventData {
   player: Player;
 }
 
-enum GameType {
-  SinglePlayer,
-  LocalCoop,
-  OnlineCoop,
-}
-
 export class GameManagerScene extends Scene {
   static readonly EventsCenter = new Phaser.Events.EventEmitter();
 
@@ -34,20 +28,20 @@ export class GameManagerScene extends Scene {
   private _isChatFocused = false;
   private _gameScene!: GameScene;
   private _combatScenes: CombatScene[];
-  private _gameType: GameType;
+  private _gameType!: GameType;
   private _pendingCombatScene: Phaser.Scene | null = null;
   private _exitedPlayers: Set<Player>;
-  private _levelCount: number = 1; // TODO: Hard-coded for now
+  private _levelCount: number = 2; // TODO: Hard-coded for now
                                     // // TODO: change back to intended max level count (was 5)
   private _operators: Operator[];
 
   constructor() {
     super("game-manager");
 
-    this._gameType = GameType.SinglePlayer;
     this._combatScenes = [];
     this._exitedPlayers = new Set<Player>();
     this._operators = this.getOperators();
+    this._gameType = this.getGameType();
     OPERATORS.splice(0, OPERATORS.length, ...this._operators);
   }
 
@@ -62,7 +56,7 @@ export class GameManagerScene extends Scene {
       GameManagerScene.EventsCenter.off(GameEvents.LevelExit, this.onExitLevel, this);
     });
 
-    this._gameScene = new GameScene();
+    this._gameScene = new GameScene(this._gameType);
     this.scene.add("GameScene", this._gameScene, true);
   }
 
@@ -91,7 +85,7 @@ export class GameManagerScene extends Scene {
    * the chat window happened to be open during combat initiation.
    * Note: _pendingCombatScene is set inside onCombatInitiated() */
   update() {
-    if ( this._pendingCombatScene && this.scene.isActive(this._pendingCombatScene) ) {
+    if (this._pendingCombatScene && this.scene.isActive(this._pendingCombatScene)) {
       this.updateGlobalCapture();
       this._pendingCombatScene = null;
     }
@@ -111,7 +105,7 @@ export class GameManagerScene extends Scene {
     this._pendingCombatScene = combatScene;
 
     this.scene.moveUp(combatScene);
-    if (this._gameType === GameType.SinglePlayer) {
+    if (this._gameType !== GameType.OnlineCoop) {
       this.scene.sleep(this._gameScene);
     }
 
@@ -120,7 +114,8 @@ export class GameManagerScene extends Scene {
 
   private onCombatOver(combatEventData: CombatEventData) {
     if (!combatEventData.player.isAlive) {
-      combatEventData.player.disableBody(true, true);
+      combatEventData.player.destroy(true); // this fixes the bug where the enemy would keep trying to follow the dead player (it was just disabling and hiding the player object before)
+      this._gameScene.untetherPlayers(); // so the remaining player isn't tethered to the dead player's last position
       if (!this.anyPlayerAlive()) {
         this.onGameOver(GameState.lost);
         return;
@@ -133,7 +128,7 @@ export class GameManagerScene extends Scene {
 
     this.scene.moveDown(combatEventData.sceneInvoker);
     this.scene.stop(combatEventData.sceneInvoker);
-    if (this._gameType === GameType.SinglePlayer) {
+    if (this._gameType !== GameType.OnlineCoop) {
       this.scene.wake(this._gameScene);
     }
 
@@ -159,54 +154,54 @@ export class GameManagerScene extends Scene {
   private updateGlobalCapture() {
     const shouldCapture = this._isGameVisible && !this._isChatFocused;
 
-    for ( const scene of this.getActiveScenes() )
-    {
-      if ( scene.input.keyboard )
-        scene.input.keyboard.enabled = shouldCapture;
+    for (const scene of this.getActiveScenes()) {
+      if (scene.input.keyboard) scene.input.keyboard.enabled = shouldCapture;
 
-      if ( shouldCapture )
-        scene.input.keyboard?.enableGlobalCapture();
-      else
-        scene.input.keyboard?.disableGlobalCapture();
+      if (shouldCapture) scene.input.keyboard?.enableGlobalCapture();
+      else scene.input.keyboard?.disableGlobalCapture();
     }
   }
 
   private pause() {
-    for ( const scene of this.getActiveScenes() ) {
-      if ( this.scene.isPaused(scene) ) continue;
+    for (const scene of this.getActiveScenes()) {
+      if (this.scene.isPaused(scene)) continue;
       this.scene.pause(scene);
       EventBus.emit(CombatEvent.pauseTimer, true);
     }
   }
 
   private togglePause() {
-    for ( const scene of this.getActiveScenes() ) {
+    for (const scene of this.getActiveScenes()) {
       if (this.scene.isPaused(scene)) {
         this.scene.resume(scene);
         EventBus.emit(CombatEvent.pauseTimer, false);
-      }
-      else {
+      } else {
         this.scene.pause(scene);
         EventBus.emit(CombatEvent.pauseTimer, true);
       }
     }
   }
 
-  private getActiveScenes() : Phaser.Scene[] {
+  private getActiveScenes(): Phaser.Scene[] {
     return [this._gameScene, ...this._combatScenes]
+      .filter((scene) => scene !== null)
       .filter((scene) => this.scene.isActive(scene) || this.scene.isPaused(scene));
   }
 
-  private onGameOver( state: GameState ): void {
+  private onGameOver(state: GameState): void {
     EventBus.emit(GameEvent.gameState, state);
   }
 
   private onExitLevel(player: Player): void {
+    if (!this._gameScene) {
+      return;
+    }
     if (!this.anyPlayerAlive() || !this.allEnemiesDefeated()) {
       return;
     }
     this._exitedPlayers.add(player);
     player.disableBody(true, true);
+    this._gameScene.untetherPlayers(); // so the remaining player can't get stuck when the path to the exit leads more than a screen away from it
 
     if (this.allPlayersExited()) {
       this._exitedPlayers.clear();
@@ -219,19 +214,19 @@ export class GameManagerScene extends Scene {
   }
 
   private allPlayersExited(): boolean {
-    return this._exitedPlayers.size === this._gameScene.getAlivePlayerCount();
+    return this._exitedPlayers.size === (this._gameScene?.getAlivePlayerCount() ?? 0);
   }
 
   private allEnemiesDefeated(): boolean {
-    return this._gameScene.getEnemyCount() === 0;
+    return (this._gameScene?.getEnemyCount() ?? 0) === 0;
   }
 
   private anyPlayerAlive() {
-    return this._gameScene.getAlivePlayerCount() > 0;
+    return (this._gameScene?.getAlivePlayerCount() ?? 0) > 0;
   }
 
-  private onBlur( doBlur: boolean = true ) {
-    if ( !doBlur ) return; // so it doesn't blur the game and open the game menu when BLUR is emitted by a focus on the side bar chat
+  private onBlur(doBlur: boolean = true) {
+    if (!doBlur) return; // so it doesn't blur the game and open the game menu when BLUR is emitted by a focus on the side bar chat
     EventBus.emit(GameEvent.blur);
   }
 
@@ -241,38 +236,48 @@ export class GameManagerScene extends Scene {
   }
 
   private onChatFocusChange(focused: boolean) {
-      this._isChatFocused = focused;
-      this.updateGlobalCapture();
-      if (focused)
-        this.game.events.emit(Core.Events.BLUR, false);
+    this._isChatFocused = focused;
+    this.updateGlobalCapture();
+    if (focused) this.game.events.emit(Core.Events.BLUR, false);
   }
 
   private onGameMenu() {
-      if (this._gameType === GameType.OnlineCoop)
-        return;
-      this.togglePause();
+    if (this._gameType === GameType.OnlineCoop) return;
+    this.togglePause();
   }
 
   private onGameBlur() {
-      if (this._gameType === GameType.OnlineCoop)
-        return;
-      this.pause();
+    if (this._gameType === GameType.OnlineCoop) return;
+    this.pause();
   }
 
   // Just a temporary helper function that builds the Operator[] for you change/move it however you like
   getOperators() {
     const searchParams = new URLSearchParams(window.location.search);
     let opsMaskString = searchParams.get(RouteParamKey.ops);
-    if ( !opsMaskString || !isValidOpsMaskStr(opsMaskString) )
-      opsMaskString = DEFAULT_OPS_MASK; // this should never be necessary because PhaserGame already checks and fixes the url but good to keep anyway
+    if (!opsMaskString || !isValidOpsMaskStr(opsMaskString)) opsMaskString = DEFAULT_OPS_MASK; // this should never be necessary because PhaserGame already checks and fixes the url but good to keep anyway
 
-    const opsFlags =  parseInt(opsMaskString, 2);
+    const opsFlags = parseInt(opsMaskString, 2);
     const ops: Operator[] = [];
-    if ( opsFlags & OperatorBit.plus ) ops.push(Operator.Plus);
-    if ( opsFlags & OperatorBit.minus ) ops.push(Operator.Minus);
-    if ( opsFlags & OperatorBit.multiply ) ops.push(Operator.Multiply);
-    if ( opsFlags & OperatorBit.divide ) ops.push(Operator.Divide);
-    if ( opsFlags & OperatorBit.modulo ) ops.push(Operator.Modulo);
+    if (opsFlags & OperatorBit.plus) ops.push(Operator.Plus);
+    if (opsFlags & OperatorBit.minus) ops.push(Operator.Minus);
+    if (opsFlags & OperatorBit.multiply) ops.push(Operator.Multiply);
+    if (opsFlags & OperatorBit.divide) ops.push(Operator.Divide);
+    if (opsFlags & OperatorBit.modulo) ops.push(Operator.Modulo);
     return ops;
+  }
+
+  getGameType() {
+    const searchParams = new URLSearchParams(window.location.search);
+    const gameType = searchParams.get(RouteParamKey.type);
+
+    switch (gameType) {
+      case RouteParamValue.singlePlayer:
+        return GameType.SinglePlayer;
+      case RouteParamValue.localCoop:
+        return GameType.LocalCoop;
+      default:
+        return GameType.SinglePlayer;
+    }
   }
 }
