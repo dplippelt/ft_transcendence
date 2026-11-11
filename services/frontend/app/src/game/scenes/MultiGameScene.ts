@@ -7,5 +7,6 @@ export default class MultiGameScene extends Scene {
   constructor(gameSocket: GameSocket) {
     super("MultiGameScene");
     this.gameSocket = gameSocket;
+    this.gameSocket;
   }
 }

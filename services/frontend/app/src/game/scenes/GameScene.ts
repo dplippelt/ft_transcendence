@@ -99,9 +99,6 @@ export default class GameScene extends Scene {
         this.nextLevel();
       }
 
-    //   if (this.input.activePointer.rightButtonDown()) {
-    //     call_create_session()
-    //   }
     });
 
     EventBus.emit("current-scene-ready", this);
