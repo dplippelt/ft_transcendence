@@ -63,6 +63,17 @@ class CardDeck:
         if len(self._cards) == 0:
             raise MemoryError("Could not create a new deck")
 
+    def deal(self) -> Card:
+        if not self._cards:
+            self.init_deck()
+
+        try:
+            card = self._cards.pop()
+        except IndexError:
+            raise MemoryError("Could not create a new deck")
+
+        return card
+
     def _adjust_weights(self, card_weights: list[CardWeight], card: Card):
         for card_weight in card_weights:
             if card_weight.value != card.value:
