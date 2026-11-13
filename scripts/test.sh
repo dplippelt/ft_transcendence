@@ -55,6 +55,11 @@ case "${1:-all}" in
 		run_pytest tests/lobby "$@"
 		;;
 
+	combat)
+		shift
+		run_pytest tests/game/combat "$@"
+		;;
+
 	*)
 		echo "Unknown test group: $1"
 		echo
