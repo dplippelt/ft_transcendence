@@ -1,3 +1,7 @@
+from datetime import timedelta
+import secrets
+from app.models.lobby_invitation import LobbyInvitation
+from app.services.friend_service import utc_now
 import app.api.v1.lobbies as lobbies_module
 from app.core.exceptions import ErrorCode
 
@@ -457,6 +461,7 @@ def test_invite_online_friend_delivers_payload_and_rejects_repeat(
     assert payloads[0][1] == "lobby_invite"
     assert payloads[0][2]["lobby_id"] == lobby_id
     assert payloads[0][2]["inviter"]["id"] == user.id
+    assert db.get(LobbyInvitation, payloads[0][2]["invitation_id"]).recipient_id == friend.id
 
     repeat = client.post(f"/lobbies/{lobby_id}/invite", json={"friend_id": friend.id}, headers=auth_headers)
     assert repeat.status_code == 409
@@ -574,19 +579,35 @@ def test_join_lobby_rejects_user_already_in_another_lobby(client, auth_headers, 
 
 # SWITCH
 
-def test_switch_route_guest_notifies_old_and_new_lobbies(client, auth_headers, make_user, make_auth_headers, monkeypatch,):
+def _invitation_for(db, target_lobby_id: int, inviter_id: int, recipient_id: int) -> str:
+    invitation_id = secrets.token_urlsafe(32)
+    db.add(LobbyInvitation(
+        id=invitation_id,
+        lobby_id=target_lobby_id,
+        inviter_id=inviter_id,
+        recipient_id=recipient_id,
+        expires_at=utc_now() + timedelta(minutes=10),
+    ))
+    db.commit()
+    return invitation_id
+
+
+
+def test_switch_route_guest_notifies_old_and_new_lobbies(client, db, auth_headers, make_user, make_auth_headers, monkeypatch,):
     source = client.post("/lobbies", json={"name": "Old lobby"}, headers=auth_headers).json()
     guest = make_user()
     guest_headers = make_auth_headers(guest)
     client.post(f"/lobbies/{source['id']}/join", headers=guest_headers)
+    target_host = make_user()
     target = client.post(
         "/lobbies", json={"name": "New lobby"},
-        headers=make_auth_headers(make_user()),
+        headers=make_auth_headers(target_host),
     ).json()
+    token = _invitation_for(db, target["id"], target_host.id, guest.id)
     updates = []
     monkeypatch.setattr(lobbies_module.connection_manager, "notify_all", updates.append)
 
-    response = client.post(f"/lobbies/{target['id']}/switch", json={"confirmed": True}, headers=guest_headers)
+    response = client.post(f"/lobbies/{target['id']}/switch", json={"confirmed": True, "invitation_id": token}, headers=guest_headers)
 
     assert response.status_code == 200
     assert any(member["user"]["id"] == guest.id for member in response.json()["members"])
@@ -595,17 +616,19 @@ def test_switch_route_guest_notifies_old_and_new_lobbies(client, auth_headers, m
 
 
 def test_switch_route_host_notifies_closed_and_target(
-    client, auth_headers, make_user, make_auth_headers, monkeypatch,
+    client, db, user, auth_headers, make_user, make_auth_headers, monkeypatch,
 ):
     source = client.post("/lobbies", json={"name": "Old lobby"}, headers=auth_headers).json()
+    target_host = make_user()
     target = client.post(
         "/lobbies", json={"name": "New lobby"},
-        headers=make_auth_headers(make_user()),
+        headers=make_auth_headers(target_host),
     ).json()
+    token = _invitation_for(db, target["id"], target_host.id, user.id)
     updates = []
     monkeypatch.setattr(lobbies_module.connection_manager, "notify_all", updates.append)
 
-    response = client.post(f"/lobbies/{target['id']}/switch", json={"confirmed": True}, headers=auth_headers)
+    response = client.post(f"/lobbies/{target['id']}/switch", json={"confirmed": True, "invitation_id": token}, headers=auth_headers)
 
     assert response.status_code == 200
     assert [update["type"] for update in updates] == ["lobby_closed", "lobby_updated"]
@@ -614,7 +637,7 @@ def test_switch_route_host_notifies_closed_and_target(
 
 
 def test_switch_route_failed_switch_does_not_broadcast(
-    client, auth_headers, make_user, make_auth_headers, monkeypatch,
+    client, db, user, auth_headers, make_user, make_auth_headers, monkeypatch,
 ):
     source = client.post("/lobbies", json={"name": "Old lobby"}, headers=auth_headers).json()
     host = make_user()
@@ -622,47 +645,96 @@ def test_switch_route_failed_switch_does_not_broadcast(
         "/lobbies", json={"name": "Full lobby"},
         headers=make_auth_headers(host),
     ).json()
+    token = _invitation_for(db, target["id"], host.id, user.id)
     client.post(f"/lobbies/{target['id']}/join", headers=make_auth_headers(make_user()))
     updates = []
     monkeypatch.setattr(lobbies_module.connection_manager, "notify_all", updates.append)
 
-    response = client.post(f"/lobbies/{target['id']}/switch", json={"confirmed": True}, headers=auth_headers)
+    response = client.post(f"/lobbies/{target['id']}/switch", json={"confirmed": True, "invitation_id": token}, headers=auth_headers)
 
     assert response.status_code == 409
     assert updates == []
     assert client.get(f"/lobbies/{source['id']}", headers=auth_headers).status_code == 200
 
 
-def test_switch_route_idempotent_does_not_broadcast(client, auth_headers, monkeypatch):
-    lobby = client.post("/lobbies", json={"name": "My lobby"}, headers=auth_headers).json()
+def test_switch_route_idempotent_does_not_broadcast(client, db, user, auth_headers, make_user, make_auth_headers, monkeypatch):
+    inviter = make_user()
+    lobby = client.post("/lobbies", json={"name": "My lobby"}, headers=make_auth_headers(inviter)).json()
+    token = _invitation_for(db, lobby["id"], inviter.id, user.id)
+    client.post(f"/lobbies/{lobby['id']}/join", headers=auth_headers)
     updates = []
     monkeypatch.setattr(lobbies_module.connection_manager, "notify_all", updates.append)
 
-    response = client.post(f"/lobbies/{lobby['id']}/switch", headers=auth_headers)
+    response = client.post(f"/lobbies/{lobby['id']}/switch", json={"invitation_id": token}, headers=auth_headers)
 
     assert response.status_code == 200
     assert updates == []
 
 
 def test_switch_route_requires_authentication(client):
-    response = client.post("/lobbies/1/switch")
+    response = client.post("/lobbies/1/switch", json={"invitation_id": "some-unpredictable-invite-id"})
     assert response.status_code == 401
 
 
 def test_switch_route_asks_for_confirmation_when_membership_is_not_known_to_client(
-    client, auth_headers, make_user, make_auth_headers, monkeypatch,
+    client, db, user, auth_headers, make_user, make_auth_headers, monkeypatch,
 ):
     source = client.post("/lobbies", json={"name": "Old lobby"}, headers=auth_headers).json()
+    target_host = make_user()
     target = client.post(
         "/lobbies", json={"name": "New lobby"},
-        headers=make_auth_headers(make_user()),
+        headers=make_auth_headers(target_host),
     ).json()
+    token = _invitation_for(db, target["id"], target_host.id, user.id)
     updates = []
     monkeypatch.setattr(lobbies_module.connection_manager, "notify_all", updates.append)
 
-    response = client.post(f"/lobbies/{target['id']}/switch", headers=auth_headers)
+    response = client.post(f"/lobbies/{target['id']}/switch", json={"invitation_id": token}, headers=auth_headers)
 
     assert response.status_code == 409
     assert response.json()["detail"]["code"] == ErrorCode.LOBBY_SWITCH_CONFIRMATION_REQUIRED
     assert updates == []
     assert client.get(f"/lobbies/{source['id']}", headers=auth_headers).status_code == 200
+
+
+def test_switch_route_requires_invitation_even_for_public_lobby(
+    client, db, user, auth_headers, make_user, make_auth_headers,
+):
+    source = client.post("/lobbies", json={"name": "Source"}, headers=auth_headers).json()
+    host = make_user()
+    target = client.post("/lobbies", json={"name": "Target"}, headers=make_auth_headers(host)).json()
+    response = client.post(
+        f"/lobbies/{target['id']}/switch",
+        json={"invitation_id": "not-a-real-invitation-id", "confirmed": True},
+        headers=auth_headers,
+    )
+    assert response.status_code == 403
+    assert response.json()["detail"]["code"] == ErrorCode.LOBBY_INVITATION_INVALID
+    assert any(m["user"]["id"] == user.id for m in client.get(f"/lobbies/{source['id']}", headers=auth_headers).json()["members"])
+
+
+def test_actual_sent_invitation_allows_switch(client, db, auth_headers, user, make_user, make_auth_headers, monkeypatch):
+    from app.models.friendship import Friendship
+    from app.services import lobby_service
+    monkeypatch.setattr(lobby_service, "_recent_invites", {})
+    monkeypatch.setattr(lobby_service, "_invite_send_times", {})
+    guest = make_user()
+    db.add(Friendship(user_a_id=min(user.id, guest.id), user_b_id=max(user.id, guest.id)))
+    db.commit()
+    lobby = client.post("/lobbies", json={"name": "Invite target"}, headers=auth_headers).json()
+    payloads = []
+    def capture(user_id, event, fields):
+        payloads.append((user_id, event, fields()))
+        return True
+    monkeypatch.setattr(lobbies_module.connection_manager, "notify_safely", capture)
+    sent = client.post(f"/lobbies/{lobby['id']}/invite", json={"friend_id": guest.id}, headers=auth_headers)
+    assert sent.status_code == 200
+    invite_token = payloads[0][2]["invitation_id"]
+    response = client.post(
+        f"/lobbies/{lobby['id']}/switch",
+        json={"invitation_id": invite_token},
+        headers=make_auth_headers(guest),
+    )
+    assert response.status_code == 200
+    assert any(m["user"]["id"] == guest.id for m in response.json()["members"])
+    assert db.get(LobbyInvitation, invite_token).used_at is not None

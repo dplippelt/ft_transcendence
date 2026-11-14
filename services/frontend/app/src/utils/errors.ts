@@ -67,6 +67,7 @@ export enum ErrorType
     lobbyFull,
     lobbyInviteNotDelivered,
     lobbyInviteAlreadySent,
+    lobbyInvitationInvalid,
     lobbyInviteRateLimited,
     lobbyAlreadyMember,
     lobbyAlreadyInAnotherLobby,
@@ -254,6 +255,8 @@ export function errorMsg(error: ErrorType): string
             return "Invitation could not be delivered. Your friend may be offline. Try again in 30 seconds.";
         case ErrorType.lobbyInviteAlreadySent:
             return "You already invited this friend recently.";
+        case ErrorType.lobbyInvitationInvalid:
+            return "This invitation is invalid, expired, or has already been used.";
         case ErrorType.lobbyInviteRateLimited:
             return "You're sending invites too quickly. Try again shortly.";
         case ErrorType.lobbyAlreadyMember:
@@ -504,6 +507,8 @@ export function mapLobbyApiError(error: unknown): ErrorType
             return ErrorType.lobbyAlreadyInAnotherLobby;
         case "LOBBY_SWITCH_CONFIRMATION_REQUIRED":
             return ErrorType.lobbySwitchConfirmationRequired;
+        case "LOBBY_INVITATION_INVALID":
+            return ErrorType.lobbyInvitationInvalid;
         case "NOT_LOBBY_MEMBER":
             return ErrorType.lobbyInviteNotMember;
         case "CANNOT_INVITE_SELF":

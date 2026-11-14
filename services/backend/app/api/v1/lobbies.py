@@ -71,18 +71,16 @@ def notify_other_members(db: Session, lobby_id: int, sender_id: int, message: ob
         connection_manager.notify(member_id, payload)
 
 
-def notify_invite(friend_id: int, lobby: Lobby, inviter: User) -> bool:
-    # No persisted model: an invite is just a real-time nudge, not a new
-    # access grant -- the invited friend can already see and join any
-    # public lobby via GET /lobbies + POST /lobbies/{id}/join regardless.
-    # Still reports whether it actually reached a connection, so the
-    # caller can tell "delivered" apart from "friend wasn't online" --
-    # the only signal that would otherwise exist for either case.
+def notify_invite(friend_id: int, lobby: Lobby, inviter: User, invitation_id: str) -> bool:
+    # The invitation ID is an unpredictable, recipient-bound authorization
+    # reference. Only send it to the invited user's authenticated socket.
+    # Ordinary joins remain public; only the switch endpoint requires it.
     return connection_manager.notify_safely(
         friend_id,
         "lobby_invite",
         lambda: {
             "lobby_id": lobby.id,
+            "invitation_id": invitation_id,
             "lobby_name": lobby.name,
             "inviter": PublicUserResponse.model_validate(inviter).model_dump(
                 mode="json"
@@ -168,8 +166,12 @@ def join(lobby_id: int, current_user: CompletedUser, db: DbSession):
 # Only invitation acceptance uses switching. Ordinary joins still enforce
 # one-lobby-per-player; this endpoint transitions memberships atomically.
 @router.post("/{lobby_id}/switch", response_model=LobbyResponse)
-def switch(lobby_id: int, current_user: CompletedUser, db: DbSession, switch_data: LobbySwitchRequest | None = None):
-    result = switch_lobby(db, current_user, lobby_id, confirmed=bool(switch_data and switch_data.confirmed))
+def switch(lobby_id: int, switch_data: LobbySwitchRequest, current_user: CompletedUser, db: DbSession):
+    result = switch_lobby(
+        db, current_user, lobby_id,
+        invitation_id=switch_data.invitation_id,
+        confirmed=switch_data.confirmed,
+    )
     if result.changed:
         if result.previous_lobby_id is not None:
             previous = get_lobby_by_id(db, result.previous_lobby_id)
@@ -226,13 +228,13 @@ def invite(
     current_user: CompletedUser,
     db: DbSession,
 ):
-    lobby = invite_friend_to_lobby(db, current_user, lobby_id, invite_data.friend_id)
+    lobby, invitation = invite_friend_to_lobby(db, current_user, lobby_id, invite_data.friend_id)
 
     # The cooldown stays reserved even when nothing was delivered (friend
     # just not connected right now, the common case) -- releasing it here
     # made the spam guard a no-op for most real invites, since most friends
     # aren't actively connected at the moment they're invited.
-    delivered = notify_invite(invite_data.friend_id, lobby, current_user)
+    delivered = notify_invite(invite_data.friend_id, lobby, current_user, invitation.id)
 
     return LobbyInviteResponse(delivered=delivered)
 

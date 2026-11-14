@@ -31,7 +31,7 @@ function InviteNotificationCard({ invite, remainingInvites }: IInviteNotificatio
     );
     const currentRole = currentLobby?.members.find(member => member.user.id === auth.user?.id)?.role;
     const [error, setError] = useState<ErrorType>(ErrorType.none);
-    const cannotJoin = error === ErrorType.lobbyDoesNotExist || error === ErrorType.lobbyFull;
+    const cannotJoin = error === ErrorType.lobbyDoesNotExist || error === ErrorType.lobbyFull || error === ErrorType.lobbyInvitationInvalid;
 
     async function accept(confirmed = false)
     {
@@ -51,7 +51,7 @@ function InviteNotificationCard({ invite, remainingInvites }: IInviteNotificatio
 
         try
         {
-            await switchToInvitedLobby(String(invite.lobby_id), confirmed);
+            await switchToInvitedLobby(String(invite.lobby_id), invite.invitation_id, confirmed);
             navigate(`${RoutePath.mpLobby}/${invite.lobby_id}`);
         }
         catch (cause)
@@ -131,7 +131,7 @@ export default function LobbyInviteNotifications()
     const invite = lobbyInvites[0];
     return (
         <InviteNotificationCard
-            key={invite.lobby_id}
+            key={invite.invitation_id}
             invite={invite}
             remainingInvites={lobbyInvites.length - 1}
         />

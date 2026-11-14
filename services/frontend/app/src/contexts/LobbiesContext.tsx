@@ -40,6 +40,7 @@ export interface LobbyData extends ILobbyResponse
 export interface LobbyInvite
 {
     lobby_id: number;
+    invitation_id: string;
     lobby_name: string;
     inviter: PublicUser;
 }
@@ -67,7 +68,7 @@ interface ILobbiesContext
     inviteFriend: (lobbyID: LobbyID, friendID: number) => Promise<boolean>;
     dismissLobbyInvite: (lobbyID: LobbyID | number) => void;
     joinLobby: (lobbyID: LobbyID) => Promise<LobbyData>;
-    switchToInvitedLobby: (lobbyID: LobbyID, confirmed?: boolean) => Promise<LobbyData>;
+    switchToInvitedLobby: (lobbyID: LobbyID, invitationID: string, confirmed?: boolean) => Promise<LobbyData>;
     leaveLobby: (lobbyID: LobbyID) => Promise<void>;
     closeLobby: (lobbyID: LobbyID) => Promise<void>;
     lobbyStartGame: (lobbyID: LobbyID) => Promise<ILobbyGame>;
@@ -303,7 +304,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         return lobbyData;
     }, [auth.accessToken, markLobbyChanged, dismissLobbyInvite]);
 
-    const switchToInvitedLobby = useCallback(async (lobbyID: LobbyID, confirmed = false): Promise<LobbyData> =>
+    const switchToInvitedLobby = useCallback(async (lobbyID: LobbyID, invitationID: string, confirmed = false): Promise<LobbyData> =>
     {
         const accessToken = auth.accessToken;
         if (!accessToken)
@@ -312,7 +313,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         const session = sessionRef.current;
         // All validation and membership changes happen in one backend
         // transaction. Do not leave/close the old lobby in the browser.
-        const lobby = await switchLobbyRequest(Number(lobbyID), confirmed, accessToken);
+        const lobby = await switchLobbyRequest(Number(lobbyID), invitationID, confirmed, accessToken);
         const lobbyData = toLobbyData(lobby);
 
         if (session === sessionRef.current)
@@ -514,6 +515,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                     type?: unknown;
                     lobby?: unknown;
                     lobby_id?: unknown;
+                    invitation_id?: unknown;
                     lobby_name?: unknown;
                     inviter?: unknown;
                     game?: unknown;
@@ -565,6 +567,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                 {
                     if (
                         typeof message.lobby_id !== "number" ||
+                        typeof message.invitation_id !== "string" ||
                         typeof message.lobby_name !== "string" ||
                         typeof message.inviter !== "object" ||
                         message.inviter === null
@@ -573,6 +576,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
 
                     const invite: LobbyInvite = {
                         lobby_id: message.lobby_id,
+                        invitation_id: message.invitation_id,
                         lobby_name: message.lobby_name,
                         inviter: message.inviter as PublicUser,
                     };
