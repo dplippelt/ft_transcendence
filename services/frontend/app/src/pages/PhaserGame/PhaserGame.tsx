@@ -161,6 +161,10 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     EventBus.emit(GameEvent.gameVis, isGameURL);
 
     function preserveGame() : boolean {
+      // How to play has its topic in the path (/how-to-play/<topic>)
+      if ( location.pathname.startsWith(RoutePath.howToPlay) )
+        return true;
+
       switch ( location.pathname )
       {
         case RoutePath.game:
@@ -170,8 +174,6 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
         case RoutePath.profile:
           return true;
         case RoutePath.leaderboard:
-          return true;
-        case RoutePath.howToPlay:
           return true;
         default:
           return false;
@@ -249,7 +251,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     <>
       <div className={`${styles.gameWrapper} ${ isGameURL ? "" : styles.hidden }`}>
         <GameBackground inCombat={inCombat} />
-        <Game 
+        <Game
           currentActiveScene={currentActiveScene}
           gameRef={gameRef}
           canStartGame={canStartGame}

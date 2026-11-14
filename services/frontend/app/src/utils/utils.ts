@@ -94,6 +94,7 @@ export enum RouteParamValue
 export enum RouteParam
 {
 	lobbyID = "/:lobbyID",
+	howToPlaySection = "/:topic",
 }
 
 export enum GameEvent

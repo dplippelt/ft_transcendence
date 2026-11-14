@@ -1,0 +1,42 @@
+@use '../../mixins' as *;
+@use '../../variables' as *;
+
+.howToPlayWindow {
+  @include window;
+  @include menuWindow;
+
+  grid-template-rows: auto 1fr;
+  align-content: stretch;
+}
+
+.topicDropdown {
+  margin-bottom: 0.5rem;
+}
+
+.topicArea {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  row-gap: 1rem;
+  min-height: 0;
+}
+
+.topicTitle {
+  font-size: 1rem;
+}
+
+.content {
+  @include scrollbar;
+
+  font-size: 0.7rem;
+  font-family: $manual-font;
+
+  ul {
+    padding-left: 1rem;
+  }
+}
+
+.navButtons {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}

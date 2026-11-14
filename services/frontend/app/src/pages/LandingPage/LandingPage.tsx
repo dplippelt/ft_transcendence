@@ -28,7 +28,7 @@ function Buttons()
 		<MenuButtons>
 			<MenuButton label="Start game" onClick={handleNewGame} />
 			<MenuButton label="Login" onClick={ () => navigate(buildRoute(RoutePath.auth, { [RouteParamKey.mode]: RouteParamValue.login })) } />
-			<MenuButton label="How to play" onClick={ () => {} } />
+			<MenuButton label="How to play" onClick={ () => navigate(RoutePath.howToPlay) } />
 		</MenuButtons>
 	)
 }
