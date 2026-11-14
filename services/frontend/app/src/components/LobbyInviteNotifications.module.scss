@@ -34,3 +34,11 @@
     flex-wrap: wrap;
     gap: 0.5rem;
 }
+
+.confirmation
+{
+    display: grid;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: $window-border;
+}

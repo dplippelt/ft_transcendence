@@ -17,6 +17,7 @@ from app.schemas.lobby import (
     LobbyMessageCreate,
     LobbyMessageResponse,
     LobbyResponse,
+    LobbySwitchRequest,
 )
 from app.schemas.user import PublicUserResponse
 from app.services.lobby_service import (
@@ -31,6 +32,7 @@ from app.services.lobby_service import (
     list_lobbies,
     send_lobby_message,
     start_game_session,
+    switch_lobby,
 )
 
 logger = logging.getLogger(__name__)
@@ -161,6 +163,22 @@ def join(lobby_id: int, current_user: CompletedUser, db: DbSession):
     lobby = join_lobby(db, current_user, lobby_id)
     notify_lobby_updated(lobby)
     return lobby
+
+
+# Only invitation acceptance uses switching. Ordinary joins still enforce
+# one-lobby-per-player; this endpoint transitions memberships atomically.
+@router.post("/{lobby_id}/switch", response_model=LobbyResponse)
+def switch(lobby_id: int, current_user: CompletedUser, db: DbSession, switch_data: LobbySwitchRequest | None = None):
+    result = switch_lobby(db, current_user, lobby_id, confirmed=bool(switch_data and switch_data.confirmed))
+    if result.changed:
+        if result.previous_lobby_id is not None:
+            previous = get_lobby_by_id(db, result.previous_lobby_id)
+            if previous is None:
+                notify_lobby_closed(result.previous_lobby_id)
+            else:
+                notify_lobby_updated(previous)
+        notify_lobby_updated(result.lobby)
+    return result.lobby
 
 
 # The public broadcast includes the departing user's other tabs too.

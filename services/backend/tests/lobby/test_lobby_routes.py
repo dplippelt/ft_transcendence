@@ -570,3 +570,99 @@ def test_join_lobby_rejects_user_already_in_another_lobby(client, auth_headers, 
         response.json()["detail"]["code"]
         == ErrorCode.ALREADY_IN_ANOTHER_LOBBY
     )
+
+
+# SWITCH
+
+def test_switch_route_guest_notifies_old_and_new_lobbies(client, auth_headers, make_user, make_auth_headers, monkeypatch,):
+    source = client.post("/lobbies", json={"name": "Old lobby"}, headers=auth_headers).json()
+    guest = make_user()
+    guest_headers = make_auth_headers(guest)
+    client.post(f"/lobbies/{source['id']}/join", headers=guest_headers)
+    target = client.post(
+        "/lobbies", json={"name": "New lobby"},
+        headers=make_auth_headers(make_user()),
+    ).json()
+    updates = []
+    monkeypatch.setattr(lobbies_module.connection_manager, "notify_all", updates.append)
+
+    response = client.post(f"/lobbies/{target['id']}/switch", json={"confirmed": True}, headers=guest_headers)
+
+    assert response.status_code == 200
+    assert any(member["user"]["id"] == guest.id for member in response.json()["members"])
+    assert [update["type"] for update in updates] == ["lobby_updated", "lobby_updated"]
+    assert [update["lobby"]["id"] for update in updates] == [source["id"], target["id"]]
+
+
+def test_switch_route_host_notifies_closed_and_target(
+    client, auth_headers, make_user, make_auth_headers, monkeypatch,
+):
+    source = client.post("/lobbies", json={"name": "Old lobby"}, headers=auth_headers).json()
+    target = client.post(
+        "/lobbies", json={"name": "New lobby"},
+        headers=make_auth_headers(make_user()),
+    ).json()
+    updates = []
+    monkeypatch.setattr(lobbies_module.connection_manager, "notify_all", updates.append)
+
+    response = client.post(f"/lobbies/{target['id']}/switch", json={"confirmed": True}, headers=auth_headers)
+
+    assert response.status_code == 200
+    assert [update["type"] for update in updates] == ["lobby_closed", "lobby_updated"]
+    assert updates[0]["lobby_id"] == source["id"]
+    assert updates[1]["lobby"]["id"] == target["id"]
+
+
+def test_switch_route_failed_switch_does_not_broadcast(
+    client, auth_headers, make_user, make_auth_headers, monkeypatch,
+):
+    source = client.post("/lobbies", json={"name": "Old lobby"}, headers=auth_headers).json()
+    host = make_user()
+    target = client.post(
+        "/lobbies", json={"name": "Full lobby"},
+        headers=make_auth_headers(host),
+    ).json()
+    client.post(f"/lobbies/{target['id']}/join", headers=make_auth_headers(make_user()))
+    updates = []
+    monkeypatch.setattr(lobbies_module.connection_manager, "notify_all", updates.append)
+
+    response = client.post(f"/lobbies/{target['id']}/switch", json={"confirmed": True}, headers=auth_headers)
+
+    assert response.status_code == 409
+    assert updates == []
+    assert client.get(f"/lobbies/{source['id']}", headers=auth_headers).status_code == 200
+
+
+def test_switch_route_idempotent_does_not_broadcast(client, auth_headers, monkeypatch):
+    lobby = client.post("/lobbies", json={"name": "My lobby"}, headers=auth_headers).json()
+    updates = []
+    monkeypatch.setattr(lobbies_module.connection_manager, "notify_all", updates.append)
+
+    response = client.post(f"/lobbies/{lobby['id']}/switch", headers=auth_headers)
+
+    assert response.status_code == 200
+    assert updates == []
+
+
+def test_switch_route_requires_authentication(client):
+    response = client.post("/lobbies/1/switch")
+    assert response.status_code == 401
+
+
+def test_switch_route_asks_for_confirmation_when_membership_is_not_known_to_client(
+    client, auth_headers, make_user, make_auth_headers, monkeypatch,
+):
+    source = client.post("/lobbies", json={"name": "Old lobby"}, headers=auth_headers).json()
+    target = client.post(
+        "/lobbies", json={"name": "New lobby"},
+        headers=make_auth_headers(make_user()),
+    ).json()
+    updates = []
+    monkeypatch.setattr(lobbies_module.connection_manager, "notify_all", updates.append)
+
+    response = client.post(f"/lobbies/{target['id']}/switch", headers=auth_headers)
+
+    assert response.status_code == 409
+    assert response.json()["detail"]["code"] == ErrorCode.LOBBY_SWITCH_CONFIRMATION_REQUIRED
+    assert updates == []
+    assert client.get(f"/lobbies/{source['id']}", headers=auth_headers).status_code == 200

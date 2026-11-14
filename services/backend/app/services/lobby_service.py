@@ -1,6 +1,7 @@
 import asyncio
 import threading
 import weakref
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from sqlalchemy import func
@@ -173,6 +174,86 @@ def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby:
             ) from exc
         raise bad_request("Could not join lobby.") from exc
     return get_lobby_or_404(db, lobby_id)
+
+
+@dataclass(frozen=True)
+class LobbySwitchResult:
+    lobby: Lobby
+    previous_lobby_id: int | None
+    changed: bool
+
+
+def switch_lobby(db: Session, user: User, lobby_id: int, *, confirmed: bool = False) -> LobbySwitchResult:
+    try:
+        db.query(User).filter(User.id == user.id).with_for_update(key_share=True).one()
+        membership = get_user_lobby_membership(db, user.id)
+        previous_lobby_id = membership.lobby_id if membership else None
+
+        # Lock both lobbies in a deterministic order. Normal joins also lock
+        # the destination row, so the MAX_MEMBERS check remains serialized.
+        lobby_ids = {lobby_id}
+        if previous_lobby_id is not None:
+            lobby_ids.add(previous_lobby_id)
+        locked_lobbies = {
+            lobby.id: lobby
+            for lobby in (
+                db.query(Lobby)
+                .filter(Lobby.id.in_(lobby_ids))
+                .order_by(Lobby.id)
+                .with_for_update()
+                .all()
+            )
+        }
+        target = locked_lobbies.get(lobby_id)
+        if target is None:
+            raise not_found("Lobby not found.", code=ErrorCode.LOBBY_NOT_FOUND)
+
+        if previous_lobby_id == lobby_id:
+            # No membership change, and no redundant public broadcasts.
+            db.rollback()
+            return LobbySwitchResult(get_lobby_or_404(db, lobby_id), previous_lobby_id, False)
+
+        member_count = db.query(LobbyMember).filter(LobbyMember.lobby_id == lobby_id).count()
+        if member_count >= MAX_MEMBERS:
+            raise conflict("This lobby is full.", code=ErrorCode.LOBBY_FULL)
+
+        # The client cache can be stale. Never close a hosted lobby solely
+        # because the client didn't know it was already in one.
+        if membership is not None and not confirmed:
+            raise conflict(
+                "Switching will leave or close your current lobby. Please confirm.",
+                code=ErrorCode.LOBBY_SWITCH_CONFIRMATION_REQUIRED,
+            )
+
+        if membership is not None:
+            old_lobby = locked_lobbies.get(previous_lobby_id)
+            if old_lobby is None:
+                db.delete(membership)
+            elif membership.role == HOST:
+                # Load members before deletion: the ORM's passive_deletes
+                # otherwise relies on database FK cascading. Loading here
+                # keeps the cleanup correct in SQLite tests too.
+                _ = old_lobby.members
+                db.delete(old_lobby)
+            else:
+                db.delete(membership)
+            db.flush()
+
+        db.add(LobbyMember(lobby=target, user=user, role=GUEST))
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        if get_constraint_name(exc) == "uq_lobby_members_user_id":
+            raise conflict(
+                "Your lobby membership changed. Please try again.",
+                code=ErrorCode.ALREADY_IN_ANOTHER_LOBBY,
+            ) from exc
+        raise conflict("Could not switch lobby. Please try again.") from exc
+    except Exception:
+        db.rollback()
+        raise
+
+    return LobbySwitchResult(get_lobby_or_404(db, lobby_id), previous_lobby_id, True)
 
 
 def get_lobby_or_404(db: Session, lobby_id: int) -> Lobby:

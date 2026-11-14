@@ -24,6 +24,10 @@ class LobbyCreate(BaseModel):
         return data
 
 
+class LobbySwitchRequest(BaseModel):
+    confirmed: bool = False
+
+
 class LobbyMessageCreate(BaseModel):
     content: str = Field(
         min_length=1,

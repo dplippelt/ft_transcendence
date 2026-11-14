@@ -11,6 +11,7 @@ from app.services.lobby_service import (
     get_member,
     join_lobby,
     leave_lobby,
+    switch_lobby,
 )
 
 
@@ -264,3 +265,137 @@ def test_guest_can_join_another_lobby_after_leaving(db, user, make_user):
     # Assert
     assert get_member(db, lobby_a.id, guest.id) is None
     assert get_member(db, lobby_b.id, guest.id) is not None
+
+
+# SWITCH
+
+def test_switch_lobby_moves_guest_atomically(db, user, make_user):
+    source = create_lobby(db, user, "Old lobby")
+    guest = make_user()
+    join_lobby(db, guest, source.id)
+    target = create_lobby(db, make_user(), "New lobby")
+
+    result = switch_lobby(db, guest, target.id, confirmed=True)
+
+    assert result.changed
+    assert result.previous_lobby_id == source.id
+    assert result.lobby.id == target.id
+    assert get_member(db, source.id, guest.id) is None
+    assert get_member(db, source.id, user.id) is not None
+    assert get_member(db, target.id, guest.id).role == GUEST
+
+
+def test_switch_lobby_closes_hosted_lobby(db, user, make_user):
+    source = create_lobby(db, user, "Old lobby")
+    guest = make_user()
+    join_lobby(db, guest, source.id)
+    source_id = source.id
+    target = create_lobby(db, make_user(), "New lobby")
+
+    result = switch_lobby(db, user, target.id, confirmed=True)
+
+    assert result.previous_lobby_id == source_id
+    assert get_lobby_by_id(db, source_id) is None
+    assert get_member(db, source_id, guest.id) is None
+    assert get_member(db, target.id, user.id).role == GUEST
+    assert get_member(db, target.id, guest.id) is None
+
+
+def test_switch_lobby_requires_explicit_confirmation(db, user, make_user):
+    source = create_lobby(db, user, "Old lobby")
+    target = create_lobby(db, make_user(), "New lobby")
+
+    with pytest.raises(HTTPException) as exc_info:
+        switch_lobby(db, user, target.id)
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail["code"] == ErrorCode.LOBBY_SWITCH_CONFIRMATION_REQUIRED
+    assert get_member(db, source.id, user.id).role == HOST
+
+
+def test_switch_lobby_is_idempotent(db, user):
+    lobby = create_lobby(db, user, "Same lobby")
+
+    result = switch_lobby(db, user, lobby.id)
+
+    assert not result.changed
+    assert result.previous_lobby_id == lobby.id
+    assert get_member(db, lobby.id, user.id).role == HOST
+    assert len(get_lobby_by_id(db, lobby.id).members) == 1
+
+
+def test_switch_lobby_joins_when_not_in_lobby(db, user, make_user):
+    lobby = create_lobby(db, user, "New lobby")
+    newcomer = make_user()
+
+    result = switch_lobby(db, newcomer, lobby.id)
+
+    assert result.changed
+    assert result.previous_lobby_id is None
+    assert get_member(db, lobby.id, newcomer.id).role == GUEST
+
+
+def test_switch_lobby_missing_target_preserves_current_membership(db, user):
+    source = create_lobby(db, user, "Old lobby")
+
+    with pytest.raises(HTTPException) as exc_info:
+        switch_lobby(db, user, 9999)
+
+    assert exc_info.value.status_code == 404
+    assert exc_info.value.detail["code"] == ErrorCode.LOBBY_NOT_FOUND
+    assert get_member(db, source.id, user.id).role == HOST
+
+
+def test_switch_lobby_full_target_preserves_current_membership(db, user, make_user):
+    source = create_lobby(db, user, "Old lobby")
+    target = create_lobby(db, make_user(), "Full lobby")
+    join_lobby(db, make_user(), target.id)
+
+    with pytest.raises(HTTPException) as exc_info:
+        switch_lobby(db, user, target.id, confirmed=True)
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail["code"] == ErrorCode.LOBBY_FULL
+    assert get_member(db, source.id, user.id).role == HOST
+    assert get_lobby_by_id(db, source.id) is not None
+
+
+def test_switch_lobby_rolls_back_on_insert_failure(db, user, make_user, monkeypatch):
+    from sqlalchemy.exc import IntegrityError
+    source = create_lobby(db, user, "Old lobby")
+    target = create_lobby(db, make_user(), "New lobby")
+    original_flush = db.flush
+    flush_count = 0
+
+    def fail_second_flush(*args, **kwargs):
+        nonlocal flush_count
+        flush_count += 1
+        if flush_count == 2:
+            raise IntegrityError("INSERT", {}, Exception("simulated insert failure"))
+        return original_flush(*args, **kwargs)
+
+    # Both the old-lobby deletion and new membership INSERT must be rolled
+    # back when the second flush (triggered by commit) fails.
+    monkeypatch.setattr(db, "flush", fail_second_flush)
+    with pytest.raises(HTTPException) as exc_info:
+        switch_lobby(db, user, target.id, confirmed=True)
+    monkeypatch.setattr(db, "flush", original_flush)
+
+    assert exc_info.value.status_code == 409
+    assert get_member(db, source.id, user.id).role == HOST
+    assert get_lobby_by_id(db, source.id) is not None
+    assert get_member(db, target.id, user.id) is None
+
+
+def test_switch_lobby_recovers_orphaned_membership(db, user, make_user):
+    # Mirrors stale data left by deployments that did not enforce FK cleanup.
+    from app.models.lobby_member import LobbyMember
+    target = create_lobby(db, make_user(), "New lobby")
+    db.add(LobbyMember(lobby_id=9999, user_id=user.id, role=GUEST))
+    db.commit()
+
+    result = switch_lobby(db, user, target.id, confirmed=True)
+
+    assert result.previous_lobby_id == 9999
+    assert get_member(db, 9999, user.id) is None
+    assert get_member(db, target.id, user.id) is not None

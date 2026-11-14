@@ -66,6 +66,18 @@ export function joinLobby(lobbyId: number, accessToken: string): Promise<ILobbyR
         accessToken);
 }
 
+// Only invitation acceptance calls this endpoint. Ordinary lobby joins must
+// continue enforcing the one-lobby-per-player restriction.
+export function switchLobby(lobbyId: number, confirmed: boolean, accessToken: string): Promise<ILobbyResponse>
+{
+    return apiRequest<ILobbyResponse>(`/lobbies/${lobbyId}/switch`,
+        {
+            method: "POST",
+            body: JSON.stringify({ confirmed }),
+        },
+        accessToken);
+}
+
 export function leaveLobby(lobbyId: number, accessToken: string): Promise<void>
 {
     return apiRequest<void>(`/lobbies/${lobbyId}/leave`,

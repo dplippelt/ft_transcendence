@@ -14,6 +14,7 @@ import {
     getLobby as getLobbyRequest,
     createLobby as createLobbyRequest,
     joinLobby as joinLobbyRequest,
+    switchLobby as switchLobbyRequest,
     leaveLobby as leaveLobbyRequest,
     closeLobby as closeLobbyRequest,
     inviteToLobby as inviteToLobbyRequest,
@@ -66,6 +67,7 @@ interface ILobbiesContext
     inviteFriend: (lobbyID: LobbyID, friendID: number) => Promise<boolean>;
     dismissLobbyInvite: (lobbyID: LobbyID | number) => void;
     joinLobby: (lobbyID: LobbyID) => Promise<LobbyData>;
+    switchToInvitedLobby: (lobbyID: LobbyID, confirmed?: boolean) => Promise<LobbyData>;
     leaveLobby: (lobbyID: LobbyID) => Promise<void>;
     closeLobby: (lobbyID: LobbyID) => Promise<void>;
     lobbyStartGame: (lobbyID: LobbyID) => Promise<ILobbyGame>;
@@ -300,6 +302,60 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         }
         return lobbyData;
     }, [auth.accessToken, markLobbyChanged, dismissLobbyInvite]);
+
+    const switchToInvitedLobby = useCallback(async (lobbyID: LobbyID, confirmed = false): Promise<LobbyData> =>
+    {
+        const accessToken = auth.accessToken;
+        if (!accessToken)
+            throw new Error("No authenticated session");
+
+        const session = sessionRef.current;
+        // All validation and membership changes happen in one backend
+        // transaction. Do not leave/close the old lobby in the browser.
+        const lobby = await switchLobbyRequest(Number(lobbyID), confirmed, accessToken);
+        const lobbyData = toLobbyData(lobby);
+
+        if (session === sessionRef.current)
+        {
+            const currentUserID = auth.user?.id;
+            // Reconcile our cached old lobby immediately. The refresh below
+            // also covers old memberships unknown to this tab.
+            setLobbies(previous =>
+            {
+                if (session !== sessionRef.current)
+                    return previous;
+
+                const next = { ...previous };
+                for (const [oldID, oldLobby] of Object.entries(previous))
+                {
+                    if (oldID === lobbyID || currentUserID === undefined)
+                        continue;
+
+                    const member = oldLobby.members.find(item => item.user.id === currentUserID);
+                    if (!member)
+                        continue;
+
+                    markLobbyChanged(oldID);
+                    if (member.role === "host")
+                        delete next[oldID];
+                    else
+                        next[oldID] = {
+                            ...oldLobby,
+                            members: oldLobby.members.filter(item => item.user.id !== currentUserID),
+                        };
+                }
+
+                markLobbyChanged(lobbyID);
+                next[lobbyID] = toLobbyData(lobby, previous[lobbyID]);
+                return next;
+            });
+            dismissLobbyInvite(lobbyID);
+            void refreshLobbies().catch(error =>
+                console.warn("Lobby list refresh failed after switching:", error)
+            );
+        }
+        return lobbyData;
+    }, [auth.accessToken, auth.user?.id, markLobbyChanged, dismissLobbyInvite, refreshLobbies]);
 
     const leaveLobby = useCallback(async (lobbyID: LobbyID): Promise<void> =>
     {
@@ -580,6 +636,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
             createLobby,
             closeLobby,
             joinLobby,
+            switchToInvitedLobby,
             leaveLobby,
             lobbyStartGame,
             inviteFriend,

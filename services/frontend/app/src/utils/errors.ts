@@ -70,6 +70,7 @@ export enum ErrorType
     lobbyInviteRateLimited,
     lobbyAlreadyMember,
     lobbyAlreadyInAnotherLobby,
+    lobbySwitchConfirmationRequired,
     lobbyInviteNotMember,
     lobbyCannotInviteSelf,
 
@@ -259,6 +260,8 @@ export function errorMsg(error: ErrorType): string
             return "This user is already a member of the lobby.";
         case ErrorType.lobbyAlreadyInAnotherLobby:
             return "You must leave your current lobby before joining or creating another.";
+        case ErrorType.lobbySwitchConfirmationRequired:
+            return "Please confirm before leaving your current lobby.";
         case ErrorType.lobbyInviteNotMember:
             return "You are not a member of this lobby.";
         case ErrorType.lobbyCannotInviteSelf:
@@ -499,6 +502,8 @@ export function mapLobbyApiError(error: unknown): ErrorType
             return ErrorType.lobbyAlreadyMember;
         case "ALREADY_IN_ANOTHER_LOBBY":
             return ErrorType.lobbyAlreadyInAnotherLobby;
+        case "LOBBY_SWITCH_CONFIRMATION_REQUIRED":
+            return ErrorType.lobbySwitchConfirmationRequired;
         case "NOT_LOBBY_MEMBER":
             return ErrorType.lobbyInviteNotMember;
         case "CANNOT_INVITE_SELF":
