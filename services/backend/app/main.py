@@ -17,10 +17,14 @@ from app.api.v1 import (
     scores,
     users,
 )
+from app.core.access_logging import install_access_log_redaction
 from app.core.settings import get_settings
 from app.db.database import Base, engine
 from app.game.game_session_manager import game_session_manager
 from app.services.avatar_service import AVATAR_DIR
+
+# Never write chat WebSocket access tokens to Docker/Uvicorn logs
+install_access_log_redaction()
 
 settings = get_settings()
 AVATAR_DIR.mkdir(parents=True, exist_ok=True)
