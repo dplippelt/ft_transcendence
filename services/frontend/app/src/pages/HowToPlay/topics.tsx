@@ -3,6 +3,8 @@ import Introduction from "./content/Introduction";
 import { RoutePath } from "../../utils/utils";
 import GameModes from "./content/GameModes";
 import OperatorSelection from "./content/OperatorSelection";
+import Controls from "./content/Controls";
+import Exploration from "./content/Exploration";
 
 export interface HowToPlayTopic
 {
@@ -16,8 +18,8 @@ export const howToPlayTopics: HowToPlayTopic[] =
   { id: "introduction", title: "Introduction", content: <Introduction /> },
   { id: "game-modes", title: "Game modes", content: <GameModes /> },
   { id: "operators", title: "Operator selection", content: <OperatorSelection /> },
-  { id: "controls", title: "Controls", content: <p>Coming soon.</p> },
-  { id: "exploring", title: "Exploring", content: <p>Coming soon.</p> },
+  { id: "controls", title: "Controls", content: <Controls /> },
+  { id: "exploring", title: "Exploring the dungeon", content: <Exploration /> },
   { id: "combat", title: "Combat", content: <p>Coming soon.</p> },
   { id: "equations", title: "Building an equation", content: <p>Coming soon.</p> },
   { id: "turns", title: "Turns", content: <p>Coming soon.</p> },

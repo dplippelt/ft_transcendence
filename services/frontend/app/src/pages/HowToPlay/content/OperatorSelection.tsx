@@ -15,7 +15,7 @@ export default function OperatorSelection()
       </ul>
       <br />
       You are able to customize what operators to include on the settings page.
-      Additionally before starting a new game you will get another chance to edit and confirm which operators will be included. <br />
+      Additionally, before starting a new game you will get another chance to edit and confirm which operators will be included. <br />
       <br />
       Operator customization is only available to logged in users.
 

@@ -5,6 +5,7 @@
   @include window;
   @include menuWindow;
 
+  height: max(500px, 80vh);
   grid-template-rows: auto 1fr;
   align-content: stretch;
 }
