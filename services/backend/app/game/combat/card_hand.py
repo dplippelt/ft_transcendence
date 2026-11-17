@@ -1,0 +1,25 @@
+from app.game.combat.card import Card
+
+class CardHand:
+    def __init__(self, max_cards: int = 8) -> None:
+        self._cards: list[Card] = []
+        self._max_cards = max_cards
+
+    def __len__(self) -> int:
+        return len(self._cards)
+
+    def add(self, card: Card) -> None:
+        self._cards.append(card)
+
+    def clear(self) -> None:
+        self._cards.clear()
+
+    def is_full(self) -> None:
+        return len(self._cards) >= self._max_cards
+
+    def get_by_id(self, id: int) -> Card | None:
+        for card in self._cards:
+            if (card.id == id):
+                return card
+        return None
+
