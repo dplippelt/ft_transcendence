@@ -189,26 +189,13 @@ class LobbySwitchResult:
 def switch_lobby(db: Session, user: User, lobby_id: int, *, invitation_id: str,  confirmed: bool = False,) -> LobbySwitchResult:
     try:
         db.query(User).filter(User.id == user.id).with_for_update(key_share=True).one()
-        # An ID alone must never authorize switching. The recipient is taken
-        # from the authenticated user, not from the request body.
-        invitation = (
-            db.query(LobbyInvitation)
-            .filter(
-                LobbyInvitation.id == invitation_id,
-                LobbyInvitation.lobby_id == lobby_id,
-                LobbyInvitation.recipient_id == user.id,
-            )
-            .with_for_update()
-            .first()
-        )
-        if invitation is None:
-            raise forbidden("No valid invitation for this lobby.", code=ErrorCode.LOBBY_INVITATION_INVALID)
-
         membership = get_user_lobby_membership(db, user.id)
         previous_lobby_id = membership.lobby_id if membership else None
 
-        # Lock both lobbies in a deterministic order. Normal joins also lock
-        # the destination row, so the MAX_MEMBERS check remains serialized.
+        # Lock the old and destination lobbies before the invitation row.
+        # Deleting a hosted lobby cascades to its invitations, so acquiring
+        # invitation locks first can deadlock when two hosts switch between
+        # each other's lobbies concurrently.
         lobby_ids = {lobby_id}
         if previous_lobby_id is not None:
             lobby_ids.add(previous_lobby_id)
@@ -223,6 +210,22 @@ def switch_lobby(db: Session, user: User, lobby_id: int, *, invitation_id: str, 
             )
         }
         target = locked_lobbies.get(lobby_id)
+
+        # An ID alone must never authorize switching. The recipient is taken
+        # from the authenticated user, not from the request body. This lock
+        # comes after the lobby locks, matching the cascade deletion order.
+        invitation = (
+            db.query(LobbyInvitation)
+            .filter(
+                LobbyInvitation.id == invitation_id,
+                LobbyInvitation.lobby_id == lobby_id,
+                LobbyInvitation.recipient_id == user.id,
+            )
+            .with_for_update()
+            .first()
+        )
+        if invitation is None:
+            raise forbidden("No valid invitation for this lobby.", code=ErrorCode.LOBBY_INVITATION_INVALID)
         if target is None:
             raise not_found("Lobby not found.", code=ErrorCode.LOBBY_NOT_FOUND)
 

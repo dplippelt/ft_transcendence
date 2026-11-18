@@ -1,9 +1,10 @@
-from datetime import timedelta
 import secrets
-from app.models.lobby_invitation import LobbyInvitation
-from app.services.friend_service import utc_now
+from datetime import timedelta
+
 import app.api.v1.lobbies as lobbies_module
 from app.core.exceptions import ErrorCode
+from app.models.lobby_invitation import LobbyInvitation
+from app.services.friend_service import utc_now
 
 
 # AUTH

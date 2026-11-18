@@ -3,6 +3,8 @@ from datetime import timedelta
 
 import pytest
 from fastapi import HTTPException
+from sqlalchemy import event
+from sqlalchemy.dialects import postgresql
 
 from app.core.exceptions import ErrorCode
 from app.models.lobby_invitation import LobbyInvitation
@@ -288,6 +290,33 @@ def _invite(db, target, recipient, *, inviter_id=None, expires_at=None):
     db.commit()
     return invite.id
 
+
+
+def test_switch_lobby_locks_lobbies_before_invitation(db, user, make_user):
+    """Check intended lock order; SQLite does not enforce PostgreSQL row locks."""
+    source = create_lobby(db, user, "Old lobby")
+    target = create_lobby(db, make_user(), "New lobby")
+    invitation_id = _invite(db, target, user)
+    lock_queries = []
+
+    def record_lock(state):
+        if not state.is_select:
+            return
+        sql = str(state.statement.compile(dialect=postgresql.dialect()))
+        if "FOR UPDATE" in sql or "FOR NO KEY UPDATE" in sql:
+            lock_queries.append(sql)
+
+    event.listen(db, "do_orm_execute", record_lock)
+    try:
+        switch_lobby(db, user, target.id, invitation_id=invitation_id, confirmed=True)
+    finally:
+        event.remove(db, "do_orm_execute", record_lock)
+
+    lobby_lock = next(i for i, sql in enumerate(lock_queries) if "FROM lobbies" in sql and "FOR UPDATE" in sql)
+    invitation_lock = next(i for i, sql in enumerate(lock_queries) if "FROM lobby_invitations" in sql and "FOR UPDATE" in sql)
+    assert lobby_lock < invitation_lock
+    assert get_lobby_by_id(db, source.id) is None
+    assert get_member(db, target.id, user.id) is not None
 
 
 def test_switch_lobby_moves_guest_atomically(db, user, make_user):
