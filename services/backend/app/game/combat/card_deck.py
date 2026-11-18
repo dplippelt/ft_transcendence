@@ -75,11 +75,11 @@ class CardDeck:
         return card
 
     def _adjust_weights(self, card_weights: list[CardWeight], card: Card):
-        for card_weight in card_weights:
+        for i, card_weight in enumerate(card_weights):
             if card_weight.value != card.value:
                 continue
             reduction = self._operator_reduction if card.is_operator() else self._number_reduction
-            card_weight.weight -= reduction
+            card_weights[i] = CardWeight(card_weight.value, card_weight.weight - reduction)
             return
 
     def _softmax(self, weights: list[CardWeight]) -> list[CardWeight]:
@@ -110,8 +110,3 @@ def weighted_random(weights: list[CardWeight]) -> CardWeight:
             return element
 
     raise ValueError("Invalid weight values used")
-
-# Debug code
-operators = [Operator.PLUS, Operator.MINUS, Operator.MULTIPLY, Operator.MODULO, Operator.DIVIDE]
-deck = CardDeck(operators=operators)
-deck._print_deck()

@@ -49,3 +49,9 @@ def test_deck_requires_operators():
     with pytest.raises(ValueError):
         make_deck(operators=[])
 
+def test_base_weights_are_not_changed_by_regeneration():
+    deck = make_deck()
+    before = [(w.value, w.weight) for w in deck._base_weights]
+    for _ in range(65):
+        deck.deal()
+    assert [(w.value, w.weight) for w in deck._base_weights] == before
