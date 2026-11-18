@@ -26,7 +26,7 @@ def _split_hand_in_numbers_and_operators(cards: list[Card]) -> tuple[list[Card],
     operators = [card for card in cards if card.is_operator()]
     return numbers, operators
 
-def is_valid_hand(cards: list[Card]):
+def is_valid_hand(cards: list[Card]) -> bool:
     numbers, operators = _split_hand_in_numbers_and_operators(cards)
     return has_valid_card_combination(numbers, operators, 1)
 
