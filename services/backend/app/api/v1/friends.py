@@ -1,8 +1,10 @@
 from fastapi import APIRouter, status
+from services.backend.app.models import friend_request
 from sqlalchemy import or_
 from sqlalchemy.orm import joinedload
 
 from app.api.dependencies import CompletedUser, DbSession
+from app.core.websocket_manager import connection_manager
 from app.core.exceptions import ErrorCode, not_found
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
@@ -14,22 +16,11 @@ from app.schemas.friend import (
     FriendResponse,
     FriendUserResponse,
 )
-from app.services.friend_service import (
-    PENDING,
-    send_friend_request,
-)
-from app.services.friend_service import (
-    accept_friend_request as accept_friend_request_service,
-)
-from app.services.friend_service import (
-    cancel_friend_request as cancel_friend_request_service,
-)
-from app.services.friend_service import (
-    reject_friend_request as reject_friend_request_service,
-)
-from app.services.friend_service import (
-    remove_friend as remove_friend_service,
-)
+from app.services.friend_service import (PENDING, send_friend_request,)
+from app.services.friend_service import (accept_friend_request as accept_friend_request_service,)
+from app.services.friend_service import (cancel_friend_request as cancel_friend_request_service,)
+from app.services.friend_service import (reject_friend_request as reject_friend_request_service,)
+from app.services.friend_service import (remove_friend as remove_friend_service,)
 from app.services.user_service import get_active_user_by_username
 
 router = APIRouter()
@@ -41,6 +32,11 @@ def build_friend_response(friendship: Friendship, friend: User) -> FriendRespons
         friend=FriendUserResponse.model_validate(friend),
         created_at=friendship.created_at,
     )
+
+
+def notify_friend_change(*user_ids: int) -> None:
+    for user_id in set(user_ids):
+        connection_manager.notify_safely(user_id, "friends_updated", lambda: {},)
 
 
 @router.get("", response_model=FriendListResponse)
@@ -116,11 +112,18 @@ def create_friend_request(request_data: FriendRequestCreate, current_user: Compl
     if recipient is None:
         raise not_found("User not found.", code=ErrorCode.USER_NOT_FOUND)
 
-    return send_friend_request(
+    friend_request = send_friend_request(
         db=db,
         current_user=current_user,
         recipient=recipient,
     )
+
+    # The requester may refresh twice - once after the HTTP reponse
+    # and once after the WebSocket event. 
+    for user_id in {current_user.id, recipient.id}:
+        notify_friend_change(friend_request.requester_id, friend_request.recipient_id)
+
+    return friend_request
 
 
 @router.get("/requests/incoming", response_model=list[FriendRequestResponse])
@@ -158,11 +161,15 @@ def get_outgoing_friend_requests(current_user: CompletedUser, db: DbSession):
 @router.post("/requests/{request_id}/accept", response_model=FriendRequestResponse)
 def accept_friend_request(request_id: int, current_user: CompletedUser, db: DbSession):
 
-    return accept_friend_request_service(
+    friend_request = accept_friend_request_service(
         db=db,
         request_id=request_id,
         current_user=current_user,
     )
+
+    notify_friend_request(friend_request.requester_id)
+
+    return friend_request
 
 
 @router.post("/requests/{request_id}/reject", response_model=FriendRequestResponse)
