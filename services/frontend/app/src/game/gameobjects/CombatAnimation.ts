@@ -1,5 +1,4 @@
 import Phaser, { Geom, Scene } from "phaser";
-import SingleCardManager from "./cards/SingleCardManager";
 import CombatPlayer from "./CombatPlayer";
 import CombatEnemy from "./CombatEnemy";
 import { CardActionEvents } from "./cards/CardManagerBase";
@@ -7,11 +6,13 @@ import CardBase from "./cards/CardBase";
 import { CardEvents } from "./cards/CardBase";
 import CardSlot from "./cards/CardSlot";
 import { AssetsKey } from "../Assets";
-import CombatManager, { CombatEvents } from "./CombatManager";
+import { CombatEvents } from "./CombatManager";
 import type CombatLayoutManager from "./CombatLayoutManager";
 import { TransformInLayout, LayoutEvents } from "./CombatLayoutManager";
 import type CombatTurnManager from "./CombatTurnManager";
 import { ExecuteCombo } from "./CombatExecuteManager";
+import type { ICombatView } from "./ICombatView";
+import type { ICardView } from "./cards/ICardView";
 
 enum PlayerAnimation {
   IDLE = "idle",
@@ -111,8 +112,8 @@ const enemyAnimationFrame: Record<EnemyAnimation, SpriteSheetFrame> = {
 export default class CombatAnimation {
   private readonly combatLayoutManager: CombatLayoutManager;
   private readonly scene: Scene;
-  private readonly combatManager: CombatManager;
-  private readonly cardManager: SingleCardManager;
+  private readonly combatManager: ICombatView;
+  private readonly cardManager: ICardView;
   private readonly turnManger: CombatTurnManager;
   private readonly player: CombatPlayer;
   private readonly enemy: CombatEnemy;
