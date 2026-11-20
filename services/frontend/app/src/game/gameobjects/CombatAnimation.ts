@@ -1,8 +1,8 @@
 import Phaser, { Geom, Scene } from "phaser";
-import CardManager from "./cards/CardManager";
+import SingleCardManager from "./cards/SingleCardManager";
 import CombatPlayer from "./CombatPlayer";
 import CombatEnemy from "./CombatEnemy";
-import { CardActionEvents } from "./cards/CardManager";
+import { CardActionEvents } from "./cards/CardManagerBase";
 import CardBase from "./cards/CardBase";
 import { CardEvents } from "./cards/CardBase";
 import CardSlot from "./cards/CardSlot";
@@ -112,7 +112,7 @@ export default class CombatAnimation {
   private readonly combatLayoutManager: CombatLayoutManager;
   private readonly scene: Scene;
   private readonly combatManager: CombatManager;
-  private readonly cardManager: CardManager;
+  private readonly cardManager: SingleCardManager;
   private readonly turnManger: CombatTurnManager;
   private readonly player: CombatPlayer;
   private readonly enemy: CombatEnemy;
