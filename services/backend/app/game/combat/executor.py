@@ -1,8 +1,10 @@
-from enum import IntEnum
 from collections.abc import Iterator
+from enum import IntEnum
 from itertools import permutations
+
 from app.game.combat.card import Card, CardValue, Operator
 from app.game.combat.card_deck import shuffle
+
 
 class ExecuteCombo(IntEnum):
     ONE = 1

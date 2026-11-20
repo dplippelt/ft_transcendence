@@ -1,11 +1,13 @@
-from app.game.combat.card_deck import CardDeck, CardDeckConfig
-from app.game.combat.card import Operator
-import pytest
 from collections import Counter
+
+import pytest
+
+from app.game.combat.card import Operator
+from app.game.combat.card_deck import DEFAULT_DECK_CONFIG, CardDeck, CardDeckConfig
 
 OPERATORS = [Operator.PLUS, Operator.MINUS, Operator.MULTIPLY, Operator.MODULO, Operator.DIVIDE]
 
-def make_deck(operators: list[Operator] = OPERATORS, config: CardDeckConfig = CardDeckConfig()) -> CardDeck:
+def make_deck(operators: list[Operator] = OPERATORS, config: CardDeckConfig = DEFAULT_DECK_CONFIG) -> CardDeck:
     return CardDeck(operators=operators, config=config)
 
 

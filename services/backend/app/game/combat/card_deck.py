@@ -1,9 +1,12 @@
-from .card import Operator, CardValue, Card
-from app.game.math_utils.random_util import shuffle
-from dataclasses import dataclass
-import random
-from functools import reduce
 import math
+import random
+from dataclasses import dataclass
+from functools import reduce
+
+from app.game.math_utils.random_util import shuffle
+
+from .card import Card, CardValue, Operator
+
 
 @dataclass
 class CardDeckConfig:
@@ -20,11 +23,13 @@ class CardWeight:
     value: CardValue
     weight: float
 
+DEFAULT_DECK_CONFIG = CardDeckConfig()
+
 class CardDeck:
     def __init__(
         self,
         operators: list[Operator],
-        config: CardDeckConfig = CardDeckConfig(),
+        config: CardDeckConfig = DEFAULT_DECK_CONFIG,
     ) -> None:
         if not operators:
             raise ValueError("a deck needs at least one operator")

@@ -1,10 +1,12 @@
+from collections.abc import Sequence
 from dataclasses import dataclass
-from app.game.combat.card import Operator, Card
+from enum import Enum
+
+from app.game.combat import executor
+from app.game.combat.card import Card, Operator
 from app.game.combat.card_deck import CardDeck
 from app.game.combat.card_hand import CardHand
-from app.game.combat import executor
-from collections.abc import Sequence
-from enum import Enum
+
 
 @dataclass
 class PlayerStatus:

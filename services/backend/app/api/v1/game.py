@@ -79,10 +79,11 @@ async def game_websocket(
 
 # TODO: temp route for getting the combat state
 
-from app.game.combat.card_deck import CardDeck
-from app.game.combat.card import Operator
-from app.schemas.combat import CombatState
 from uuid import uuid4
+
+from app.game.combat.card import Operator
+from app.game.combat.card_deck import CardDeck
+
 
 @router.post("/debug/combat")
 def debug_combat_start():

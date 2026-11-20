@@ -1,5 +1,6 @@
 from app.game.combat.card import Card
 
+
 class CardHand:
     def __init__(self, max_cards: int = 8) -> None:
         self._cards: list[Card] = []

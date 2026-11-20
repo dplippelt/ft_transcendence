@@ -1,5 +1,6 @@
-from enum import StrEnum
 import uuid
+from enum import StrEnum
+
 
 class Operator(StrEnum):
     PLUS = "+"

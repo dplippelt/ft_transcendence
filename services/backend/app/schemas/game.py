@@ -1,8 +1,9 @@
 from enum import IntEnum, IntFlag, auto
 from typing import Literal
-from app.schemas import combat
 
 from pydantic import BaseModel
+
+from app.schemas import combat
 
 
 class GameState(IntEnum):

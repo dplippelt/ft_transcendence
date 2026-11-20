@@ -1,6 +1,5 @@
-import pytest
-from app.game.combat.combat_manager import PlayerStatus, EnemyData, CombatManager, EnemyLevel
 from app.game.combat.card import Operator
+from app.game.combat.combat_manager import CombatManager, EnemyLevel, PlayerStatus
 
 DUMMY_PLAYER = PlayerStatus(hp=10, mana=5)
 DEFAULT_OPERATORS = [Operator.PLUS, Operator.MINUS, Operator.MULTIPLY, Operator.DIVIDE, Operator.MODULO]

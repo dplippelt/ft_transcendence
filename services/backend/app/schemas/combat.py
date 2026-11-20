@@ -1,6 +1,8 @@
-from pydantic import BaseModel, Field
 from enum import StrEnum
 from typing import Annotated, Literal
+
+from pydantic import BaseModel, Field
+
 from app.game.combat.card import Operator
 from app.game.combat.executor import Number
 
