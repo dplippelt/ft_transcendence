@@ -83,9 +83,10 @@ from uuid import uuid4
 
 from app.game.combat.card import Operator
 from app.game.combat.card_deck import CardDeck
+from app.schemas.combat import CombatState
 
 
-@router.post("/debug/combat")
+@router.post("/debug/combat", response_model=CombatState)
 def debug_combat_start():
     deck = CardDeck(operators=list(Operator))
     hand = [deck.deal() for _ in range(8)]

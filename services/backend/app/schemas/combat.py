@@ -28,7 +28,7 @@ class RejectReason(StrEnum):
     NOT_ENOUGH_MP = "not_enough_mp"
 
 class CombatCard(BaseModel):
-    id: int
+    id: str
     value: int | Operator
 
 class CombatPlayerStatus(BaseModel):
@@ -99,7 +99,7 @@ CombatEvent = Annotated[
 ]
 
 class CombatState(BaseModel):
-    combat_id: int
+    combat_id: str
     player_id: int
     enemy_id: int
     phase: CombatPhase
