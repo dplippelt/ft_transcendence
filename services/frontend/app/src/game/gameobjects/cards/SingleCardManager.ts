@@ -1,0 +1,36 @@
+import type { Scene } from "phaser";
+import CardManagerBase, { CardActionEvents } from "./CardManagerBase";
+import CardDeck, { cardDeckConfig } from "./CardDeck";
+import { CardEvents } from "./CardBase";
+
+export default class SingleCardManager extends CardManagerBase {
+  readonly cardDeck: CardDeck;
+
+  constructor(scene: Scene) {
+    super(scene);
+    this.cardDeck = new CardDeck(this.scene, cardDeckConfig);
+  }
+
+  fillCardHand(amount: number) {
+    for (let i = 0; i < amount; ++i) {
+      this.drawCard();
+    }
+  }
+
+  drawCard() {
+    if (!this.cardHand.isUnderHandLimit(this.maxNumCardsInHand)) {
+      return false;
+    }
+
+    if (this.cardDeck.isEmpty()) {
+      this.cardDeck.initDeck();
+      this.events.emit(CardActionEvents.GENERATE_DECK);
+    }
+    const card = this.cardDeck.dealCard()!;
+    card.on(CardEvents.SELECTION, this.select, this);
+
+    this.cardHand.addCard(card);
+    this.events.emit(CardActionEvents.DRAW, card);
+    return true;
+  }
+}
