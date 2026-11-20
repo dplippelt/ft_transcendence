@@ -1,11 +1,11 @@
 import Phaser, { Actions, Scene } from "phaser";
-import CombatManager from "./CombatManager";
+import type { ICombatView } from "./ICombatView";
+import type { ICardView } from "./cards/ICardView";
 import type CardBase from "./cards/CardBase";
-import type CardManager from "./cards/CardManager";
 import CombatPlayer from "./CombatPlayer";
 import type CombatEnemy from "./CombatEnemy";
 import CombatAnimation from "./CombatAnimation";
-import { CardActionEvents } from "./cards/CardManager";
+import { CardActionEvents } from "./cards/CardManagerBase";
 import type CardSlot from "./cards/CardSlot";
 
 // Must match the dimensions of the background image used in 'GameBackground.module.scss'
@@ -138,9 +138,9 @@ export enum LayoutEvents {
 }
 
 export default class CombatLayoutManager {
-  readonly combatManger: CombatManager;
+  readonly combatManger: ICombatView;
   readonly scene: Scene;
-  readonly cardManager: CardManager;
+  readonly cardManager: ICardView;
   readonly player: CombatPlayer;
   readonly enemy: CombatEnemy;
   readonly events: Phaser.Events.EventEmitter;
@@ -150,7 +150,7 @@ export default class CombatLayoutManager {
   readonly display!: Display;
   readonly background!: Background;
 
-  constructor(combatManger: CombatManager) {
+  constructor(combatManger: ICombatView) {
     this.combatManger = combatManger;
     this.scene = this.combatManger.scene;
     this.cardManager = this.combatManger.cardManager;
@@ -233,43 +233,43 @@ export default class CombatLayoutManager {
   updateDeck(isResize: boolean = true) {
     const display = this.display;
     const background = this.background;
-    const deck = this.cardManager.cardDeck.getDeck();
+    // const deck = this.cardManager.cardDeck.getDeck();
     const deckLayout = this.layout.cards.deck;
     const targetX = background.leftX + deckLayout.xFromBgLeft * background.scale;
     const targetY = background.bottomY + deckLayout.yFromBgBottom * background.scale;
-    const angle = 0;
+    // const angle = 0;
 
-    deck.forEach((card: CardBase) => {
-      card.setData({
-        [TransformInLayout.X]: targetX,
-        [TransformInLayout.Y]: targetY,
-        [TransformInLayout.ANGLE]: angle,
-        [TransformInLayout.SCALE]: display.scale,
-      });
-      if (isResize) {
-        this.setCardPosition(card);
-      } else {
-        this.events.emit(LayoutEvents.SET_CARD_POS, card);
-      }
-    });
+    // deck.forEach((card: CardBase) => {
+    //   card.setData({
+    //     [TransformInLayout.X]: targetX,
+    //     [TransformInLayout.Y]: targetY,
+    //     [TransformInLayout.ANGLE]: angle,
+    //     [TransformInLayout.SCALE]: display.scale,
+    //   });
+    //   if (isResize) {
+    //     this.setCardPosition(card);
+    //   } else {
+    //     this.events.emit(LayoutEvents.SET_CARD_POS, card);
+    //   }
+    // });
 
-    const cover = this.cardManager.cardDeck.getCover();
-    cover.setData({
-      [TransformInLayout.X]: targetX,
-      [TransformInLayout.Y]: targetY,
-      [TransformInLayout.ANGLE]: angle,
-      [TransformInLayout.SCALE]: display.scale,
-    });
-    if (isResize) {
-      this.setCardPosition(cover);
-    } else {
-      this.events.emit(LayoutEvents.SET_CARD_POS, cover);
-    }
+    // const cover = this.cardManager.cardDeck.getCover();
+    // cover.setData({
+    //   [TransformInLayout.X]: targetX,
+    //   [TransformInLayout.Y]: targetY,
+    //   [TransformInLayout.ANGLE]: angle,
+    //   [TransformInLayout.SCALE]: display.scale,
+    // });
+    // if (isResize) {
+    //   this.setCardPosition(cover!);
+    // } else {
+    //   this.events.emit(LayoutEvents.SET_CARD_POS, cover);
+    // }
 
     // Making cards in deck and cover card invisible in favor of
     // a new deck image used for the React button
-    deck.forEach((card) => card.setVisible(false));
-    cover.setVisible(false);
+    // deck.forEach((card) => card.setVisible(false));
+    // cover.setVisible(false);
 
     // Setting deck position and size as properties so React can
     // render an invisible button of the same size on top of it
