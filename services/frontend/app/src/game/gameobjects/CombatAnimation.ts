@@ -114,7 +114,7 @@ export default class CombatAnimation {
   private readonly scene: Scene;
   private readonly combatManager: ICombatView;
   private readonly cardManager: ICardView;
-  private readonly turnManger: CombatTurnManager;
+  private readonly turnManger: CombatTurnManager | undefined;
   private readonly player: CombatPlayer;
   private readonly enemy: CombatEnemy;
 
@@ -249,8 +249,11 @@ export default class CombatAnimation {
   }
 
   playerAttack() {
-    this.turnManger.pausePlayerTurn();
-    const execute = this.combatManager.executeManager;
+    this.turnManger?.pausePlayerTurn();
+    const execute = this.combatManager.executeManager; // TODO:
+    if (!execute) {
+      return;
+    }
     switch (execute.getCombo()) {
       case ExecuteCombo.ONE:
         this.player.play(PlayerAnimation.ATTACK_A);
