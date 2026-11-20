@@ -237,6 +237,7 @@ export default class CombatLayoutManager {
     const deckLayout = this.layout.cards.deck;
     const targetX = background.leftX + deckLayout.xFromBgLeft * background.scale;
     const targetY = background.bottomY + deckLayout.yFromBgBottom * background.scale;
+    void isResize; // TODO:
     // const angle = 0;
 
     // deck.forEach((card: CardBase) => {

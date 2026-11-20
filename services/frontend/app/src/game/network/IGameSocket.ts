@@ -71,6 +71,7 @@ export class FakeGameSocket extends Phaser.Events.EventEmitter implements IGameS
   private async start() {
     const state = await apiRequest<CombatState>("/game/debug/combat", { method: "POST" });
     this.combatId = state.combat_id;
+    void this.combatId; // TODO:
     this.open = true;
     this.emit("open");
     this.emitSnapshot(state);

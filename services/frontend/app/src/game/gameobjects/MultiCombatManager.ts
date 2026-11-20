@@ -39,6 +39,7 @@ export default class MultiCombatManager implements ICombatView {
     this.latestState = initial;
     this.cardManager.syncHand(initial.hand);
     this.emitStatusToUI(initial);
+    void this.latestState; // TODO:
   }
 
   sendPlayCards() {
@@ -86,10 +87,11 @@ export default class MultiCombatManager implements ICombatView {
 }
 
 function toTargetRecord(target: (number | null)[]) {
+  // TODO
   const targetNumbers: Record<ExecuteCombo, number | null> = {
-    [ExecuteCombo.ONE]: null,
-    [ExecuteCombo.TWO]: null,
-    [ExecuteCombo.THREE]: null,
+    [ExecuteCombo.ONE]: target[0],
+    [ExecuteCombo.TWO]: target[1],
+    [ExecuteCombo.THREE]: target[2],
   };
   return targetNumbers;
 }
