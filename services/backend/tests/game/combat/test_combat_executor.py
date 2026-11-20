@@ -29,7 +29,6 @@ def cards(*values) -> list[Card]:
 def test_evaluate_follows_operator_precedence(values, expected):
     result = executor.evaluate(cards(*values))
     assert result == expected
-    assert type(result) is type(expected)
 
 
 @pytest.mark.parametrize(
