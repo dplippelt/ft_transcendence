@@ -45,7 +45,7 @@ export interface GameSnapshot {
   game_id: string;
   tick_id: number;
   state: ServerGameState;
-  dungeon_deed: number;
+  dungeon_seed: number;
   user_player_id: number;
   players: SnapshotPlayer[];
   enemies: SnapshotEnemy[];
@@ -100,7 +100,7 @@ export class FakeGameSocket extends Phaser.Events.EventEmitter implements IGameS
       players: [{ player_id: this.userId, sequence: ackSequence }],
       enemies: [],
       combat: [combat],
-      receiveAt: performance.now(),
+      receivedAt: performance.now(),
     });
   }
 }
