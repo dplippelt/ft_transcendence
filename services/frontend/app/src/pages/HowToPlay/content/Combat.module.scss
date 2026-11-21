@@ -1,0 +1,19 @@
+.image {
+  display: block;
+  width: 2463px;
+  max-width: 95%;
+  height: auto;
+}
+
+.numberedList {
+  list-style-type: decimal;
+  li {
+    margin-top: 0.4rem;
+  }
+}
+
+.bulletList {
+  li {
+    margin-top: 0.1rem;
+  }
+}

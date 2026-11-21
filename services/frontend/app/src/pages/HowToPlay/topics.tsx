@@ -5,6 +5,7 @@ import GameModes from "./content/GameModes";
 import OperatorSelection from "./content/OperatorSelection";
 import Controls from "./content/Controls";
 import Exploration from "./content/Exploration";
+import Combat from "./content/Combat";
 
 export interface HowToPlayTopic
 {
@@ -20,7 +21,7 @@ export const howToPlayTopics: HowToPlayTopic[] =
   { id: "operators", title: "Operator selection", content: <OperatorSelection /> },
   { id: "controls", title: "Controls", content: <Controls /> },
   { id: "exploring", title: "Exploring the dungeon", content: <Exploration /> },
-  { id: "combat", title: "Combat", content: <p>Coming soon.</p> },
+  { id: "combat", title: "Combat screen", content: <Combat /> },
   { id: "equations", title: "Building an equation", content: <p>Coming soon.</p> },
   { id: "turns", title: "Turns", content: <p>Coming soon.</p> },
   { id: "win-lose", title: "Winning and losing", content: <p>Coming soon.</p> },
