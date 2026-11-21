@@ -29,8 +29,9 @@
   @include scrollbar;
 
   font-size: 0.8rem;
-  line-height: 1.5;
+  line-height: 1.2;
   font-family: $manual-font;
+  font-weight: 200;
 
   ul {
     padding-left: 1rem;
