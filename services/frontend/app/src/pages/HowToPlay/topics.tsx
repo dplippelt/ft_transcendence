@@ -24,7 +24,7 @@ export const howToPlayTopics: HowToPlayTopic[] =
   { id: "operators", title: "Operator selection", content: <OperatorSelection /> },
   { id: "controls", title: "Controls", content: <Controls /> },
   { id: "exploring", title: "Exploring the dungeon", content: <Exploration /> },
-  { id: "combat", title: "Combat screen", content: <Combat /> },
+  { id: "combat", title: "Combat encounter", content: <Combat /> },
   { id: "equations", title: "Building an equation", content: <Equation /> },
   { id: "turns", title: "Turns", content: <Turns /> },
   { id: "win-lose", title: "Winning and losing", content: <WinLose /> },

@@ -1,8 +1,17 @@
+@use '../../../variables' as *;
+
 .image {
   display: block;
-  width: 2463px;
+  width: 1000px;
   max-width: 95%;
   height: auto;
+  border: solid 2px $image-border-color;
+  border-radius: 4px;
+  transition: border-color 0.15s;
+
+  &:hover {
+    border-color: $image-border-hover-color;
+  }
 }
 
 .numberedList {
