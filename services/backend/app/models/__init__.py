@@ -4,6 +4,7 @@ from app.models.dungeon import Dungeon
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
 from app.models.lobby import Lobby
+from app.models.lobby_invitation import LobbyInvitation
 from app.models.lobby_member import LobbyMember
 from app.models.lobby_message import LobbyMessage
 from app.models.score import Score
@@ -16,6 +17,7 @@ __all__ = [
     "FriendRequest",
     "Friendship",
     "Lobby",
+    "LobbyInvitation",
     "LobbyMember",
     "LobbyMessage",
     "Score",
