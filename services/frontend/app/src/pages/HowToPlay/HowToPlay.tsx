@@ -1,3 +1,4 @@
+import { useCallback, useState } from "react";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import Background from "../../components/Background";
 import { BottomButtons } from "../../components/ButtonContainers";
@@ -9,6 +10,7 @@ import SideBar from "../../components/SideBar";
 import { useAuth } from "../../contexts/AuthContext";
 import { RoutePath } from "../../utils/utils";
 import { getTopicIndex, howToPlayTopics, topicPath } from "./topics";
+import ImageOverlay from "./ImageOverlay";
 import styles from "./HowToPlay.module.scss";
 
 interface ITopicNav
@@ -45,18 +47,35 @@ function PrevNextButtons( { index, goTo } : ITopicNav )
   );
 }
 
+interface IZoomedImage
+{
+  topicId: string;
+  src: string;
+  alt: string;
+}
+
 function HowToPlayWindow( { index, goTo } : ITopicNav )
 {
   const topic = howToPlayTopics[index];
+  const [zoomed, setZoomed] = useState<IZoomedImage | null>(null);
+  const closeZoom = useCallback(() => setZoomed(null), []);
+
+  function onContentClick( e: React.MouseEvent<HTMLDivElement> )
+  {
+    if ( e.target instanceof HTMLImageElement )
+      setZoomed({ topicId: topic.id, src: e.target.src, alt: e.target.alt });
+  }
 
   return (
     <div className={styles.howToPlayWindow}>
       <TopicList index={index} goTo={goTo} />
       <div className={styles.topicArea}>
         <div className={styles.topicTitle}>{topic.title}</div>
-        <div className={styles.content}>{topic.content}</div>
+        <div className={styles.content} onClick={onContentClick}>{topic.content}</div>
         <PrevNextButtons index={index} goTo={goTo} />
       </div>
+      { zoomed && zoomed.topicId === topic.id &&
+        <ImageOverlay src={zoomed.src} alt={zoomed.alt} onClose={closeZoom} /> }
     </div>
   );
 }
