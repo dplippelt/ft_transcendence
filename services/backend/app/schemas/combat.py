@@ -27,6 +27,16 @@ class RejectReason(StrEnum):
     INVALID_SELECTION = "invalid_selection"
     NOT_ENOUGH_MP = "not_enough_mp"
 
+class CombatEventType(StrEnum):
+    TURN_STARTED = "turn_started"
+    HAND_DEALT = "hand_dealt"
+    PLAYER_ATTACK = "player_attack"
+    PLAYER_GUARD = "player_guard"
+    PLAY_MISSED = "play_missed"
+    ENEMY_ATTACK = "enemy_attack"
+    COMBAT_END = "combat_end"
+    ACTION_REJECTED = "action_rejected"
+
 class CombatCard(BaseModel):
     id: str
     value: int | Operator
@@ -45,17 +55,16 @@ class CombatEventBase(BaseModel):
     tick: int
 
 class TurnStartedEvent(CombatEventBase):
-    type: Literal["turn_started"] = "turn_started"
+    type: Literal[CombatEventType.TURN_STARTED] = CombatEventType.TURN_STARTED
     phase: CombatPhase
     turn_ends_at_tick: int
 
 class HandDealtEvent(CombatEventBase):
-    type: Literal["hand_dealt"] = "hand_dealt"
-    reason: Literal["turn_started", "redraw"]
+    type: Literal[CombatEventType.HAND_DEALT] = CombatEventType.HAND_DEALT
     card_ids: list[str]
 
 class PlayerAttackEvent(CombatEventBase):
-    type: Literal["player_attack"] = "player_attack"
+    type: Literal[CombatEventType.PLAYER_ATTACK] = CombatEventType.PLAYER_ATTACK
     card_ids: list[str]
     result: Number
     combo: int
@@ -63,30 +72,30 @@ class PlayerAttackEvent(CombatEventBase):
     enemy_hp: int
 
 class PlayMissedEvent(CombatEventBase):
-    type: Literal["play_missed"] = "play_missed"
+    type: Literal[CombatEventType.PLAY_MISSED] = CombatEventType.PLAY_MISSED
     card_ids: list[str]
     result: Number
     combo: int | None
 
-class ActionRejectedEvent(CombatEventBase):
-    type: Literal["action_rejected"] = "action_rejected"
-    action: CombatAction
-    reason: RejectReason
-    card_ids: list[str] = Field(default_factory=list)
-
 class PlayerGuardEvent(CombatEventBase):
-    type: Literal["player_guard"] = "player_guard"
+    type: Literal[CombatEventType.PLAYER_GUARD] = CombatEventType.PLAYER_GUARD
 
 class EnemyAttackEvent(CombatEventBase):
-    type: Literal["enemy_attack"] = "enemy_attack"
+    type: Literal[CombatEventType.ENEMY_ATTACK] = CombatEventType.ENEMY_ATTACK
     damage: int
     player_hp: int
 
 class CombatEndEvent(CombatEventBase):
-    type: Literal["combat_end"] = "combat_end"
+    type: Literal[CombatEventType.COMBAT_END] = CombatEventType.COMBAT_END
     result: CombatResult
 
-CombatEvent = Annotated[
+class ActionRejectedEvent(CombatEventBase):
+    type: Literal[CombatEventType.ACTION_REJECTED] = CombatEventType.ACTION_REJECTED
+    action: CombatAction
+    reason: RejectReason
+    card_ids: list[str] = Field(default_factory=list)
+
+type CombatEvent = Annotated[
     TurnStartedEvent
     | HandDealtEvent
     | PlayerAttackEvent
