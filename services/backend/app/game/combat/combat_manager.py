@@ -252,6 +252,9 @@ class CombatManager:
             result=result
         ))
 
+    def is_over(self) -> bool:
+        return self._turn_manager.phase is CombatPhase.OVER
+
     def _add_event(self, event: CombatEvent) -> None:
         self._events.append(event)
 
