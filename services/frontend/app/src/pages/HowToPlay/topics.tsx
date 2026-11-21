@@ -7,6 +7,7 @@ import Controls from "./content/Controls";
 import Exploration from "./content/Exploration";
 import Combat from "./content/Combat";
 import Equation from "./content/Equation";
+import Turns from "./content/Turns";
 
 export interface HowToPlayTopic
 {
@@ -24,8 +25,9 @@ export const howToPlayTopics: HowToPlayTopic[] =
   { id: "exploring", title: "Exploring the dungeon", content: <Exploration /> },
   { id: "combat", title: "Combat screen", content: <Combat /> },
   { id: "equations", title: "Building an equation", content: <Equation /> },
-  { id: "turns", title: "Turns", content: <p>Coming soon.</p> },
-  { id: "win-lose", title: "Winning and losing", content: <p>Coming soon.</p> },
+  { id: "turns", title: "Turns", content: <Turns /> },
+  { id: "win-lose-fights", title: "Winning and losing fights", content: <p>Coming soon.</p> },
+  { id: "win-lose-game", title: "Winning and losing the game", content: <p>Coming soon.</p> },
 ];
 
 export function getTopicIndex( id?: string ) : number
