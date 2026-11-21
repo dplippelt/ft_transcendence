@@ -1,0 +1,15 @@
+@use '../../variables' as *;
+
+.levelIndicator
+{
+	position: absolute;
+	top: 1.5rem; // matching the menu and chat/side-bar toggle buttons
+	left: 50%;
+	transform: translateX(-50%);
+	color: $primary-text-color;
+	font-family: $text-font;
+	font-size: 1rem;
+	text-shadow: 0 0 4px #000, 0 0 2px #000;
+	pointer-events: none;
+	user-select: none;
+}

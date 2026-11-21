@@ -1,0 +1,28 @@
+@use '../../../variables' as *;
+
+.image {
+  display: block;
+  width: 1000px;
+  max-width: 95%;
+  height: auto;
+  border: solid 2px $image-border-color;
+  border-radius: 4px;
+  transition: border-color 0.15s;
+
+  &:hover {
+    border-color: $image-border-hover-color;
+  }
+}
+
+.numberedList {
+  list-style-type: decimal;
+  li {
+    margin-top: 0.4rem;
+  }
+}
+
+.bulletList {
+  li {
+    margin-top: 0.1rem;
+  }
+}

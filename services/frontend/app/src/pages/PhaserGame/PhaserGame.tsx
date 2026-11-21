@@ -9,6 +9,7 @@ import GameUI from "../../components/Game/GameUI";
 import CombatUI from "../../components/Game/CombatUI";
 import GameBackground from "../../components/Game/GameBackground";
 import GameOver from "../../components/Game/GameOver";
+import LevelIndicator from "../../components/Game/LevelIndicator";
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -161,6 +162,10 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     EventBus.emit(GameEvent.gameVis, isGameURL);
 
     function preserveGame() : boolean {
+      // How to play has its topic in the path (/how-to-play/<topic>)
+      if ( location.pathname.startsWith(RoutePath.howToPlay) )
+        return true;
+
       switch ( location.pathname )
       {
         case RoutePath.game:
@@ -170,8 +175,6 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
         case RoutePath.profile:
           return true;
         case RoutePath.leaderboard:
-          return true;
-        case RoutePath.howToPlay:
           return true;
         default:
           return false;
@@ -249,7 +252,7 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     <>
       <div className={`${styles.gameWrapper} ${ isGameURL ? "" : styles.hidden }`}>
         <GameBackground inCombat={inCombat} />
-        <Game 
+        <Game
           currentActiveScene={currentActiveScene}
           gameRef={gameRef}
           canStartGame={canStartGame}
@@ -258,6 +261,8 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
           cleanupGame={cleanupGame}
         />
         <CombatUI inCombat={inCombat} />
+        {/* TODO: level indicator for online co-op */}
+        { isGameURL && !inCombat && !isOnline && <LevelIndicator /> }
         <GameUI gameMenuVis={gameMenuVis} loggedIn={loggedIn} />
       </div>
     </>
