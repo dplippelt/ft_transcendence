@@ -83,7 +83,7 @@ from uuid import uuid4
 
 from app.game.combat.card import Operator
 from app.game.combat.card_deck import CardDeck
-from app.schemas.combat import CombatState
+from app.schemas.combat import CombatState, CombatPhase, CombatPlayerStatus, CombatEnemyStatus
 
 
 @router.post("/debug/combat", response_model=CombatState)
@@ -96,11 +96,11 @@ def debug_combat_start():
         "combat_id": combat_id,
         "player_id": 0,
         "enemy_id": 0,
-        "phase": "player_turn",
+        "phase": CombatPhase.PLAYER_TURN,
         "turn_ends_at_tick": None,
         "result": None,
-        "player": {"hp": 10, "max_hp": 10, "mp": 5},
-        "enemy": {"hp": 16, "max_hp": 16},
+        "player": CombatPlayerStatus(hp=10, max_hp=10, mp=5),
+        "enemy": CombatEnemyStatus(hp=16, max_hp=16, attack_damage=4),
         "hand": [{"id": c.id, "value": c.value} for c in hand],
         "target_numbers": [None, None, None],
         "deck_count": 8,
