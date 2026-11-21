@@ -8,7 +8,7 @@ from app.game.math_utils.random_util import shuffle
 from .card import Card, CardValue, Operator
 
 
-@dataclass
+@dataclass(frozen=True)
 class CardDeckConfig:
     amount: int = 20
     number_min: int = 1

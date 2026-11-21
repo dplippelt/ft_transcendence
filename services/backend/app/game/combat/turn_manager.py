@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from app.schemas.combat import CombatPhase
 
 
-@dataclass
+@dataclass(frozen=True)
 class TurnConfig:
     player_turn_ticks: int
     enemy_turn_ticks: int

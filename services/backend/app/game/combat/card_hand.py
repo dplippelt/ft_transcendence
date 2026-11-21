@@ -19,15 +19,15 @@ class CardHand:
     def clear(self) -> None:
         self._cards.clear()
 
-    def is_full(self) -> None:
+    def is_full(self) -> bool:
         return len(self._cards) >= self._max_cards
 
-    def get_by_id(self, id: int) -> Card | None:
+    def get_by_id(self, card_id: str) -> Card | None:
         for card in self._cards:
-            if (card.id == id):
+            if (card.id == card_id):
                 return card
         return None
 
     def get_cards(self) -> list[Card]:
-        return self._cards
+        return list(self._cards)
 
