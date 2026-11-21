@@ -28,3 +28,6 @@ class CardHand:
                 return card
         return None
 
+    def get_cards(self) -> list[Card]:
+        return self._cards
+

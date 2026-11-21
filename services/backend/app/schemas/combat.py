@@ -93,7 +93,6 @@ class ActionRejectedEvent(CombatEventBase):
     type: Literal[CombatEventType.ACTION_REJECTED] = CombatEventType.ACTION_REJECTED
     action: CombatAction
     reason: RejectReason
-    card_ids: list[str] = Field(default_factory=list)
 
 type CombatEvent = Annotated[
     TurnStartedEvent
