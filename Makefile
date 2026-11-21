@@ -84,6 +84,9 @@ test-2fa: ensure-env
 test-lobby: ensure-env
 	./scripts/test.sh lobby
 
+test-friends: ensure-env
+	./scripts/test.sh friends
+
 reset-db: ensure-env
 	$(MAKE) down || true
 	docker volume rm $(POSTGRES_VOLUME) 2>/dev/null || true

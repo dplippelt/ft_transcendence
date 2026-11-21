@@ -189,9 +189,13 @@ def send_friend_request(db: Session, current_user: User, recipient: User,) -> Fr
 
     db.add(friend_request)
 
+    affected_user_ids = {
+        current_user.id,
+        recipient.id,
+    }
+
     try:
         db.commit()
-        notify_friend_change(pair_user_a_id, pair_user_b_id)
     except IntegrityError:
         db.rollback()
 
@@ -211,13 +215,13 @@ def send_friend_request(db: Session, current_user: User, recipient: User,) -> Fr
 
         raise bad_request("Friend request already exists.", code=ErrorCode.FRIEND_REQUEST_ALREADY_SENT)
 
+    notify_friend_change(affected_user_ids)
     db.refresh(friend_request)
-    notify_friend_change(pair_user_a_id, pair_user_b_id)
 
     return friend_request
 
 
-def accept_friend_request(db: Session, request_id: int,current_user: User,) -> FriendRequest:
+def accept_friend_request(db: Session, request_id: int, current_user: User,) -> FriendRequest:
     friend_request = require_pending_received_request(
         db,
         request_id,
