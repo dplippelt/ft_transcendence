@@ -10,7 +10,6 @@ export default function Exploration()
       Your goal is to reach the exit, a staircase that leads further down the dungeon.<br/>
       <br/>
       <img className={styles.image} src={dungeon_overview} alt="Dungeon exploration overview"></img><br/>
-      <br/>
       You start at a random location within the dungeon. Walk from room to room to find the exit.<br/>
       <br/>
       Enemies roam the dungeon. When they see you, they will start to chase you. If they catch you a fight begins.<br/>

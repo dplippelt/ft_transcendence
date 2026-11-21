@@ -15,7 +15,8 @@ export default function Turns()
       After the enemy's turn a new round begins.<br/>
       <br/>
       Opening the game menu during combat pauses the timer in single player and local co-op mode.
-      Switching to a different tab or window will automatically open the game menu and pause the game as well.
+      Switching to a different tab or window will automatically open the game menu and pause the game as well.<br/>
+      <br/>
 
     </div>
   );

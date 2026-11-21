@@ -12,8 +12,8 @@ export default function Combat()
       <br/>
       The combat view consists of different elements:<br/>
       <ul className={styles.numberedList}>
-        <li>Your HP: your health is shown in red. When it reaches 0, you have lost and the game is over. You start with 10 at the start of every combat encounter</li>
-        <li>Your MP: your mana is shown in blue. Used to draw new cards. You start with 5 at the start of every encounter</li>
+        <li>Your HP: your health is shown in red. When it reaches 0, you have lost and the game is over. You start with 10 at the beginning of every combat encounter</li>
+        <li>Your MP: your mana is shown in blue. Used to draw new cards. You start with 5 at the beginning of an encounter</li>
         <li>Enemy HP: the enemy's health. Drop the enemy HP to 0 to defeat them.</li>
         <li>Player hand: the cards available to you for play. It consists of a mix of number and operator cards. You always have 8 cards available to you during a combat round</li>
         <li>Target numbers: the target numbers you are trying to hit to deal damage to the enemy. The colors show how many operators you need to use to calculate them and how much damage you deal:</li>
