@@ -1,7 +1,6 @@
 import { gRandom } from "../../map/random";
 import type { CardValue } from "./CardBase";
-import CardBase, { OPERATORS } from "./CardBase";
-import { Scene } from "phaser";
+import { OPERATORS } from "./CardBase";
 
 interface CardDeckConfig {
   amount: number;
@@ -42,22 +41,16 @@ interface WeightReduction {
 }
 
 export default class CardDeck {
-  readonly scene: Scene;
   readonly config: CardDeckConfig;
   readonly baseWeights: CardWeight[];
   readonly weightReduction: WeightReduction;
-  private deck!: CardBase[];
-  private cover: CardBase;
+  private deck!: CardValue[];
 
-  constructor(scene: Scene, config: CardDeckConfig) {
-    this.scene = scene;
+  constructor(config: CardDeckConfig) {
     this.config = config;
     this.baseWeights = this.initBaseWeights(this.config);
     this.weightReduction = this.setWeightReductionFromConfig(this.config);
     this.initDeck();
-    this.cover = new CardBase(scene);
-    this.scene.add.existing(this.cover);
-    this.cover.setDepth(1); // hard cord
   }
 
   initBaseWeights(config: CardDeckConfig) {
@@ -93,47 +86,35 @@ export default class CardDeck {
 
     if (amount < 0) throw Error("Amount for generating cards should be positive");
 
-    const cards: CardBase[] = [];
+    const values: CardValue[] = [];
     const weights = structuredClone(baseWeights);
 
     for (let i = 0; i < amount; ++i) {
-      const card = this.generateCard(weights);
-      this.adjustWeights(weights, card, weightReduction);
-      cards.push(card);
+      const value = this.generateValue(weights);
+      this.adjustWeights(weights, value, weightReduction);
+      values.push(value);
     }
 
-    shuffle(cards);
+    shuffle(values);
 
-    this.deck = cards;
+    this.deck = values;
     if (!this.deck.length) {
       throw Error("Could not create a new deck");
     }
   }
 
-  generateCard(cardWeights: readonly CardWeight[]) {
+  generateValue(cardWeights: readonly CardWeight[]) {
     if (!cardWeights.length) {
       throw Error("Card weights is not configured");
     }
-
     const normalizedWeights = this.softmax(cardWeights);
-
-    const cardWeight = weightedRandom(normalizedWeights);
-
-    const card = new CardBase(this.scene, cardWeight.value);
-
-    this.scene.add.existing(card);
-
-    return card;
+    return weightedRandom(normalizedWeights).value;
   }
 
-  adjustWeights(cardWeights: CardWeight[], target: CardBase, reduction: WeightReduction) {
-    const targetValue = target.getValue();
-
+  adjustWeights(cardWeights: CardWeight[], value: CardValue, reduction: WeightReduction) {
     for (const card of cardWeights) {
-      if (card.value !== targetValue) continue;
-      if (target.isValueNumber()) card.weight -= reduction.number;
-      else if (target.isValueOperator()) card.weight -= reduction.operator;
-      else throw Error("Unexpected CardValue");
+      if (card.value !== value) continue;
+      card.weight -= typeof value === "number" ? reduction.number : reduction.operator;
       break;
     }
   }
@@ -157,10 +138,6 @@ export default class CardDeck {
 
   getDeck() {
     return this.deck;
-  }
-
-  getCover() {
-    return this.cover;
   }
 
   isEmpty() {

@@ -1,14 +1,14 @@
 import type { Scene } from "phaser";
 import CardManagerBase, { CardActionEvents } from "./CardManagerBase";
 import CardDeck, { cardDeckConfig } from "./CardDeck";
-import { CardEvents } from "./CardBase";
+import CardBase, { CardEvents } from "./CardBase";
 
 export default class SingleCardManager extends CardManagerBase {
   readonly cardDeck: CardDeck;
 
   constructor(scene: Scene) {
     super(scene);
-    this.cardDeck = new CardDeck(this.scene, cardDeckConfig);
+    this.cardDeck = new CardDeck(cardDeckConfig);
   }
 
   fillCardHand(amount: number) {
@@ -24,9 +24,10 @@ export default class SingleCardManager extends CardManagerBase {
 
     if (this.cardDeck.isEmpty()) {
       this.cardDeck.initDeck();
-      this.events.emit(CardActionEvents.GENERATE_DECK);
+    //   this.events.emit(CardActionEvents.GENERATE_DECK);
     }
-    const card = this.cardDeck.dealCard()!;
+    const card = new CardBase(this.scene, this.cardDeck.dealCard()!)
+    this.scene.add.existing(card);
     card.on(CardEvents.SELECTION, this.select, this);
 
     this.cardHand.addCard(card);
