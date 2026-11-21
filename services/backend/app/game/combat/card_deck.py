@@ -51,6 +51,9 @@ class CardDeck:
         self._cards: list[Card] = []
         self.init_deck()
 
+    def __len__(self) -> int:
+        return len(self._cards)
+
     def init_deck(self):
         cards: list[Card] = []
         weights: list[CardWeight] = list(self._base_weights)
