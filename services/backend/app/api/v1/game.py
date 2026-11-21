@@ -101,7 +101,7 @@ def debug_combat_start():
         "result": None,
         "player": {"hp": 10, "max_hp": 10, "mp": 5},
         "enemy": {"hp": 16, "max_hp": 16},
-        "hand": [{"id": str(c.id), "value": c.value} for c in hand],
+        "hand": [{"id": c.id, "value": c.value} for c in hand],
         "target_numbers": [None, None, None],
         "deck_count": 8,
         "events": [],

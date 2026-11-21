@@ -22,7 +22,7 @@ class CombatAction(StrEnum):
 
 class RejectReason(StrEnum):
     NOT_PLAYER_TURN = "not_player_turn"
-    UNKnOWN_CARD = "unknown_card"
+    UNKNOWN_CARD = "unknown_card"
     DUPLICATE_CARD = "duplicate_card"
     INVALID_SELECTION = "invalid_selection"
     NOT_ENOUGH_MP = "not_enough_mp"
@@ -52,11 +52,11 @@ class TurnStartedEvent(CombatEventBase):
 class HandDealtEvent(CombatEventBase):
     type: Literal["hand_dealt"] = "hand_dealt"
     reason: Literal["turn_started", "redraw"]
-    card_ids: list[int]
+    card_ids: list[str]
 
 class PlayerAttackEvent(CombatEventBase):
     type: Literal["player_attack"] = "player_attack"
-    card_ids: list[int]
+    card_ids: list[str]
     result: Number
     combo: int
     damage: int
@@ -64,7 +64,7 @@ class PlayerAttackEvent(CombatEventBase):
 
 class PlayMissedEvent(CombatEventBase):
     type: Literal["play_missed"] = "play_missed"
-    card_ids: list[int]
+    card_ids: list[str]
     result: Number
     combo: int | None
 
@@ -72,7 +72,7 @@ class ActionRejectedEvent(CombatEventBase):
     type: Literal["action_rejected"] = "action_rejected"
     action: CombatAction
     reason: RejectReason
-    card_ids: list[int] = Field(default_factory=list)
+    card_ids: list[str] = Field(default_factory=list)
 
 class PlayerGuardEvent(CombatEventBase):
     type: Literal["player_guard"] = "player_guard"
