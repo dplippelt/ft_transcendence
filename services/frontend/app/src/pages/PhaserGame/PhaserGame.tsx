@@ -9,6 +9,7 @@ import GameUI from "../../components/Game/GameUI";
 import CombatUI from "../../components/Game/CombatUI";
 import GameBackground from "../../components/Game/GameBackground";
 import GameOver from "../../components/Game/GameOver";
+import LevelIndicator from "../../components/Game/LevelIndicator";
 
 export interface IRefPhaserGame {
   game: Phaser.Game | null;
@@ -260,6 +261,8 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
           cleanupGame={cleanupGame}
         />
         <CombatUI inCombat={inCombat} />
+        {/* TODO: level indicator for online co-op */}
+        { isGameURL && !inCombat && !isOnline && <LevelIndicator /> }
         <GameUI gameMenuVis={gameMenuVis} loggedIn={loggedIn} />
       </div>
     </>

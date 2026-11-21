@@ -31,8 +31,9 @@ export class GameManagerScene extends Scene {
   private _gameType!: GameType;
   private _pendingCombatScene: Phaser.Scene | null = null;
   private _exitedPlayers: Set<Player>;
-  private _levelCount: number = 2; // TODO: Hard-coded for now
+  private readonly _totalLevels: number = 2; // TODO: Hard-coded for now
                                     // // TODO: change back to intended max level count (was 5)
+  private _currentLevel: number = 1;
   private _operators: Operator[];
 
   constructor() {
@@ -69,6 +70,7 @@ export class GameManagerScene extends Scene {
     EventBus.addListener(GameEvent.chatFocus, this.onChatFocusChange, this);
     EventBus.addListener(GameEvent.gameMenu, this.onGameMenu, this);
     EventBus.addListener(GameEvent.blur, this.onGameBlur, this);
+    EventBus.addListener(GameEvent.getLevelInfo, this.emitLevelInfo, this);
 
     this.events.once(Phaser.Scenes.Events.DESTROY, () => {
       this.game.events.off(Core.Events.BLUR, this.onBlur, this);
@@ -77,6 +79,7 @@ export class GameManagerScene extends Scene {
       EventBus.removeListener(GameEvent.chatFocus, this.onChatFocusChange, this);
       EventBus.removeListener(GameEvent.gameMenu, this.onGameMenu, this);
       EventBus.removeListener(GameEvent.blur, this.onGameBlur, this);
+      EventBus.removeListener(GameEvent.getLevelInfo, this.emitLevelInfo, this);
     });
   }
 
@@ -205,12 +208,18 @@ export class GameManagerScene extends Scene {
 
     if (this.allPlayersExited()) {
       this._exitedPlayers.clear();
-      if (--this._levelCount) {
+      if (this._currentLevel < this._totalLevels) {
+        ++this._currentLevel;
         this._gameScene.nextLevel();
+        this.emitLevelInfo();
       } else {
         this.onGameOver(GameState.won);
       }
     }
+  }
+
+  private emitLevelInfo(): void {
+    EventBus.emit(GameEvent.levelInfo, this._currentLevel, this._totalLevels);
   }
 
   private allPlayersExited(): boolean {
