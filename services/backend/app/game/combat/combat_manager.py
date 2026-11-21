@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 from itertools import count
 
-from services.backend.app.game.combat.turn_manager import TurnConfig, TurnManager
+from app.game.combat.turn_manager import TurnConfig, TurnManager
 
 from app.game.combat import executor
 from app.game.combat.card import Card, Operator
@@ -14,6 +14,8 @@ from app.schemas.combat import (
     ActionRejectedEvent,
     CombatAction,
     CombatCard,
+    CombatPlayerStatus,
+    CombatEnemyStatus,
     CombatEndEvent,
     CombatEvent,
     CombatPhase,
@@ -33,17 +35,18 @@ from app.schemas.combat import (
 class PlayerStatus:
     hp: int
     max_hp: int
-    mana: int
+    mp: int
 
 @dataclass
 class EnemyData:
     hp: int
+    max_hp: int
     attack_damage: int
 
 class EnemyLevel(Enum):
-    EASY = EnemyData(hp=5, attack_damage=2)
-    NORMAL = EnemyData(hp=16, attack_damage=4)
-    HARD = EnemyData(hp=25, attack_damage=5)
+    EASY = EnemyData(hp=5, max_hp=5, attack_damage=2)
+    NORMAL = EnemyData(hp=16, max_hp=16, attack_damage=4)
+    HARD = EnemyData(hp=25, max_hp=25, attack_damage=5)
 
 TICKS_PER_SECOND = 20 # = 1 / FIXED_TIME_STEP in game_session.py
 
@@ -54,7 +57,7 @@ class CombatConfig:
     enemy_turn_ticks: int = 3 * TICKS_PER_SECOND
     redraw_cost: int = 1
     max_events: int = 32 # Events kept in the state; must cover what can happen between two snapshots.
-    max_dead_attempts: int = 100
+    max_deal_attempts: int = 100
     deck: CardDeckConfig = DEFAULT_DECK_CONFIG
 
 DEFAULT_COMBAT_CONFIG = CombatConfig()
@@ -65,22 +68,22 @@ class CombatManager:
             combat_id: str,
             player_id: int,
             enemy_id: int,
-            player: PlayerStatus,
-            enemy: EnemyData,
+            player: CombatPlayerStatus,
+            enemy: CombatEnemyStatus,
             operators: list[Operator],
             config: CombatConfig = DEFAULT_COMBAT_CONFIG,
         ) -> None:
         self.combat_id = combat_id
         self.player_id = player_id
         self.enemy_id = enemy_id
-        self.player = PlayerStatus(hp=player.hp, max_hp=player.max_hp, mana=player.mana)
-        self.enemy = EnemyData(hp=enemy.hp, attack_damage=enemy.attack_damage)
+        self.player = CombatPlayerStatus(hp=player.hp, max_hp=player.max_hp, mp=player.mp)
+        self.enemy = CombatEnemyStatus(hp=enemy.hp, max_hp=enemy.max_hp, attack_damage=enemy.attack_damage)
         self.config = config
 
         self.result: CombatResult | None = None
         self.target_numbers: list[executor.Number | None] = [None, None, None]
 
-        self._deck = CardDeck(operators)
+        self._deck = CardDeck(operators, config.deck)
         self._hand = CardHand(config.hand_size)
         self._turn_manager = TurnManager(TurnConfig(config.player_turn_ticks, config.enemy_turn_ticks))
         self._event_seq = count(1)
@@ -91,12 +94,11 @@ class CombatManager:
             raise RuntimeError("combat already started")
         self._start_player_turn(tick)
 
-    def turn_check(self, tick: int) -> None:
-        if self._turn_manager.turn_ends_at_tick is None or tick < self._turn_manager.turn_ends_at_tick:
-            return
-        if self._turn_manager.phase is CombatPhase.PLAYER_TURN:
+    def update(self, tick: int) -> None:
+        expired = self._turn_manager.update(tick)
+        if expired is CombatPhase.PLAYER_TURN:
             self._start_enemy_turn(tick, player_hit=False)
-        elif self._turn_manager.phase is CombatPhase.ENEMY_TURN:
+        elif expired is CombatPhase.ENEMY_TURN:
             self._start_player_turn(tick)
 
     def get_state(self) -> CombatState:
@@ -117,7 +119,7 @@ class CombatManager:
             events=list(self._events),
         )
 
-    def is_started(self) -> None:
+    def is_started(self) -> bool:
         return self._turn_manager.phase is not None
 
     def _start_player_turn(self, tick: int) -> None:
@@ -131,16 +133,16 @@ class CombatManager:
         self._deal_hand(tick)
 
     def _deal_hand(self, tick: int) -> None:
-        for _ in range(self.config.max_dead_attempts):
+        for _ in range(self.config.max_deal_attempts):
             self._hand.clear()
             while not self._hand.is_full():
                 self._hand.add(self._deck.deal())
-            if executor.is_valid_hand(self._hand):
+            if executor.is_valid_hand(self._hand.get_cards()):
                 break
         else:
             raise RuntimeError("could not deal a playable hand; check the config")
         
-        self.target_numbers = executor.generate_target_numbers(self._hand)
+        self.target_numbers = executor.generate_target_numbers(self._hand.get_cards())
         self._add_event(HandDealtEvent(
             seq=next(self._event_seq),
             tick=tick,
@@ -203,9 +205,6 @@ class CombatManager:
             self._add_event(PlayMissedEvent(
                 seq=next(self._event_seq),
                 tick=tick,
-                card_ids=card_ids,
-                result=result,
-                combo=None if combo is None else int(combo),
             ))
             return False
 
@@ -214,11 +213,8 @@ class CombatManager:
         self._add_event(PlayerAttackEvent(
             seq=next(self._event_seq),
             tick=tick,
-            card_ids=card_ids,
-            result=result,
             combo=int(combo),
             damage=damage,
-            enemy_hp=self.enemy.hp,
         ))
 
         if self.enemy.hp == 0:
@@ -241,7 +237,7 @@ class CombatManager:
         return None
 
     def redraw(self, tick: int) -> bool:
-        if self._turn_manager.phase is not CombatPhase.PLAYER_TURN:
+        if not self._turn_manager.is_player_turn():
             self._add_event(ActionRejectedEvent(
                 seq=next(self._event_seq),
                 tick=tick,
@@ -249,7 +245,7 @@ class CombatManager:
                 reason=RejectReason.NOT_PLAYER_TURN,
             ))
             return False
-        if self.player.mana < self.config.redraw_cost:
+        if self.player.mp < self.config.redraw_cost:
             self._add_event(ActionRejectedEvent(
                 seq=next(self._event_seq),
                 tick=tick,
@@ -257,7 +253,7 @@ class CombatManager:
                 reason=RejectReason.NOT_ENOUGH_MP,
             ))
             return False
-        self.player.mana -= self.config.redraw_cost
+        self.player.mp -= self.config.redraw_cost
         self._deal_hand(tick)
         return True
 

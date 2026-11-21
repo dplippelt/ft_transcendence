@@ -49,6 +49,7 @@ class CombatPlayerStatus(BaseModel):
 class CombatEnemyStatus(BaseModel):
     hp: int
     max_hp: int
+    attack_damage: int
 
 class CombatEventBase(BaseModel):
     seq: int
@@ -61,21 +62,14 @@ class TurnStartedEvent(CombatEventBase):
 
 class HandDealtEvent(CombatEventBase):
     type: Literal[CombatEventType.HAND_DEALT] = CombatEventType.HAND_DEALT
-    card_ids: list[str]
 
 class PlayerAttackEvent(CombatEventBase):
     type: Literal[CombatEventType.PLAYER_ATTACK] = CombatEventType.PLAYER_ATTACK
-    card_ids: list[str]
-    result: Number
     combo: int
     damage: int
-    enemy_hp: int
 
 class PlayMissedEvent(CombatEventBase):
     type: Literal[CombatEventType.PLAY_MISSED] = CombatEventType.PLAY_MISSED
-    card_ids: list[str]
-    result: Number
-    combo: int | None
 
 class PlayerGuardEvent(CombatEventBase):
     type: Literal[CombatEventType.PLAYER_GUARD] = CombatEventType.PLAYER_GUARD
