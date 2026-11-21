@@ -183,5 +183,5 @@ class GameSimulation:
             user_player_id=self.players[user_id].player_id,
             players=list(self.players.values()),
             enemies=self.enemies,
-            combat=[],  # TODO: Combat data required
+            combat=[combat.get_state() for combat in self.combats.values()],
         )
