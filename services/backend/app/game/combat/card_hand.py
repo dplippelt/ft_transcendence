@@ -3,6 +3,8 @@ from app.game.combat.card import Card
 
 class CardHand:
     def __init__(self, max_cards: int = 8) -> None:
+        if max_cards <= 0:
+            raise ValueError("max_cards must be positive")
         self._cards: list[Card] = []
         self._max_cards = max_cards
 
@@ -10,6 +12,8 @@ class CardHand:
         return len(self._cards)
 
     def add(self, card: Card) -> None:
+        if self.is_full():
+            raise ValueError("hand is full")
         self._cards.append(card)
 
     def clear(self) -> None:
