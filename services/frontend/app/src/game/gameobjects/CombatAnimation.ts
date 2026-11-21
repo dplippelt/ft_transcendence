@@ -211,6 +211,7 @@ export default class CombatAnimation {
   }
 
   draw(card: CardBase) {
+    this.combatLayoutManager.placeAtDeck(card);
     card.on(CardEvents.FOCUSON, this.HoverUp, this);
     card.on(CardEvents.FOCUSOFF, this.HoverDown, this);
     this.combatLayoutManager.updateCardHand(false);

@@ -30,6 +30,12 @@ interface Background {
   insetY: number;
 }
 
+interface DeckPosition {
+  x: number;
+  y: number;
+  scale: number;
+}
+
 interface Size {
   width: number;
   height: number;
@@ -149,6 +155,7 @@ export default class CombatLayoutManager {
   readonly layout: CombatLayout;
   readonly display!: Display;
   readonly background!: Background;
+  readonly deckPosition: DeckPosition;
 
   constructor(combatManger: ICombatView) {
     this.combatManger = combatManger;
@@ -164,6 +171,7 @@ export default class CombatLayoutManager {
     this.layout = combatLayout;
     this.display = { width: 0, height: 0, centerX: 0, centerY: 0, scale: 0 };
     this.background = { topY: 0, bottomY: 0, leftX: 0, centerX: 0, scale: 0, insetX: 0, insetY: 0 };
+    this.deckPosition = { x: 0, y: 0, scale: 1 };
     this.scene.scale.refresh();
     this.updateDisplay();
     this.updateLayout();
@@ -175,7 +183,6 @@ export default class CombatLayoutManager {
     events.on(CardActionEvents.SELECT, () => this.updateSelectionSlots(false), this);
     events.on(CardActionEvents.UNSELECT, () => this.updateSelectionSlots(false), this);
     events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
-    events.on(CardActionEvents.GENERATE_DECK, this.updateDeck, this);
     events.on(CardActionEvents.TRASH_CARD, this.trashCard, this);
   }
 
@@ -223,66 +230,37 @@ export default class CombatLayoutManager {
       this.updateDisplay();
     }
 
-    this.updateDeck(isResize);
+    this.updateDeckPosition();
     this.updateCardHand(isResize);
     this.updateSelectionSlots(isResize);
     this.updatePlayer();
     this.updateEnemy();
   }
 
-  updateDeck(isResize: boolean = true) {
+  updateDeckPosition() {
     const display = this.display;
     const background = this.background;
-    // const deck = this.cardManager.cardDeck.getDeck();
     const deckLayout = this.layout.cards.deck;
     const targetX = background.leftX + deckLayout.xFromBgLeft * background.scale;
     const targetY = background.bottomY + deckLayout.yFromBgBottom * background.scale;
-    void isResize; // TODO:
-    // const angle = 0;
+    this.deckPosition.x = targetX;
+    this.deckPosition.y = targetY;
+    this.deckPosition.scale = display.scale;
+    const style = document.documentElement.style;
+    style.setProperty("--deck-x", `${targetX}px`);
+    style.setProperty("--deck-y", `${targetY}px`);
+    style.setProperty("--deck-width", `${this.spriteSize.card.width * display.scale}px`);
+    style.setProperty("--deck-height", `${this.spriteSize.card.height * display.scale}px`);
+  }
 
-    // deck.forEach((card: CardBase) => {
-    //   card.setData({
-    //     [TransformInLayout.X]: targetX,
-    //     [TransformInLayout.Y]: targetY,
-    //     [TransformInLayout.ANGLE]: angle,
-    //     [TransformInLayout.SCALE]: display.scale,
-    //   });
-    //   if (isResize) {
-    //     this.setCardPosition(card);
-    //   } else {
-    //     this.events.emit(LayoutEvents.SET_CARD_POS, card);
-    //   }
-    // });
-
-    // const cover = this.cardManager.cardDeck.getCover();
-    // cover.setData({
-    //   [TransformInLayout.X]: targetX,
-    //   [TransformInLayout.Y]: targetY,
-    //   [TransformInLayout.ANGLE]: angle,
-    //   [TransformInLayout.SCALE]: display.scale,
-    // });
-    // if (isResize) {
-    //   this.setCardPosition(cover!);
-    // } else {
-    //   this.events.emit(LayoutEvents.SET_CARD_POS, cover);
-    // }
-
-    // Making cards in deck and cover card invisible in favor of
-    // a new deck image used for the React button
-    // deck.forEach((card) => card.setVisible(false));
-    // cover.setVisible(false);
-
-    // Setting deck position and size as properties so React can
-    // render an invisible button of the same size on top of it
-    document.documentElement.style.setProperty("--deck-x", `${targetX}px`);
-    document.documentElement.style.setProperty("--deck-y", `${targetY}px`);
-    document.documentElement.style.setProperty("--deck-width", `${this.spriteSize.card.width * display.scale}px`);
-    document.documentElement.style.setProperty("--deck-height", `${this.spriteSize.card.height * display.scale}px`);
+  placeAtDeck(card: CardBase) {
+    card.setPosition(this.deckPosition.x, this.deckPosition.y);
+    card.setScale(this.deckPosition.scale);
+    card.setAngle(0);
   }
 
   updateCardHand(isResize: boolean = true) {
     const handCards = this.cardManager.cardHand.getHandCards();
-    handCards.forEach((card) => card.setVisible(true)); // need to be made visible again as they were made invisible in the deck
     const totalCards = handCards.length;
     if (!totalCards) {
       return;
