@@ -4,21 +4,20 @@ from dataclasses import dataclass
 from enum import Enum
 from itertools import count
 
-from app.game.combat.turn_manager import TurnConfig, TurnManager
-
 from app.game.combat import executor
 from app.game.combat.card import Card, Operator
 from app.game.combat.card_deck import DEFAULT_DECK_CONFIG, CardDeck, CardDeckConfig
 from app.game.combat.card_hand import CardHand
+from app.game.combat.turn_manager import TurnConfig, TurnManager
 from app.schemas.combat import (
     ActionRejectedEvent,
     CombatAction,
     CombatCard,
-    CombatPlayerStatus,
-    CombatEnemyStatus,
     CombatEndEvent,
+    CombatEnemyStatus,
     CombatEvent,
     CombatPhase,
+    CombatPlayerStatus,
     CombatResult,
     CombatState,
     EnemyAttackEvent,
@@ -31,22 +30,10 @@ from app.schemas.combat import (
 )
 
 
-@dataclass
-class PlayerStatus:
-    hp: int
-    max_hp: int
-    mp: int
-
-@dataclass
-class EnemyData:
-    hp: int
-    max_hp: int
-    attack_damage: int
-
 class EnemyLevel(Enum):
-    EASY = EnemyData(hp=5, max_hp=5, attack_damage=2)
-    NORMAL = EnemyData(hp=16, max_hp=16, attack_damage=4)
-    HARD = EnemyData(hp=25, max_hp=25, attack_damage=5)
+    EASY = CombatEnemyStatus(hp=5, max_hp=5, attack_damage=2)
+    NORMAL = CombatEnemyStatus(hp=16, max_hp=16, attack_damage=4)
+    HARD = CombatEnemyStatus(hp=25, max_hp=25, attack_damage=5)
 
 TICKS_PER_SECOND = 20 # = 1 / FIXED_TIME_STEP in game_session.py
 
@@ -76,8 +63,8 @@ class CombatManager:
         self.combat_id = combat_id
         self.player_id = player_id
         self.enemy_id = enemy_id
-        self.player = CombatPlayerStatus(hp=player.hp, max_hp=player.max_hp, mp=player.mp)
-        self.enemy = CombatEnemyStatus(hp=enemy.hp, max_hp=enemy.max_hp, attack_damage=enemy.attack_damage)
+        self.player = player.model_copy()
+        self.enemy = enemy.model_copy()
         self.config = config
 
         self.result: CombatResult | None = None
@@ -111,8 +98,8 @@ class CombatManager:
             phase=self._turn_manager.phase,
             turn_ends_at_tick=self._turn_manager.turn_ends_at_tick,
             result=self.result,
-            player=self.player,
-            enemy=self.enemy,
+            player=self.player.model_copy(),
+            enemy=self.enemy.model_copy(),
             hand=[CombatCard(id=card.id, value=card.value) for card in self._hand.get_cards()],
             target_numbers=list(self.target_numbers),
             deck_count=len(self._deck),
@@ -146,7 +133,6 @@ class CombatManager:
         self._add_event(HandDealtEvent(
             seq=next(self._event_seq),
             tick=tick,
-            card_ids=[card.id for card in self._hand.get_cards()],
         ))
 
     def _start_enemy_turn(self, tick: int, player_hit: bool) -> None:
