@@ -34,18 +34,3 @@ export default function Combat()
     </div>
   );
 }
-
-// 1. Your HP: your health. When it reaches 0, the game is over. You start with 10.
-// 2. Your mana: used to draw a new hand. You start with 5.
-// 3. Enemy HP: the enemy's health. Bring it to 0 to win the fight.
-// 4. Target numbers: the numbers you need to make with your cards. Their colour shows how many operators to use, and how much damage you deal:
-//    - Green: 1 operator, 2 damage
-//    - Yellow: 2 operators, 4 damage
-//    - Red: 3 operators, 8 damage
-// 5. Your hand: 8 cards, with numbers and operators.
-// 6. Selected cards: the cards you've picked for your equation.
-// 7. Turn timer: you have 30 seconds to build your equation.
-// 8. Attack: submits your equation.
-// 9. Draw: swaps your whole hand for a new one. Costs 1 mana.
-
-// See Building an equation for how to make a target number.

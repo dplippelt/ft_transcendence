@@ -1,3 +1,5 @@
+import styles from "./GameModes.module.scss";
+
 export default function GameModes()
 {
   return (
@@ -5,7 +7,7 @@ export default function GameModes()
 
       Math Crawler can be played in three different game modes:<br/>
       <br/>
-      <ul>
+      <ul className={styles.bulletList}>
         <li>Single player</li>
         <li>Local co-op</li>
         <li>Online co-op</li>

@@ -10,7 +10,7 @@ export default function Controls()
 
       Use W A S D to move around the dungeon:<br/>
       <br/>
-      <ul>
+      <ul className={styles.bulletList}>
         <li>W: up</li>
         <li>A: left</li>
         <li>S: down</li>

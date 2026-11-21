@@ -6,6 +6,7 @@ import OperatorSelection from "./content/OperatorSelection";
 import Controls from "./content/Controls";
 import Exploration from "./content/Exploration";
 import Combat from "./content/Combat";
+import Equation from "./content/Equation";
 
 export interface HowToPlayTopic
 {
@@ -22,7 +23,7 @@ export const howToPlayTopics: HowToPlayTopic[] =
   { id: "controls", title: "Controls", content: <Controls /> },
   { id: "exploring", title: "Exploring the dungeon", content: <Exploration /> },
   { id: "combat", title: "Combat screen", content: <Combat /> },
-  { id: "equations", title: "Building an equation", content: <p>Coming soon.</p> },
+  { id: "equations", title: "Building an equation", content: <Equation /> },
   { id: "turns", title: "Turns", content: <p>Coming soon.</p> },
   { id: "win-lose", title: "Winning and losing", content: <p>Coming soon.</p> },
 ];
