@@ -1,7 +1,7 @@
 from enum import IntEnum, IntFlag, auto
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from app.schemas import combat
 
@@ -51,6 +51,7 @@ class Action(BaseModel):
     type: ActionType
     direction: Direction
     card: int
+    cards: list[str] = Field(default_factory=list)
 
 
 class PlayerAction(BaseModel):
