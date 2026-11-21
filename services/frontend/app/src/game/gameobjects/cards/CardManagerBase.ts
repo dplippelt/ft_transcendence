@@ -8,7 +8,6 @@ export enum CardActionEvents {
   DRAW = "draw",
   SELECT = "select",
   UNSELECT = "unselect",
-  GENERATE_DECK = "generateDeck",
   TRASH_CARD = "trashCard",
 }
 

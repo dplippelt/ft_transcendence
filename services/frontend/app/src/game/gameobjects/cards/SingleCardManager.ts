@@ -24,7 +24,6 @@ export default class SingleCardManager extends CardManagerBase {
 
     if (this.cardDeck.isEmpty()) {
       this.cardDeck.initDeck();
-    //   this.events.emit(CardActionEvents.GENERATE_DECK);
     }
     const card = new CardBase(this.scene, this.cardDeck.dealCard()!)
     this.scene.add.existing(card);
