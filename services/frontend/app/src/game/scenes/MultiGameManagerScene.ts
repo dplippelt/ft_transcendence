@@ -22,12 +22,12 @@ export class MultiGameManagerScene extends Scene {
     const userId = this.registry.get(RegistryKey.userId) as number;
 
     this._gameSocket = new GameSocket(userId, sessionId);
-    this._gameSocket.on(GameWsEvent.SNAPSHOT, this.onSnapshot, this);
+    this._gameSocket.on(GameWsEvent.MESSAGE, this.onSnapshot, this);
     this._gameSocket.on(GameWsEvent.DISCONNECTED, this.onSocketDisconnected, this);
 
     this.events.once(Phaser.Scenes.Events.DESTROY, () => {
       if (this._gameSocket) {
-        this._gameSocket.off(GameWsEvent.SNAPSHOT, this.onSnapshot, this);
+        this._gameSocket.off(GameWsEvent.MESSAGE, this.onSnapshot, this);
         this._gameSocket.off(GameWsEvent.DISCONNECTED, this.onSocketDisconnected, this);
         this._gameSocket.close();
         this._gameSocket = null;
