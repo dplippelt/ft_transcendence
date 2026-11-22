@@ -43,8 +43,10 @@ export class MultiGameManagerScene extends Scene {
 
   private onSnapshot(snapshot: GameSnapshot) {
     // TODO: Start MultiGameScene from the first snapshot (dungeon_seed, players, enemies),
-    this._gameScene = new MultiGameScene(this._gameSocket!);
-    this.scene.add("MultiGameScene", this._gameScene, true);
+    if (!this._gameScene) {
+      this._gameScene = new MultiGameScene(this._gameSocket!);
+      this.scene.add("MultiGameScene", this._gameScene, true);
+    }
 
     // Open the combat scene the first the our combat shows up.
     // TODO: (Closing it / switching back to the dungeon comes with MultiGameScene.)
