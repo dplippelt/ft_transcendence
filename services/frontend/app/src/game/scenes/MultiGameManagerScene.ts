@@ -2,14 +2,15 @@ import Phaser, { Scene } from "phaser";
 import GameSocket from "../network/GameSocket";
 import MultiGameScene from "./MultiGameScene";
 import { GameEvent, RegistryKey, type GameURL } from "../../utils/utils";
-import { FakeGameSocket, type IGameSocket } from "../network/IGameSocket";
+import { GameWsEvent, type DisconnectInfo, type GameSnapshot } from "../network/IGameSocket";
 import MultiCombatScene from "./MultiCombatScene";
 import { EventBus } from "../EventBus";
 
 export class MultiGameManagerScene extends Scene {
   private _gameSocket: GameSocket | null = null;
-  private _multiGameScene: MultiGameScene | null = null;
-  private _multiCombatScene: MultiCombatScene | null = null;
+  private _gameScene: MultiGameScene | null = null;
+  private _combatId: string | null = null;
+  private _combatScene: MultiCombatScene | null = null;
 
   constructor() {
     super("multi-game-manager");
@@ -21,27 +22,49 @@ export class MultiGameManagerScene extends Scene {
     const userId = this.registry.get(RegistryKey.userId) as number;
 
     this._gameSocket = new GameSocket(userId, sessionId);
-    this._gameSocket.on("disconnected", this.onSocketDisconnected, this);
-
-    this._multiGameScene = new MultiGameScene(this._gameSocket);
-    this.scene.add("MultiGameScene", this._multiGameScene, true);
+    this._gameSocket.on(GameWsEvent.SNAPSHOT, this.onSnapshot, this);
+    this._gameSocket.on(GameWsEvent.DISCONNECTED, this.onSocketDisconnected, this);
 
     this.events.once(Phaser.Scenes.Events.DESTROY, () => {
-      this._gameSocket?.off("disconnected", this.onSocketDisconnected, this);
-      // this._gameSocket?.close();
-      this._gameSocket = null;
+      if (this._gameSocket) {
+        this._gameSocket.off(GameWsEvent.SNAPSHOT, this.onSnapshot, this);
+        this._gameSocket.off(GameWsEvent.DISCONNECTED, this.onSocketDisconnected, this);
+        this._gameSocket.close();
+        this._gameSocket = null;
+      }
     });
-
-    // Debug
-    const fakeSocket: IGameSocket = new FakeGameSocket(userId);
-    this._multiCombatScene = new MultiCombatScene(fakeSocket);
-    this.scene.add("MultiCombatScene", this._multiCombatScene, true);
-    EventBus.emit(GameEvent.inCombat, true);
   }
 
-  create() {}
+  create() {
+    // TODO:
+    // Heartbeat: send NONE when nothing was sent for a while.
+    // (Replaced by one action per tick once MultiGameScene sends movement.)
+  }
 
-  private onSocketDisconnected() {
+  private onSnapshot(snapshot: GameSnapshot) {
+    // TODO: Start MultiGameScene from the first snapshot (dungeon_seed, players, enemies),
+    this._gameScene = new MultiGameScene(this._gameSocket!);
+    this.scene.add("MultiGameScene", this._gameScene, true);
+
+    // Open the combat scene the first the our combat shows up.
+    // TODO: (Closing it / switching back to the dungeon comes with MultiGameScene.)
+    const state = snapshot.combat.find((combat) => combat.player_id === snapshot.user_player_id);
+    if (!state || state.combat_id === this._combatId) {
+      return;
+    }
+    this._combatId = state.combat_id;
+    if (!this._combatScene) {
+      this._combatScene = new MultiCombatScene(this._gameSocket!);
+      this.scene.add("MultiCombatScene", this._combatScene, true, state);
+    } else {
+      this.scene.stop(this._combatScene); // shutdown: objects destroyed, socket listener removed
+      this.scene.launch(this._combatScene, state); // create() runs again with the new combat
+    }
+    EventBus.emit(GameEvent.inCombat, true); // show the React CombatUI
+  }
+
+  private onSocketDisconnected(info: DisconnectInfo) {
+    console.warn(`Game socket disconnected (code =${info.code}, reason=${info.reason})`);
     //TODO: error display / return to the lobby
   }
 }
