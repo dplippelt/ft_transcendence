@@ -2,7 +2,7 @@ import Phaser, { Scene } from "phaser";
 import GameSocket from "../network/GameSocket";
 import MultiGameScene from "./MultiGameScene";
 import { GameEvent, RegistryKey, type GameURL } from "../../utils/utils";
-import { GameWsEvent, type DisconnectInfo, type GameSnapshot } from "../network/IGameSocket";
+import { ActionType, Direction, GameWsEvent, type DisconnectInfo, type GameSnapshot } from "../network/IGameSocket";
 import MultiCombatScene from "./MultiCombatScene";
 import { EventBus } from "../EventBus";
 
@@ -36,9 +36,23 @@ export class MultiGameManagerScene extends Scene {
   }
 
   create() {
-    // TODO:
     // Heartbeat: send NONE when nothing was sent for a while.
-    // (Replaced by one action per tick once MultiGameScene sends movement.)
+    // TODO: Replaced by one action per tick once MultiGameScene sends movement.
+    this.time.addEvent({
+        delay: 1000,
+        loop: true,
+        callback: () => {
+            const socket = this._gameSocket;
+            if (socket?.isOpen && performance.now() - socket.lastSentAt >= 1000) {
+                socket.sendAction({
+                    type: ActionType.NONE,
+                    direction: Direction.NONE,
+                    card: 0,
+                    cards: [],
+                });
+            }
+        },
+    });
   }
 
   private onSnapshot(snapshot: GameSnapshot) {

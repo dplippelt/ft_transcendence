@@ -15,7 +15,7 @@ export default class GameSocket extends Phaser.Events.EventEmitter implements IG
   private readonly gameId: string;
   private nextSequence: number = 1;
   private closedByClient: boolean = false;
-  //   private lastSentAt: number = 0;
+  lastSentAt: number = 0;
 
   constructor(userId: number, gameId: string) {
     super();
@@ -45,7 +45,7 @@ export default class GameSocket extends Phaser.Events.EventEmitter implements IG
         action: action,
       }),
     );
-    // this.lastSentAt = performance.now();
+    this.lastSentAt = performance.now();
     return seq;
   }
 
