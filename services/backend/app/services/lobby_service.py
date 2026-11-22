@@ -186,29 +186,62 @@ class LobbySwitchResult:
     changed: bool
 
 
-def switch_lobby(db: Session, user: User, lobby_id: int, *, invitation_id: str,  confirmed: bool = False,) -> LobbySwitchResult:
+def _lock_lobbies_for_switch(
+    db: Session,
+    lobby_id: int,
+    previous_lobby_id: int | None,
+) -> dict[int, Lobby]:
+    # Lock the old and destination lobbies before the invitation row.
+    # Deleting a hosted lobby cascades to its invitations, so acquiring
+    # invitation locks first can deadlock when two hosts switch between
+    # each other's lobbies concurrently.
+    lobby_ids = {lobby_id}
+    if previous_lobby_id is not None:
+        lobby_ids.add(previous_lobby_id)
+    return {
+        lobby.id: lobby
+        for lobby in (
+            db.query(Lobby)
+            .filter(Lobby.id.in_(lobby_ids))
+            .order_by(Lobby.id)
+            .with_for_update()
+            .all()
+        )
+    }
+
+
+def _remove_previous_membership(
+    db: Session,
+    membership: LobbyMember,
+    old_lobby: Lobby | None,
+) -> None:
+    if old_lobby is None:
+        db.delete(membership)
+    elif membership.role == HOST:
+        # Load members before deletion: the ORM's passive_deletes
+        # otherwise relies on database FK cascading. Loading here
+        # keeps the cleanup correct in SQLite tests too.
+        _ = old_lobby.members
+        db.delete(old_lobby)
+    else:
+        db.delete(membership)
+    db.flush()
+
+
+def switch_lobby(
+    db: Session,
+    user: User,
+    lobby_id: int,
+    *,
+    invitation_id: str,
+    confirmed: bool = False,
+) -> LobbySwitchResult:
     try:
         db.query(User).filter(User.id == user.id).with_for_update(key_share=True).one()
         membership = get_user_lobby_membership(db, user.id)
         previous_lobby_id = membership.lobby_id if membership else None
 
-        # Lock the old and destination lobbies before the invitation row.
-        # Deleting a hosted lobby cascades to its invitations, so acquiring
-        # invitation locks first can deadlock when two hosts switch between
-        # each other's lobbies concurrently.
-        lobby_ids = {lobby_id}
-        if previous_lobby_id is not None:
-            lobby_ids.add(previous_lobby_id)
-        locked_lobbies = {
-            lobby.id: lobby
-            for lobby in (
-                db.query(Lobby)
-                .filter(Lobby.id.in_(lobby_ids))
-                .order_by(Lobby.id)
-                .with_for_update()
-                .all()
-            )
-        }
+        locked_lobbies = _lock_lobbies_for_switch(db, lobby_id, previous_lobby_id)
         target = locked_lobbies.get(lobby_id)
 
         # An ID alone must never authorize switching. The recipient is taken
@@ -263,18 +296,7 @@ def switch_lobby(db: Session, user: User, lobby_id: int, *, invitation_id: str, 
             )
 
         if membership is not None:
-            old_lobby = locked_lobbies.get(previous_lobby_id)
-            if old_lobby is None:
-                db.delete(membership)
-            elif membership.role == HOST:
-                # Load members before deletion: the ORM's passive_deletes
-                # otherwise relies on database FK cascading. Loading here
-                # keeps the cleanup correct in SQLite tests too.
-                _ = old_lobby.members
-                db.delete(old_lobby)
-            else:
-                db.delete(membership)
-            db.flush()
+            _remove_previous_membership(db, membership, locked_lobbies.get(previous_lobby_id))
 
         db.add(LobbyMember(lobby=target, user=user, role=GUEST))
         invitation.used_at = utc_now()

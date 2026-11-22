@@ -142,6 +142,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
     const [startedMultiGame, setStartedMultiGame] = useState<StartedMultiGame | null>(null);
 
     const lobbyVersionRef = useRef(0);
+    const lastLobbySwitchVersionRef = useRef(0);
     const lobbyRevisionsRef = useRef<Record<LobbyID, number>>({});
     const sessionRef = useRef(0);
     const inviteVersionRef = useRef(0);
@@ -161,6 +162,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         // Invalidate pending API responses from the previous session.
         sessionRef.current += 1;
         lobbyVersionRef.current = 0;
+        lastLobbySwitchVersionRef.current = 0;
         lobbyRevisionsRef.current = {};
         inviteVersionRef.current = 0;
         inviteRevisionsRef.current = {};
@@ -181,7 +183,9 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         const refreshID = ++nextRefreshIDRef.current;
         const lobbyList = await getLobbies(accessToken);
 
-        if (session !== sessionRef.current || refreshID < lastAppliedRefreshIDRef.current)
+        if (session !== sessionRef.current ||
+            startedAt < lastLobbySwitchVersionRef.current ||
+            refreshID < lastAppliedRefreshIDRef.current)
             return;
 
         lastAppliedRefreshIDRef.current = refreshID;
@@ -197,7 +201,9 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         );
         setLobbyInvites(previous =>
         {
-            if (session !== sessionRef.current || refreshID < lastAppliedRefreshIDRef.current)
+            if (session !== sessionRef.current ||
+                startedAt < lastLobbySwitchVersionRef.current ||
+                refreshID < lastAppliedRefreshIDRef.current)
                 return previous;
 
             return previous.filter(invite =>
@@ -207,7 +213,9 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         });
         setLobbies(previous =>
         {
-            if (session !== sessionRef.current || refreshID < lastAppliedRefreshIDRef.current)
+            if (session !== sessionRef.current ||
+                startedAt < lastLobbySwitchVersionRef.current ||
+                refreshID < lastAppliedRefreshIDRef.current)
                 return previous;
 
             return mergeLobbySnapshot(
@@ -231,6 +239,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         const lobbyData = toLobbyData(lobby);
 
         if (session === sessionRef.current &&
+            startedAt >= lastLobbySwitchVersionRef.current &&
             (lobbyRevisionsRef.current[lobbyID] ?? 0) <= startedAt)
         {
             markLobbyChanged(lobbyID);
@@ -319,6 +328,10 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         if (session === sessionRef.current)
         {
             const currentUserID = auth.user?.id;
+            markLobbyChanged(lobbyID);
+            // The old lobby may be unknown until the updater runs. Invalidate
+            // older requests instead of mutating its revision in the updater.
+            lastLobbySwitchVersionRef.current = lobbyVersionRef.current;
             // Reconcile our cached old lobby immediately. The refresh below
             // also covers old memberships unknown to this tab.
             setLobbies(previous =>
@@ -336,7 +349,6 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                     if (!member)
                         continue;
 
-                    markLobbyChanged(oldID);
                     if (member.role === "host")
                         delete next[oldID];
                     else
@@ -346,7 +358,6 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                         };
                 }
 
-                markLobbyChanged(lobbyID);
                 next[lobbyID] = toLobbyData(lobby, previous[lobbyID]);
                 return next;
             });
