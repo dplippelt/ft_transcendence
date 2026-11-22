@@ -75,39 +75,3 @@ async def game_websocket(
     finally:
         logger.debug(f"player {current_user_id} disconnected from the session {game_session.id}")
         await game_session.leave(current_user_id, websocket)
-
-
-# TODO: temp route for getting the combat state
-
-from uuid import uuid4
-
-from app.game.combat.card import Operator
-from app.game.combat.card_deck import CardDeck
-from app.schemas.combat import (
-    CombatEnemyStatus,
-    CombatPhase,
-    CombatPlayerStatus,
-    CombatState,
-)
-
-
-@router.post("/debug/combat", response_model=CombatState)
-def debug_combat_start():
-    deck = CardDeck(operators=list(Operator))
-    hand = [deck.deal() for _ in range(8)]
-    combat_id = str(uuid4())
-    # _debug_combats[combat_id] = {"deck": deck, "hand": hand}
-    return {
-        "combat_id": combat_id,
-        "player_id": 0,
-        "enemy_id": 0,
-        "phase": CombatPhase.PLAYER_TURN,
-        "turn_ends_at_tick": None,
-        "result": None,
-        "player": CombatPlayerStatus(hp=10, max_hp=10, mp=5),
-        "enemy": CombatEnemyStatus(hp=16, max_hp=16, attack_damage=4),
-        "hand": [{"id": c.id, "value": c.value} for c in hand],
-        "target_numbers": [None, None, None],
-        "deck_count": 8,
-        "events": [],
-    }
