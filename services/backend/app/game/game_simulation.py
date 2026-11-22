@@ -93,7 +93,7 @@ class GameSimulation:
             player_id=player.player_id,
             enemy_id=1, # TODO (Jose): the enemy the player collide with
             player=CombatPlayerStatus(hp=player.hp, max_hp=player.hp, mp=player.mp),
-            enemy=EnemyLevel.NORMAL.value, #TODO should be from the enemy's level
+            enemy=EnemyLevel.EASY.value, #TODO should be from the enemy's level
             operators=list(Operator), #TODO should be the operators chosen in the lobby(ops mask)
         )
         combat.start(self.tick_id)
@@ -101,7 +101,7 @@ class GameSimulation:
         player.state |= PlayerState.IN_COMBAT
 
     def _clean_up_combats(self) -> None:
-        for user_id, combat in self.combats.items():
+        for user_id, combat in list(self.combats.items()):
             if not combat.is_over():
                 continue
 
