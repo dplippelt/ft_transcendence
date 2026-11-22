@@ -6,7 +6,7 @@ import CombatLayoutManager from "./CombatLayoutManager";
 import type { IGameSocket } from "../network/IGameSocket";
 import type { CombatState } from "../network/CombatTypes";
 import MultiCardManager from "./cards/MultiCardManager";
-import { ActionType, Direction } from "../network/GameSocket";
+import { ActionType, Direction } from "../network/IGameSocket";
 import { EventBus } from "../EventBus";
 import { CombatEvent } from "../../utils/utils";
 import { ExecuteCombo } from "./CombatExecuteManager";
@@ -18,6 +18,7 @@ export default class MultiCombatManager implements ICombatView {
   readonly events: Phaser.Events.EventEmitter;
   readonly layoutManager: CombatLayoutManager;
   private latestState: CombatState;
+  private lastEventSeq: number = 0;
   private pendingSequence: number | null = null;
 
   constructor(
@@ -40,6 +41,7 @@ export default class MultiCombatManager implements ICombatView {
     this.cardManager.syncHand(initial.hand);
     this.emitStatusToUI(initial);
     void this.latestState; // TODO:
+    this.logNewEvents(initial);
   }
 
   sendPlayCards() {
@@ -63,10 +65,16 @@ export default class MultiCombatManager implements ICombatView {
     this.cardManager.lockSelection(true);
   }
 
-  sendRedraw() {}
+  sendRedraw() {
+    // TODO
+  }
 
   applyState(state: CombatState, ackSequence: number) {
     this.latestState = state;
+    const handDealt = this.logNewEvents(state); // TODO
+    if (handDealt) {
+      this.cardManager.syncHand(state.hand);
+    }
     if (this.pendingSequence !== null && ackSequence >= this.pendingSequence) {
       this.pendingSequence = null;
       this.cardManager.lockSelection(false);
@@ -75,23 +83,52 @@ export default class MultiCombatManager implements ICombatView {
   }
 
   private emitStatusToUI(state: CombatState) {
+    // TODO:
     EventBus.emit(CombatEvent.updatePlayerHP, state.player.hp);
     EventBus.emit(CombatEvent.updatePlayerMP, state.player.mp);
     EventBus.emit(CombatEvent.updateEnemyHP, state.enemy.hp);
-    EventBus.emit(CombatEvent.updateTargetNumbers, toTargetRecord(state.target_numbers));
+    EventBus.emit(CombatEvent.updateTargetNumbers, this.toTargetRecord(state.target_numbers));
   }
 
-  destroy() {
-    /* destroy visuals, remove listeners */
+  // DEBUG: log new combat events and find hand dealt event
+  private logNewEvents(state: CombatState) {
+    let handDealt = false;
+    for (const event of state.events) {
+      if (event.seq <= this.lastEventSeq) {
+        continue;
+      }
+      this.lastEventSeq = event.seq;
+      const { seq, tick, type, ...detail } = event;
+      console.log(`[combat] #${seq} tick ${tick} ${type}`, detail);
+      if (type === "hand_dealt") {
+        handDealt = true;
+      }
+      if (handDealt) {
+        console.log(
+          "[combat] phase: ",
+          state.phase,
+          "| targets;",
+          state.target_numbers,
+          "| hand:",
+          state.hand.map((c) => c.value).join(" "),
+          "| player hp/mp;",
+          state.player.hp,
+          state.player.mp,
+          "| enemy hp;",
+          state.enemy.hp,
+        );
+      }
+      return handDealt;
+    }
   }
-}
 
-function toTargetRecord(target: (number | null)[]) {
-  // TODO
-  const targetNumbers: Record<ExecuteCombo, number | null> = {
-    [ExecuteCombo.ONE]: target[0],
-    [ExecuteCombo.TWO]: target[1],
-    [ExecuteCombo.THREE]: target[2],
-  };
-  return targetNumbers;
+  private toTargetRecord(target: (number | null)[]) {
+    // TODO: brush up
+    const targetNumbers: Record<ExecuteCombo, number | null> = {
+      [ExecuteCombo.ONE]: target[0],
+      [ExecuteCombo.TWO]: target[1],
+      [ExecuteCombo.THREE]: target[2],
+    };
+    return targetNumbers;
+  }
 }
