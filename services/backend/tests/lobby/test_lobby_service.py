@@ -1,7 +1,14 @@
+import secrets
+from datetime import timedelta
+
 import pytest
 from fastapi import HTTPException
+from sqlalchemy import event
+from sqlalchemy.dialects import postgresql
 
 from app.core.exceptions import ErrorCode
+from app.models.lobby_invitation import LobbyInvitation
+from app.services.friend_service import utc_now
 from app.services.lobby_service import (
     GUEST,
     HOST,
@@ -11,6 +18,7 @@ from app.services.lobby_service import (
     get_member,
     join_lobby,
     leave_lobby,
+    switch_lobby,
 )
 
 
@@ -264,3 +272,272 @@ def test_guest_can_join_another_lobby_after_leaving(db, user, make_user):
     # Assert
     assert get_member(db, lobby_a.id, guest.id) is None
     assert get_member(db, lobby_b.id, guest.id) is not None
+
+
+# SWITCH
+
+# A genuine invite is minted by the sender endpoint. These focused service
+# tests insert the same database record without testing notification delivery.
+def _invite(db, target, recipient, *, inviter_id=None, expires_at=None):
+    invite = LobbyInvitation(
+        id=secrets.token_urlsafe(32),
+        lobby_id=target.id,
+        recipient_id=recipient.id,
+        inviter_id=inviter_id or next(member.user_id for member in target.members if member.role == HOST),
+        expires_at=expires_at or utc_now() + timedelta(minutes=10),
+    )
+    db.add(invite)
+    db.commit()
+    return invite.id
+
+
+
+def test_switch_lobby_locks_lobbies_before_invitation(db, user, make_user):
+    """Check intended lock order; SQLite does not enforce PostgreSQL row locks."""
+    source = create_lobby(db, user, "Old lobby")
+    target = create_lobby(db, make_user(), "New lobby")
+    invitation_id = _invite(db, target, user)
+    lock_queries = []
+
+    def record_lock(state):
+        if not state.is_select:
+            return
+        sql = str(state.statement.compile(dialect=postgresql.dialect()))
+        if "FOR UPDATE" in sql or "FOR NO KEY UPDATE" in sql:
+            lock_queries.append(sql)
+
+    event.listen(db, "do_orm_execute", record_lock)
+    try:
+        switch_lobby(db, user, target.id, invitation_id=invitation_id, confirmed=True)
+    finally:
+        event.remove(db, "do_orm_execute", record_lock)
+
+    lobby_lock = next(i for i, sql in enumerate(lock_queries) if "FROM lobbies" in sql and "FOR UPDATE" in sql)
+    invitation_lock = next(i for i, sql in enumerate(lock_queries) if "FROM lobby_invitations" in sql and "FOR UPDATE" in sql)
+    assert lobby_lock < invitation_lock
+    assert get_lobby_by_id(db, source.id) is None
+    assert get_member(db, target.id, user.id) is not None
+
+
+def test_switch_lobby_moves_guest_atomically(db, user, make_user):
+    source = create_lobby(db, user, "Old lobby")
+    guest = make_user()
+    join_lobby(db, guest, source.id)
+    target = create_lobby(db, make_user(), "New lobby")
+
+    invitation_id = _invite(db, target, guest)
+    result = switch_lobby(db, guest, target.id, invitation_id=invitation_id, confirmed=True)
+
+    assert result.changed
+    assert result.previous_lobby_id == source.id
+    assert result.lobby.id == target.id
+    assert get_member(db, source.id, guest.id) is None
+    assert get_member(db, source.id, user.id) is not None
+    assert get_member(db, target.id, guest.id).role == GUEST
+
+
+def test_switch_lobby_closes_hosted_lobby(db, user, make_user):
+    source = create_lobby(db, user, "Old lobby")
+    guest = make_user()
+    join_lobby(db, guest, source.id)
+    source_id = source.id
+    target = create_lobby(db, make_user(), "New lobby")
+
+    invitation_id = _invite(db, target, user)
+    result = switch_lobby(db, user, target.id, invitation_id=invitation_id, confirmed=True)
+
+    assert result.previous_lobby_id == source_id
+    assert get_lobby_by_id(db, source_id) is None
+    assert get_member(db, source_id, guest.id) is None
+    assert get_member(db, target.id, user.id).role == GUEST
+    assert get_member(db, target.id, guest.id) is None
+
+
+def test_switch_lobby_requires_explicit_confirmation(db, user, make_user):
+    source = create_lobby(db, user, "Old lobby")
+    target = create_lobby(db, make_user(), "New lobby")
+
+    invitation_id = _invite(db, target, user)
+    with pytest.raises(HTTPException) as exc_info:
+        switch_lobby(db, user, target.id, invitation_id=invitation_id)
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail["code"] == ErrorCode.LOBBY_SWITCH_CONFIRMATION_REQUIRED
+    assert get_member(db, source.id, user.id).role == HOST
+
+
+def test_switch_lobby_is_idempotent(db, user, make_user):
+    lobby = create_lobby(db, user, "Same lobby")
+    guest = make_user()
+    invitation_id = _invite(db, lobby, guest)
+    join_lobby(db, guest, lobby.id)  # Guest joined via public join before accepting.
+
+    result = switch_lobby(db, guest, lobby.id, invitation_id=invitation_id)
+
+    assert not result.changed
+    assert result.previous_lobby_id == lobby.id
+    assert get_member(db, lobby.id, guest.id).role == GUEST
+    assert len(get_lobby_by_id(db, lobby.id).members) == 2
+
+
+def test_switch_lobby_joins_when_not_in_lobby(db, user, make_user):
+    lobby = create_lobby(db, user, "New lobby")
+    newcomer = make_user()
+
+    invitation_id = _invite(db, lobby, newcomer)
+    result = switch_lobby(db, newcomer, lobby.id, invitation_id=invitation_id)
+
+    assert result.changed
+    assert result.previous_lobby_id is None
+    assert get_member(db, lobby.id, newcomer.id).role == GUEST
+
+
+def test_switch_lobby_missing_target_preserves_current_membership(db, user):
+    source = create_lobby(db, user, "Old lobby")
+
+    with pytest.raises(HTTPException) as exc_info:
+        switch_lobby(db, user, 9999, invitation_id="invalid-invitation-id")
+
+    assert exc_info.value.status_code == 403
+    assert exc_info.value.detail["code"] == ErrorCode.LOBBY_INVITATION_INVALID
+    assert get_member(db, source.id, user.id).role == HOST
+
+
+def test_switch_lobby_full_target_preserves_current_membership(db, user, make_user):
+    source = create_lobby(db, user, "Old lobby")
+    target = create_lobby(db, make_user(), "Full lobby")
+    join_lobby(db, make_user(), target.id)
+
+    invitation_id = _invite(db, target, user)
+    with pytest.raises(HTTPException) as exc_info:
+        switch_lobby(db, user, target.id, invitation_id=invitation_id, confirmed=True)
+
+    assert exc_info.value.status_code == 409
+    assert exc_info.value.detail["code"] == ErrorCode.LOBBY_FULL
+    assert get_member(db, source.id, user.id).role == HOST
+    assert get_lobby_by_id(db, source.id) is not None
+
+
+def test_switch_lobby_rolls_back_on_insert_failure(db, user, make_user, monkeypatch):
+    from sqlalchemy.exc import IntegrityError
+    source = create_lobby(db, user, "Old lobby")
+    target = create_lobby(db, make_user(), "New lobby")
+    invitation_id = _invite(db, target, user)
+    original_flush = db.flush
+    flush_count = 0
+
+    def fail_second_flush(*args, **kwargs):
+        nonlocal flush_count
+        flush_count += 1
+        if flush_count == 2:
+            raise IntegrityError("INSERT", {}, Exception("simulated insert failure"))
+        return original_flush(*args, **kwargs)
+
+    # Both the old-lobby deletion and new membership INSERT must be rolled
+    # back when the second flush (triggered by commit) fails.
+    monkeypatch.setattr(db, "flush", fail_second_flush)
+    with pytest.raises(HTTPException) as exc_info:
+        switch_lobby(db, user, target.id, invitation_id=invitation_id, confirmed=True)
+    monkeypatch.setattr(db, "flush", original_flush)
+
+    assert exc_info.value.status_code == 409
+    assert get_member(db, source.id, user.id).role == HOST
+    assert get_lobby_by_id(db, source.id) is not None
+    assert get_member(db, target.id, user.id) is None
+    # Rollback must also keep the invite unconsumed, allowing a safe retry.
+    assert db.get(LobbyInvitation, invitation_id).used_at is None
+
+
+def test_switch_lobby_recovers_orphaned_membership(db, user, make_user):
+    # Mirrors stale data left by deployments that did not enforce FK cleanup.
+    from app.models.lobby_member import LobbyMember
+    target = create_lobby(db, make_user(), "New lobby")
+    db.add(LobbyMember(lobby_id=9999, user_id=user.id, role=GUEST))
+    db.commit()
+
+    invitation_id = _invite(db, target, user)
+    result = switch_lobby(db, user, target.id, invitation_id=invitation_id, confirmed=True)
+
+    assert result.previous_lobby_id == 9999
+    assert get_member(db, 9999, user.id) is None
+    assert get_member(db, target.id, user.id) is not None
+
+
+def test_switch_lobby_without_invitation_forbidden(db, user, make_user):
+    source = create_lobby(db, user, "My lobby")
+    target = create_lobby(db, make_user(), "Their lobby")
+    with pytest.raises(HTTPException) as exc:
+        switch_lobby(db, user, target.id, invitation_id="made-up-invitation-id", confirmed=True)
+    assert exc.value.status_code == 403
+    assert exc.value.detail["code"] == ErrorCode.LOBBY_INVITATION_INVALID
+    assert get_member(db, source.id, user.id) is not None
+
+
+def test_switch_lobby_invitation_is_recipient_bound(db, user, make_user):
+    target = create_lobby(db, user, "Their lobby")
+    intended = make_user()
+    stranger = make_user()
+    invitation_id = _invite(db, target, intended)
+    with pytest.raises(HTTPException) as exc:
+        switch_lobby(db, stranger, target.id, invitation_id=invitation_id)
+    assert exc.value.detail["code"] == ErrorCode.LOBBY_INVITATION_INVALID
+    assert get_member(db, target.id, stranger.id) is None
+
+
+def test_switch_lobby_invitation_is_lobby_bound(db, user, make_user):
+    target = create_lobby(db, user, "Their lobby")
+    other = create_lobby(db, make_user(), "Another lobby")
+    recipient = make_user()
+    invitation_id = _invite(db, target, recipient)
+    with pytest.raises(HTTPException) as exc:
+        switch_lobby(db, recipient, other.id, invitation_id=invitation_id)
+    assert exc.value.detail["code"] == ErrorCode.LOBBY_INVITATION_INVALID
+    assert get_member(db, other.id, recipient.id) is None
+
+
+def test_switch_lobby_expired_invitation_rejected(db, user, make_user):
+    target = create_lobby(db, user, "Their lobby")
+    recipient = make_user()
+    invitation_id = _invite(db, target, recipient, expires_at=utc_now() - timedelta(seconds=1))
+    with pytest.raises(HTTPException) as exc:
+        switch_lobby(db, recipient, target.id, invitation_id=invitation_id)
+    assert exc.value.detail["code"] == ErrorCode.LOBBY_INVITATION_INVALID
+
+
+def test_switch_lobby_inviter_no_longer_member_rejected(db, user, make_user):
+    target = create_lobby(db, user, "Their lobby")
+    guest_inviter = make_user()
+    recipient = make_user()
+    join_lobby(db, guest_inviter, target.id)
+    invitation_id = _invite(db, target, recipient, inviter_id=guest_inviter.id)
+    leave_lobby(db, guest_inviter, target.id)
+    with pytest.raises(HTTPException) as exc:
+        switch_lobby(db, recipient, target.id, invitation_id=invitation_id)
+    assert exc.value.detail["code"] == ErrorCode.LOBBY_INVITATION_INVALID
+
+
+def test_switch_lobby_used_invitation_cannot_switch_again(db, user, make_user):
+    target = create_lobby(db, user, "Their lobby")
+    recipient = make_user()
+    invitation_id = _invite(db, target, recipient)
+    switch_lobby(db, recipient, target.id, invitation_id=invitation_id)
+    # Retrying a lost response is a no-op while still in the target lobby.
+    result = switch_lobby(db, recipient, target.id, invitation_id=invitation_id)
+    assert not result.changed
+    leave_lobby(db, recipient, target.id)
+    with pytest.raises(HTTPException) as exc:
+        switch_lobby(db, recipient, target.id, invitation_id=invitation_id)
+    assert exc.value.detail["code"] == ErrorCode.LOBBY_INVITATION_INVALID
+
+
+def test_failed_switch_does_not_consume_invitation(db, user, make_user):
+    source = create_lobby(db, user, "Old lobby")
+    target = create_lobby(db, make_user(), "New lobby")
+    token = _invite(db, target, user)
+    with pytest.raises(HTTPException) as exc:
+        switch_lobby(db, user, target.id, invitation_id=token)
+    assert exc.value.detail["code"] == ErrorCode.LOBBY_SWITCH_CONFIRMATION_REQUIRED
+    assert db.get(LobbyInvitation, token).used_at is None
+    switch_lobby(db, user, target.id, invitation_id=token, confirmed=True)
+    assert db.get(LobbyInvitation, token).used_at is not None
+    assert get_lobby_by_id(db, source.id) is None

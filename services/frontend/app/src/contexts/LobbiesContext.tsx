@@ -14,6 +14,7 @@ import {
     getLobby as getLobbyRequest,
     createLobby as createLobbyRequest,
     joinLobby as joinLobbyRequest,
+    switchLobby as switchLobbyRequest,
     leaveLobby as leaveLobbyRequest,
     closeLobby as closeLobbyRequest,
     inviteToLobby as inviteToLobbyRequest,
@@ -39,6 +40,7 @@ export interface LobbyData extends ILobbyResponse
 export interface LobbyInvite
 {
     lobby_id: number;
+    invitation_id: string;
     lobby_name: string;
     inviter: PublicUser;
 }
@@ -66,6 +68,7 @@ interface ILobbiesContext
     inviteFriend: (lobbyID: LobbyID, friendID: number) => Promise<boolean>;
     dismissLobbyInvite: (lobbyID: LobbyID | number) => void;
     joinLobby: (lobbyID: LobbyID) => Promise<LobbyData>;
+    switchToInvitedLobby: (lobbyID: LobbyID, invitationID: string, confirmed?: boolean) => Promise<LobbyData>;
     leaveLobby: (lobbyID: LobbyID) => Promise<void>;
     closeLobby: (lobbyID: LobbyID) => Promise<void>;
     lobbyStartGame: (lobbyID: LobbyID) => Promise<ILobbyGame>;
@@ -139,6 +142,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
     const [startedMultiGame, setStartedMultiGame] = useState<StartedMultiGame | null>(null);
 
     const lobbyVersionRef = useRef(0);
+    const lastLobbySwitchVersionRef = useRef(0);
     const lobbyRevisionsRef = useRef<Record<LobbyID, number>>({});
     const sessionRef = useRef(0);
     const inviteVersionRef = useRef(0);
@@ -158,6 +162,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         // Invalidate pending API responses from the previous session.
         sessionRef.current += 1;
         lobbyVersionRef.current = 0;
+        lastLobbySwitchVersionRef.current = 0;
         lobbyRevisionsRef.current = {};
         inviteVersionRef.current = 0;
         inviteRevisionsRef.current = {};
@@ -178,7 +183,9 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         const refreshID = ++nextRefreshIDRef.current;
         const lobbyList = await getLobbies(accessToken);
 
-        if (session !== sessionRef.current || refreshID < lastAppliedRefreshIDRef.current)
+        if (session !== sessionRef.current ||
+            startedAt < lastLobbySwitchVersionRef.current ||
+            refreshID < lastAppliedRefreshIDRef.current)
             return;
 
         lastAppliedRefreshIDRef.current = refreshID;
@@ -194,7 +201,9 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         );
         setLobbyInvites(previous =>
         {
-            if (session !== sessionRef.current || refreshID < lastAppliedRefreshIDRef.current)
+            if (session !== sessionRef.current ||
+                startedAt < lastLobbySwitchVersionRef.current ||
+                refreshID < lastAppliedRefreshIDRef.current)
                 return previous;
 
             return previous.filter(invite =>
@@ -204,7 +213,9 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         });
         setLobbies(previous =>
         {
-            if (session !== sessionRef.current || refreshID < lastAppliedRefreshIDRef.current)
+            if (session !== sessionRef.current ||
+                startedAt < lastLobbySwitchVersionRef.current ||
+                refreshID < lastAppliedRefreshIDRef.current)
                 return previous;
 
             return mergeLobbySnapshot(
@@ -228,6 +239,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         const lobbyData = toLobbyData(lobby);
 
         if (session === sessionRef.current &&
+            startedAt >= lastLobbySwitchVersionRef.current &&
             (lobbyRevisionsRef.current[lobbyID] ?? 0) <= startedAt)
         {
             markLobbyChanged(lobbyID);
@@ -300,6 +312,62 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         }
         return lobbyData;
     }, [auth.accessToken, markLobbyChanged, dismissLobbyInvite]);
+
+    const switchToInvitedLobby = useCallback(async (lobbyID: LobbyID, invitationID: string, confirmed = false): Promise<LobbyData> =>
+    {
+        const accessToken = auth.accessToken;
+        if (!accessToken)
+            throw new Error("No authenticated session");
+
+        const session = sessionRef.current;
+        // All validation and membership changes happen in one backend
+        // transaction. Do not leave/close the old lobby in the browser.
+        const lobby = await switchLobbyRequest(Number(lobbyID), invitationID, confirmed, accessToken);
+        const lobbyData = toLobbyData(lobby);
+
+        if (session === sessionRef.current)
+        {
+            const currentUserID = auth.user?.id;
+            markLobbyChanged(lobbyID);
+            // The old lobby may be unknown until the updater runs. Invalidate
+            // older requests instead of mutating its revision in the updater.
+            lastLobbySwitchVersionRef.current = lobbyVersionRef.current;
+            // Reconcile our cached old lobby immediately. The refresh below
+            // also covers old memberships unknown to this tab.
+            setLobbies(previous =>
+            {
+                if (session !== sessionRef.current)
+                    return previous;
+
+                const next = { ...previous };
+                for (const [oldID, oldLobby] of Object.entries(previous))
+                {
+                    if (oldID === lobbyID || currentUserID === undefined)
+                        continue;
+
+                    const member = oldLobby.members.find(item => item.user.id === currentUserID);
+                    if (!member)
+                        continue;
+
+                    if (member.role === "host")
+                        delete next[oldID];
+                    else
+                        next[oldID] = {
+                            ...oldLobby,
+                            members: oldLobby.members.filter(item => item.user.id !== currentUserID),
+                        };
+                }
+
+                next[lobbyID] = toLobbyData(lobby, previous[lobbyID]);
+                return next;
+            });
+            dismissLobbyInvite(lobbyID);
+            void refreshLobbies().catch(error =>
+                console.warn("Lobby list refresh failed after switching:", error)
+            );
+        }
+        return lobbyData;
+    }, [auth.accessToken, auth.user?.id, markLobbyChanged, dismissLobbyInvite, refreshLobbies]);
 
     const leaveLobby = useCallback(async (lobbyID: LobbyID): Promise<void> =>
     {
@@ -458,6 +526,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                     type?: unknown;
                     lobby?: unknown;
                     lobby_id?: unknown;
+                    invitation_id?: unknown;
                     lobby_name?: unknown;
                     inviter?: unknown;
                     game?: unknown;
@@ -509,6 +578,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                 {
                     if (
                         typeof message.lobby_id !== "number" ||
+                        typeof message.invitation_id !== "string" ||
                         typeof message.lobby_name !== "string" ||
                         typeof message.inviter !== "object" ||
                         message.inviter === null
@@ -517,6 +587,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
 
                     const invite: LobbyInvite = {
                         lobby_id: message.lobby_id,
+                        invitation_id: message.invitation_id,
                         lobby_name: message.lobby_name,
                         inviter: message.inviter as PublicUser,
                     };
@@ -580,6 +651,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
             createLobby,
             closeLobby,
             joinLobby,
+            switchToInvitedLobby,
             leaveLobby,
             lobbyStartGame,
             inviteFriend,

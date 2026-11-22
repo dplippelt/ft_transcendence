@@ -17,6 +17,7 @@ MIGRATIONS_DIR="services/backend/migrations"
 MIGRATIONS=(
     "$MIGRATIONS_DIR/20260913_add_two_factor_management_timecode.sql"
     "$MIGRATIONS_DIR/20261028_unique_lobby_membership.sql"
+    "$MIGRATIONS_DIR/20261114_create_lobby_invitations.sql"
 )
 
 
