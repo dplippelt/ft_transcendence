@@ -54,6 +54,11 @@ case "${1:-all}" in
 		shift
 		run_pytest tests/lobby "$@"
 		;;
+    
+    friends)
+		shift
+		run_pytest tests/friends "$@"
+		;;
 
 	*)
 		echo "Unknown test group: $1"
@@ -64,6 +69,7 @@ case "${1:-all}" in
 		echo "  $0 security"
 		echo "  $0 two-factor"
 		echo "  $0 lobby"
+        echo "  $0 friends"
 		exit 1
 		;;
 esac

@@ -20,6 +20,7 @@ services:
       - "8000:8000"
     volumes:
       - ./services/backend/app:/app/app
+      - ./services/backend/tests:/app/tests
       - avatar_data:/app/uploads
     depends_on:
       - db

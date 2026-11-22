@@ -1,6 +1,8 @@
 import asyncio
+import secrets
 import threading
 import weakref
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from sqlalchemy import func
@@ -12,6 +14,7 @@ from app.db.database import SessionLocal
 from app.game.game_session import GameSession
 from app.game.game_session_manager import game_session_manager
 from app.models.lobby import Lobby
+from app.models.lobby_invitation import LobbyInvitation
 from app.models.lobby_member import LobbyMember
 from app.models.lobby_message import LobbyMessage
 from app.models.user import User
@@ -23,6 +26,7 @@ MAX_MEMBERS = 2
 MAX_MESSAGE_HISTORY = 200
 
 INVITE_COOLDOWN = timedelta(seconds=30)
+INVITE_VALIDITY = timedelta(minutes=10)
 
 # Separate from INVITE_COOLDOWN: the cooldown only blocks re-inviting the
 # *same* friend, so without this a host could still fan out invites to many
@@ -173,6 +177,143 @@ def join_lobby(db: Session, user: User, lobby_id: int) -> Lobby:
             ) from exc
         raise bad_request("Could not join lobby.") from exc
     return get_lobby_or_404(db, lobby_id)
+
+
+@dataclass(frozen=True)
+class LobbySwitchResult:
+    lobby: Lobby
+    previous_lobby_id: int | None
+    changed: bool
+
+
+def _lock_lobbies_for_switch(
+    db: Session,
+    lobby_id: int,
+    previous_lobby_id: int | None,
+) -> dict[int, Lobby]:
+    # Lock the old and destination lobbies before the invitation row.
+    # Deleting a hosted lobby cascades to its invitations, so acquiring
+    # invitation locks first can deadlock when two hosts switch between
+    # each other's lobbies concurrently.
+    lobby_ids = {lobby_id}
+    if previous_lobby_id is not None:
+        lobby_ids.add(previous_lobby_id)
+    return {
+        lobby.id: lobby
+        for lobby in (
+            db.query(Lobby)
+            .filter(Lobby.id.in_(lobby_ids))
+            .order_by(Lobby.id)
+            .with_for_update()
+            .all()
+        )
+    }
+
+
+def _remove_previous_membership(
+    db: Session,
+    membership: LobbyMember,
+    old_lobby: Lobby | None,
+) -> None:
+    if old_lobby is None:
+        db.delete(membership)
+    elif membership.role == HOST:
+        # Load members before deletion: the ORM's passive_deletes
+        # otherwise relies on database FK cascading. Loading here
+        # keeps the cleanup correct in SQLite tests too.
+        _ = old_lobby.members
+        db.delete(old_lobby)
+    else:
+        db.delete(membership)
+    db.flush()
+
+
+def switch_lobby(
+    db: Session,
+    user: User,
+    lobby_id: int,
+    *,
+    invitation_id: str,
+    confirmed: bool = False,
+) -> LobbySwitchResult:
+    try:
+        db.query(User).filter(User.id == user.id).with_for_update(key_share=True).one()
+        membership = get_user_lobby_membership(db, user.id)
+        previous_lobby_id = membership.lobby_id if membership else None
+
+        locked_lobbies = _lock_lobbies_for_switch(db, lobby_id, previous_lobby_id)
+        target = locked_lobbies.get(lobby_id)
+
+        # An ID alone must never authorize switching. The recipient is taken
+        # from the authenticated user, not from the request body. This lock
+        # comes after the lobby locks, matching the cascade deletion order.
+        invitation = (
+            db.query(LobbyInvitation)
+            .filter(
+                LobbyInvitation.id == invitation_id,
+                LobbyInvitation.lobby_id == lobby_id,
+                LobbyInvitation.recipient_id == user.id,
+            )
+            .with_for_update()
+            .first()
+        )
+        if invitation is None:
+            raise forbidden("No valid invitation for this lobby.", code=ErrorCode.LOBBY_INVITATION_INVALID)
+        if target is None:
+            raise not_found("Lobby not found.", code=ErrorCode.LOBBY_NOT_FOUND)
+
+        # A consumed invitation is only retryable when the player is still
+        # in its destination (e.g. the first HTTP response was lost).
+        if invitation.used_at is not None:
+            if previous_lobby_id == lobby_id:
+                db.rollback()
+                return LobbySwitchResult(get_lobby_or_404(db, lobby_id), previous_lobby_id, False)
+            raise forbidden("Invitation has already been used.", code=ErrorCode.LOBBY_INVITATION_INVALID)
+
+        expires_at = invitation.expires_at
+        if expires_at.tzinfo is None:
+            expires_at = expires_at.replace(tzinfo=utc_now().tzinfo)
+        if expires_at <= utc_now():
+            raise forbidden("Invitation has expired.", code=ErrorCode.LOBBY_INVITATION_INVALID)
+        if get_member(db, lobby_id, invitation.inviter_id) is None:
+            raise forbidden("Inviter is no longer in this lobby.", code=ErrorCode.LOBBY_INVITATION_INVALID)
+
+        if previous_lobby_id == lobby_id:
+            invitation.used_at = utc_now()
+            db.commit()
+            return LobbySwitchResult(get_lobby_or_404(db, lobby_id), previous_lobby_id, False)
+
+        member_count = db.query(LobbyMember).filter(LobbyMember.lobby_id == lobby_id).count()
+        if member_count >= MAX_MEMBERS:
+            raise conflict("This lobby is full.", code=ErrorCode.LOBBY_FULL)
+
+        # The client cache can be stale. Never close a hosted lobby solely
+        # because the client didn't know it was already in one.
+        if membership is not None and not confirmed:
+            raise conflict(
+                "Switching will leave or close your current lobby. Please confirm.",
+                code=ErrorCode.LOBBY_SWITCH_CONFIRMATION_REQUIRED,
+            )
+
+        if membership is not None:
+            _remove_previous_membership(db, membership, locked_lobbies.get(previous_lobby_id))
+
+        db.add(LobbyMember(lobby=target, user=user, role=GUEST))
+        invitation.used_at = utc_now()
+        db.commit()
+    except IntegrityError as exc:
+        db.rollback()
+        if get_constraint_name(exc) == "uq_lobby_members_user_id":
+            raise conflict(
+                "Your lobby membership changed. Please try again.",
+                code=ErrorCode.ALREADY_IN_ANOTHER_LOBBY,
+            ) from exc
+        raise conflict("Could not switch lobby. Please try again.") from exc
+    except Exception:
+        db.rollback()
+        raise
+
+    return LobbySwitchResult(get_lobby_or_404(db, lobby_id), previous_lobby_id, True)
 
 
 def get_lobby_or_404(db: Session, lobby_id: int) -> Lobby:
@@ -402,14 +543,11 @@ def release_invite_rate_limit(user_id: int, sent_at: datetime) -> None:
                 pass
 
 
-def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: int) -> Lobby:
+def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: int) -> tuple[Lobby, LobbyInvitation]:
     lobby = get_lobby_or_404(db, lobby_id)
 
-    # invite_friend_to_lobby never writes lobby membership itself -- it only
-    # reads it to decide whether to send a notification -- so there's no
-    # data-integrity invariant here for a row lock to protect; join_lobby
-    # independently re-validates capacity under its own lock at the moment
-    # someone actually joins.
+    # Invitations are persisted so their authorization can be checked when
+    # the recipient accepts. They do not alter lobby membership.
     if get_member(db, lobby_id, user.id) is None:
         raise forbidden("You are not a member of this lobby.", code=ErrorCode.NOT_LOBBY_MEMBER)
 
@@ -427,15 +565,6 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
     if len(member_ids) >= MAX_MEMBERS:
         raise conflict("This lobby is full.", code=ErrorCode.LOBBY_FULL)
 
-    # Free, in-memory checks -- run before the one remaining DB query so a
-    # repeated/spam invite doesn't pay for a friendship lookup it can't use.
-    # Rate limit is checked *before* the pair cooldown: reserving the pair
-    # cooldown first left a gap between that reservation and its release (if
-    # the rate limit then rejected the request) where a concurrent duplicate
-    # request for the same pair could see a stale "already invited" and get
-    # a misleading error instead of the real rate-limit one. Checking the
-    # rate limit first means the cooldown is only ever reserved for a
-    # request that has already cleared it.
     rate_limit_sent_at = _check_invite_rate_limit(user.id)
 
     try:
@@ -459,7 +588,28 @@ def invite_friend_to_lobby(db: Session, user: User, lobby_id: int, friend_id: in
         release_invite_rate_limit(user.id, rate_limit_sent_at)
         raise not_found("Friendship not found.", code=ErrorCode.FRIENDSHIP_NOT_FOUND)
 
-    return lobby
+    now = utc_now()
+    invitation = LobbyInvitation(
+        id=secrets.token_urlsafe(32),
+        lobby_id=lobby_id,
+        inviter_id=user.id,
+        recipient_id=friend_id,
+        expires_at=now + INVITE_VALIDITY,
+    )
+    try:
+        # Opportunistically remove expired/used records. No background job
+        # is needed for this short-lived authorization state.
+        db.query(LobbyInvitation).filter(
+            LobbyInvitation.expires_at <= now
+        ).delete(synchronize_session=False)
+        db.add(invitation)
+        db.commit()
+    except Exception:
+        db.rollback()
+        release_invite_cooldown(user.id, friend_id, cooldown_sent_at)
+        release_invite_rate_limit(user.id, rate_limit_sent_at)
+        raise
+    return lobby, invitation
 
 
 def get_user_ids_in_a_lobby(user: User, lobby_id: int) -> list[int]:
