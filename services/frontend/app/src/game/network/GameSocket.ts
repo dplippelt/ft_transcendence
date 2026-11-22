@@ -15,7 +15,7 @@ export default class GameSocket extends Phaser.Events.EventEmitter implements IG
   private readonly gameId: string;
   private nextSequence: number = 1;
   private closedByClient: boolean = false;
-  private lastSentAt: number = 0;
+  //   private lastSentAt: number = 0;
 
   constructor(userId: number, gameId: string) {
     super();
@@ -45,8 +45,7 @@ export default class GameSocket extends Phaser.Events.EventEmitter implements IG
         action: action,
       }),
     );
-    this.lastSentAt = performance.now();
-    this.lastSentAt; // TODO: read it somehow
+    // this.lastSentAt = performance.now();
     return seq;
   }
 
@@ -63,25 +62,31 @@ export default class GameSocket extends Phaser.Events.EventEmitter implements IG
     this.removeAllListeners();
   }
 
-  private onOpen() {
+  private onOpen = () => {
     this.emit(GameWsEvent.OPEN);
-  }
+  };
 
-  private onMessage(event: MessageEvent) {
-    const message = JSON.parse(event.data) as GameSnapshot;
+  private onMessage = (event: MessageEvent) => {
+    let message: GameSnapshot;
+    try {
+      message = JSON.parse(event.data) as GameSnapshot;
+    } catch {
+      console.warn("GameSocket: invalid JSON", event.data);
+      return;
+    }
     if (typeof message.type !== "string") {
       return;
     }
     message.receivedAt = performance.now();
-    this.emit(GameWsEvent.SNAPSHOT, message);
-  }
+    this.emit(GameWsEvent.MESSAGE, message);
+  };
 
-  private onClose(event: CloseEvent) {
+  private onClose = (event: CloseEvent) => {
     const info: DisconnectInfo = { code: event.code, reason: event.reason };
     this.emit(GameWsEvent.DISCONNECTED, info);
-  }
+  };
 
-  private onError(event: Event) {
+  private onError = (event: Event) => {
     console.error("GameSocket error", event);
-  }
+  };
 }
