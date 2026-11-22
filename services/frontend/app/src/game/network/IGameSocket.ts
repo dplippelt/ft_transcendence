@@ -1,19 +1,54 @@
 import Phaser from "phaser";
-import type { ActionType, Direction } from "./GameSocket";
-import { apiRequest } from "../../api/http";
 import type { CombatState } from "./CombatTypes";
+
+/* ---- Must match backend/app/schemas/game.py ---- */
+
+export enum ActionType {
+  NONE = 0,
+  MOVE = 1,
+  PICK_CARD = 2,
+  DRAW_CARD = 3,
+  PLAY_CARDS = 4,
+  LEAVE = 5,
+}
+
+// Python IntFlag + auto() -> 1, 2, 4, 8 (bit flags, so diagonals can be combined)
+export enum Direction {
+  NONE = 0,
+  UP = 1 << 0,
+  RIGHT = 1 << 1,
+  DOWN = 1 << 2,
+  LEFT = 1 << 3,
+}
 
 export interface Action {
   type: ActionType;
   direction: Direction;
   card: number;
-  cards?: string[];
+  cards: string[];
 }
 
-export interface IGameSocket extends Phaser.Events.EventEmitter {
-  readonly isOpen: boolean;
-  sendAction(action: Action): number | null;
-  close(): void;
+export interface DisconnectInfo {
+  code: number;
+  reason: string;
+}
+
+export enum WsEvent {
+  OPEN = "open",
+  MESSAGE = "message",
+  ERROR = "error",
+  CLOSE = "close",
+}
+
+export enum GameWsEvent {
+  OPEN = "open",
+  SNAPSHOT = "game-snapshot",
+  DISCONNECTED = "disconnected",
+}
+
+export enum GameWsMessageType {
+  SNAPSHOT = "game.snapshot",
+  PLAYER_ACTION = "game.player.action",
 }
 
 export enum ServerGameState {
@@ -41,7 +76,7 @@ export interface SnapshotEnemy {
 }
 
 export interface GameSnapshot {
-  type: "game.snapshot";
+  type: GameWsMessageType.SNAPSHOT;
   game_id: string;
   tick_id: number;
   state: ServerGameState;
@@ -53,54 +88,8 @@ export interface GameSnapshot {
   receivedAt: number;
 }
 
-// For test only
-export class FakeGameSocket extends Phaser.Events.EventEmitter implements IGameSocket {
-  private nextSequence = 1;
-  private combatId: string | null = null;
-  private open = false;
-
-  constructor(private readonly userId: number) {
-    super();
-    void this.start();
-  }
-
-  get isOpen() {
-    return this.open;
-  }
-
-  private async start() {
-    const state = await apiRequest<CombatState>("/game/debug/combat", { method: "POST" });
-    this.combatId = state.combat_id;
-    void this.combatId; // TODO:
-    this.open = true;
-    this.emit("open");
-    this.emitSnapshot(state);
-  }
-
-  sendAction(action: Action): number | null {
-    if (!this.open) return null;
-    const seq = this.nextSequence++;
-    console.log("[FakeGameSocket] sendAction", seq, action);
-    return seq;
-  }
-
-  close() {
-    this.open = false;
-    this.removeAllListeners();
-  }
-
-  private emitSnapshot(combat: CombatState, ackSequence = 0) {
-    this.emit("game.snapshot", {
-      type: "game.snapshot",
-      game_id: "debug",
-      tick_id: 0,
-      state: 2,
-      dungeon_seed: 0,
-      user_player_id: this.userId,
-      players: [{ player_id: this.userId, sequence: ackSequence }],
-      enemies: [],
-      combat: [combat],
-      receivedAt: performance.now(),
-    });
-  }
+export interface IGameSocket extends Phaser.Events.EventEmitter {
+  readonly isOpen: boolean;
+  sendAction(action: Action): number | null;
+  close(): void;
 }
