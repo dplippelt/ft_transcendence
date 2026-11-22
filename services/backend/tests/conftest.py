@@ -229,6 +229,3 @@ def make_user(db):
         return user
 
     return _make_user
-
-
-

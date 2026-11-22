@@ -42,7 +42,6 @@ def build_friend_response(friendship: Friendship, friend: User) -> FriendRespons
         created_at=friendship.created_at,
     )
 
-
 @router.get("", response_model=FriendListResponse)
 def get_friends(current_user: CompletedUser, db: DbSession):
     friendships = (
@@ -116,11 +115,13 @@ def create_friend_request(request_data: FriendRequestCreate, current_user: Compl
     if recipient is None:
         raise not_found("User not found.", code=ErrorCode.USER_NOT_FOUND)
 
-    return send_friend_request(
+    friend_request = send_friend_request(
         db=db,
         current_user=current_user,
         recipient=recipient,
     )
+
+    return friend_request
 
 
 @router.get("/requests/incoming", response_model=list[FriendRequestResponse])
@@ -158,11 +159,13 @@ def get_outgoing_friend_requests(current_user: CompletedUser, db: DbSession):
 @router.post("/requests/{request_id}/accept", response_model=FriendRequestResponse)
 def accept_friend_request(request_id: int, current_user: CompletedUser, db: DbSession):
 
-    return accept_friend_request_service(
+    friend_request = accept_friend_request_service(
         db=db,
         request_id=request_id,
         current_user=current_user,
     )
+
+    return friend_request
 
 
 @router.post("/requests/{request_id}/reject", response_model=FriendRequestResponse)

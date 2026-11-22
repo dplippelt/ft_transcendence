@@ -8,6 +8,7 @@ from app.db.utils import commit_or_bad_request
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
 from app.models.user import User
+from app.services.friend_notification_service import notify_friend_change
 
 PENDING = "pending"
 ACCEPTED = "accepted"
@@ -61,11 +62,16 @@ def handle_existing_friend_request(db: Session, existing_request: FriendRequest,
         existing_request.status = PENDING
         existing_request.responded_at = None
 
+        affected_user_ids = {
+                current_user.id,
+                recipient.id
+        }
+        
         commit_or_bad_request(
             db,
             "Friend request could not be sent.",
         )
-
+        notify_friend_change(affected_user_ids)
         db.refresh(existing_request)
 
         return existing_request
@@ -133,14 +139,17 @@ def accept_pending_friend_request(db: Session, friend_request: FriendRequest,) -
         friend_request.requester_id,
         friend_request.recipient_id,
     )
-
+    affected_user_ids = {
+        friend_request.requester_id,
+        friend_request.recipient_id
+    }
     commit_or_bad_request(
         db,
         "Friend request could not be accepted.",
     )
 
+    notify_friend_change(affected_user_ids)
     db.refresh(friend_request)
-
     return friend_request
 
 
@@ -180,6 +189,11 @@ def send_friend_request(db: Session, current_user: User, recipient: User,) -> Fr
 
     db.add(friend_request)
 
+    affected_user_ids = {
+        current_user.id,
+        recipient.id,
+    }
+
     try:
         db.commit()
     except IntegrityError:
@@ -201,12 +215,13 @@ def send_friend_request(db: Session, current_user: User, recipient: User,) -> Fr
 
         raise bad_request("Friend request already exists.", code=ErrorCode.FRIEND_REQUEST_ALREADY_SENT)
 
+    notify_friend_change(affected_user_ids)
     db.refresh(friend_request)
 
     return friend_request
 
 
-def accept_friend_request(db: Session, request_id: int,current_user: User,) -> FriendRequest:
+def accept_friend_request(db: Session, request_id: int, current_user: User,) -> FriendRequest:
     friend_request = require_pending_received_request(
         db,
         request_id,
@@ -228,10 +243,16 @@ def reject_friend_request(db: Session, request_id: int, current_user: User,) -> 
         "reject",
     )
 
+    affected_user_ids = {
+        friend_request.requester_id,
+        friend_request.recipient_id
+    }
+
     friend_request.status = REJECTED
     friend_request.responded_at = utc_now()
 
     db.commit()
+    notify_friend_change(affected_user_ids)
     db.refresh(friend_request)
 
     return friend_request
@@ -253,8 +274,16 @@ def cancel_friend_request(db: Session, request_id: int, current_user: User,) -> 
     if friend_request.status != PENDING:
         raise bad_request("Friend request is not pending.", code=ErrorCode.FRIEND_REQUEST_NOT_PENDING)
 
+    # Capture the IDs before deleting the ORM object
+    affected_user_ids = {
+        friend_request.requester_id,
+        friend_request.recipient_id,
+    }
+
     db.delete(friend_request)
     db.commit()
+
+    notify_friend_change(affected_user_ids)
 
 
 def remove_friend(db: Session, current_user: User, friend_id: int) -> None:
@@ -267,9 +296,13 @@ def remove_friend(db: Session, current_user: User, friend_id: int) -> None:
         friend_id,
     )
 
+    affected_user_ids = {
+        current_user.id,
+        friend_id
+    }
+    
     if friendship is None:
         raise not_found("Friendship not found.", code=ErrorCode.FRIENDSHIP_NOT_FOUND)
-
     existing_request = get_existing_friend_request(
         db,
         current_user.id,
@@ -282,3 +315,4 @@ def remove_friend(db: Session, current_user: User, friend_id: int) -> None:
         db.delete(existing_request)
 
     db.commit()
+    notify_friend_change(affected_user_ids)
