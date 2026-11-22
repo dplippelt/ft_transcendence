@@ -7,7 +7,7 @@ from fastapi import WebSocket, status
 
 from app.schemas.game import GameSnapshot
 
-CLIENT_TIMEOUT = 10.0
+CLIENT_TIMEOUT = 10000.0 # TODO: should get back to 10.0 
 EMPTY_SESSION = 0
 SEND_TIMEOUT = 0.1
 
