@@ -176,6 +176,10 @@ export default class CombatLayoutManager {
     this.updateDisplay();
     this.updateLayout();
     this.scene.scale.on("resize", this.updateLayout, this);
+    // Scale is game-wide: remove our listener when our scene shuts down (single player and multiplayer)
+    this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+        this.scene.scale.off("resize", this.updateLayout, this);
+    })
   }
 
   onCardActions() {
