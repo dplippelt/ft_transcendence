@@ -19,17 +19,20 @@ export interface WebSocketMessage
     [key: string]: unknown;
 }
 
-type MessageHandler = (message: WebSocketMessage) => void;
-type OpenHandler = () => void;
+type MessageHandler = (message: WebSocketMessage) => void | Promise<void>;
+type OpenHandler = () => void | Promise<void>;
 
 // This defines what other contexts are allowed to access, they can only register their interest in events e.g handle message or open socket
 interface IWebSocketContext
 {
+    // Handlers may be synchronous or asynchronous. Return asynchronous operations to let the provider handle rejected Promises
+    //  Unsubscribing prevents future handler executions, but does not cancel operations already in progress
     subscribe: (
         type: string,
         handler: MessageHandler
     ) => () => void;
 
+    // Subscribe to connection-open events, including reconnections. The handler is not called immediately if the socket is already open
     subscribeOpen: (handler: OpenHandler) => () => void;
 }
 
@@ -99,9 +102,13 @@ export default function WebSocketProvider({ children }: { children: ReactNode })
                 {
                     try
                     {
-                        handler();
+                        // inner .catch for asynchronous Promise rejection
+                        void Promise.resolve(handler()).catch(error =>
+                        {
+                            console.error("WebSocket open handler failed", error);
+                        });
                     }
-                    catch (error)
+                    catch (error) // for synchronous exception
                     {
                         console.error("WebSocket open handler failed", error);
                     }
@@ -137,7 +144,10 @@ export default function WebSocketProvider({ children }: { children: ReactNode })
                 {
                     try
                     {
-                        handler(message);
+                        void Promise.resolve(handler(message)).catch(error =>
+                        {
+                            console.error("WebSocket message handler failed", error);
+                        });
                     }
                     catch (error)
                     {
