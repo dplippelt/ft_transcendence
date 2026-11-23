@@ -42,8 +42,8 @@ export enum WsEvent {
 
 export enum GameWsEvent {
   OPEN = "open",
-  MESSAGE = "message",
   DISCONNECTED = "disconnected",
+  SNAPSHOT = "game.snapshot",
 }
 
 export enum GameWsMessageType {
