@@ -76,7 +76,7 @@ export default function WebSocketProvider({ children }: { children: ReactNode })
     useEffect(() =>
     {
         const accessToken = auth.accessToken;
-        if (auth.status !== "authenticated" || !accessToken || auth.user?.id === undefined)
+        if (auth.status !== "authenticated" || !accessToken || auth.user?.id === undefined || !auth.user.username)
             return;
     
         let socket: WebSocket | null = null;
@@ -181,7 +181,7 @@ export default function WebSocketProvider({ children }: { children: ReactNode })
             window.clearTimeout(reconnectTimeoutID);
             socket?.close();
         };
-    }, [auth.status, auth.accessToken, auth.user?.id]);
+    }, [auth.status, auth.accessToken, auth.user?.id, auth.user?.username]);
 
     // Avoid unnecessarily notifying context consumers when the provider re-renders but its interface hasn't changed
     const value = useMemo(() => ({
