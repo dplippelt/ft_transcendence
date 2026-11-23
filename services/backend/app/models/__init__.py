@@ -9,6 +9,7 @@ from app.models.lobby_member import LobbyMember
 from app.models.lobby_message import LobbyMessage
 from app.models.score import Score
 from app.models.user import User
+from app.models.websocket_ticket import WebSocketTicket
 
 __all__ = [
     "AuthAccount",
@@ -23,4 +24,5 @@ __all__ = [
     "Score",
     "TwoFactorRecoveryCode",
     "User",
+    "WebSocketTicket",
 ]

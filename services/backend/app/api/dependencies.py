@@ -6,8 +6,10 @@ from sqlalchemy.orm import Session
 
 from app.core.exceptions import ErrorCode, forbidden, unauthorized
 from app.core.security import decode_token
+from app.core.settings import get_settings
 from app.db.database import SessionLocal, get_db
 from app.models.user import User
+from app.services.websocket_ticket_service import consume_websocket_ticket
 
 DbSession = Annotated[Session, Depends(get_db)]
 
@@ -79,36 +81,28 @@ def get_current_user_matching_path(user_id: int, current_user: CurrentUser) -> U
 SelfUser = Annotated[User, Depends(get_current_user_matching_path)]
 
 
-def get_current_user_id_ws(
-    websocket: WebSocket,
-    # Browsers can't set custom headers on the WS handshake, so the token
-    # travels in the query string instead. That risks exposure via
-    # reverse-proxy/access logs that record full request URLs -- deployments
-    # should keep this behind WSS and avoid logging query strings for this
-    # path, and access tokens should stay short-lived.
-    token: str | None = Query(default=None),
-) -> int:
-    # Deliberately not the DbSession dependency: that session stays open for
-    # as long as the WebSocket connection does (get_db only closes it when
-    # the endpoint returns), which for a long-lived connection means an idle
-    # session/transaction held for hours just to check the token once at
-    # connect time. Use a short-lived session instead, scoped to this check.
-    #
-    # Returns just the id rather than the User: the object would be detached
-    # once this session closes, and the id is all the WS layer needs -- this
-    # keeps future code from being tempted to lazy-load a relationship off
-    # a detached instance.
-    db = SessionLocal()
-
-    try:
-        user = get_user_from_token(token, db)
-    finally:
-        db.close()
-
-    if user is None or not user.is_active or user.username is None:
+def get_current_user_id_ws(websocket: WebSocket, token: str | None = Query(default=None), ticket: str | None = Query(default=None),) -> int:
+    # Browser WebSocket handshakes are not covered by CORS middleware.
+    # Restrict ticket authentication to our configured frontend origin.
+    if (ticket is not None and websocket.headers.get("origin") != get_settings().frontend_origin):
         raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
 
-    return user.id
+    # Keep the database session scoped to handshake authentication, not the
+    # entire WebSocket lifetime.
+    db = SessionLocal()
+    try:
+        if ticket is not None:
+            user_id = consume_websocket_ticket(db, ticket)
+            user = db.get(User, user_id) if user_id is not None else None
+        else:
+            user = get_user_from_token(token, db)
+
+        if user is None or not user.is_active or user.username is None:
+            raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
+
+        return user.id
+    finally:
+        db.close()
 
 
 CurrentUserIdWS = Annotated[int, Depends(get_current_user_id_ws)]

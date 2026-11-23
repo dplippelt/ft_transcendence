@@ -60,6 +60,11 @@ case "${1:-all}" in
 		run_pytest tests/friends "$@"
 		;;
 
+    websocket)
+        shift
+        run_pytest tests/websocket "$@"
+        ;;
+
 	*)
 		echo "Unknown test group: $1"
 		echo
