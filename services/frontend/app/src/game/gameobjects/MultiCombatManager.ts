@@ -3,13 +3,19 @@ import type { ICombatView } from "./ICombatView";
 import CombatPlayer from "./CombatPlayer";
 import CombatEnemy from "./CombatEnemy";
 import CombatLayoutManager from "./CombatLayoutManager";
-import type { IGameSocket } from "../network/IGameSocket";
-import type { CombatState } from "../network/CombatTypes";
+import type { Action } from "../network/IGameSocket";
+import type { CombatActionEvent, CombatState } from "../network/CombatTypes";
 import MultiCardManager from "./cards/MultiCardManager";
 import { ActionType, Direction } from "../network/IGameSocket";
 import { EventBus } from "../EventBus";
 import { CombatEvent } from "../../utils/utils";
 import { ExecuteCombo } from "./CombatExecuteManager";
+import { CombatEvents } from "./CombatManager";
+
+export enum MultiCombatEvents {
+    TURN_SHOW = "turnShown",
+    COMBAT_FINISHED = "combatFinished",
+}
 
 export default class MultiCombatManager implements ICombatView {
   readonly player: CombatPlayer;
@@ -17,118 +23,142 @@ export default class MultiCombatManager implements ICombatView {
   readonly cardManager: MultiCardManager;
   readonly events: Phaser.Events.EventEmitter;
   readonly layoutManager: CombatLayoutManager;
-  private latestState: CombatState;
-  private lastEventSeq: number = 0;
-  private pendingSequence: number | null = null;
+  private latestTick: number = 0;
+  isPlaying: boolean = false;
+  private readonly targetNumbers: Record<ExecuteCombo, number | null> = {
+    [ExecuteCombo.ONE]: null,
+    [ExecuteCombo.TWO]: null,
+    [ExecuteCombo.THREE]: null,
+  };
 
   constructor(
     readonly scene: Scene,
-    private readonly socket: IGameSocket,
-    initial: CombatState,
+    state: CombatState,
+    tick: number,
   ) {
     this.player = new CombatPlayer(scene, {
-      hitPoint: initial.player.hp,
-      mana: initial.player.mp,
+      hitPoint: state.player.hp,
+      mana: state.player.mp,
     });
     this.enemy = new CombatEnemy(scene, {
-      hitPoint: initial.enemy.hp,
-      attackDamage: 0,
+      hitPoint: state.enemy.hp,
+      attackDamage: state.enemy.attack_damage,
     });
     this.cardManager = new MultiCardManager(scene);
     this.events = new Phaser.Events.EventEmitter();
     this.layoutManager = new CombatLayoutManager(this);
-    this.latestState = initial;
-    this.cardManager.syncHand(initial.hand);
-    this.emitStatusToUI(initial);
-    void this.latestState; // TODO:
-    this.logNewEvents(initial);
+    this.events.on(CombatEvents.COMPLETEFILLHAND, () => {
+      EventBus.emit(CombatEvent.completeFillHand);
+    });
+    this.cardManager.syncHand(state.hand);
+    this.latestTick = tick;
   }
 
   sendPlayCards() {
-    if (this.pendingSequence !== null) {
-      return;
-    }
     const cards = this.cardManager.getSelectedCardIds();
     if (cards.length === 0) {
-      return;
+      return null;
     }
-    const seq = this.socket.sendAction({
+    const action: Action = {
       type: ActionType.PLAY_CARDS,
       direction: Direction.NONE,
       card: 0,
       cards: cards,
-    });
-    if (seq === null) {
-      return;
-    }
-    this.pendingSequence = seq;
-    this.cardManager.lockSelection(true);
+    };
+    return action;
   }
 
   sendRedraw() {
-    // TODO
+    const action: Action = {
+      type: ActionType.DRAW_CARD,
+      direction: Direction.NONE,
+      card: 0,
+      cards: [],
+    };
+    return action;
   }
 
-  applyState(state: CombatState, ackSequence: number) {
-    this.latestState = state;
-    const handDealt = this.logNewEvents(state); // TODO
-    if (handDealt) {
-      this.cardManager.syncHand(state.hand);
-    }
-    if (this.pendingSequence !== null && ackSequence >= this.pendingSequence) {
-      this.pendingSequence = null;
-      this.cardManager.lockSelection(false);
-    }
-    this.emitStatusToUI(state);
+  setLatestTick(tick: number) {
+    this.latestTick = tick;
   }
 
-  private emitStatusToUI(state: CombatState) {
-    // TODO:
-    EventBus.emit(CombatEvent.updatePlayerHP, state.player.hp);
-    EventBus.emit(CombatEvent.updatePlayerMP, state.player.mp);
-    EventBus.emit(CombatEvent.updateEnemyHP, state.enemy.hp);
-    EventBus.emit(CombatEvent.updateTargetNumbers, this.toTargetRecord(state.target_numbers));
-  }
+  resync(state: CombatState) {}
+
+  handleEvents(events: CombatActionEvent[], state: CombatState) {}
 
   // DEBUG: log new combat events and find hand dealt event
-  private logNewEvents(state: CombatState) {
-    let handDealt = false;
-    for (const event of state.events) {
-      if (event.seq <= this.lastEventSeq) {
-        continue;
-      }
-      this.lastEventSeq = event.seq;
-      const { seq, tick, type, ...detail } = event;
-      console.log(`[combat] #${seq} tick ${tick} ${type}`, detail);
-      if (type === "hand_dealt") {
-        handDealt = true;
-      }
-      if (handDealt) {
-        console.log(
-          "[combat] phase: ",
-          state.phase,
-          "| targets;",
-          state.target_numbers,
-          "| hand:",
-          state.hand.map((c) => c.value).join(" "),
-          "| player hp/mp;",
-          state.player.hp,
-          state.player.mp,
-          "| enemy hp;",
-          state.enemy.hp,
-        );
-      }
-      return handDealt;
-    }
+  //   private logNewEvents(state: CombatState) {
+  //     let handDealt = false;
+  //     for (const event of state.events) {
+  //       if (event.seq <= this.lastEventSeq) {
+  //         continue;
+  //       }
+  //       this.lastEventSeq = event.seq;
+  //       if (type === "hand_dealt") {
+  //         handDealt = true;
+  //       }
+  //       if (handDealt) {
+  //         console.log(
+  //           "[combat] phase: ",
+  //           state.phase,
+  //           "| targets;",
+  //           state.target_numbers,
+  //           "| hand:",
+  //           state.hand.map((c) => c.value).join(" "),
+  //           "| player hp/mp;",
+  //           state.player.hp,
+  //           state.player.mp,
+  //           "| enemy hp;",
+  //           state.enemy.hp,
+  //         );
+  //       }
+  //       return handDealt;
+  //     }
+  //   }
+
+  private updateTargetNumbers(target: (number | null)[]) {
+    this.targetNumbers[ExecuteCombo.ONE] = target[ExecuteCombo.ONE];
+    this.targetNumbers[ExecuteCombo.TWO] = target[ExecuteCombo.TWO];
+    this.targetNumbers[ExecuteCombo.THREE] = target[ExecuteCombo.THREE];
   }
 
-  private toTargetRecord(target: (number | null)[]) {
-    // TODO: brush up
-    const targetNumbers: Record<ExecuteCombo, number | null> = {
-      [ExecuteCombo.ONE]: target[0],
-      [ExecuteCombo.TWO]: target[1],
-      [ExecuteCombo.THREE]: target[2],
-    };
-    return targetNumbers;
+  sendInitPlayerHP() {
+    EventBus.emit(CombatEvent.initPlayerHP, this.player.status.hitPoint);
+  }
+
+  sendInitPlayerMP() {
+    EventBus.emit(CombatEvent.initPlayerMP, this.player.status.mana);
+  }
+
+  sendInitEnemyHP() {
+    EventBus.emit(CombatEvent.initEnemyHP, this.enemy.hitPoint);
+  }
+
+  sendInitTargetNumbers() {
+    EventBus.emit(CombatEvent.initTargetNumbers, this.targetNumbers);
+  }
+
+  sendCurrPlayerHP() {
+    EventBus.emit(CombatEvent.updatePlayerHP, this.player.status.hitPoint);
+  }
+
+  sendCurrPlayerMP() {
+    EventBus.emit(CombatEvent.updatePlayerMP, this.player.status.mana);
+  }
+
+  sendCurrEnemyHP() {
+    EventBus.emit(CombatEvent.updateEnemyHP, this.enemy.hitPoint);
+  }
+
+  sendCurrTargetNumbers() {
+    EventBus.emit(CombatEvent.updateTargetNumbers, this.targetNumbers);
+  }
+
+  sendElapsedPlayerTime() {
+    // const elapsedTime = this.turnManager.getElapsedPlayerTime();
+    // if (elapsedTime === null) {
+    //   return;
+    // }
+    // EventBus.emit(CombatEvent.initTurn, this.turnManager.getPlayerDelayMs(), elapsedTime);
   }
 }
