@@ -78,7 +78,9 @@ export default class GameSocket extends Phaser.Events.EventEmitter implements IG
       return;
     }
     message.receivedAt = performance.now();
-    this.emit(GameWsEvent.MESSAGE, message);
+    if (message.type === GameWsMessageType.SNAPSHOT) {
+      this.emit(GameWsEvent.SNAPSHOT, message);
+    }
   };
 
   private onClose = (event: CloseEvent) => {
