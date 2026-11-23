@@ -3,6 +3,9 @@ import type { PublicUser } from "./friendsApi";
 
 export type LobbyRole = "host" | "guest";
 
+// Keep in sync with LobbyMessageCreate.content in the backend.
+export const LOBBY_MESSAGE_MAX_LENGTH = 2000;
+
 export interface ILobbyMemberResponse
 {
 	user: PublicUser;

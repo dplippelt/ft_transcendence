@@ -19,22 +19,19 @@ import {
     closeLobby as closeLobbyRequest,
     inviteToLobby as inviteToLobbyRequest,
     lobbyStartGame as lobbyStartGameRequest,
+    getLobbyMessages as getLobbyMessagesRequest,
+    sendLobbyMessage as sendLobbyMessageRequest,
 } from "../api/lobbyApi";
 
-import type { ILobbyGame, ILobbyResponse } from "../api/lobbyApi";
+import type { ILobbyGame, ILobbyResponse, ILobbyMessageResponse } from "../api/lobbyApi";
 import type { PublicUser } from "../api/friendsApi";
 import { useAuth } from "./AuthContext";
 import { useWebSocket } from "./WebSocketContext";
-
-interface ILobbyChatMsg
-{
-    username: string;
-    message: string;
-}
+import useLatestRef from "../hooks/useLatestRef";
 
 export interface LobbyData extends ILobbyResponse
 {
-    chatHistory: ILobbyChatMsg[];
+    chatHistory: ILobbyMessageResponse[];
 }
 
 export interface LobbyInvite
@@ -72,12 +69,9 @@ interface ILobbiesContext
     leaveLobby: (lobbyID: LobbyID) => Promise<void>;
     closeLobby: (lobbyID: LobbyID) => Promise<void>;
     lobbyStartGame: (lobbyID: LobbyID) => Promise<ILobbyGame>;
-    getChatHistory: (lobbyID: LobbyID) => ILobbyChatMsg[] | undefined;
-    addChatHistory: (
-        lobbyID: LobbyID,
-        username: string,
-        message: string,
-    ) => void;
+    getChatHistory: (lobbyID: LobbyID) => ILobbyMessageResponse[] | undefined;
+    loadLobbyMessages: (lobbyID: LobbyID) => Promise<void>;
+    sendLobbyChatMessage: (lobbyID: LobbyID, content: string) => Promise<void>;
     startedMultiGame: StartedMultiGame | null;
     clearStartedMultiGame: () => void;
 }
@@ -87,6 +81,37 @@ const LobbiesContext = createContext<ILobbiesContext | null>(null);
 function toLobbyData(lobby: ILobbyResponse, existing?: LobbyData): LobbyData
 {
     return { ...lobby, chatHistory: existing?.chatHistory ?? [] };
+}
+
+// REST responses and live events may arrive in either order. Merge by the
+// database ID so no message is lost or shown twice.
+function mergeLobbyMessages(
+    existing: ILobbyMessageResponse[],
+    incoming: ILobbyMessageResponse[],
+): ILobbyMessageResponse[]
+{
+    const byID = new Map(existing.map(message => [message.id, message]));
+    for (const message of incoming)
+        byID.set(message.id, message);
+
+    return Array.from(byID.values()).sort((a, b) => a.id - b.id);
+}
+
+function isLobbyMessage(value: unknown): value is ILobbyMessageResponse
+{
+    if (typeof value !== "object" || value === null)
+        return false;
+
+    const message = value as Partial<ILobbyMessageResponse>;
+    return (
+        typeof message.id === "number" &&
+        typeof message.lobby_id === "number" &&
+        typeof message.content === "string" &&
+        typeof message.created_at === "string" &&
+        typeof message.sender === "object" &&
+        message.sender !== null &&
+        typeof message.sender.id === "number"
+    );
 }
 
 function isLobbyResponse(value: unknown): value is ILobbyResponse
@@ -137,6 +162,7 @@ function mergeLobbySnapshot(
 export default function LobbiesProvider({ children }: { children: ReactNode })
 {
     const { auth } = useAuth();
+    const accessTokenRef = useLatestRef(auth.accessToken);
     const { subscribe, subscribeOpen } = useWebSocket();
     const [lobbies, setLobbies] = useState<Lobbies>({});
     const [lobbyInvites, setLobbyInvites] = useState<LobbyInvite[]>([]);
@@ -445,29 +471,73 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
 
     }, [auth.accessToken]);
 
-    function getChatHistory(lobbyID: LobbyID): ILobbyChatMsg[] | undefined
+    function getChatHistory(lobbyID: LobbyID): ILobbyMessageResponse[] | undefined
     {
         return lobbies[lobbyID]?.chatHistory;
     }
 
-    function addChatHistory(lobbyID: LobbyID, username: string, message: string)
+    const addLobbyMessage = useCallback((message: ILobbyMessageResponse, session: number, token: string) =>
     {
-        const newMsg: ILobbyChatMsg = { username, message };
+        if (session !== sessionRef.current || accessTokenRef.current !== token)
+            return;
+
+        const lobbyID = String(message.lobby_id);
         setLobbies(previous =>
         {
             const lobby = previous[lobbyID];
-            if (!lobby)
+            if (session !== sessionRef.current || accessTokenRef.current !== token ||
+                !lobby || !lobby.members.some(member => member.user.id === auth.user?.id))
                 return previous;
 
             return {
                 ...previous,
                 [lobbyID]: {
                     ...lobby,
-                    chatHistory: [...lobby.chatHistory, newMsg],
+                    chatHistory: mergeLobbyMessages(lobby.chatHistory, [message]),
                 },
             };
         });
-    }
+    }, [auth.user?.id, accessTokenRef]);
+
+    const loadLobbyMessages = useCallback(async (lobbyID: LobbyID): Promise<void> =>
+    {
+        const token = auth.accessToken;
+        if (!token)
+            throw new Error("No authenticated session");
+
+        const session = sessionRef.current;
+        const messages = await getLobbyMessagesRequest(Number(lobbyID), token);
+
+        if (session !== sessionRef.current || accessTokenRef.current !== token)
+            return;
+
+        setLobbies(previous =>
+        {
+            const lobby = previous[lobbyID];
+            if (session !== sessionRef.current || accessTokenRef.current !== token ||
+                !lobby || !lobby.members.some(member => member.user.id === auth.user?.id))
+                return previous;
+
+            return {
+                ...previous,
+                [lobbyID]: {
+                    ...lobby,
+                    chatHistory: mergeLobbyMessages(lobby.chatHistory, messages),
+                },
+            };
+        });
+    }, [auth.accessToken, auth.user?.id, accessTokenRef]);
+
+    const sendLobbyChatMessage = useCallback(async (lobbyID: LobbyID, content: string): Promise<void> =>
+    {
+        const token = auth.accessToken;
+        if (!token)
+            throw new Error("No authenticated session");
+
+        const session = sessionRef.current;
+        const message = await sendLobbyMessageRequest(Number(lobbyID), content, token);
+        addLobbyMessage(message, session, token);
+    }, [auth.accessToken, addLobbyMessage]);
 
     const clearStartedMultiGame = useCallback(() => setStartedMultiGame(null), []);
 
@@ -556,6 +626,16 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
             ]);
         });
 
+        const unsubscribeLobbyMessage = subscribe("lobby_message", message =>
+        {
+            if (!isLobbyMessage(message))
+                return;
+
+            const token = auth.accessToken;
+            if (token)
+                addLobbyMessage(message, sessionRef.current, token);
+        });
+
         const unsubscribeLobbyStart = subscribe("lobby_start", message =>
         {
             if (
@@ -581,9 +661,10 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
             unsubscribeLobbyUpdated();
             unsubscribeLobbyClosed();
             unsubscribeLobbyInvite();
+            unsubscribeLobbyMessage();
             unsubscribeLobbyStart();
         };
-    }, [auth.status, auth.accessToken, auth.user?.id, refreshLobbies, markLobbyChanged, dismissLobbyInvite, subscribe, subscribeOpen]);
+    }, [auth.status, auth.accessToken, auth.user?.id, refreshLobbies, markLobbyChanged, dismissLobbyInvite, addLobbyMessage, subscribe, subscribeOpen]);
 
     return (
         <LobbiesContext.Provider value={{
@@ -602,7 +683,8 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
             inviteFriend,
             dismissLobbyInvite,
             getChatHistory,
-            addChatHistory,
+            loadLobbyMessages,
+            sendLobbyChatMessage,
             clearStartedMultiGame,
         }}>
             {children}

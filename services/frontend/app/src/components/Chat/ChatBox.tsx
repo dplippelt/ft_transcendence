@@ -12,8 +12,9 @@ import { useLobbies } from "../../contexts/LobbiesContext";
 import { useCurrentUser } from "../../contexts/AuthContext";
 
 import { getFriendDraftKey, getLobbyDraftKey, } from "../../utils/utils";
-import { ErrorType, mapChatApiError } from "../../utils/errors";
+import { ErrorType, mapChatApiError, mapLobbyApiError } from "../../utils/errors";
 import { CHAT_MESSAGE_MAX_LENGTH } from "../../api/chatApi";
+import { LOBBY_MESSAGE_MAX_LENGTH } from "../../api/lobbyApi";
 import useLatestRef from "../../hooks/useLatestRef";
 
 
@@ -171,17 +172,15 @@ export default function ChatBox()
 export function LobbyChatBox()
 {
 	const { lobbyID } = useParams();
-	const { addChatHistory } = useLobbies();
+	const { sendLobbyChatMessage } = useLobbies();
 	const user = useCurrentUser();
 
 	const [msg, setMsg] = useState<string>("");
+	const [error, setError] = useState<ErrorType>(ErrorType.none);
 	const timeoutIDRef = useRef<number | undefined>(undefined);
+	const currentLobbyIDRef = useLatestRef(lobbyID);
 
 	const userID = String(user.id);
-	const username =
-		user.username ??
-		user.display_name ??
-		"Unknown";
 
 	useEffect(() =>
 	{
@@ -194,6 +193,7 @@ export function LobbyChatBox()
 			) ?? "";
 
 		setMsg(draft);
+		setError(ErrorType.none);
 	}, [userID, lobbyID]);
 
 	useEffect(() =>
@@ -242,31 +242,49 @@ export function LobbyChatBox()
 		if (msg.trim().length === 0)
 			return;
 
-		addChatHistory(
-			lobbyID!,
-			username,
-			msg,
-		);
+		const content = msg;
+		const sentLobbyID = lobbyID!;
 
 		clearTimeout(timeoutIDRef.current);
-
-		localStorage.removeItem(
-			getLobbyDraftKey(
-				userID,
-				lobbyID!,
-			),
-		);
-
+		localStorage.removeItem(getLobbyDraftKey(userID, sentLobbyID));
 		setMsg("");
+		setError(ErrorType.none);
+
+		sendLobbyChatMessage(sentLobbyID, content).catch(err =>
+		{
+			if (currentLobbyIDRef.current === sentLobbyID)
+			{
+				const chatError = mapChatApiError(err);
+				setError(chatError !== ErrorType.unknown ? chatError : mapLobbyApiError(err));
+			}
+
+			// Preserve a failed send as a draft, but never overwrite text
+			// that was typed after the request started.
+			if (currentLobbyIDRef.current !== sentLobbyID)
+			{
+				localStorage.setItem(getLobbyDraftKey(userID, sentLobbyID), content);
+				return;
+			}
+
+			// The existing debounced draft effect persists the restored text.
+			// Keep state updaters pure; don't write to localStorage inside one.
+			setMsg(current => current.length > 0 ? current : content);
+		});
 	}
 
 	return (
 		<div className={styles.chatBox}>
+			{ error !== ErrorType.none &&
+				<div className={styles.chatError}>
+					<ErrorText error={error}/>
+				</div>
+			}
 			<ChatInput
 				placeholder="Type here..."
 				onSend={handleSend}
 				msg={msg}
 				setMsg={setMsg}
+				maxLength={LOBBY_MESSAGE_MAX_LENGTH}
 			/>
 
 			<SendButton onClick={handleSend}/>
