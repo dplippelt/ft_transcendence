@@ -1,44 +1,121 @@
 import Phaser, { Scene } from "phaser";
-import { GameWsEvent, type GameSnapshot, type IGameSocket } from "../network/IGameSocket";
 import { EventBus } from "../EventBus";
 import { CombatEvent } from "../../utils/utils";
 import MultiCombatManager from "../gameobjects/MultiCombatManager";
-import type { CombatState } from "../network/CombatTypes";
+import { CombatPhase, type CombatState } from "../network/CombatTypes";
+import type { INetworkScene } from "../network/INetworkScene";
+import { ActionType, type Action } from "../network/IGameSocket";
 
-export default class MultiCombatScene extends Scene {
+const MAX_QUEUED_EVENTS = 10; // more than this behind -> skip animations
+
+export default class MultiCombatScene extends Scene implements INetworkScene {
+  private state: CombatState | null = null;
   private combatManager!: MultiCombatManager;
+  private pendingAction: Action | null = null;
+  private pendingSequence: number | null = null;
+  private lastEventSequence: number = 0;
 
-  constructor(private readonly socket: IGameSocket) {
+  constructor() {
     super("MultiCombatScene");
   }
 
-  create(state: CombatState) {
-    this.combatManager = new MultiCombatManager(this, this.socket, state);
-    this.socket.on(GameWsEvent.MESSAGE, this.onSnapshot, this);
-    EventBus.addListener(CombatEvent.attack, this.onAttack, this);
-    EventBus.addListener(CombatEvent.draw, this.onDraw, this);
+  create(data: { state: CombatState; tick: number }) {
+    this.state = data.state;
+    this.combatManager = new MultiCombatManager(this, data.state, data.tick);
+
+    const listeners = this.activateUIActions();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
-      this.socket.off(GameWsEvent.MESSAGE, this.onSnapshot, this);
-      EventBus.removeListener(CombatEvent.attack, this.onAttack, this);
-      EventBus.removeListener(CombatEvent.draw, this.onDraw, this);
+      this.removeUIListeners(listeners);
     });
+
     EventBus.emit("current-scene-ready", this);
   }
 
-  private onSnapshot(snap: GameSnapshot) {
-    const state = snap.combat.find((combat) => combat.player_id === snap.user_player_id);
-    if (!state) {
+  nextAction(): Action | null {
+    const action = this.pendingAction;
+    this.pendingAction = null;
+    return action;
+  }
+
+  onActionSent(action: Action, seq: number): void {
+    if (action.type === ActionType.NONE) {
       return;
     }
-    const me = snap.players.find((p) => p.player_id === snap.user_player_id);
-    this.combatManager.applyState(state, me?.sequence ?? 0);
+    this.pendingSequence = seq;
   }
 
-  onAttack() {
-    this.combatManager?.sendPlayCards();
+  applyState(state: CombatState, ackSequence: number, tick: number) {
+    this.state = state;
+    if (this.pendingSequence !== null && ackSequence >= this.pendingSequence) {
+      this.pendingSequence = null;
+    }
+    this.combatManager.setLatestTick(tick);
+    const newEvents = state.events.filter((e) => e.seq > this.lastEventSequence);
+    const numEvents = newEvents.length;
+    if (numEvents === 0) {
+      this.updateInputEnabled();
+      return;
+    }
+    const missed = newEvents[0].seq > this.lastEventSequence + 1;
+    this.lastEventSequence = newEvents[numEvents - 1].seq;
+
+    if (missed || document.hidden || numEvents > MAX_QUEUED_EVENTS) {
+      this.combatManager.resync(state);
+    } else {
+      this.combatManager.handleEvents(newEvents, state);
+    }
+    this.updateInputEnabled();
   }
 
-  onDraw() {
-    this.combatManager?.sendRedraw();
+  private updateInputEnabled() {
+    this.input.enabled = this.canAct();
+  }
+
+  private canAct() {
+    return (
+      this.state?.phase === CombatPhase.PLAYER_TURN &&
+      this.pendingAction === null &&
+      this.pendingSequence === null &&
+      !this.combatManager.isPlaying
+    );
+  }
+
+  private activateUIActions() {
+    const m = this.combatManager;
+    const listeners: [string, () => void][] = [
+      [
+        CombatEvent.attack,
+        () => {
+          this.pendingAction = m.sendPlayCards();
+          this.updateInputEnabled();
+        },
+      ],
+      [
+        CombatEvent.draw,
+        () => {
+          this.pendingAction = m.sendRedraw();
+          this.updateInputEnabled();
+        },
+      ],
+      [CombatEvent.getInitPlayerHp, () => m.sendInitPlayerHP()],
+      [CombatEvent.getInitPlayerMp, () => m.sendInitPlayerMP()],
+      [CombatEvent.getInitEnemyHp, () => m.sendInitEnemyHP()],
+      [CombatEvent.getInitTargetNumbers, () => m.sendInitTargetNumbers()],
+      [CombatEvent.getCurrPlayerHp, () => m.sendCurrPlayerHP()],
+      [CombatEvent.getCurrPlayerMp, () => m.sendCurrPlayerMP()],
+      [CombatEvent.getCurrEnemyHp, () => m.sendCurrEnemyHP()],
+      [CombatEvent.getCurrTargetNumbers, () => m.sendCurrTargetNumbers()],
+      [CombatEvent.getTurnTimerState, () => m.sendElapsedPlayerTime()],
+    ];
+    for (const [event, handler] of listeners) {
+      EventBus.addListener(event, handler);
+    }
+    return listeners;
+  }
+
+  private removeUIListeners(listeners: [string, () => void][]) {
+    for (const [event, handler] of listeners) {
+      EventBus.removeListener(event, handler);
+    }
   }
 }
