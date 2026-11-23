@@ -41,6 +41,7 @@ class FriendResponse(BaseModel):
     id: int
     friend: FriendUserResponse
     created_at: datetime
+    is_online: bool
 
     model_config = {
         "from_attributes": True

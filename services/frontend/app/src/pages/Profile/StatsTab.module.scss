@@ -1,7 +1,0 @@
-@use '../../mixins' as *;
-
-.statsInfo
-{
-	@include profileInfo;
-	grid-template-columns: max-content 1fr;
-}

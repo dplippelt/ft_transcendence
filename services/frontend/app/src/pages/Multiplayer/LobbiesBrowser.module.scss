@@ -34,6 +34,27 @@
 	font-size: 0.8rem;
 }
 
+.lobbyDetails
+{
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+}
+
+.hostName
+{
+	font-size: 0.7rem;
+	color: inherit;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+
+	&:hover, &:focus-visible
+	{
+		text-decoration: underline;
+	}
+}
+
 .lobbyName
 {
 	text-wrap: nowrap;

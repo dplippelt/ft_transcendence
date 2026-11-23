@@ -48,11 +48,11 @@ function SidePanel()
 		setActiveFriendID(userID);
 	}
 
-	if ( activeFriend )
+	if ( activeFriend && activeFriendID )
 	{
 		return (
 			<div className={styles.friendsPanel}>
-				<ChatTitleSideBar activeFriend={activeFriend} />
+				<ChatTitleSideBar activeFriendID={activeFriendID} activeFriend={activeFriend} />
 				<ChatHistory />
 				<ChatBox />
 			</div>
@@ -63,11 +63,12 @@ function SidePanel()
 		<div className={styles.friendsPanel}>
 			<FriendsListTitle />
 			<FriendsList>
-				{ (friendID, username, avatar) =>
+				{ (friendID, username, avatar, isOnline) =>
 					<FriendButton
 						username={username}
 						friendID={friendID}
 						avatar={avatar}
+						isOnline={isOnline}
 						panel={true}
 						onClick={ () => handleOpenChat(friendID) } /> }
 			</FriendsList>

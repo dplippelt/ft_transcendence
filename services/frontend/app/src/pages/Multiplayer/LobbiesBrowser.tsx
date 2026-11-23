@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import React, {
 	useEffect,
 	useMemo,
@@ -135,8 +136,20 @@ function Lobbies({ lobbiesArr }: ILobbies,)
 							className={styles.lobby}
 							key={lobbyID}
 						>
-							<div className={styles.lobbyName}>
-								{lobby.name}
+							<div className={styles.lobbyDetails}>
+								<div className={styles.lobbyName}>
+									{lobby.name}
+								</div>
+								{lobby.members.filter(member => member.role === "host").map(host =>
+									<Link
+										key={host.user.id}
+										to={`${RoutePath.profile}/${host.user.id}`}
+										className={styles.hostName}
+										title={`View ${host.user.username ?? host.user.display_name ?? "player"}'s profile`}
+									>
+										Host: {host.user.username ?? host.user.display_name ?? "Unknown"}
+									</Link>
+								)}
 							</div>
 
 							<div className={styles.players}>

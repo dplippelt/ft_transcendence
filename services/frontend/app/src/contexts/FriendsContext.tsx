@@ -22,6 +22,7 @@ export interface IFriendData
 {
 	username: string;
 	avatar: string;
+	isOnline: boolean;
 }
 
 export interface IFriendRequestData
@@ -35,11 +36,12 @@ export interface IFriendRequestData
 type userID = string;
 type Friends = Record<userID, IFriendData>;
 
-function toFriendData( user: PublicUser ): IFriendData
+function toFriendData( user: PublicUser, isOnline = false ): IFriendData
 {
 	return {
 		username: getDisplayName(user),
 		avatar: user.avatar_url ?? guestAvatar,
+		isOnline,
 	};
 }
 
@@ -48,7 +50,8 @@ function toFriendRequestData( requestId: number, user: PublicUser ): IFriendRequ
 	return {
 		requestId,
 		userID: String(user.id),
-		...toFriendData(user),
+		username: getDisplayName(user),
+		avatar: user.avatar_url ?? guestAvatar,
 	};
 }
 
@@ -122,7 +125,7 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 			return;
 
 		const newFriends: Friends = Object.fromEntries(
-			friendList.friends.map(entry => [String(entry.friend.id), toFriendData(entry.friend)])
+			friendList.friends.map(entry => [String(entry.friend.id), toFriendData(entry.friend, entry.is_online)])
 		);
 
 		setFriends(newFriends);
@@ -148,6 +151,55 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 		else if ( auth.status === "unauthenticated" )
 			resetFriends();
 	}, [auth.status, refreshFriends, resetFriends]);
+
+	// Until the shared WebSocket refactor merges, poll only presence. The
+	// regular refreshFriends() continues to own membership and requests.
+	useEffect(() =>
+	{
+		const requestToken = auth.accessToken;
+
+		if ( auth.status !== "authenticated" || !requestToken )
+			return;
+
+		let inFlight = false;
+		const interval = window.setInterval(() =>
+		{
+			if ( inFlight )
+				return;
+
+			inFlight = true;
+			void getFriends(requestToken)
+				.then(friendList =>
+				{
+					if ( accessTokenRef.current !== requestToken )
+						return;
+
+					setFriends(previous =>
+					{
+						let changed = false;
+						const next = { ...previous };
+
+						for ( const entry of friendList.friends )
+						{
+							const friendID = String(entry.friend.id);
+							const friend = next[friendID];
+
+							if ( friend && friend.isOnline !== entry.is_online )
+							{
+								next[friendID] = { ...friend, isOnline: entry.is_online };
+								changed = true;
+							}
+						}
+
+						return changed ? next : previous;
+					});
+				})
+				.catch(() => {}) // Connection failure doesn't mean friends are offline.
+				.finally(() => { inFlight = false; });
+		}, 15000);
+
+		return () => window.clearInterval(interval);
+	}, [auth.accessToken, auth.status, accessTokenRef]);
 
 	async function addFriend( username: string )
 	{

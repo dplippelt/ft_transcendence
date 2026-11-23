@@ -3,8 +3,8 @@ import LandingPage from "./pages/LandingPage/LandingPage"
 import MainMenu from "./pages/MainMenu/MainMenu"
 import Settings from "./pages/Settings/Settings"
 import PhaserGame from "./pages/PhaserGame/PhaserGame"
-import Leaderboard from "./pages/Leaderboard/Leaderboard"
 import Profile from "./pages/Profile/Profile"
+import PublicProfile from "./pages/Profile/PublicProfile"
 import Auth from "./pages/Auth/Auth"
 import Friends from "./pages/Friends/Friends"
 import { RouteParam, RoutePath } from "./utils/utils"
@@ -45,7 +45,7 @@ export default function App()
                 <Route path={RoutePath.mpBrowser} element={ <LobbiesBrowser/> } />
                 <Route path={RoutePath.friends} element={ <Friends/> } />
                 <Route path={RoutePath.profile} element={ <Profile/> } />
-                <Route path={RoutePath.leaderboard} element={ <Leaderboard/> } />
+                <Route path={RoutePath.playerProfile} element={ <PublicProfile/> } />
                 <Route path={RoutePath.settings} element={ <Settings/> } />
             </Route>
         </Route>

@@ -35,6 +35,11 @@ class ConnectionManager:
         if not connections:
             _ = self.active_connections.pop(user_id, None)
 
+    def is_online(self, user_id: int) -> bool:
+        # One active authenticated chat connection is enough. Other tabs
+        # can disconnect without marking the user offline.
+        return bool(self.active_connections.get(user_id))
+
     async def send_to_user(self, user_id: int, payload: dict) -> bool:
         # Catch broadly per-socket: one dead/broken connection must not stop
         # delivery to this user's other open tabs/devices. A timeout guards

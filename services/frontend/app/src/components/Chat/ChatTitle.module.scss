@@ -28,3 +28,18 @@
 	max-width: none;
 	white-space: normal;
 }
+
+.profileLink
+{
+    display: flex;
+    flex-direction: row;
+    column-gap: 0.4rem;
+    align-items: center;
+    color: inherit;
+    text-decoration: none;
+
+    &:hover
+    {
+        text-decoration: underline;
+    }
+}

@@ -130,28 +130,6 @@
 	font-size: 0.6rem;
 }
 
-@mixin tabButton
-{
-	@include textButton;
-	width: fit-content;
-	font-size: 0.8rem;
-	border-bottom: 1px solid $primary-text-color;
-	border-radius: 0px;
-}
-
-.tabSelected
-{
-	@include tabButton;
-	border-bottom: 1px solid $primary-text-color;
-	border-radius: 0px;
-}
-
-.tabNotSelected
-{
-	@include tabButton;
-	border-bottom: none;
-}
-
 .sendButton
 {
 	background-color: $input-bg-color;
@@ -192,6 +170,24 @@
 	{
 		flex-shrink: 0;
 	}
+}
+
+.presenceIndicator
+{
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.online
+{
+    background-color: $moss-green-light;
+}
+
+.offline
+{
+    background-color: $grey-light;
 }
 
 .friendUsername

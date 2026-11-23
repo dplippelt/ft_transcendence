@@ -1,5 +1,6 @@
-import { FriendButton, InviteToPlayButton, RemoveFriendButton } from "../../components/Buttons";
-import { PopupType, MobileView } from "../../utils/utils";
+import { FriendButton, InviteToPlayButton, RemoveFriendButton, ChatButton } from "../../components/Buttons";
+import { useNavigate } from "react-router-dom";
+import { PopupType, MobileView, RoutePath } from "../../utils/utils";
 import TheFriendsList from "../../components/FriendsList";
 import { useFriends } from "../../contexts/FriendsContext";
 import useIsMobile from "../../hooks/useIsMobile";
@@ -19,6 +20,7 @@ function FriendsListTitle()
 function FriendsList( { setMobileView, setPopupType } : IFriendsWindow )
 {
 	const isMobile = useIsMobile(720);
+	const navigate = useNavigate();
 	const { setSelectedFriendID, setActiveFriendID } = useFriends();
 
 	function handleOpenChat( friendID: string )
@@ -43,9 +45,10 @@ function FriendsList( { setMobileView, setPopupType } : IFriendsWindow )
 
 	return (
 		<TheFriendsList>
-			{ (friendID, username, avatar) => (
+			{ (friendID, username, avatar, isOnline) => (
 				<>
-					<FriendButton username={username} friendID={friendID} avatar={avatar} panel={false} onClick={ () => handleOpenChat(friendID) } />
+					<FriendButton username={username} friendID={friendID} avatar={avatar} isOnline={isOnline} panel={false} onClick={ () => navigate(`${RoutePath.profile}/${friendID}`) } />
+					<ChatButton onClick={ () => handleOpenChat(friendID) } />
 					<InviteToPlayButton onClick={ () => handleInviteToPlay(friendID) } />
 					<RemoveFriendButton onClick={ () => handleRemoveFriend(friendID) } />
 				</>

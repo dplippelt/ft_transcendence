@@ -68,7 +68,7 @@ function Game( { currentActiveScene, gameRef, canStartGame, gameURL, userId, cle
  * changes instead of being unmounted/recreated per-route. isGameURL controls
  * visibility and whether a new game gets created. preserveGame() below decides on
  * whether to destroy the running instance on navigation using an explicit allowlist
- * of routes (Friends, Profile, Leaderboard, etc.) where the game should keep running
+ * of routes (Friends, Profile, etc.) where the game should keep running
  * in the background. */
 export default function PhaserGame( { currentActiveScene } : IPhaserGame )
 {
@@ -169,7 +169,6 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
           return true;
         case RoutePath.profile:
           return true;
-        case RoutePath.leaderboard:
           return true;
         case RoutePath.howToPlay:
           return true;

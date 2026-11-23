@@ -4,6 +4,7 @@ import React, {
 } from "react";
 import {
 	Navigate,
+	Link,
 	useLocation,
 	useNavigate,
 	useParams,
@@ -59,6 +60,7 @@ interface IGuestButtons
 
 interface IPlayer
 {
+	userID?: number;
 	username: string;
 	avatar: string;
 	alt: string;
@@ -74,25 +76,27 @@ interface ILobbyWindow
 	lobbyID: string;
 }
 
-function Player( { username, avatar, alt }: IPlayer,)
+function Player( { userID, username, avatar, alt }: IPlayer,)
 {
 	const isMobile = useIsMobile(480);
 
 	const avatarSize = isMobile ? AvatarSize.medium : AvatarSize.large;
+	const playerInfo = <>
+		<Avatar
+			src={avatar}
+			alt={alt}
+			size={avatarSize}
+		/>
 
-	return (
-		<div className={styles.player}>
-			<Avatar
-				src={avatar}
-				alt={alt}
-				size={avatarSize}
-			/>
-
-			<div className={styles.username}>
-				{username}
-			</div>
+		<div className={styles.username}>
+			{username}
 		</div>
-	);
+	</>;
+
+	if ( userID )
+		return <Link to={`${RoutePath.profile}/${userID}`} className={`${styles.player} ${styles.playerLink}`}>{playerInfo}</Link>;
+
+	return <div className={styles.player}>{playerInfo}</div>;
 }
 
 function getHost( lobby: LobbyData,)
@@ -126,12 +130,14 @@ function Players({ lobbyID }: IPlayers,)
 	return (
 		<div className={styles.players}>
 			<Player
+				userID={host?.user.id}
 				username={ username(host, "Host",) }
 				avatar={ host?.user.avatar_url ?? noAvatar }
 				alt="Host avatar"
 			/>
 
 			<Player
+				userID={secondPlayer?.user.id}
 				username={ username(secondPlayer,"Waiting...",) }
 				avatar={ secondPlayer ?.user.avatar_url ?? noAvatar }
 				alt="Player 2 avatar"
