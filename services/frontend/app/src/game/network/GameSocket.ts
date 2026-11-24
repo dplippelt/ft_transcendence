@@ -10,6 +10,8 @@ import {
   type IGameSocket,
 } from "./IGameSocket";
 
+export type SocketListener = [GameWsEvent, (...args: never[]) => void];
+
 export default class GameSocket extends Phaser.Events.EventEmitter implements IGameSocket {
   private readonly websocket: WebSocket;
   private readonly gameId: string;
