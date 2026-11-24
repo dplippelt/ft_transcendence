@@ -63,7 +63,7 @@ export default class MultiCombatManager implements ICombatView {
     this.latestTick = tick;
     this.maxPlayerHP = state.player.max_hp;
     this.maxPlayerMP = state.player.mp;
-    this.maxEnemyHP = state.enemy.hp;
+    this.maxEnemyHP = state.enemy.max_hp;
   }
 
   sendPlayCards() {
@@ -127,7 +127,7 @@ export default class MultiCombatManager implements ICombatView {
     try {
       await this.applyEvent(event);
     } catch (error) {
-      console.error("[combat] failed to play event", event, error);
+      console.error("[combat] failed to apply event", event, error);
     }
     void this.processNextEvent();
   }
