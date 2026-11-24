@@ -82,6 +82,7 @@ class Enemy(Entity):
 class GameSnapshot(BaseModel):
     type: Literal["game.snapshot"]
     game_id: str
+    ticks_per_second: int
     tick_id: int
     state: GameState
     dungeon_seed: int

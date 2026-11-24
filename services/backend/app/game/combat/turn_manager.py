@@ -13,6 +13,7 @@ class TurnManager:
     def __init__(self, config: TurnConfig) -> None:
         self._config = config
         self.phase: CombatPhase | None = None
+        self.turn_started_at_tick: int | None = None
         self.turn_ends_at_tick: int | None = None
 
     def is_player_turn(self) -> bool:
@@ -20,14 +21,17 @@ class TurnManager:
 
     def start_player_turn(self, tick: int) -> None:
         self.phase = CombatPhase.PLAYER_TURN
+        self.turn_started_at_tick = tick
         self.turn_ends_at_tick = tick + self._config.player_turn_ticks
 
     def start_enemy_turn(self, tick: int) -> None:
         self.phase = CombatPhase.ENEMY_TURN
+        self.turn_started_at_tick = tick
         self.turn_ends_at_tick = tick + self._config.enemy_turn_ticks
 
     def end(self) -> None:
         self.phase = CombatPhase.OVER
+        self.turn_started_at_tick = None
         self.turn_ends_at_tick = None
 
     def update(self, tick: int) -> CombatPhase | None:

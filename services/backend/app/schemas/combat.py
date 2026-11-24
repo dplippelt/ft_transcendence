@@ -62,11 +62,14 @@ class TurnStartedEvent(CombatEventBase):
 
 class HandDealtEvent(CombatEventBase):
     type: Literal[CombatEventType.HAND_DEALT] = CombatEventType.HAND_DEALT
+    player: CombatPlayerStatus
+    hand: list[CombatCard]
+    target_numbers: list[Number | None]
 
 class PlayerAttackEvent(CombatEventBase):
     type: Literal[CombatEventType.PLAYER_ATTACK] = CombatEventType.PLAYER_ATTACK
     combo: int
-    damage: int
+    enemy: CombatEnemyStatus
 
 class PlayMissedEvent(CombatEventBase):
     type: Literal[CombatEventType.PLAY_MISSED] = CombatEventType.PLAY_MISSED
@@ -76,8 +79,7 @@ class PlayerGuardEvent(CombatEventBase):
 
 class EnemyAttackEvent(CombatEventBase):
     type: Literal[CombatEventType.ENEMY_ATTACK] = CombatEventType.ENEMY_ATTACK
-    damage: int
-    player_hp: int
+    player: CombatPlayerStatus
 
 class CombatEndEvent(CombatEventBase):
     type: Literal[CombatEventType.COMBAT_END] = CombatEventType.COMBAT_END
@@ -105,12 +107,12 @@ class CombatState(BaseModel):
     player_id: int
     enemy_id: int
     phase: CombatPhase
+    turn_started_at_tick: int | None
     turn_ends_at_tick: int | None
     result: CombatResult | None
     player: CombatPlayerStatus
     enemy: CombatEnemyStatus
     hand: list[CombatCard]
     target_numbers: list[Number | None]
-    deck_count: int
     events: list[CombatEvent]
 

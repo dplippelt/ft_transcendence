@@ -177,6 +177,7 @@ class GameSimulation:
         return GameSnapshot(
             type="game.snapshot",
             game_id=self.game_id,
+            ticks_per_second=TICKS_PER_SECOND,
             tick_id=self.tick_id,
             state=self.game_state,
             dungeon_seed=self.dungeon_seed,
