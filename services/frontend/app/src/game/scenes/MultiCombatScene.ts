@@ -20,11 +20,11 @@ export default class MultiCombatScene extends Scene implements INetworkScene {
   }
 
   create(data: { state: CombatState; tick: number }) {
-    this.state = data.state;
     this.combatManager = new MultiCombatManager(this, data.state, data.tick);
     this.pendingAction = null;
     this.pendingSequence = null;
     this.lastEventSequence = 0;
+    this.applyState(data.state, 0, data.tick);
 
     const listeners = this.activateUIActions();
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
