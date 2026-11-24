@@ -1,5 +1,5 @@
 import Phaser, { Scene } from "phaser";
-import GameSocket from "../network/GameSocket";
+import GameSocket, { type SocketListener } from "../network/GameSocket";
 import MultiGameScene from "./MultiGameScene";
 import { GameEvent, RegistryKey, type GameURL } from "../../utils/utils";
 import {
@@ -21,7 +21,6 @@ const NON_ACTION: Action = {
   cards: [],
 };
 
-export const FIXED_TIME_STEP: number = 1 / 20; // MUST equal FIXED_TIME_STEP in backend game_session.py
 const MAX_TICKS_PER_FRAME: number = 5; // avoid a "spiral of death" after the tab was hidden
 
 export class MultiGameManagerScene extends Scene {
@@ -29,6 +28,7 @@ export class MultiGameManagerScene extends Scene {
   private _gameScene: MultiGameScene | null = null;
   private _combatScene: MultiCombatScene | null = null;
   private _combatId: string | null = null;
+  private _fixedTimeStep: number | null = null;
   private _elapsedTime: number = 0;
 
   constructor() {
@@ -50,7 +50,7 @@ export class MultiGameManagerScene extends Scene {
   }
 
   private activateGameSocketListeners(socket: GameSocket) {
-    const listeners: [string, (...args: any[]) => void][] = [
+    const listeners: SocketListener[] = [
       [GameWsEvent.SNAPSHOT, (snap: GameSnapshot) => this.onSnapshot(snap)],
       [GameWsEvent.DISCONNECTED, (info: DisconnectInfo) => this.onSocketDisconnected(info)],
     ];
@@ -60,7 +60,7 @@ export class MultiGameManagerScene extends Scene {
     return listeners;
   }
 
-  private removeGameSocket(socket: GameSocket, listeners: [string, (...args: any[]) => void][]) {
+  private removeGameSocket(socket: GameSocket, listeners: SocketListener[]) {
     for (const [event, handler] of listeners) {
       socket.off(event, handler);
     }
@@ -80,14 +80,14 @@ export class MultiGameManagerScene extends Scene {
 
   update(time: number, delta: number) {
     const socket = this._gameSocket;
-    if (!socket?.isOpen) {
+    if (!socket?.isOpen || !this._fixedTimeStep) {
       return;
     }
     void time;
     this._elapsedTime += delta;
     let ticks = 0;
-    while (this._elapsedTime >= FIXED_TIME_STEP && ticks < MAX_TICKS_PER_FRAME) {
-      this._elapsedTime -= FIXED_TIME_STEP;
+    while (this._elapsedTime >= this._fixedTimeStep && ticks < MAX_TICKS_PER_FRAME) {
+      this._elapsedTime -= this._fixedTimeStep;
       this.fixedTick();
       ticks++;
     }
@@ -119,6 +119,9 @@ export class MultiGameManagerScene extends Scene {
   }
 
   private onSnapshot(snapshot: GameSnapshot) {
+    if (!this._fixedTimeStep) {
+      this._fixedTimeStep = 1 / snapshot.ticks_per_second;
+    }
     const me = snapshot.players.find((p) => p.player_id === snapshot.user_player_id);
     const ackSequence = me?.sequence ?? 0;
 
