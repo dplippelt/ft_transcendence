@@ -28,6 +28,11 @@ export interface CombatEnemyStatus {
   attack_damage: number;
 }
 
+export enum CombatAction {
+  PLAY_CARDS = "play_cards",
+  REDRAW = "redraw",
+}
+
 export enum CombatEventType {
   TURN_STARTED = "turn_started",
   HAND_DEALT = "hand_dealt",
@@ -54,7 +59,7 @@ export interface HandDealtEvent extends CombatEventBase {
   type: CombatEventType.HAND_DEALT;
   player: CombatPlayerStatus;
   hand: CombatCard[];
-  target_numbers: (number | null)[],
+  target_numbers: (number | null)[];
 }
 
 export interface PlayerAttackEvent extends CombatEventBase {
@@ -83,7 +88,7 @@ export interface CombatEndEvent extends CombatEventBase {
 
 export interface ActionRejectedEvent extends CombatEventBase {
   type: CombatEventType.ACTION_REJECTED;
-  action: string;
+  action: CombatAction;
   reason: string;
 }
 
@@ -104,6 +109,7 @@ export type CombatState = {
   phase: CombatPhase;
   turn_started_at_tick: number | null;
   turn_ends_at_tick: number | null;
+  ticks_per_second: number;
   result: CombatResult | null;
   player: CombatPlayerStatus;
   enemy: CombatEnemyStatus;
