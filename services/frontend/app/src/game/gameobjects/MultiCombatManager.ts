@@ -5,6 +5,7 @@ import CombatEnemy from "./CombatEnemy";
 import CombatLayoutManager from "./CombatLayoutManager";
 import type { Action } from "../network/IGameSocket";
 import {
+  CombatAction,
   CombatEventType,
   CombatPhase,
   CombatResult,
@@ -17,9 +18,6 @@ import { EventBus } from "../EventBus";
 import { CombatEvent } from "../../utils/utils";
 import { ExecuteCombo } from "./CombatExecuteManager";
 import { CombatEvents } from "./CombatManager";
-import { FIXED_TIME_STEP } from "../scenes/MultiGameManagerScene";
-
-const TICK_MS = (1 / FIXED_TIME_STEP) * 1000;
 
 export default class MultiCombatManager implements ICombatView {
   readonly player: CombatPlayer;
@@ -27,6 +25,7 @@ export default class MultiCombatManager implements ICombatView {
   readonly cardManager: MultiCardManager;
   readonly events: Phaser.Events.EventEmitter;
   readonly layoutManager: CombatLayoutManager;
+  private readonly tickMs: number;
   private latestState: CombatState;
   private latestTick: number;
   private readonly targetNumbers: Record<ExecuteCombo, number | null> = {
@@ -37,6 +36,9 @@ export default class MultiCombatManager implements ICombatView {
   private busy = false;
   private eventQueue: CombatActionEvent[] = [];
   private playerTimer: { start: number; end: number } | null = null;
+  private maxPlayerHP: number;
+  private maxPlayerMP: number;
+  private maxEnemyHP: number;
 
   constructor(
     readonly scene: Scene,
@@ -57,9 +59,12 @@ export default class MultiCombatManager implements ICombatView {
     this.events.on(CombatEvents.COMPLETEFILLHAND, () => {
       EventBus.emit(CombatEvent.completeFillHand);
     });
-    this.cardManager.syncHand(state.hand);
+    this.tickMs = (1 / state.ticks_per_second) * 1000;
     this.latestState = state;
     this.latestTick = tick;
+    this.maxPlayerHP = state.player.max_hp;
+    this.maxPlayerMP = state.player.mp;
+    this.maxEnemyHP = state.enemy.hp;
   }
 
   sendPlayCards() {
@@ -97,16 +102,12 @@ export default class MultiCombatManager implements ICombatView {
   resync(state: CombatState) {
     this.latestState = state;
     this.eventQueue = [];
-    this.syncWithState(state);
-    this.updatePlayerTimer(state.phase, state.turn_started_at_tick, state.turn_ends_at_tick);
-  }
-
-  private syncWithState(state: CombatState) {
     this.cardManager.syncHand(state.hand);
     this.updateTargetNumbers(state.target_numbers);
     this.player.status.hitPoint = state.player.hp;
     this.player.status.mana = state.player.mp;
     this.enemy.hitPoint = state.enemy.hp;
+    this.updatePlayerTimer(state.phase, state.turn_started_at_tick, state.turn_ends_at_tick);
   }
 
   handleEvents(events: CombatActionEvent[], state: CombatState) {
@@ -161,6 +162,9 @@ export default class MultiCombatManager implements ICombatView {
         return;
       case CombatEventType.ACTION_REJECTED:
         console.warn(`[combat] ${event.action} rejected: ${event.reason}`);
+        if (event.action === CombatAction.REDRAW) {
+          this.events.emit(CombatEvents.COMPLETEFILLHAND);
+        }
         return;
       case CombatEventType.COMBAT_END:
         this.updatePlayerTimer(CombatPhase.OVER, event.tick, null);
@@ -189,7 +193,7 @@ export default class MultiCombatManager implements ICombatView {
   }
 
   private updatePlayerTimer(phase: CombatPhase, start: number | null, end: number | null) {
-    if (phase === CombatPhase.PLAYER_TURN && start && end) {
+    if (phase === CombatPhase.PLAYER_TURN && start !== null && end !== null) {
       this.playerTimer = { start, end };
       this.sendElapsedPlayerTime();
     } else {
@@ -205,15 +209,15 @@ export default class MultiCombatManager implements ICombatView {
   }
 
   sendInitPlayerHP() {
-    EventBus.emit(CombatEvent.initPlayerHP, this.latestState.player.max_hp);
+    EventBus.emit(CombatEvent.initPlayerHP, this.maxPlayerHP);
   }
 
   sendInitPlayerMP() {
-    EventBus.emit(CombatEvent.initPlayerMP, this.latestState.player.mp);
+    EventBus.emit(CombatEvent.initPlayerMP, this.maxPlayerMP);
   }
 
   sendInitEnemyHP() {
-    EventBus.emit(CombatEvent.initEnemyHP, this.latestState.enemy.max_hp);
+    EventBus.emit(CombatEvent.initEnemyHP, this.maxEnemyHP);
   }
 
   sendInitTargetNumbers() {
@@ -241,8 +245,8 @@ export default class MultiCombatManager implements ICombatView {
       return;
     }
     const { start, end } = this.playerTimer;
-    const totalMs = (end - start) * TICK_MS;
-    const elapsedMs = Math.min(totalMs, (this.latestTick - start) * TICK_MS);
+    const totalMs = (end - start) * this.tickMs;
+    const elapsedMs = Math.min(totalMs, (this.latestTick - start) * this.tickMs);
     EventBus.emit(CombatEvent.initTurn, totalMs, elapsedMs);
   }
 }
