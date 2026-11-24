@@ -4,44 +4,43 @@ import pyotp
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy import text
 
 import app.models
 from app.api.v1 import auth, lobbies, scores
 from app.core.rate_limit import FixedWindowLimiter
 from app.core.security import create_access_token, get_password_hash
-from app.db.database import Base, get_db
+from app.db.database import Base, SessionLocal, engine, get_db
 from app.models.auth_account import AuthAccount
 from app.models.user import User
 
-# create an SQLite database entirely in memory
-TEST_DATABASE_URL = "sqlite+pysqlite:///:memory:"
 TEST_EMAIL = "test@example.com"
 TEST_PASSWORD = "TestPassword123!"
 TEST_USERNAME = "testuser"
 
-engine = create_engine(
-    TEST_DATABASE_URL,
-    # FastAPI's TestClient makes requests in separate threads,
-    # so this allows the test env to share the SQLite connection
-    connect_args={"check_same_thread": False},
-    # keep reusing the same connection
-    poolclass=StaticPool,
-)
+@pytest.fixture(scope="session", autouse=True)
+def check_test_database():
+    url = engine.url
 
-TestingSessionLocal = sessionmaker(
-    autocommit=False,
-    autoflush=False,
-    bind=engine,
-)
+    if (
+        url.get_backend_name() != "postgresql"
+        or url.database != "game_test_db"
+        or url.username != "test_user"
+        or url.host not in ("db-test", "localhost", "127.0.0.1")
+    ):
+        pytest.fail( "Tests must run against the dedicated PostgreSQL test database.")
+
+    with engine.connect() as connection:
+        database, username = connection.execute(text("SELECT current_database(), current_user")).one()
+
+        if database != "game_test_db" or username != "test_user":
+            pytest.fail("Unsafe database connection. Aborting tests.")
 
 @pytest.fixture()
 def db():
     Base.metadata.create_all(bind=engine)
 
-    session = TestingSessionLocal()
+    session = SessionLocal()
 
     try:
         yield session

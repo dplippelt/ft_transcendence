@@ -3,16 +3,22 @@
 set -euo pipefail
 
 
-COMPOSE_FILE="./docker-compose.yml"
-ENV_FILE=".env"
-ENV_SECRET_FILE=".env.secrets"
+COMPOSE_FILE="./docker-compose.test.yml"
+COMPOSE_PROJECT="ft_transcendence-test"
 
 COMPOSE=(
 	docker compose
+	-p "$COMPOSE_PROJECT"
 	-f "$COMPOSE_FILE"
-	--env-file "$ENV_FILE"
-	--env-file "$ENV_SECRET_FILE"
 )
+
+
+cleanup()
+{
+	"${COMPOSE[@]}" down --remove-orphans
+}
+
+trap cleanup EXIT
 
 
 run_pytest()
@@ -20,11 +26,11 @@ run_pytest()
 	local path="$1"
 	shift
 
-	"${COMPOSE[@]}" run --rm backend \
+	"${COMPOSE[@]}" run --rm --build backend-test \
 		python -m pytest "$path" \
 		-v \
 		--maxfail=1 \
-        --disable-warnings \
+		--disable-warnings \
 		"$@"
 }
 

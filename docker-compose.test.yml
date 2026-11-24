@@ -1,0 +1,29 @@
+services:
+  backend-test:
+    build: ./services/backend
+    volumes:
+      - ./services/backend/app:/app/app
+      - ./services/backend/tests:/app/tests
+    depends_on:
+      db-test:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+psycopg://test_user:test_password@db-test:5432/game_test_db
+      SECRET_KEY: "test-only-secret-key-not-for-production"
+      TWO_FACTOR_ENCRYPTION_KEY: "7oGz1lF3z1lF3z1lF3z1lF3z1lF3z1lF3z1lF3z1lFI="
+      TWO_FACTOR_RECOVERY_HMAC_KEY: "test-recovery-hmac-key"
+    command: ["python", "-m", "pytest"]
+
+  db-test:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: game_test_db
+      POSTGRES_USER: test_user
+      POSTGRES_PASSWORD: test_password
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test_user -d game_test_db"]
+      interval: 2s
+      timeout: 5s
+      retries: 10

@@ -3,7 +3,7 @@ from datetime import timedelta
 
 import pytest
 from fastapi import HTTPException
-from sqlalchemy import event
+from sqlalchemy import event, text
 from sqlalchemy.dialects import postgresql
 
 from app.core.exceptions import ErrorCode
@@ -452,7 +452,23 @@ def test_switch_lobby_recovers_orphaned_membership(db, user, make_user):
     # Mirrors stale data left by deployments that did not enforce FK cleanup.
     from app.models.lobby_member import LobbyMember
     target = create_lobby(db, make_user(), "New lobby")
+
+    # Simulate legacy data created without foreign key enforcement.
+    db.execute(text(
+        "ALTER TABLE lobby_members "
+        "DROP CONSTRAINT lobby_members_lobby_id_fkey"
+    ))
+
     db.add(LobbyMember(lobby_id=9999, user_id=user.id, role=GUEST))
+    db.flush()
+
+    # Restore FK enforcement without validating existing legacy data.
+    db.execute(text(
+        "ALTER TABLE lobby_members "
+        "ADD CONSTRAINT lobby_members_lobby_id_fkey "
+        "FOREIGN KEY (lobby_id) REFERENCES lobbies(id) "
+        "ON DELETE CASCADE NOT VALID"
+    ))
     db.commit()
 
     invitation_id = _invite(db, target, user)
@@ -461,6 +477,13 @@ def test_switch_lobby_recovers_orphaned_membership(db, user, make_user):
     assert result.previous_lobby_id == 9999
     assert get_member(db, 9999, user.id) is None
     assert get_member(db, target.id, user.id) is not None
+
+    # Verify that referential integrity has been restored.
+    db.execute(text(
+        "ALTER TABLE lobby_members "
+        "VALIDATE CONSTRAINT lobby_members_lobby_id_fkey"
+    ))
+    db.commit()
 
 
 def test_switch_lobby_without_invitation_forbidden(db, user, make_user):
