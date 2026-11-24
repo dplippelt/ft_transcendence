@@ -249,13 +249,13 @@ export default class CombatAnimation {
     });
   }
 
-  playerAttack() {
+  playerAttack(combo?: ExecuteCombo) {
     this.turnManger?.pausePlayerTurn();
     const execute = this.combatManager.executeManager; // TODO:
     if (!execute) {
       return;
     }
-    switch (execute.getCombo()) {
+    switch (combo ?? execute.getCombo()) {
       case ExecuteCombo.ONE:
         this.player.play(PlayerAnimation.ATTACK_A);
         break;
