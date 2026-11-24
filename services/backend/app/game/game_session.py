@@ -136,19 +136,38 @@ class GameSession:
                 self.state = SessionState.WAITING_FOR_PLAYERS
 
     async def game_loop(self):
+        # [To Jose] The elapsed real time is accumulated, and as many fixed ticks are run as that
+        # time requires (the same approach as the client's MultiGameManagerScene).
+        # Sleeping only yields to the event loop until the next tick is due: if it
+        # oversleeps, the extra time stays in the elapsed_time and is caught up on the
+        # next iteration, so the tick rate never drifts below 1 / FIXED_TIME_STEP.
+        # (Previously each iteration slept FIXED_TIME_STEP minus the work time; the
+        # oversleep of every asyncio.sleep() was lost, the server ticked slightly
+        # slower than the clients sent actions, and the action queues kept growing.)
         FIXED_TIME_STEP: float = 1.0 / 20.0
+        MAX_TICKS_PER_LOOP = 5
+        elapsed_time = 0.0
+        previous = monotonic()
 
         while True:
-            start_time = monotonic()
             if self.is_over():
                 break
+            now = monotonic()
+            elapsed_time += now - previous
+            previous = now
 
             await self.check_user_activity()
-            if self.state == SessionState.RUNNING:
-                self.game.tick(FIXED_TIME_STEP)
+            ticks = 0
+            while elapsed_time >= FIXED_TIME_STEP and ticks < MAX_TICKS_PER_LOOP:
+                elapsed_time -= FIXED_TIME_STEP
+                ticks += 1
+                if self.state == SessionState.RUNNING:
+                    self.game.tick(FIXED_TIME_STEP)
+            if ticks == MAX_TICKS_PER_LOOP:
+                elapsed_time = 0.0
+            if ticks > 0 and self.state == SessionState.RUNNING:
                 await self.broadcast()
 
-            elapsed_time = monotonic() - start_time
             await asyncio.sleep(delay=max(0, FIXED_TIME_STEP - elapsed_time))
 
     def update_time_since_action(self, user_id: int):
