@@ -52,12 +52,15 @@ export interface TurnStartedEvent extends CombatEventBase {
 
 export interface HandDealtEvent extends CombatEventBase {
   type: CombatEventType.HAND_DEALT;
+  player: CombatPlayerStatus;
+  hand: CombatCard[];
+  target_numbers: (number | null)[],
 }
 
 export interface PlayerAttackEvent extends CombatEventBase {
   type: CombatEventType.PLAYER_ATTACK;
   combo: number;
-  damage: number;
+  enemy: CombatEnemyStatus;
 }
 
 export interface PlayMissedEvent extends CombatEventBase {
@@ -70,10 +73,12 @@ export interface PlayerGuardEvent extends CombatEventBase {
 
 export interface EnemyAttackEvent extends CombatEventBase {
   type: CombatEventType.ENEMY_ATTACK;
+  player: CombatPlayerStatus;
 }
 
 export interface CombatEndEvent extends CombatEventBase {
   type: CombatEventType.COMBAT_END;
+  result: CombatResult;
 }
 
 export interface ActionRejectedEvent extends CombatEventBase {
@@ -97,12 +102,12 @@ export type CombatState = {
   player_id: number;
   enemy_id: number;
   phase: CombatPhase;
+  turn_started_at_tick: number | null;
   turn_ends_at_tick: number | null;
   result: CombatResult | null;
   player: CombatPlayerStatus;
   enemy: CombatEnemyStatus;
   hand: CombatCard[];
   target_numbers: (number | null)[];
-  deck_count: number;
   events: CombatActionEvent[];
 };

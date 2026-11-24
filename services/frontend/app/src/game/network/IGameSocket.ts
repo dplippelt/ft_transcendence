@@ -78,6 +78,7 @@ export interface SnapshotEnemy {
 export interface GameSnapshot {
   type: GameWsMessageType.SNAPSHOT;
   game_id: string;
+  ticks_per_second: number;
   tick_id: number;
   state: ServerGameState;
   dungeon_seed: number;
