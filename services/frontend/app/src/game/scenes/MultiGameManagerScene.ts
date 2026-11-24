@@ -109,11 +109,11 @@ export class MultiGameManagerScene extends Scene {
   }
 
   private activeScene() {
-    if (this._gameScene && this.scene.isActive(this._gameScene)) {
-      return this._gameScene;
-    }
     if (this._combatScene && this.scene.isActive(this._combatScene)) {
       return this._combatScene;
+    }
+    if (this._gameScene && this.scene.isActive(this._gameScene)) {
+      return this._gameScene;
     }
     return null;
   }
