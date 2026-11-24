@@ -98,6 +98,7 @@ class CombatManager:
             phase=self._turn_manager.phase,
             turn_started_at_tick=self._turn_manager.turn_started_at_tick,
             turn_ends_at_tick=self._turn_manager.turn_ends_at_tick,
+            ticks_per_second=TICKS_PER_SECOND,
             result=self.result,
             player=self.player.model_copy(),
             enemy=self.enemy.model_copy(),

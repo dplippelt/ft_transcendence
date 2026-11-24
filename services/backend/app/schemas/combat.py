@@ -109,6 +109,7 @@ class CombatState(BaseModel):
     phase: CombatPhase
     turn_started_at_tick: int | None
     turn_ends_at_tick: int | None
+    ticks_per_second: int
     result: CombatResult | None
     player: CombatPlayerStatus
     enemy: CombatEnemyStatus
