@@ -21,7 +21,7 @@ const NON_ACTION: Action = {
   cards: [],
 };
 
-const FIXED_TIME_STEP: number = 1 / 20; // MUST equal FIXED_TIME_STEP in backend game_session.py
+export const FIXED_TIME_STEP: number = 1 / 20; // MUST equal FIXED_TIME_STEP in backend game_session.py
 const MAX_TICKS_PER_FRAME: number = 5; // avoid a "spiral of death" after the tab was hidden
 
 export class MultiGameManagerScene extends Scene {
