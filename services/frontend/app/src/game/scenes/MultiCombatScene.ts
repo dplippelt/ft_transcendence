@@ -65,7 +65,7 @@ export default class MultiCombatScene extends Scene implements INetworkScene {
     if (missed || document.hidden || numEvents > MAX_QUEUED_EVENTS) {
       this.combatManager.resync(state);
     } else {
-      this.combatManager.handleEvents(newEvents, state);
+      this.combatManager.handleEvents(newEvents);
     }
     this.updateInputEnabled();
   }
