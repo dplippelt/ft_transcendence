@@ -145,6 +145,7 @@ class GameSession:
         # oversleep of every asyncio.sleep() was lost, the server ticked slightly
         # slower than the clients sent actions, and the action queues kept growing.)
         FIXED_TIME_STEP: float = 1.0 / 20.0
+        # Upper bound of ticks run in one loop iteration, to avoid a long burst after a pause
         MAX_TICKS_PER_LOOP = 5
         elapsed_time = 0.0
         previous = monotonic()
