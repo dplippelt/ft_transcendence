@@ -89,6 +89,9 @@ export default class MultiCombatScene extends Scene implements INetworkScene {
       [
         CombatEvent.attack,
         () => {
+          if (!this.canAct()) {
+            return ;
+          }
           this.pendingAction = m.sendPlayCards();
           this.updateInputEnabled();
         },
@@ -96,6 +99,7 @@ export default class MultiCombatScene extends Scene implements INetworkScene {
       [
         CombatEvent.draw,
         () => {
+          // TODO: reject when it cannot act and enable the draw button
           this.pendingAction = m.sendRedraw();
           this.updateInputEnabled();
         },
