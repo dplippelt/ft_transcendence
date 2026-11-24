@@ -14,7 +14,7 @@ import MultiCombatScene from "./MultiCombatScene";
 import { EventBus } from "../EventBus";
 import type { CombatState } from "../network/CombatTypes";
 
-const NON_ACTION: Action = {
+const NONE_ACTION: Action = {
   type: ActionType.NONE,
   direction: Direction.NONE,
   card: 0,
@@ -70,7 +70,7 @@ export class MultiGameManagerScene extends Scene {
   create() {
     const keepAlive = window.setInterval(() => {
       if (document.hidden && this._gameSocket?.isOpen) {
-        this._gameSocket.sendAction(NON_ACTION);
+        this._gameSocket.sendAction(NONE_ACTION);
       }
     }, 1000);
     this.events.once(Phaser.Scenes.Events.DESTROY, () => {
@@ -84,7 +84,7 @@ export class MultiGameManagerScene extends Scene {
       return;
     }
     void time;
-    this._elapsedTime += delta;
+    this._elapsedTime += delta / 1000;
     let ticks = 0;
     while (this._elapsedTime >= this._fixedTimeStep && ticks < MAX_TICKS_PER_FRAME) {
       this._elapsedTime -= this._fixedTimeStep;
@@ -103,7 +103,7 @@ export class MultiGameManagerScene extends Scene {
       return;
     }
     const scene = this.activeScene();
-    const action = scene?.nextAction() ?? NON_ACTION;
+    const action = scene?.nextAction() ?? NONE_ACTION;
     const sequence = socket.sendAction(action)!;
     scene?.onActionSent(action, sequence);
   }
