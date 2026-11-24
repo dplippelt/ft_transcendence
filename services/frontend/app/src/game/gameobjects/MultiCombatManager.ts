@@ -26,7 +26,6 @@ export default class MultiCombatManager implements ICombatView {
   readonly events: Phaser.Events.EventEmitter;
   readonly layoutManager: CombatLayoutManager;
   private readonly tickMs: number;
-  private latestState: CombatState;
   private latestTick: number;
   private readonly targetNumbers: Record<ExecuteCombo, number | null> = {
     [ExecuteCombo.ONE]: null,
@@ -35,6 +34,7 @@ export default class MultiCombatManager implements ICombatView {
   };
   private busy = false;
   private eventQueue: CombatActionEvent[] = [];
+  private generation: number = 0;
   private playerTimer: { start: number; end: number } | null = null;
   private maxPlayerHP: number;
   private maxPlayerMP: number;
@@ -60,7 +60,6 @@ export default class MultiCombatManager implements ICombatView {
       EventBus.emit(CombatEvent.completeFillHand);
     });
     this.tickMs = (1 / state.ticks_per_second) * 1000;
-    this.latestState = state;
     this.latestTick = tick;
     this.maxPlayerHP = state.player.max_hp;
     this.maxPlayerMP = state.player.mp;
@@ -100,7 +99,7 @@ export default class MultiCombatManager implements ICombatView {
   }
 
   resync(state: CombatState) {
-    this.latestState = state;
+    this.generation++;
     this.eventQueue = [];
     this.cardManager.syncHand(state.hand);
     this.updateTargetNumbers(state.target_numbers);
@@ -110,62 +109,79 @@ export default class MultiCombatManager implements ICombatView {
     this.updatePlayerTimer(state.phase, state.turn_started_at_tick, state.turn_ends_at_tick);
   }
 
-  handleEvents(events: CombatActionEvent[], state: CombatState) {
-    this.latestState = state;
+  handleEvents(events: CombatActionEvent[]) {
     this.eventQueue.push(...events);
     if (this.busy) {
       return;
     }
-    void this.playNextEvent();
+    void this.processNextEvent();
   }
 
-  private async playNextEvent() {
+  private async processNextEvent() {
     const event = this.eventQueue.shift();
     if (!event) {
       this.busy = false;
       return;
     }
     this.busy = true;
-    await this.play(event);
-    this.playNextEvent();
+    try {
+      await this.applyEvent(event);
+    } catch (error) {
+      console.error("[combat] failed to play event", event, error);
+    }
+    void this.processNextEvent();
   }
 
-  private async play(event: CombatActionEvent) {
+  private async applyEvent(event: CombatActionEvent) {
     switch (event.type) {
       case CombatEventType.TURN_STARTED:
         this.updatePlayerTimer(event.phase, event.tick, event.turn_ends_at_tick);
         return;
+
       case CombatEventType.HAND_DEALT:
-        this.cardManager.syncHand(event.hand);
-        this.updateTargetNumbers(event.target_numbers);
-        this.player.status.mana = event.player.mp;
-        await this.waitFor(CombatEvents.COMPLETEFILLHAND);
-        return;
+        return this.applyAndWait(() => {
+          this.cardManager.syncHand(event.hand);
+          this.updateTargetNumbers(event.target_numbers);
+          this.player.status.mana = event.player.mp;
+        }, CombatEvents.COMPLETEFILLHAND);
+
       case CombatEventType.PLAYER_ATTACK:
-        const enemyTakeDamage = this.waitFor(CombatEvents.TAKEDAMAGE);
-        this.events.emit(CombatEvents.PLAYERATTACK, this.toExecuteCombo(event.combo));
-        await enemyTakeDamage;
-        this.enemy.hitPoint = event.enemy.hp;
-        return;
-      case CombatEventType.PLAYER_GUARD:
-        const ended = this.waitFor(CombatEvents.ENDTURN);
-        this.events.emit(CombatEvents.PLAYERGUARD);
-        await ended;
-        return;
+        return this.applyWhenDone(
+          () => {
+            this.events.emit(CombatEvents.PLAYERATTACK, this.toExecuteCombo(event.combo));
+          },
+          CombatEvents.TAKEDAMAGE,
+          () => {
+            this.enemy.hitPoint = event.enemy.hp;
+          },
+        );
+
       case CombatEventType.ENEMY_ATTACK:
-        const playerTakeDamage = this.waitFor(CombatEvents.TAKEDAMAGE);
-        this.events.emit(CombatEvents.ENEMYATTACK);
-        await playerTakeDamage;
-        this.player.status.hitPoint = event.player.hp;
-        return;
+        return this.applyWhenDone(
+          () => {
+            this.events.emit(CombatEvents.ENEMYATTACK);
+          },
+          CombatEvents.TAKEDAMAGE,
+          () => {
+            this.player.status.hitPoint = event.player.hp;
+          },
+        );
+
+      case CombatEventType.PLAYER_GUARD:
+        return this.applyAndWait(() => {
+          this.events.emit(CombatEvents.PLAYERGUARD);
+        }, CombatEvents.ENDTURN);
+
       case CombatEventType.PLAY_MISSED:
         return;
+
       case CombatEventType.ACTION_REJECTED:
         console.warn(`[combat] ${event.action} rejected: ${event.reason}`);
         if (event.action === CombatAction.REDRAW) {
           this.events.emit(CombatEvents.COMPLETEFILLHAND);
         }
         return;
+
       case CombatEventType.COMBAT_END:
         this.updatePlayerTimer(CombatPhase.OVER, event.tick, null);
         // TODO:
@@ -176,6 +192,22 @@ export default class MultiCombatManager implements ICombatView {
         }
         return;
     }
+  }
+
+  private async applyWhenDone(start: () => void, doneEvent: CombatEvents, apply: () => void) {
+    const generation = this.generation;
+    const done = this.waitFor(doneEvent);
+    start();
+    await done;
+    if (generation === this.generation) {
+      apply();
+    }
+  }
+
+  private async applyAndWait(apply: () => void, doneEvent: CombatEvents) {
+    const done = this.waitFor(doneEvent);
+    apply();
+    await done;
   }
 
   private waitFor(event: CombatEvents): Promise<void> {
