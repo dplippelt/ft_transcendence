@@ -27,7 +27,7 @@ export default class MultiCombatManager implements ICombatView {
   readonly layoutManager: CombatLayoutManager;
   private readonly tickMs: number;
   private latestTick: number;
-  private readonly targetNumbers: Record<ExecuteCombo, number | null> = {
+  private targetNumbers: Record<ExecuteCombo, number | null> = {
     [ExecuteCombo.ONE]: null,
     [ExecuteCombo.TWO]: null,
     [ExecuteCombo.THREE]: null,
@@ -124,6 +124,7 @@ export default class MultiCombatManager implements ICombatView {
       return;
     }
     this.busy = true;
+    this.logEvent(event);
     try {
       await this.applyEvent(event);
     } catch (error) {
@@ -235,9 +236,11 @@ export default class MultiCombatManager implements ICombatView {
   }
 
   private updateTargetNumbers(target: (number | null)[]) {
-    this.targetNumbers[ExecuteCombo.ONE] = target[ExecuteCombo.ONE];
-    this.targetNumbers[ExecuteCombo.TWO] = target[ExecuteCombo.TWO];
-    this.targetNumbers[ExecuteCombo.THREE] = target[ExecuteCombo.THREE];
+    this.targetNumbers = {
+      [ExecuteCombo.ONE]: target[0] ?? null,
+      [ExecuteCombo.TWO]: target[1] ?? null,
+      [ExecuteCombo.THREE]: target[2] ?? null,
+    };
   }
 
   sendInitPlayerHP() {
@@ -280,5 +283,10 @@ export default class MultiCombatManager implements ICombatView {
     const totalMs = (end - start) * this.tickMs;
     const elapsedMs = Math.min(totalMs, (this.latestTick - start) * this.tickMs);
     EventBus.emit(CombatEvent.initTurn, totalMs, elapsedMs);
+  }
+
+  private logEvent(event: CombatActionEvent) {
+    const { seq, tick, type, ...detail } = event;
+    console.log(`[combat] #${seq} tick ${tick} ${type}`, detail);
   }
 }
