@@ -251,11 +251,7 @@ export default class CombatAnimation {
 
   playerAttack(combo?: ExecuteCombo) {
     this.turnManger?.pausePlayerTurn();
-    const execute = this.combatManager.executeManager; // TODO:
-    if (!execute) {
-      return;
-    }
-    switch (combo ?? execute.getCombo()) {
+    switch (combo ?? this.combatManager.executeManager?.getCombo()) {
       case ExecuteCombo.ONE:
         this.player.play(PlayerAnimation.ATTACK_A);
         break;
