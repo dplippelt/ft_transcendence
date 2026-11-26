@@ -81,21 +81,18 @@ def get_current_user_matching_path(user_id: int, current_user: CurrentUser) -> U
 SelfUser = Annotated[User, Depends(get_current_user_matching_path)]
 
 
-def get_current_user_id_ws(websocket: WebSocket, token: str | None = Query(default=None), ticket: str | None = Query(default=None),) -> int:
+def get_current_user_id_ws(websocket: WebSocket, ticket: str | None = Query(default=None),) -> int:
     # Browser WebSocket handshakes are not covered by CORS middleware.
-    # Restrict ticket authentication to our configured frontend origin.
-    if (ticket is not None and websocket.headers.get("origin") != get_settings().frontend_origin):
+    # Require a single-use ticket from our configured frontend origin.
+    if not ticket or websocket.headers.get("origin") != get_settings().frontend_origin:
         raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
 
     # Keep the database session scoped to handshake authentication, not the
     # entire WebSocket lifetime.
     db = SessionLocal()
     try:
-        if ticket is not None:
-            user_id = consume_websocket_ticket(db, ticket)
-            user = db.get(User, user_id) if user_id is not None else None
-        else:
-            user = get_user_from_token(token, db)
+        user_id = consume_websocket_ticket(db, ticket)
+        user = db.get(User, user_id) if user_id is not None else None
 
         if user is None or not user.is_active or user.username is None:
             raise WebSocketException(code=status.WS_1008_POLICY_VIOLATION)
