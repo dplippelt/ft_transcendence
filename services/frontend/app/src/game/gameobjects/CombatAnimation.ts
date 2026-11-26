@@ -264,7 +264,7 @@ export default class CombatAnimation {
       default:
         throw Error("Execution combo animation is not implemented.");
     }
-    this.player.once("animationcomplete", () => {
+    this.player.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
       this.enemyTakeDamage();
     });
   }
@@ -272,7 +272,7 @@ export default class CombatAnimation {
   playerGuard() {
     this.player.play(PlayerAnimation.GUARD_START);
     this.player.playAfterRepeat(PlayerAnimation.GUARD);
-    this.player.once("animationcomplete", () => {
+    this.player.once(Phaser.Animations.Events.ANIMATION_COMPLETE, () => {
       this.enemyAttackBefore(() => {
         this.player.play(PlayerAnimation.GUARD_END);
         this.player.playAfterRepeat(PlayerAnimation.IDLE);
@@ -332,6 +332,19 @@ export default class CombatAnimation {
         this.combatManager.events.emit(CombatEvents.TAKEDAMAGE, this.player);
       },
     });
+  }
+
+  // Stop any running combat animation and put both combatants back to their idle pose.
+  resetToIdle() {
+    this.scene.tweens.killTweensOf([this.player, this.enemy]);
+    this.player.removeAllListeners(Phaser.Animations.Events.ANIMATION_COMPLETE);
+    this.player.clearTint();
+    this.enemy.clearTint();
+    this.player.play(PlayerAnimation.IDLE);
+    this.enemy.play(EnemyAnimation.WALK);
+    // Killed yoyo tweens may leave them off their place
+    this.combatLayoutManager.updatePlayer();
+    this.combatLayoutManager.updateEnemy();
   }
 
   registerPlayerAnimation() {
