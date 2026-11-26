@@ -69,6 +69,8 @@ start: ensure-env
 stop:
 	$(COMPOSE) stop
 
+test-all: test test-frontend
+
 test: ensure-env
 	./scripts/test.sh all
 
@@ -86,6 +88,15 @@ test-lobby: ensure-env
 
 test-friends: ensure-env
 	./scripts/test.sh friends
+
+test-websocket: ensure-env
+	./scripts/test.sh websocket
+
+test-frontend: ensure-env
+	$(COMPOSE) run --rm frontend npm test
+
+test-frontend-contexts: ensure-env
+	$(COMPOSE) run --rm frontend npm test -- test/contexts
 
 reset-db: ensure-env
 	$(MAKE) down || true
@@ -115,5 +126,7 @@ fre: fclean setup check up
 	setup build check check-frontend check-backend \
 	lint-backend lint-backend-fix dead-code \
 	test test-auth test-security test-2fa test-lobby \
+	test-friends test-websocket \
+	test-frontend test-frontend-contexts test-all \
 	migrate-db check-users-table check-2fa-migration \
 	up down start stop restart reset-db re clean fclean fre
