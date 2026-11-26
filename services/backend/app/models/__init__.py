@@ -8,6 +8,7 @@ from app.models.lobby_invitation import LobbyInvitation
 from app.models.lobby_member import LobbyMember
 from app.models.lobby_message import LobbyMessage
 from app.models.score import Score
+from app.models.two_factor_recovery_code import TwoFactorRecoveryCode
 from app.models.user import User
 from app.models.websocket_ticket import WebSocketTicket
 
