@@ -125,11 +125,13 @@ export class MultiGameManagerScene extends Scene {
     const me = snapshot.players.find((p) => p.player_id === snapshot.user_player_id);
     const ackSequence = me?.sequence ?? 0;
 
-    // TODO: Start MultiGameScene from the first snapshot (dungeon_seed, players, enemies),
-    // if (!this._gameScene) {
-    //   this._gameScene = new MultiGameScene();
-    //   this.scene.add("MultiGameScene", this._gameScene, true);
-    // }
+    // MultiGameScene starts with the first snapshot
+    if (!this._gameScene) {
+      this._gameScene = new MultiGameScene();
+      this.scene.add("MultiGameScene", this._gameScene, true, snapshot);
+    } else if (this.scene.isActive(this._gameScene)) {
+      this._gameScene.applyState(snapshot);
+    }
 
     // Open the combat scene the first the our combat shows up.
     // TODO: (Closing it / switching back to the dungeon comes with MultiGameScene.)
@@ -143,6 +145,8 @@ export class MultiGameManagerScene extends Scene {
       this.startCombatScene(state, snapshot.tick_id);
     } else if (this._combatScene && this.scene.isActive(this._combatScene)) {
       this._combatScene.applyState(state, ackSequence, snapshot.tick_id);
+    } else if (this._combatId !== null) {
+      this.endCombatScene();
     }
   }
 
@@ -156,7 +160,19 @@ export class MultiGameManagerScene extends Scene {
       this.scene.stop(this._combatScene); // shutdown: objects destroyed, socket listener removed
       this.scene.launch(this._combatScene, data); // create() runs again with the new combat
     }
+    this.scene.bringToTop(this._combatScene);
+    this.scene.sleep(this._gameScene!);
     EventBus.emit(GameEvent.inCombat, true); // show the React CombatUI
+  }
+
+  private endCombatScene() {
+    this._combatId = null;
+    if (this._combatScene) {
+      this.scene.stop(this._combatScene);
+    }
+    this.scene.wake(this._gameScene!);
+    EventBus.emit(GameEvent.inCombat, false);
+    // TODO: if lost (player not ALIVE), game over
   }
 
   private onSocketDisconnected(info: DisconnectInfo) {
