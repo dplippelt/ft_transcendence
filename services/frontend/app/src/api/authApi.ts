@@ -90,6 +90,12 @@ export interface PasswordUpdateRequest
     new_password: string;
 }
 
+export interface WebSocketTicketResponse
+{
+    ticket: string;
+    expires_in: number;
+}
+
 export function loginUser(credentials: LoginRequest): Promise<LoginResponse>
 {
     return apiRequest<LoginResponse>(
@@ -259,6 +265,17 @@ export function regenerateTwoFactorRecoveryCodes(data: TwoFactorCodeRequest, acc
         {
             method: "POST",
             body: JSON.stringify(data),
+        },
+        accessToken,
+    );
+}
+
+export function getWebSocketTicket(accessToken: string): Promise<WebSocketTicketResponse>
+{
+    return apiRequest<WebSocketTicketResponse>(
+        "/auth/ws-ticket",
+        {
+            method: "POST",
         },
         accessToken,
     );
