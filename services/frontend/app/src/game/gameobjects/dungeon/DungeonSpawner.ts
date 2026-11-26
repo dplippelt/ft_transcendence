@@ -1,4 +1,4 @@
-import { Game, Math as PhaserMath, type Types } from "phaser";
+import { Math as PhaserMath, type Types } from "phaser";
 import { Dungeon } from "./Dungeon";
 import { PlayerFactory, EnemyFactory, PassageFactory } from "./factories";
 import type { Passage } from "./Passage";
