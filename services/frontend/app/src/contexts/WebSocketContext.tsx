@@ -95,7 +95,7 @@ export default function WebSocketProvider({ children }: { children: ReactNode })
             socket = connection;
             connection.addEventListener("open", () =>
             {
-                if (!isCurrent || socket !== connection)
+                if (!isCurrent)
                     return;
     
                 for (const handler of openHandlersRef.current)
@@ -117,7 +117,7 @@ export default function WebSocketProvider({ children }: { children: ReactNode })
     
             connection.addEventListener("message", event =>
             {
-                if (!isCurrent || socket !== connection)
+                if (!isCurrent)
                     return;
     
                 let payload: unknown;
@@ -158,7 +158,7 @@ export default function WebSocketProvider({ children }: { children: ReactNode })
     
             connection.addEventListener("close", event =>
             {
-                if (!isCurrent || socket !== connection) // protect us from outdated connections & connect with current socket
+                if (!isCurrent) // protect us from outdated connections & connect with current socket
                     return;
     
                 socket = null;
