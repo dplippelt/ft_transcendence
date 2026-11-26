@@ -3,13 +3,21 @@ import type { ICombatView } from "./ICombatView";
 import CombatPlayer from "./CombatPlayer";
 import CombatEnemy from "./CombatEnemy";
 import CombatLayoutManager from "./CombatLayoutManager";
-import type { IGameSocket } from "../network/IGameSocket";
-import type { CombatState } from "../network/CombatTypes";
+import type { Action } from "../network/IGameSocket";
+import {
+  CombatAction,
+  CombatEventType,
+  CombatPhase,
+  CombatResult,
+  type CombatActionEvent,
+  type CombatState,
+} from "../network/CombatTypes";
 import MultiCardManager from "./cards/MultiCardManager";
 import { ActionType, Direction } from "../network/IGameSocket";
 import { EventBus } from "../EventBus";
 import { CombatEvent } from "../../utils/utils";
 import { ExecuteCombo } from "./CombatExecuteManager";
+import { CombatEvents } from "./CombatManager";
 
 export default class MultiCombatManager implements ICombatView {
   readonly player: CombatPlayer;
@@ -17,118 +25,279 @@ export default class MultiCombatManager implements ICombatView {
   readonly cardManager: MultiCardManager;
   readonly events: Phaser.Events.EventEmitter;
   readonly layoutManager: CombatLayoutManager;
-  private latestState: CombatState;
-  private lastEventSeq: number = 0;
-  private pendingSequence: number | null = null;
+  private readonly tickMs: number;
+  private latestTick: number;
+  private targetNumbers: Record<ExecuteCombo, number | null> = {
+    [ExecuteCombo.ONE]: null,
+    [ExecuteCombo.TWO]: null,
+    [ExecuteCombo.THREE]: null,
+  };
+  private busy = false;
+  private readonly awaitedWaits: Set<() => void> = new Set<() => void>();
+  private eventQueue: CombatActionEvent[] = [];
+  private generation: number = 0;
+  private playerTimer: { start: number; end: number } | null = null;
+  private maxPlayerHP: number;
+  private maxPlayerMP: number;
+  private maxEnemyHP: number;
 
   constructor(
     readonly scene: Scene,
-    private readonly socket: IGameSocket,
-    initial: CombatState,
+    state: CombatState,
+    tick: number,
   ) {
     this.player = new CombatPlayer(scene, {
-      hitPoint: initial.player.hp,
-      mana: initial.player.mp,
+      hitPoint: state.player.hp,
+      mana: state.player.mp,
     });
     this.enemy = new CombatEnemy(scene, {
-      hitPoint: initial.enemy.hp,
-      attackDamage: 0,
+      hitPoint: state.enemy.hp,
+      attackDamage: state.enemy.attack_damage,
     });
     this.cardManager = new MultiCardManager(scene);
     this.events = new Phaser.Events.EventEmitter();
     this.layoutManager = new CombatLayoutManager(this);
-    this.latestState = initial;
-    this.cardManager.syncHand(initial.hand);
-    this.emitStatusToUI(initial);
-    void this.latestState; // TODO:
-    this.logNewEvents(initial);
+    this.events.on(CombatEvents.COMPLETEFILLHAND, () => {
+      EventBus.emit(CombatEvent.completeFillHand);
+    });
+    this.tickMs = (1 / state.ticks_per_second) * 1000;
+    this.latestTick = tick;
+    this.maxPlayerHP = state.player.max_hp;
+    this.maxPlayerMP = state.player.mp;
+    this.maxEnemyHP = state.enemy.max_hp;
   }
 
   sendPlayCards() {
-    if (this.pendingSequence !== null) {
-      return;
-    }
     const cards = this.cardManager.getSelectedCardIds();
     if (cards.length === 0) {
-      return;
+      return null;
     }
-    const seq = this.socket.sendAction({
+    const action: Action = {
       type: ActionType.PLAY_CARDS,
       direction: Direction.NONE,
       card: 0,
       cards: cards,
-    });
-    if (seq === null) {
-      return;
-    }
-    this.pendingSequence = seq;
-    this.cardManager.lockSelection(true);
+    };
+    return action;
   }
 
   sendRedraw() {
-    // TODO
-  }
-
-  applyState(state: CombatState, ackSequence: number) {
-    this.latestState = state;
-    const handDealt = this.logNewEvents(state); // TODO
-    if (handDealt) {
-      this.cardManager.syncHand(state.hand);
-    }
-    if (this.pendingSequence !== null && ackSequence >= this.pendingSequence) {
-      this.pendingSequence = null;
-      this.cardManager.lockSelection(false);
-    }
-    this.emitStatusToUI(state);
-  }
-
-  private emitStatusToUI(state: CombatState) {
-    // TODO:
-    EventBus.emit(CombatEvent.updatePlayerHP, state.player.hp);
-    EventBus.emit(CombatEvent.updatePlayerMP, state.player.mp);
-    EventBus.emit(CombatEvent.updateEnemyHP, state.enemy.hp);
-    EventBus.emit(CombatEvent.updateTargetNumbers, this.toTargetRecord(state.target_numbers));
-  }
-
-  // DEBUG: log new combat events and find hand dealt event
-  private logNewEvents(state: CombatState) {
-    let handDealt = false;
-    for (const event of state.events) {
-      if (event.seq <= this.lastEventSeq) {
-        continue;
-      }
-      this.lastEventSeq = event.seq;
-      const { seq, tick, type, ...detail } = event;
-      console.log(`[combat] #${seq} tick ${tick} ${type}`, detail);
-      if (type === "hand_dealt") {
-        handDealt = true;
-      }
-      if (handDealt) {
-        console.log(
-          "[combat] phase: ",
-          state.phase,
-          "| targets;",
-          state.target_numbers,
-          "| hand:",
-          state.hand.map((c) => c.value).join(" "),
-          "| player hp/mp;",
-          state.player.hp,
-          state.player.mp,
-          "| enemy hp;",
-          state.enemy.hp,
-        );
-      }
-      return handDealt;
-    }
-  }
-
-  private toTargetRecord(target: (number | null)[]) {
-    // TODO: brush up
-    const targetNumbers: Record<ExecuteCombo, number | null> = {
-      [ExecuteCombo.ONE]: target[0],
-      [ExecuteCombo.TWO]: target[1],
-      [ExecuteCombo.THREE]: target[2],
+    const action: Action = {
+      type: ActionType.DRAW_CARD,
+      direction: Direction.NONE,
+      card: 0,
+      cards: [],
     };
-    return targetNumbers;
+    return action;
+  }
+
+  isBusy() {
+    return this.busy;
+  }
+
+  setLatestTick(tick: number) {
+    this.latestTick = tick;
+  }
+
+  resync(state: CombatState) {
+    this.generation++;
+    this.eventQueue = [];
+    this.cardManager.syncHand(state.hand);
+    this.updateTargetNumbers(state.target_numbers);
+    this.player.status.hitPoint = state.player.hp;
+    this.player.status.mana = state.player.mp;
+    this.enemy.hitPoint = state.enemy.hp;
+    this.resetAwaitedEvents();
+    this.layoutManager.anims.resetToIdle();
+    this.updatePlayerTimer(state.phase, state.turn_started_at_tick, state.turn_ends_at_tick);
+  }
+
+  handleEvents(events: CombatActionEvent[]) {
+    this.eventQueue.push(...events);
+    if (this.busy) {
+      return;
+    }
+    void this.processNextEvent();
+  }
+
+  private async processNextEvent() {
+    const event = this.eventQueue.shift();
+    if (!event) {
+      this.busy = false;
+      return;
+    }
+    this.busy = true;
+    this.logEvent(event);
+    try {
+      await this.applyEvent(event);
+    } catch (error) {
+      console.error("[combat] failed to apply event", event, error);
+    }
+    void this.processNextEvent();
+  }
+
+  private async applyEvent(event: CombatActionEvent) {
+    switch (event.type) {
+      case CombatEventType.TURN_STARTED:
+        this.updatePlayerTimer(event.phase, event.tick, event.turn_ends_at_tick);
+        return;
+
+      case CombatEventType.HAND_DEALT:
+        return this.applyAndWait(() => {
+          this.cardManager.syncHand(event.hand);
+          this.updateTargetNumbers(event.target_numbers);
+          this.player.status.mana = event.player.mp;
+        }, CombatEvents.COMPLETEFILLHAND);
+
+      case CombatEventType.PLAYER_ATTACK:
+        return this.applyWhenDone(
+          () => {
+            this.events.emit(CombatEvents.PLAYERATTACK, this.toExecuteCombo(event.combo));
+          },
+          CombatEvents.TAKEDAMAGE,
+          () => {
+            this.enemy.hitPoint = event.enemy.hp;
+          },
+        );
+
+      case CombatEventType.ENEMY_ATTACK:
+        return this.applyWhenDone(
+          () => {
+            this.events.emit(CombatEvents.ENEMYATTACK);
+          },
+          CombatEvents.TAKEDAMAGE,
+          () => {
+            this.player.status.hitPoint = event.player.hp;
+          },
+        );
+
+      case CombatEventType.PLAYER_GUARD:
+        return this.applyAndWait(() => {
+          this.events.emit(CombatEvents.PLAYERGUARD);
+        }, CombatEvents.ENDTURN);
+
+      case CombatEventType.PLAY_MISSED:
+        return;
+
+      case CombatEventType.ACTION_REJECTED:
+        console.warn(`[combat] ${event.action} rejected: ${event.reason}`);
+        if (event.action === CombatAction.REDRAW) {
+          this.events.emit(CombatEvents.COMPLETEFILLHAND);
+        }
+        return;
+
+      case CombatEventType.COMBAT_END:
+        this.updatePlayerTimer(CombatPhase.OVER, event.tick, null);
+        // TODO:
+        if (event.result == CombatResult.WIN) {
+          this.events.emit(CombatEvents.ENDCOMBAT);
+        } else {
+          this.events.emit(CombatEvents.ENDGAME);
+        }
+        return;
+    }
+  }
+
+  private async applyWhenDone(start: () => void, doneEvent: CombatEvents, apply: () => void) {
+    const generation = this.generation;
+    const done = this.waitFor(doneEvent);
+    start();
+    await done;
+    if (generation === this.generation) {
+      apply();
+    }
+  }
+
+  private async applyAndWait(apply: () => void, doneEvent: CombatEvents) {
+    const done = this.waitFor(doneEvent);
+    apply();
+    await done;
+  }
+
+  private waitFor(event: CombatEvents): Promise<void> {
+    return new Promise((resolve) => {
+      const done = () => {
+        this.events.off(event, done);
+        this.awaitedWaits.delete(done);
+        resolve();
+      };
+      this.awaitedWaits.add(done);
+      this.events.once(event, done);
+    });
+  }
+
+  private resetAwaitedEvents() {
+    for (const done of [...this.awaitedWaits]) {
+      done();
+    }
+  }
+
+  private toExecuteCombo(combo: number) {
+    return (combo - 1) as ExecuteCombo;
+  }
+
+  private updatePlayerTimer(phase: CombatPhase, start: number | null, end: number | null) {
+    if (phase === CombatPhase.PLAYER_TURN && start !== null && end !== null) {
+      this.playerTimer = { start, end };
+      this.sendElapsedPlayerTime();
+    } else {
+      this.playerTimer = null;
+      EventBus.emit(CombatEvent.turnEnded);
+    }
+  }
+
+  private updateTargetNumbers(target: (number | null)[]) {
+    this.targetNumbers = {
+      [ExecuteCombo.ONE]: target[0] ?? null,
+      [ExecuteCombo.TWO]: target[1] ?? null,
+      [ExecuteCombo.THREE]: target[2] ?? null,
+    };
+  }
+
+  sendInitPlayerHP() {
+    EventBus.emit(CombatEvent.initPlayerHP, this.maxPlayerHP);
+  }
+
+  sendInitPlayerMP() {
+    EventBus.emit(CombatEvent.initPlayerMP, this.maxPlayerMP);
+  }
+
+  sendInitEnemyHP() {
+    EventBus.emit(CombatEvent.initEnemyHP, this.maxEnemyHP);
+  }
+
+  sendInitTargetNumbers() {
+    EventBus.emit(CombatEvent.initTargetNumbers, this.targetNumbers);
+  }
+
+  sendCurrPlayerHP() {
+    EventBus.emit(CombatEvent.updatePlayerHP, this.player.status.hitPoint);
+  }
+
+  sendCurrPlayerMP() {
+    EventBus.emit(CombatEvent.updatePlayerMP, this.player.status.mana);
+  }
+
+  sendCurrEnemyHP() {
+    EventBus.emit(CombatEvent.updateEnemyHP, this.enemy.hitPoint);
+  }
+
+  sendCurrTargetNumbers() {
+    EventBus.emit(CombatEvent.updateTargetNumbers, this.targetNumbers);
+  }
+
+  sendElapsedPlayerTime() {
+    if (!this.playerTimer) {
+      return;
+    }
+    const { start, end } = this.playerTimer;
+    const totalMs = (end - start) * this.tickMs;
+    const elapsedMs = Math.min(totalMs, (this.latestTick - start) * this.tickMs);
+    EventBus.emit(CombatEvent.initTurn, totalMs, elapsedMs);
+  }
+
+  private logEvent(event: CombatActionEvent) {
+    const { seq, tick, type, ...detail } = event;
+    console.log(`[combat] #${seq} tick ${tick} ${type}`, detail);
   }
 }

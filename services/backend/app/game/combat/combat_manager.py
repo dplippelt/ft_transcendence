@@ -41,7 +41,7 @@ TICKS_PER_SECOND = 20 # = 1 / FIXED_TIME_STEP in game_session.py
 class CombatConfig:
     hand_size: int = 8
     player_turn_ticks: int = 30 * TICKS_PER_SECOND
-    enemy_turn_ticks: int = 3 * TICKS_PER_SECOND
+    enemy_turn_ticks: int = 1 * TICKS_PER_SECOND
     redraw_cost: int = 1
     max_events: int = 32 # Events kept in the state; must cover what can happen between two snapshots.
     max_deal_attempts: int = 100
@@ -96,13 +96,14 @@ class CombatManager:
             player_id=self.player_id,
             enemy_id=self.enemy_id,
             phase=self._turn_manager.phase,
+            turn_started_at_tick=self._turn_manager.turn_started_at_tick,
             turn_ends_at_tick=self._turn_manager.turn_ends_at_tick,
+            ticks_per_second=TICKS_PER_SECOND,
             result=self.result,
             player=self.player.model_copy(),
             enemy=self.enemy.model_copy(),
             hand=[CombatCard(id=card.id, value=card.value) for card in self._hand.get_cards()],
             target_numbers=list(self.target_numbers),
-            deck_count=len(self._deck),
             events=list(self._events),
         )
 
@@ -133,6 +134,9 @@ class CombatManager:
         self._add_event(HandDealtEvent(
             seq=next(self._event_seq),
             tick=tick,
+            player=self.player.model_copy(),
+            hand=[CombatCard(id=card.id, value=card.value) for card in self._hand.get_cards()],
+            target_numbers=list(self.target_numbers),
         ))
 
     def _start_enemy_turn(self, tick: int, player_hit: bool) -> None:
@@ -156,8 +160,7 @@ class CombatManager:
         self._add_event(EnemyAttackEvent(
             seq=next(self._event_seq),
             tick=tick,
-            damage=damage,
-            player_hp=self.player.hp,
+            player=self.player.model_copy(),
         ))
 
         if self.player.hp == 0:
@@ -200,7 +203,7 @@ class CombatManager:
             seq=next(self._event_seq),
             tick=tick,
             combo=int(combo),
-            damage=damage,
+            enemy=self.enemy.model_copy(),
         ))
 
         if self.enemy.hp == 0:

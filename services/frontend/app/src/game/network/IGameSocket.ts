@@ -10,6 +10,7 @@ export enum ActionType {
   DRAW_CARD = 3,
   PLAY_CARDS = 4,
   LEAVE = 5,
+  DEBUG_START_COMBAT = 99, // TODO: remove when combats start from enemy collisions
 }
 
 // Python IntFlag + auto() -> 1, 2, 4, 8 (bit flags, so diagonals can be combined)
@@ -42,8 +43,8 @@ export enum WsEvent {
 
 export enum GameWsEvent {
   OPEN = "open",
-  MESSAGE = "message",
   DISCONNECTED = "disconnected",
+  SNAPSHOT = "game.snapshot",
 }
 
 export enum GameWsMessageType {
@@ -78,6 +79,7 @@ export interface SnapshotEnemy {
 export interface GameSnapshot {
   type: GameWsMessageType.SNAPSHOT;
   game_id: string;
+  ticks_per_second: number;
   tick_id: number;
   state: ServerGameState;
   dungeon_seed: number;

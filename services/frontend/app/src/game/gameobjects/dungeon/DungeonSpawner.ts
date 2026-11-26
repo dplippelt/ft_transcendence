@@ -34,10 +34,16 @@ export class DungeonSpawner {
     for (const roomNode of graph.graph.keys()) {
       switch (roomNode.room.tileNode!.type) {
         case TileNodeType.EnterPoint:
-          this.spawnPlayers(roomNode.room);
+          // Online: players come from the server snapshot (next PR)
+          if (this._gameType !== GameType.OnlineCoop) {
+            this.spawnPlayers(roomNode.room);
+          }
           break;
         case TileNodeType.SpawnPoint:
-          this.spawnEnemy(roomNode.room);
+          // Online: enemies and their AI live on the server
+          if (this._gameType !== GameType.OnlineCoop) {
+            this.spawnEnemy(roomNode.room);
+          }
           break;
         case TileNodeType.ExitPoint:
           this.spawnExitNode(roomNode.room);
@@ -62,12 +68,12 @@ export class DungeonSpawner {
       dungeon: this._dungeon,
       startingRoom: room,
       spawnPoint: this.tileToWorldPosition(room.tileNode!.position),
-    }
+    };
 
     const player_1 = this._playerFactory.createPlayer(PlayerNum.One, spawnLocation);
     this._dungeon.addPlayer(player_1);
 
-    if ( this._gameType === GameType.LocalCoop ) {
+    if (this._gameType === GameType.LocalCoop) {
       const player_2 = this._playerFactory.createPlayer(PlayerNum.Two, spawnLocation);
       this._dungeon.addPlayer(player_2);
       player_1.movement.setTetherTarget(() => new PhaserMath.Vector2(player_2.x, player_2.y));

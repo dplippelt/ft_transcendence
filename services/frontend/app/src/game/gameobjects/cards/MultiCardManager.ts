@@ -29,9 +29,4 @@ export default class MultiCardManager extends CardManagerBase {
   getSelectedCardIds() {
     return this.cardSelection.getSelectedCards().map((card) => card.getData("id") as string);
   }
-
-  lockSelection(locked: boolean) {
-    void locked; // TODO:
-    /* disable input on hand cards while waiting for the server */
-  }
 }

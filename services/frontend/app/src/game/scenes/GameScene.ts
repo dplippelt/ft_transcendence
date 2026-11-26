@@ -6,14 +6,16 @@ import Player from "../gameobjects/Player.ts";
 import { GameType } from "../../utils/utils.ts";
 import { Direction, type DungeonConfig } from "../map/DungeonModels.ts";
 
-const dungeonConfig: DungeonConfig = {
+// TODO: move out of here to share with multi-game scene
+export const dungeonConfig: DungeonConfig = {
     doorCount: { min: 2, max: 4 },
     roomWidth: { min: 5, max: 9 },
     roomHeight: { min: 5, max: 9 },
     roomCount: { min: 3, max: 3 },
 };
 
-const tileSetMap: TileSetMap = {
+// TODO: move out of here to share with multi-game scene
+export const tileSetMap: TileSetMap = {
   corners: {
     [Direction.TopLeft]: 2,
     [Direction.TopRight]: 5,

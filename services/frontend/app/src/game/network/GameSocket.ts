@@ -10,6 +10,8 @@ import {
   type IGameSocket,
 } from "./IGameSocket";
 
+export type SocketListener = [GameWsEvent, (...args: never[]) => void];
+
 export default class GameSocket extends Phaser.Events.EventEmitter implements IGameSocket {
   private readonly websocket: WebSocket;
   private readonly gameId: string;
@@ -78,7 +80,9 @@ export default class GameSocket extends Phaser.Events.EventEmitter implements IG
       return;
     }
     message.receivedAt = performance.now();
-    this.emit(GameWsEvent.MESSAGE, message);
+    if (message.type === GameWsMessageType.SNAPSHOT) {
+      this.emit(GameWsEvent.SNAPSHOT, message);
+    }
   };
 
   private onClose = (event: CloseEvent) => {

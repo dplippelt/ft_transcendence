@@ -95,7 +95,6 @@ def test_player_turn_timeout_lets_the_enemy_attack():
     assert state.phase is CombatPhase.ENEMY_TURN
     assert state.player.hp == 10 - NORMAL.attack_damage
     assert event_types(combat)[-2:] == [CombatEventType.TURN_STARTED, CombatEventType.ENEMY_ATTACK]
-    assert state.events[-1].damage == NORMAL.attack_damage
 
 def test_enemy_turn_ends_with_a_new_player_turn_and_hand():
     combat = make_combat()
@@ -134,8 +133,9 @@ def test_hit_damages_the_enemy_and_the_player_guards(seed):
     ]
 
     attack = state.events[-3]
-    assert attack.damage == executor.DAMAGE_TO_ENEMY[attack.combo]
-    assert state.enemy.hp == NORMAL.hp - attack.damage
+    damage = executor.DAMAGE_TO_ENEMY[attack.combo]
+    assert attack.enemy.hp == NORMAL.hp - damage
+    assert state.enemy.hp == attack.enemy.hp
     assert state.phase is CombatPhase.ENEMY_TURN
     assert state.turn_ends_at_tick == tick + CONFIG.enemy_turn_ticks
 
