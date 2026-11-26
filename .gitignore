@@ -1,3 +1,7 @@
 .claude/
 
 .env.secrets
+
+# Python cache
+__pycache__/
+*.py[cod]
