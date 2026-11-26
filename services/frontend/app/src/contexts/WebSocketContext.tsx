@@ -9,7 +9,8 @@ import {
 import type { ReactNode } from "react";
 
 import { useAuth } from "./AuthContext";
-import { getWsUrl } from "../api/http";
+import { ApiError, getWsUrl } from "../api/http";
+import { getWebSocketTicket } from "../api/authApi";
 
 // The structure of a message received from the backend
 // Unknown instead of any -> force to check the type before using the value
@@ -82,20 +83,58 @@ export default function WebSocketProvider({ children }: { children: ReactNode })
         let socket: WebSocket | null = null;
         let reconnectTimeoutID: number | undefined;
         let isCurrent = true; // indicates whether this effect is still active
-    
-        function connect(token: string)
+        const abortController = new AbortController();
+
+        function scheduleReconnect(token: string)
         {
             if (!isCurrent)
                 return;
-            // Token in the URL query string rather than an Authorization
-            // header, since browsers can't set custom headers on a
-            // WebSocket handshake. Requires WSS in production and avoiding
-            // logging query strings for this endpoint.
-            const connection = new WebSocket(getWsUrl(`/chat/ws?token=${encodeURIComponent(token)}`));
+            reconnectTimeoutID = window.setTimeout(
+                () => void connect(token),
+                3000
+            );
+        }
+
+        async function connect(token: string)
+        {
+            if (!isCurrent)
+                return;
+            let connection: WebSocket;
+            try
+            {
+                // Every connection attempt needs a fresh, single-use ticket.
+                // The access token is sent only in the HTTP Authorization header.
+                const { ticket } = await getWebSocketTicket(token, abortController.signal);
+
+                // Authentication may have changed while the request was in flight.
+                if (!isCurrent)
+                    return;
+
+                connection = new WebSocket(getWsUrl(`/chat/ws?ticket=${encodeURIComponent(ticket)}`));
+            }
+            catch (error)
+            {
+                if (!isCurrent)
+                    return;
+
+                // Invalid or forbidden HTTP authentication cannot be fixed by
+                // reconnecting with the same access token.
+                if (error instanceof ApiError && (error.status === 401 || error.status === 403))
+                {
+                    console.warn("WebSocket authentication rejected");
+                    return;
+                }
+
+                // Do not log the error object or URL: they may contain credentials.
+                console.warn("WebSocket connection attempt failed");
+                scheduleReconnect(token);
+                return;
+            }
+
             socket = connection;
             connection.addEventListener("open", () =>
             {
-                if (!isCurrent)
+                if (!isCurrent || socket !== connection)
                     return;
     
                 for (const handler of openHandlersRef.current)
@@ -117,7 +156,7 @@ export default function WebSocketProvider({ children }: { children: ReactNode })
     
             connection.addEventListener("message", event =>
             {
-                if (!isCurrent)
+                if (!isCurrent || socket !== connection)
                     return;
     
                 let payload: unknown;
@@ -158,26 +197,22 @@ export default function WebSocketProvider({ children }: { children: ReactNode })
     
             connection.addEventListener("close", event =>
             {
-                if (!isCurrent) // protect us from outdated connections & connect with current socket
+                if (!isCurrent || socket !== connection)
                     return;
-    
+
                 socket = null;
-    
+
                 if (event.code !== 1008) // WebSocket policy violated
-                {
-                    reconnectTimeoutID = window.setTimeout(
-                        () => connect(token),
-                        3000
-                    );
-                }
+                    scheduleReconnect(token);
             });
         }
     
-        connect(accessToken);
+        void connect(accessToken);
 
         return () =>
         {
             isCurrent = false;
+            abortController.abort();
             window.clearTimeout(reconnectTimeoutID);
             socket?.close();
         };
