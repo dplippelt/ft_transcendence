@@ -3,6 +3,7 @@ import {
     useCallback,
     useContext,
     useEffect,
+    useMemo,
     useRef,
     useState,
 } from "react";
@@ -471,10 +472,10 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
 
     }, [auth.accessToken]);
 
-    function getChatHistory(lobbyID: LobbyID): ILobbyMessageResponse[] | undefined
+    const getChatHistory = useCallback((lobbyID: LobbyID): ILobbyMessageResponse[] | undefined =>
     {
         return lobbies[lobbyID]?.chatHistory;
-    }
+    }, [lobbies]);
 
     const addLobbyMessage = useCallback((message: ILobbyMessageResponse, session: number, token: string) =>
     {
@@ -666,27 +667,48 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
         };
     }, [auth.status, auth.accessToken, auth.user?.id, refreshLobbies, markLobbyChanged, dismissLobbyInvite, addLobbyMessage, subscribe, subscribeOpen]);
 
+    const value = useMemo(() => ({
+        lobbies,
+        lobbyInvites,
+        startedMultiGame,
+        resetLobbies,
+        refreshLobbies,
+        loadLobby,
+        createLobby,
+        closeLobby,
+        joinLobby,
+        switchToInvitedLobby,
+        leaveLobby,
+        lobbyStartGame,
+        inviteFriend,
+        dismissLobbyInvite,
+        getChatHistory,
+        loadLobbyMessages,
+        sendLobbyChatMessage,
+        clearStartedMultiGame,
+    }), [
+        lobbies,
+        lobbyInvites,
+        startedMultiGame,
+        resetLobbies,
+        refreshLobbies,
+        loadLobby,
+        createLobby,
+        closeLobby,
+        joinLobby,
+        switchToInvitedLobby,
+        leaveLobby,
+        lobbyStartGame,
+        inviteFriend,
+        dismissLobbyInvite,
+        getChatHistory,
+        loadLobbyMessages,
+        sendLobbyChatMessage,
+        clearStartedMultiGame,
+    ]);
+    
     return (
-        <LobbiesContext.Provider value={{
-            lobbies,
-            lobbyInvites,
-            startedMultiGame,
-            resetLobbies,
-            refreshLobbies,
-            loadLobby,
-            createLobby,
-            closeLobby,
-            joinLobby,
-            switchToInvitedLobby,
-            leaveLobby,
-            lobbyStartGame,
-            inviteFriend,
-            dismissLobbyInvite,
-            getChatHistory,
-            loadLobbyMessages,
-            sendLobbyChatMessage,
-            clearStartedMultiGame,
-        }}>
+        <LobbiesContext.Provider value={value}>
             {children}
         </LobbiesContext.Provider>
     );
