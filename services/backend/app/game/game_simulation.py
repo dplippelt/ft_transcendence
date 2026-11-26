@@ -23,7 +23,7 @@ DEBUG_ACTIONS_ENABLED = True # TODO: remove when combats start from enemy collis
 # Keep a finished combat in the snapshot for a while, so the client sees combat_end.
 from app.game.combat.combat_manager import TICKS_PER_SECOND
 
-FINISHED_COMBAT_TICKS = 3 * TICKS_PER_SECOND
+FINISHED_COMBAT_TICKS = 1 * TICKS_PER_SECOND
 
 
 class GameSimulation:
