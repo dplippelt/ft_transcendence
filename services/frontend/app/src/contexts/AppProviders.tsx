@@ -6,24 +6,28 @@ import ChatHistoryProvider from "./ChatHistoryContext";
 import LobbiesProvider from "./LobbiesContext";
 import ErrorProvider from "./ErrorContext";
 import OperatorsProvider from "./OperatorContext";
+import WebSocketProvider from "./WebSocketContext";
 
 export default function AppProviders( { children } : { children: React.ReactNode } )
 {
-	return (
-		<AuthProvider>
-			<LobbiesProvider>
-				<ChatHistoryProvider>
-					<FriendsProvider>
-						<SettingsProvider>
-							<ErrorProvider>
-								<OperatorsProvider>
-									{children}
-								</OperatorsProvider>
-							</ErrorProvider>
-						</SettingsProvider>
-					</FriendsProvider>
-				</ChatHistoryProvider>
-			</LobbiesProvider>
-		</AuthProvider>
-	);
+    return (
+        <AuthProvider>
+            <WebSocketProvider>
+                <LobbiesProvider>
+                    <ChatHistoryProvider>
+                        <FriendsProvider>
+                            <SettingsProvider>
+                                <ErrorProvider>
+                                    <OperatorsProvider>
+                                        {children}
+                                    </OperatorsProvider>
+                                </ErrorProvider>
+                            </SettingsProvider>
+                        </FriendsProvider>
+                    </ChatHistoryProvider>
+                </LobbiesProvider>
+            </WebSocketProvider>
+        </AuthProvider>
+    );
+
 }
