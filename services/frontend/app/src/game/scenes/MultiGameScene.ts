@@ -46,7 +46,6 @@ export default class MultiGameScene extends Scene implements INetworkScene {
     }
     // TODO: players / enemies from the snapshot (next PR)
     // syncEntities(): players, enemies
-    this.cameras.main.centerOn((this.dungeon.widthInPixels * 1.5) / 2, (this.dungeon.heightInPixels * 1.5) / 2);
   }
 
   private buildDungeon(seed: number) {
@@ -55,7 +54,7 @@ export default class MultiGameScene extends Scene implements INetworkScene {
     gRandom.init_seed(seed);
     this.dungeon.build(dungeonConfig, tileSetMap, 1.5);
     // No player follow yet: look at the middle of the map
-    this.cameras;
+    this.cameras.main.centerOn((this.dungeon.widthInPixels * 1.5) / 2, (this.dungeon.heightInPixels * 1.5) / 2);
   }
 
   private requestDebugCombat() {
