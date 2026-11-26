@@ -75,6 +75,7 @@ case "${1:-all}" in
 		echo "  $0 two-factor"
 		echo "  $0 lobby"
         echo "  $0 friends"
+        echo "  $0 websocket"
 		exit 1
 		;;
 esac
