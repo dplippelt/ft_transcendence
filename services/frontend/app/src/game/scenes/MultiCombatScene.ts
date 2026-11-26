@@ -9,7 +9,7 @@ import { ActionType, type Action } from "../network/IGameSocket";
 const MAX_QUEUED_EVENTS = 10; // more than this behind -> skip animations
 
 export default class MultiCombatScene extends Scene implements INetworkScene {
-  private state: CombatState | null = null;
+  state: CombatState | null = null;
   private combatManager!: MultiCombatManager;
   private pendingAction: Action | null = null;
   private pendingSequence: number | null = null;
