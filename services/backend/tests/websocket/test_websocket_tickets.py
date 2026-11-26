@@ -150,8 +150,37 @@ def test_invalid_ticket_never_falls_back_to_valid_access_token(ws_client, auth_h
         pass
 
 
-def test_legacy_jwt_url_still_works_during_rollout(ws_client, user, auth_headers):
+def test_legacy_jwt_url_is_rejected(ws_client, user, auth_headers):
     token = auth_headers["Authorization"].split(" ", 1)[1]
 
-    with ws_client.websocket_connect(f"/chat/ws?token={token}"):
+    with pytest.raises(WebSocketDisconnect) as exc, ws_client.websocket_connect(
+        f"/chat/ws?token={token}",
+        headers={"Origin": get_settings().frontend_origin},
+    ):
+        pass
+
+    assert exc.value.code == 1008
+    assert user.id not in connection_manager.active_connections
+
+
+def test_missing_ticket_is_rejected(ws_client):
+    with pytest.raises(WebSocketDisconnect) as exc, ws_client.websocket_connect(
+        "/chat/ws",
+        headers={"Origin": get_settings().frontend_origin},
+    ):
+        pass
+
+    assert exc.value.code == 1008
+
+
+def test_missing_origin_does_not_consume_ticket(ws_client, user, auth_headers):
+    ticket = _get_ticket(ws_client, auth_headers)
+
+    with pytest.raises(WebSocketDisconnect) as exc, ws_client.websocket_connect(
+        f"/chat/ws?ticket={ticket}",
+    ):
+        pass
+
+    assert exc.value.code == 1008
+    with _connect(ws_client, ticket):
         assert user.id in connection_manager.active_connections
