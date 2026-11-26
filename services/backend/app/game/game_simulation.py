@@ -17,7 +17,8 @@ from app.schemas.game import (
 )
 
 # Combat starts as soon as a player joins, until combat can start from collisions.
-DEBUG_AUTO_COMBAT = True # TODO: remove when the dungeon / enemies are in the game loop
+DEBUG_AUTO_COMBAT = False # TODO: remove when the dungeon / enemies are in the game loop
+DEBUG_ACTIONS_ENABLED = True # TODO: remove when combats start from enemy collisions
 
 # Keep a finished combat in the snapshot for a while, so the client sees combat_end.
 from app.game.combat.combat_manager import TICKS_PER_SECOND
@@ -83,6 +84,9 @@ class GameSimulation:
                 combat.redraw(self.tick_id)
             # case ActionType.MOVE:
             # case ActionType.LEAVE:
+            case ActionType.DEBUG_START_COMBAT:
+                if DEBUG_ACTIONS_ENABLED and combat is None and self.players[user_id].state & PlayerState.ALIVE:
+                    self._start_combat(user_id)
             case _:
                 pass
 

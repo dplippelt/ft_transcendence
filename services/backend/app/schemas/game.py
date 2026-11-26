@@ -20,6 +20,7 @@ class ActionType(IntEnum):
     DRAW_CARD = auto()
     PLAY_CARDS = auto()
     LEAVE = auto()
+    DEBUG_START_COMBAT = 99 # TODO: remove when combats start from enemy collisions
 
 
 class Direction(IntFlag):
