@@ -1,7 +1,7 @@
 import Phaser, { Scene } from "phaser";
 import GameSocket, { type SocketListener } from "../network/GameSocket";
 import MultiGameScene from "./MultiGameScene";
-import { GameEvent, RegistryKey, type GameURL } from "../../utils/utils";
+import { GameEvent, GameState, RegistryKey, type GameURL } from "../../utils/utils";
 import {
   ActionType,
   Direction,
@@ -12,7 +12,7 @@ import {
 } from "../network/IGameSocket";
 import MultiCombatScene from "./MultiCombatScene";
 import { EventBus } from "../EventBus";
-import type { CombatState } from "../network/CombatTypes";
+import { CombatResult, type CombatState } from "../network/CombatTypes";
 
 const NONE_ACTION: Action = {
   type: ActionType.NONE,
@@ -137,7 +137,10 @@ export class MultiGameManagerScene extends Scene {
     // TODO: (Closing it / switching back to the dungeon comes with MultiGameScene.)
     const state = snapshot.combat.find((combat) => combat.player_id === snapshot.user_player_id);
     if (!state) {
-      // TODO: when coming back from a combat, the game scene restarts
+      // The server removed the combat, then go back to the dungeon
+      if (this._combatId !== null) {
+        this.endCombatScene();
+      }
       return;
     }
 
@@ -166,13 +169,15 @@ export class MultiGameManagerScene extends Scene {
   }
 
   private endCombatScene() {
+    const result = this._combatScene?.state?.result;
     this._combatId = null;
-    if (this._combatScene) {
-      this.scene.stop(this._combatScene);
-    }
+    this.scene.stop(this._combatScene!);
     this.scene.wake(this._gameScene!);
     EventBus.emit(GameEvent.inCombat, false);
-    // TODO: if lost (player not ALIVE), game over
+    if (result === CombatResult.LOSE) {
+      // TODO: it needs to check if the game is over only when every player loses instead of only one player.
+      EventBus.emit(GameEvent.gameState, GameState.lost);
+    }
   }
 
   private onSocketDisconnected(info: DisconnectInfo) {
