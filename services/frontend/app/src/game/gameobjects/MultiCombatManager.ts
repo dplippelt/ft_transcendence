@@ -33,6 +33,7 @@ export default class MultiCombatManager implements ICombatView {
     [ExecuteCombo.THREE]: null,
   };
   private busy = false;
+  private readonly awaitedWaits: Set<() => void> = new Set<() => void>();
   private eventQueue: CombatActionEvent[] = [];
   private generation: number = 0;
   private playerTimer: { start: number; end: number } | null = null;
@@ -106,6 +107,8 @@ export default class MultiCombatManager implements ICombatView {
     this.player.status.hitPoint = state.player.hp;
     this.player.status.mana = state.player.mp;
     this.enemy.hitPoint = state.enemy.hp;
+    this.resetAwaitedEvents();
+    this.layoutManager.anims.resetToIdle();
     this.updatePlayerTimer(state.phase, state.turn_started_at_tick, state.turn_ends_at_tick);
   }
 
@@ -215,10 +218,18 @@ export default class MultiCombatManager implements ICombatView {
     return new Promise((resolve) => {
       const done = () => {
         this.events.off(event, done);
+        this.awaitedWaits.delete(done);
         resolve();
       };
+      this.awaitedWaits.add(done);
       this.events.once(event, done);
     });
+  }
+
+  private resetAwaitedEvents() {
+    for (const done of [...this.awaitedWaits]) {
+      done();
+    }
   }
 
   private toExecuteCombo(combo: number) {
