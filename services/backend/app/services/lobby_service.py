@@ -186,11 +186,7 @@ class LobbySwitchResult:
     changed: bool
 
 
-def _lock_lobbies_for_switch(
-    db: Session,
-    lobby_id: int,
-    previous_lobby_id: int | None,
-) -> dict[int, Lobby]:
+def _lock_lobbies_for_switch(db: Session,lobby_id: int, previous_lobby_id: int | None,) -> dict[int, Lobby]:
     # Lock the old and destination lobbies before the invitation row.
     # Deleting a hosted lobby cascades to its invitations, so acquiring
     # invitation locks first can deadlock when two hosts switch between
@@ -210,11 +206,7 @@ def _lock_lobbies_for_switch(
     }
 
 
-def _remove_previous_membership(
-    db: Session,
-    membership: LobbyMember,
-    old_lobby: Lobby | None,
-) -> None:
+def _remove_previous_membership(db: Session, membership: LobbyMember, old_lobby: Lobby | None,) -> None:
     if old_lobby is None:
         db.delete(membership)
     elif membership.role == HOST:
@@ -228,14 +220,7 @@ def _remove_previous_membership(
     db.flush()
 
 
-def switch_lobby(
-    db: Session,
-    user: User,
-    lobby_id: int,
-    *,
-    invitation_id: str,
-    confirmed: bool = False,
-) -> LobbySwitchResult:
+def switch_lobby(db: Session, user: User, lobby_id: int, *, invitation_id: str, confirmed: bool = False,) -> LobbySwitchResult:
     try:
         db.query(User).filter(User.id == user.id).with_for_update(key_share=True).one()
         membership = get_user_lobby_membership(db, user.id)

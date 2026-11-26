@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import styles from "./ChatHistory.module.scss";
 import { useChatHistory } from "../../contexts/ChatHistoryContext";
 import { useFriends } from "../../contexts/FriendsContext";
@@ -6,6 +6,7 @@ import { useLobbies } from "../../contexts/LobbiesContext";
 import { useCurrentUser } from "../../contexts/AuthContext";
 import { useParams } from "react-router-dom";
 import { getDisplayName } from "../../utils/utils";
+import { useWebSocket } from "../../contexts/WebSocketContext";
 
 interface IChatMessage
 {
@@ -82,8 +83,29 @@ export function LobbyChatHistory()
 {
 	const { lobbyID } = useParams();
 	const scrollRef = useRef<HTMLDivElement>(null);
-	const { getChatHistory } = useLobbies();
-	const chatHistory = getChatHistory(lobbyID!);
+	const { lobbies, getChatHistory, loadLobbyMessages } = useLobbies();
+	const { subscribeOpen } = useWebSocket();
+	const chatHistory = lobbyID ? getChatHistory(lobbyID) : undefined;
+	const lobbyLoaded = lobbyID ? Boolean(lobbies[lobbyID]) : false;
+
+	useEffect(() =>
+	{
+		if (!lobbyID || !lobbyLoaded)
+			return;
+
+		const currentLobbyID = lobbyID;
+
+		function refresh()
+		{
+			void loadLobbyMessages(currentLobbyID).catch(error =>
+				console.warn("Failed to load lobby chat history:", error)
+			);
+		}
+
+		// Backfill on entry/refresh and after the shared WebSocket reconnects.
+		refresh();
+		return subscribeOpen(refresh);
+	}, [lobbyID, lobbyLoaded, loadLobbyMessages, subscribeOpen]);
 
 	useLayoutEffect(() =>
 	{
@@ -93,8 +115,12 @@ export function LobbyChatHistory()
 
 	return (
 		<div className={styles.chatHistory} ref={scrollRef}>
-			{ chatHistory?.map((chatMsg, idx) =>
-				<ChatMessage key={idx} username={chatMsg.username} message={chatMsg.message} />
+			{ chatHistory?.map(chatMsg =>
+				<ChatMessage
+					key={chatMsg.id}
+					username={chatMsg.sender.username ?? chatMsg.sender.display_name ?? "Unknown"}
+					message={chatMsg.content}
+				/>
 			)}
 		</div>
 	)
