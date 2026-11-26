@@ -127,23 +127,9 @@ export default function ChatBox()
 					return;
 				}
 
-				// Still on the same chat: only restore the failed content
-				// (to both the visible input and the draft) if the box is
-				// still empty. If the user already typed something new,
-				// leave both alone -- writing the old failed content to
-				// localStorage here would clobber the newer draft the
-				// existing debounced autosave effect is about to persist.
-				setMsg(currentMsg =>
-				{
-					if (currentMsg.length > 0)
-						return currentMsg;
-
-					localStorage.setItem(
-						getFriendDraftKey(userID, sentFriendID),
-						content,
-					);
-					return content;
-				});
+				// Only restore the failed content if the input is still empty.
+				// The existing debounced draft effect persists the restored text.
+				setMsg(current => current.length > 0 ? current : content);
 			});
 	}
 
