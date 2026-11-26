@@ -18,6 +18,12 @@ export interface TokenResponse
     token_type: string;
 }
 
+export interface WebSocketTicketResponse
+{
+    ticket: string;
+    expires_in: number;
+}
+
 export interface TwoFactorAuthResponse
 {
     requires_two_factor: true;
@@ -90,10 +96,16 @@ export interface PasswordUpdateRequest
     new_password: string;
 }
 
-export interface WebSocketTicketResponse
+export function getWebSocketTicket(accessToken: string, signal?: AbortSignal): Promise<WebSocketTicketResponse>
 {
-    ticket: string;
-    expires_in: number;
+    return apiRequest<WebSocketTicketResponse>(
+        "/auth/ws-ticket",
+        {
+            method: "POST",
+            signal,
+        },
+        accessToken,
+    );
 }
 
 export function loginUser(credentials: LoginRequest): Promise<LoginResponse>
@@ -265,17 +277,6 @@ export function regenerateTwoFactorRecoveryCodes(data: TwoFactorCodeRequest, acc
         {
             method: "POST",
             body: JSON.stringify(data),
-        },
-        accessToken,
-    );
-}
-
-export function getWebSocketTicket(accessToken: string): Promise<WebSocketTicketResponse>
-{
-    return apiRequest<WebSocketTicketResponse>(
-        "/auth/ws-ticket",
-        {
-            method: "POST",
         },
         accessToken,
     );
