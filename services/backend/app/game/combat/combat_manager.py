@@ -41,7 +41,7 @@ TICKS_PER_SECOND = 20 # = 1 / FIXED_TIME_STEP in game_session.py
 class CombatConfig:
     hand_size: int = 8
     player_turn_ticks: int = 30 * TICKS_PER_SECOND
-    enemy_turn_ticks: int = 3 * TICKS_PER_SECOND
+    enemy_turn_ticks: int = 1 * TICKS_PER_SECOND
     redraw_cost: int = 1
     max_events: int = 32 # Events kept in the state; must cover what can happen between two snapshots.
     max_deal_attempts: int = 100
