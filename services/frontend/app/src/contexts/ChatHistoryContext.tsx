@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { useAuth } from "./AuthContext";
 import { getConversation, markConversationAsRead, sendChatMessage } from "../api/chatApi";
 import type { ChatMessageResponse } from "../api/chatApi";
-import { getWsUrl } from "../api/http";
+import { useWebSocket } from "./WebSocketContext";
 import useLatestRef from "../hooks/useLatestRef";
 
 export interface IChatMsg
@@ -78,6 +78,7 @@ const ChatHistoryContext = createContext<IChatHistoryContext | null>(null);
 export default function ChatHistoryProvider( { children } : {children: ReactNode} )
 {
 	const { auth } = useAuth();
+	const { subscribe, subscribeOpen } = useWebSocket();
 	const [chatHistory, setChatHistory] = useState<ChatHistory>({});
 
 	// Which friends' history has already been fetched at least once, so a
@@ -369,20 +370,15 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 	// Live delivery for messages other people send us. Only updates a
 	// friend we're already tracking (i.e. addChatHistoryEntry has loaded
 	// them) -- a message from someone not yet tracked is picked up the
-	// next time their entry loads instead. Reconnects on drop since a
-	// closed socket would otherwise silently stop live updates for the
-	// rest of the session.
+	// next time their entry loads instead. The shared WebSocket provider
+	// handles reconnection; this effect only handles chat events and backfill.
 	useEffect(() =>
 	{
 		const accessToken = auth.accessToken;
 		const currentUserId = auth.user?.id;
 
-		if ( !accessToken || currentUserId === undefined )
+		if ( auth.status !== "authenticated" || !accessToken || currentUserId === undefined )
 			return;
-
-		let socket: WebSocket | null = null;
-		let reconnectTimeoutID: number | undefined;
-		let isCurrent = true;
 
 		// Re-pulls a friend's full conversation and merges it into local
 		// state (mergeMessages dedupes by id, so this is safe to call
@@ -421,142 +417,101 @@ export default function ChatHistoryProvider( { children } : {children: ReactNode
 				.catch(() => {}); // best-effort; the next reconnect retries this too
 		}
 
-		// Same parameter-passing reasoning as refetchConversation above.
-		function connect( accessToken: string, currentUserId: number )
+
+		const unsubscribeOpen = subscribeOpen(() =>
 		{
-			// Token in the URL query string rather than an Authorization
-			// header, since browsers can't set custom headers on a
-			// WebSocket handshake -- same tradeoff app/api/dependencies.py's
-			// get_current_user_id_ws already documents server-side: this
-			// risks exposure via reverse-proxy/access logs, so the
-			// deployment needs to stay on WSS and avoid logging query
-			// strings for this path.
-			socket = new WebSocket(getWsUrl(`/chat/ws?token=${encodeURIComponent(accessToken)}`));
+			// Every successful connect, first one included: between the
+			// initial REST history resolving and this handshake
+			// completing there's a window where a freshly-persisted
+			// message is pushed to nobody. The redundant fetch that
+			// overlaps addChatHistoryEntry's own initial load on first
+			// connect is harmless -- mergeMessages dedupes by id.
+			for ( const friendID of fetchedFriendIDsRef.current )
+				refetchConversation(friendID, accessToken, currentUserId);
+		});
 
-			socket.addEventListener("open", () =>
+		// The user read this conversation on another tab/device --
+		// clear our own unread state for it so the badge doesn't
+		// stay stuck until the next refetch/reconnect. Only up to
+		// up_to_message_id, the highest id that backend call
+		// actually marked: a message that arrives on this tab after
+		// that call started but before this event is processed was
+		// never touched by it, so it must stay unread here too.
+		const unsubscribeConversationRead = subscribe("conversation_read", payload =>
+		{
+			if ( typeof payload.friend_id !== "number" || typeof payload.up_to_message_id !== "number" )
+				return;
+
+			const readFriendID = String(payload.friend_id);
+			const upToMessageId = payload.up_to_message_id;
+
+			setChatHistory(prev =>
 			{
-				// Every successful connect, first one included: between the
-				// initial REST history resolving and this handshake
-				// completing there's a window where a freshly-persisted
-				// message is pushed to nobody. The redundant fetch that
-				// overlaps addChatHistoryEntry's own initial load on first
-				// connect is harmless -- mergeMessages dedupes by id.
-				for ( const friendID of fetchedFriendIDsRef.current )
-					refetchConversation(friendID, accessToken, currentUserId);
-			});
+				const friendChatHistory = prev[readFriendID];
+				if ( !friendChatHistory || !friendChatHistory.some(msg => !msg.read && msg.id <= upToMessageId) )
+					return prev;
 
-			socket.addEventListener("message", (event) =>
+				return {
+					...prev,
+					[readFriendID]: friendChatHistory.map(msg =>
+						(!msg.read && msg.id <= upToMessageId) ? { ...msg, read: true } : msg
+					),
+				};
+			});
+		});
+
+		const unsubscribeChatMessage = subscribe("chat_message", payload =>
+		{
+			if (
+				typeof payload.id !== "number" ||
+				typeof payload.sender_id !== "number" ||
+				typeof payload.receiver_id !== "number" ||
+				typeof payload.content !== "string" ||
+				typeof payload.created_at !== "string"
+			)
+				return;
+
+			// The backend pushes a sent message back to the sender's
+			// own other tabs/devices too, not just the receiver's, so
+			// this push can be our own echo. The conversation it
+			// belongs to is keyed by whichever side isn't us.
+			const isOwnMessage = payload.sender_id === currentUserId;
+			const friendID = String(isOwnMessage ? payload.receiver_id : payload.sender_id);
+
+			// Route through the same mapping toChatMsg uses for
+			// REST-loaded messages instead of a second hand-built
+			// IChatMsg, so the two paths can't silently drift apart.
+			const incoming = toChatMsg(
+				{
+					id: payload.id,
+					sender_id: payload.sender_id,
+					receiver_id: payload.receiver_id,
+					content: payload.content,
+					created_at: payload.created_at,
+					read_at: typeof payload.read_at === "string" ? payload.read_at : null,
+				},
+				currentUserId,
+			);
+
+			setChatHistory(prev =>
 			{
-				let payload: Partial<ChatMessageResponse> & { type?: string; friend_id?: number; up_to_message_id?: number };
+				if ( prev[friendID] === undefined )
+					return prev;
 
-				try
-				{
-					payload = JSON.parse(event.data);
-				}
-				catch
-				{
-					return;
-				}
-
-				// The user read this conversation on another tab/device --
-				// clear our own unread state for it so the badge doesn't
-				// stay stuck until the next refetch/reconnect. Only up to
-				// up_to_message_id, the highest id that backend call
-				// actually marked: a message that arrives on this tab after
-				// that call started but before this event is processed was
-				// never touched by it, so it must stay unread here too.
-				if ( payload.type === "conversation_read" )
-				{
-					if ( payload.friend_id === undefined || payload.up_to_message_id === undefined )
-						return;
-
-					const readFriendID = String(payload.friend_id);
-					const upToMessageId = payload.up_to_message_id;
-
-					setChatHistory(prev =>
-					{
-						const friendChatHistory = prev[readFriendID];
-						if ( !friendChatHistory || !friendChatHistory.some(msg => !msg.read && msg.id <= upToMessageId) )
-							return prev;
-
-						return {
-							...prev,
-							[readFriendID]: friendChatHistory.map(msg =>
-								(!msg.read && msg.id <= upToMessageId) ? { ...msg, read: true } : msg
-							),
-						};
-					});
-
-					return;
-				}
-
-				if (
-					payload.type !== "chat_message" ||
-					payload.id === undefined ||
-					payload.sender_id === undefined ||
-					payload.receiver_id === undefined ||
-					payload.content === undefined ||
-					payload.created_at === undefined
-				)
-					return;
-
-				// The backend pushes a sent message back to the sender's
-				// own other tabs/devices too, not just the receiver's, so
-				// this push can be our own echo. The conversation it
-				// belongs to is keyed by whichever side isn't us.
-				const isOwnMessage = payload.sender_id === currentUserId;
-				const friendID = String(isOwnMessage ? payload.receiver_id : payload.sender_id);
-
-				// Route through the same mapping toChatMsg uses for
-				// REST-loaded messages instead of a second hand-built
-				// IChatMsg, so the two paths can't silently drift apart.
-				const incoming = toChatMsg(
-					{
-						id: payload.id,
-						sender_id: payload.sender_id,
-						receiver_id: payload.receiver_id,
-						content: payload.content,
-						created_at: payload.created_at,
-						read_at: payload.read_at ?? null,
-					},
-					currentUserId,
-				);
-
-				setChatHistory(prev =>
-				{
-					if ( prev[friendID] === undefined )
-						return prev;
-
-					return {
-						...prev,
-						[friendID]: mergeMessages(prev[friendID], [incoming]),
-					};
-				});
+				return {
+					...prev,
+					[friendID]: mergeMessages(prev[friendID], [incoming]),
+				};
 			});
-
-			socket.addEventListener("close", (event) =>
-			{
-				// 1008 (policy violation) is what get_current_user_id_ws
-				// closes with when the token itself is rejected -- retrying
-				// with that same token would just fail the same way every
-				// 3s forever, so only reconnect on other, recoverable
-				// closes (network drop, server restart, etc). The socket
-				// picks back up once a valid token flows through (this
-				// effect re-runs on auth.accessToken changing).
-				if ( isCurrent && event.code !== 1008 )
-					reconnectTimeoutID = window.setTimeout(() => connect(accessToken, currentUserId), 3000);
-			});
-		}
-
-		connect(accessToken, currentUserId);
+		});
 
 		return () =>
 		{
-			isCurrent = false;
-			clearTimeout(reconnectTimeoutID);
-			socket?.close();
+			unsubscribeOpen();
+			unsubscribeConversationRead();
+			unsubscribeChatMessage();
 		};
-	}, [auth.accessToken, auth.user?.id, accessTokenRef]);
+	}, [auth.status, auth.accessToken, auth.user?.id, accessTokenRef, subscribe, subscribeOpen]);
 
 	const value = useMemo(() => (
 	{
