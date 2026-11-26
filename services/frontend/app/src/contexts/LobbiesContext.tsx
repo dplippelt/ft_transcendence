@@ -3,6 +3,7 @@ import {
     useCallback,
     useContext,
     useEffect,
+    useMemo,
     useRef,
     useState,
 } from "react";
@@ -19,22 +20,19 @@ import {
     closeLobby as closeLobbyRequest,
     inviteToLobby as inviteToLobbyRequest,
     lobbyStartGame as lobbyStartGameRequest,
+    getLobbyMessages as getLobbyMessagesRequest,
+    sendLobbyMessage as sendLobbyMessageRequest,
 } from "../api/lobbyApi";
 
-import type { ILobbyGame, ILobbyResponse } from "../api/lobbyApi";
+import type { ILobbyGame, ILobbyResponse, ILobbyMessageResponse } from "../api/lobbyApi";
 import type { PublicUser } from "../api/friendsApi";
 import { useAuth } from "./AuthContext";
-import { getWsUrl } from "../api/http";
-
-interface ILobbyChatMsg
-{
-    username: string;
-    message: string;
-}
+import { useWebSocket } from "./WebSocketContext";
+import useLatestRef from "../hooks/useLatestRef";
 
 export interface LobbyData extends ILobbyResponse
 {
-    chatHistory: ILobbyChatMsg[];
+    chatHistory: ILobbyMessageResponse[];
 }
 
 export interface LobbyInvite
@@ -72,12 +70,9 @@ interface ILobbiesContext
     leaveLobby: (lobbyID: LobbyID) => Promise<void>;
     closeLobby: (lobbyID: LobbyID) => Promise<void>;
     lobbyStartGame: (lobbyID: LobbyID) => Promise<ILobbyGame>;
-    getChatHistory: (lobbyID: LobbyID) => ILobbyChatMsg[] | undefined;
-    addChatHistory: (
-        lobbyID: LobbyID,
-        username: string,
-        message: string,
-    ) => void;
+    getChatHistory: (lobbyID: LobbyID) => ILobbyMessageResponse[] | undefined;
+    loadLobbyMessages: (lobbyID: LobbyID) => Promise<void>;
+    sendLobbyChatMessage: (lobbyID: LobbyID, content: string) => Promise<void>;
     startedMultiGame: StartedMultiGame | null;
     clearStartedMultiGame: () => void;
 }
@@ -87,6 +82,37 @@ const LobbiesContext = createContext<ILobbiesContext | null>(null);
 function toLobbyData(lobby: ILobbyResponse, existing?: LobbyData): LobbyData
 {
     return { ...lobby, chatHistory: existing?.chatHistory ?? [] };
+}
+
+// REST responses and live events may arrive in either order. Merge by the
+// database ID so no message is lost or shown twice.
+function mergeLobbyMessages(
+    existing: ILobbyMessageResponse[],
+    incoming: ILobbyMessageResponse[],
+): ILobbyMessageResponse[]
+{
+    const byID = new Map(existing.map(message => [message.id, message]));
+    for (const message of incoming)
+        byID.set(message.id, message);
+
+    return Array.from(byID.values()).sort((a, b) => a.id - b.id);
+}
+
+function isLobbyMessage(value: unknown): value is ILobbyMessageResponse
+{
+    if (typeof value !== "object" || value === null)
+        return false;
+
+    const message = value as Partial<ILobbyMessageResponse>;
+    return (
+        typeof message.id === "number" &&
+        typeof message.lobby_id === "number" &&
+        typeof message.content === "string" &&
+        typeof message.created_at === "string" &&
+        typeof message.sender === "object" &&
+        message.sender !== null &&
+        typeof message.sender.id === "number"
+    );
 }
 
 function isLobbyResponse(value: unknown): value is ILobbyResponse
@@ -137,6 +163,8 @@ function mergeLobbySnapshot(
 export default function LobbiesProvider({ children }: { children: ReactNode })
 {
     const { auth } = useAuth();
+    const accessTokenRef = useLatestRef(auth.accessToken);
+    const { subscribe, subscribeOpen } = useWebSocket();
     const [lobbies, setLobbies] = useState<Lobbies>({});
     const [lobbyInvites, setLobbyInvites] = useState<LobbyInvite[]>([]);
     const [startedMultiGame, setStartedMultiGame] = useState<StartedMultiGame | null>(null);
@@ -444,29 +472,73 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
 
     }, [auth.accessToken]);
 
-    function getChatHistory(lobbyID: LobbyID): ILobbyChatMsg[] | undefined
+    const getChatHistory = useCallback((lobbyID: LobbyID): ILobbyMessageResponse[] | undefined =>
     {
         return lobbies[lobbyID]?.chatHistory;
-    }
+    }, [lobbies]);
 
-    function addChatHistory(lobbyID: LobbyID, username: string, message: string)
+    const addLobbyMessage = useCallback((message: ILobbyMessageResponse, session: number, token: string) =>
     {
-        const newMsg: ILobbyChatMsg = { username, message };
+        if (session !== sessionRef.current || accessTokenRef.current !== token)
+            return;
+
+        const lobbyID = String(message.lobby_id);
         setLobbies(previous =>
         {
             const lobby = previous[lobbyID];
-            if (!lobby)
+            if (session !== sessionRef.current || accessTokenRef.current !== token ||
+                !lobby || !lobby.members.some(member => member.user.id === auth.user?.id))
                 return previous;
 
             return {
                 ...previous,
                 [lobbyID]: {
                     ...lobby,
-                    chatHistory: [...lobby.chatHistory, newMsg],
+                    chatHistory: mergeLobbyMessages(lobby.chatHistory, [message]),
                 },
             };
         });
-    }
+    }, [auth.user?.id, accessTokenRef]);
+
+    const loadLobbyMessages = useCallback(async (lobbyID: LobbyID): Promise<void> =>
+    {
+        const token = auth.accessToken;
+        if (!token)
+            throw new Error("No authenticated session");
+
+        const session = sessionRef.current;
+        const messages = await getLobbyMessagesRequest(Number(lobbyID), token);
+
+        if (session !== sessionRef.current || accessTokenRef.current !== token)
+            return;
+
+        setLobbies(previous =>
+        {
+            const lobby = previous[lobbyID];
+            if (session !== sessionRef.current || accessTokenRef.current !== token ||
+                !lobby || !lobby.members.some(member => member.user.id === auth.user?.id))
+                return previous;
+
+            return {
+                ...previous,
+                [lobbyID]: {
+                    ...lobby,
+                    chatHistory: mergeLobbyMessages(lobby.chatHistory, messages),
+                },
+            };
+        });
+    }, [auth.accessToken, auth.user?.id, accessTokenRef]);
+
+    const sendLobbyChatMessage = useCallback(async (lobbyID: LobbyID, content: string): Promise<void> =>
+    {
+        const token = auth.accessToken;
+        if (!token)
+            throw new Error("No authenticated session");
+
+        const session = sessionRef.current;
+        const message = await sendLobbyMessageRequest(Number(lobbyID), content, token);
+        addLobbyMessage(message, session, token);
+    }, [auth.accessToken, addLobbyMessage]);
 
     const clearStartedMultiGame = useCallback(() => setStartedMultiGame(null), []);
 
@@ -481,185 +553,162 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
 
     useEffect(() =>
     {
-        const accessToken = auth.accessToken;
-        if (auth.status !== "authenticated" || !accessToken)
+        if (auth.status !== "authenticated" || !auth.accessToken || auth.user?.id === undefined)
             return;
 
-        let socket: WebSocket | null = null;
-        let reconnectTimeoutID: number | undefined;
-        let isCurrent = true;
-
-        function connect()
+        const unsubscribeOpen = subscribeOpen(() =>
         {
-            socket = new WebSocket(
-                getWsUrl(`/chat/ws?token=${encodeURIComponent(accessToken!)}`),
-            );
+            // Recover lobby changes missed during a disconnection.
+            void refreshLobbies().catch(() => {});
+        });
 
-            socket.addEventListener("open", () =>
+        const unsubscribeLobbyUpdated = subscribe("lobby_updated", message =>
+        {
+            if (!isLobbyResponse(message.lobby))
+                return;
+
+            const lobby = message.lobby;
+            const lobbyID = String(lobby.id);
+            markLobbyChanged(lobbyID);
+            setLobbies(previous => ({
+                ...previous,
+                [lobbyID]: toLobbyData(lobby, previous[lobbyID]),
+            }));
+
+            // The invite is no longer actionable if the lobby is full
+            // or the current user has already joined (possibly elsewhere).
+            if (
+                lobby.members.length >= MAX_LOBBY_MEMBERS ||
+                lobby.members.some(member => member.user.id === auth.user?.id)
+            )
+                dismissLobbyInvite(lobbyID);
+        });
+
+        const unsubscribeLobbyClosed = subscribe("lobby_closed", message =>
+        {
+            if (typeof message.lobby_id !== "number")
+                return;
+
+            const lobbyID = String(message.lobby_id);
+            markLobbyChanged(lobbyID);
+            setLobbies(previous =>
             {
-                if (!isCurrent)
-                    return;
-
-                // Recover lobby changes missed during a disconnection.
-                void refreshLobbies().catch(() => {});
+                if (!previous[lobbyID])
+                    return previous;
+                const next = { ...previous };
+                delete next[lobbyID];
+                return next;
             });
+            dismissLobbyInvite(lobbyID);
+        });
 
-            socket.addEventListener("message", event =>
-            {
-                if (!isCurrent)
-                    return;
+        const unsubscribeLobbyInvite = subscribe("lobby_invite", message =>
+        {
+            if (
+                typeof message.lobby_id !== "number" ||
+                typeof message.invitation_id !== "string" ||
+                typeof message.lobby_name !== "string" ||
+                typeof message.inviter !== "object" ||
+                message.inviter === null
+            )
+                return;
 
-                let payload: unknown;
-                try
-                {
-                    payload = JSON.parse(event.data);
-                }
-                catch
-                {
-                    return;
-                }
+            const invite: LobbyInvite = {
+                lobby_id: message.lobby_id,
+                invitation_id: message.invitation_id,
+                lobby_name: message.lobby_name,
+                inviter: message.inviter as PublicUser,
+            };
 
-                if (typeof payload !== "object" || payload === null)
-                    return;
+            inviteRevisionsRef.current[String(invite.lobby_id)] = ++inviteVersionRef.current;
+            setLobbyInvites(previous => [
+                ...previous.filter(existing => existing.lobby_id !== invite.lobby_id),
+                invite,
+            ]);
+        });
 
-                const message = payload as {
-                    type?: unknown;
-                    lobby?: unknown;
-                    lobby_id?: unknown;
-                    invitation_id?: unknown;
-                    lobby_name?: unknown;
-                    inviter?: unknown;
-                    game?: unknown;
-                };
+        const unsubscribeLobbyMessage = subscribe("lobby_message", message =>
+        {
+            if (!isLobbyMessage(message))
+                return;
 
-                if (message.type === "lobby_updated")
-                {
-                    if (!isLobbyResponse(message.lobby))
-                        return;
+            const token = auth.accessToken;
+            if (token)
+                addLobbyMessage(message, sessionRef.current, token);
+        });
 
-                    const lobby = message.lobby;
-                    const lobbyID = String(lobby.id);
-                    markLobbyChanged(lobbyID);
-                    setLobbies(previous => ({
-                        ...previous,
-                        [lobbyID]: toLobbyData(lobby, previous[lobbyID]),
-                    }));
+        const unsubscribeLobbyStart = subscribe("lobby_start", message =>
+        {
+            if (
+              typeof message.lobby_id !== "number" ||
+              typeof message.game !== "object" ||
+              message.game === null
+            )
+                return;
 
-                    // The invite is no longer actionable if the lobby is full
-                    // or the current user has already joined (possibly elsewhere).
-                    if (
-                        lobby.members.length >= MAX_LOBBY_MEMBERS ||
-                        lobby.members.some(member => member.user.id === auth.user?.id)
-                    )
-                        dismissLobbyInvite(lobbyID);
-                    return;
-                }
+            const lobbyGame = message.game as ILobbyGame;
+            if (typeof lobbyGame.game_session_id !== "string")
+                return;
 
-                if (message.type === "lobby_closed")
-                {
-                    if (typeof message.lobby_id !== "number")
-                        return;
-
-                    const lobbyID = String(message.lobby_id);
-                    markLobbyChanged(lobbyID);
-                    setLobbies(previous =>
-                    {
-                        if (!previous[lobbyID])
-                            return previous;
-                        const next = { ...previous };
-                        delete next[lobbyID];
-                        return next;
-                    });
-                    dismissLobbyInvite(lobbyID);
-                    return;
-                }
-
-                if (message.type === "lobby_invite")
-                {
-                    if (
-                        typeof message.lobby_id !== "number" ||
-                        typeof message.invitation_id !== "string" ||
-                        typeof message.lobby_name !== "string" ||
-                        typeof message.inviter !== "object" ||
-                        message.inviter === null
-                    )
-                        return;
-
-                    const invite: LobbyInvite = {
-                        lobby_id: message.lobby_id,
-                        invitation_id: message.invitation_id,
-                        lobby_name: message.lobby_name,
-                        inviter: message.inviter as PublicUser,
-                    };
-
-                    inviteRevisionsRef.current[String(invite.lobby_id)] = ++inviteVersionRef.current;
-                    setLobbyInvites(previous => [
-                        ...previous.filter(existing => existing.lobby_id !== invite.lobby_id),
-                        invite,
-                    ]);
-                    return;
-                }
-
-                if(message.type === "lobby_start")
-                {
-                    if (
-                      typeof message.lobby_id !== "number" ||
-                      typeof message.game !== "object" ||
-                      message.game === null
-                    )
-                        return;
-
-                    const lobbyGame = message.game as ILobbyGame;
-                    if (typeof lobbyGame.game_session_id !== "string")
-                        return;
-
-                    setStartedMultiGame({
-                        lobbyId: String(message.lobby_id),
-                        gameSessionId: lobbyGame.game_session_id,
-                    });
-                    return;
-                }
-
-                // chat_message and conversation_read belong to the chat context.
+            setStartedMultiGame({
+                lobbyId: String(message.lobby_id),
+                gameSessionId: lobbyGame.game_session_id,
             });
-
-            socket.addEventListener("close", event =>
-            {
-                if (isCurrent && event.code !== 1008)
-                    reconnectTimeoutID = window.setTimeout(connect, 3000);
-            });
-        }
-
-        connect();
+        });
 
         return () =>
         {
-            isCurrent = false;
-            window.clearTimeout(reconnectTimeoutID);
-            socket?.close();
+            unsubscribeOpen();
+            unsubscribeLobbyUpdated();
+            unsubscribeLobbyClosed();
+            unsubscribeLobbyInvite();
+            unsubscribeLobbyMessage();
+            unsubscribeLobbyStart();
         };
-    }, [auth.status, auth.accessToken, auth.user?.id, refreshLobbies, markLobbyChanged, dismissLobbyInvite]);
+    }, [auth.status, auth.accessToken, auth.user?.id, refreshLobbies, markLobbyChanged, dismissLobbyInvite, addLobbyMessage, subscribe, subscribeOpen]);
 
+    const value = useMemo(() => ({
+        lobbies,
+        lobbyInvites,
+        startedMultiGame,
+        resetLobbies,
+        refreshLobbies,
+        loadLobby,
+        createLobby,
+        closeLobby,
+        joinLobby,
+        switchToInvitedLobby,
+        leaveLobby,
+        lobbyStartGame,
+        inviteFriend,
+        dismissLobbyInvite,
+        getChatHistory,
+        loadLobbyMessages,
+        sendLobbyChatMessage,
+        clearStartedMultiGame,
+    }), [
+        lobbies,
+        lobbyInvites,
+        startedMultiGame,
+        resetLobbies,
+        refreshLobbies,
+        loadLobby,
+        createLobby,
+        closeLobby,
+        joinLobby,
+        switchToInvitedLobby,
+        leaveLobby,
+        lobbyStartGame,
+        inviteFriend,
+        dismissLobbyInvite,
+        getChatHistory,
+        loadLobbyMessages,
+        sendLobbyChatMessage,
+        clearStartedMultiGame,
+    ]);
+    
     return (
-        <LobbiesContext.Provider value={{
-            lobbies,
-            lobbyInvites,
-            startedMultiGame,
-            resetLobbies,
-            refreshLobbies,
-            loadLobby,
-            createLobby,
-            closeLobby,
-            joinLobby,
-            switchToInvitedLobby,
-            leaveLobby,
-            lobbyStartGame,
-            inviteFriend,
-            dismissLobbyInvite,
-            getChatHistory,
-            addChatHistory,
-            clearStartedMultiGame,
-        }}>
+        <LobbiesContext.Provider value={value}>
             {children}
         </LobbiesContext.Provider>
     );
