@@ -2,7 +2,7 @@ import Component from "./Component";
 import { GameObjects } from "phaser";
 import { Math as PhaserMath } from "phaser";
 
-export class InterpolatedMovementComponent extends Component {
+export default class InterpolatedMovementComponent extends Component {
   smoothing: number;
   snapDistance: number;
   private target: PhaserMath.Vector2 | null = null;
@@ -17,7 +17,7 @@ export class InterpolatedMovementComponent extends Component {
     if (!this.target) {
       return;
     }
-    const sprite = this.gameObject as Phaser.GameObjects.Sprite;
+    const sprite = this.gameObject as GameObjects.Sprite;
     const deltaX = this.target.x - sprite.x;
     const deltaY = this.target.y - sprite.y;
 
