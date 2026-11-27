@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { matchPath, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, GameType, getPathToGame, isValidGameType, isValidOpsMaskStr, parseGameURL as parseGameURLParams, RouteParamKey, RouteParamValue, RoutePath, type GameURL } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import { useAuth } from "../../contexts/AuthContext";
@@ -161,20 +161,19 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     EventBus.emit(GameEvent.gameVis, isGameURL);
 
     function preserveGame() : boolean {
-      switch ( location.pathname )
-      {
+    if ( matchPath(RoutePath.playerProfile, location.pathname) )
+        return true;
+    
+    switch ( location.pathname )
+    {
         case RoutePath.game:
-          return true;
         case RoutePath.friends:
-          return true;
         case RoutePath.profile:
-          return true;
-          return true;
         case RoutePath.howToPlay:
-          return true;
+            return true;
         default:
-          return false;
-      }
+            return false;
+    }
     }
 
     function navToValidGameUrl() {
