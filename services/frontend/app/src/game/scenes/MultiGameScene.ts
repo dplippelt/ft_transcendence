@@ -36,7 +36,7 @@ function toDirectionFlag(vector: Phaser.Math.Vector2) {
   if (vector.x < 0) {
     flags |= Direction.LEFT;
   }
-  if (vector.y > 0) {
+  if (vector.x > 0) {
     flags |= Direction.RIGHT;
   }
   return flags;
