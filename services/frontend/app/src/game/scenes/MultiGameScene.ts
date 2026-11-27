@@ -15,7 +15,7 @@ import { dungeonConfig, tileSetMap } from "./GameScene";
 import KeyboardComponent from "../components/KeyboardComponent";
 import { playerConfigs, PlayerNum, type IPlayerConfig } from "../gameobjects/Player";
 import { AssetsKey } from "../Assets";
-import { InterpolatedMovementComponent } from "../components/MultiMovementComponent";
+import InterpolatedMovementComponent from "../components/InterpolatedMovementComponent";
 
 function toWorld(state: SnapshotPlayer | SnapshotEnemy) {
   const position: { x: number; y: number } = {
@@ -23,6 +23,23 @@ function toWorld(state: SnapshotPlayer | SnapshotEnemy) {
     y: state.y,
   };
   return position;
+}
+
+function toDirectionFlag(vector: Phaser.Math.Vector2) {
+  let flags = Direction.NONE;
+  if (vector.y < 0) {
+    flags |= Direction.UP;
+  }
+  if (vector.y > 0) {
+    flags |= Direction.DOWN;
+  }
+  if (vector.x < 0) {
+    flags |= Direction.LEFT;
+  }
+  if (vector.y > 0) {
+    flags |= Direction.RIGHT;
+  }
+  return flags;
 }
 
 class PlayerMulti extends Phaser.GameObjects.Sprite {
@@ -38,7 +55,7 @@ class PlayerMulti extends Phaser.GameObjects.Sprite {
     this.scene.add.existing(this);
   }
   applyState(state: SnapshotPlayer) {
-    const {x, y} = toWorld(state);
+    const { x, y } = toWorld(state);
     this.movement.setTarget(x, y);
   }
 }
@@ -55,7 +72,7 @@ class EnemyMulti extends Phaser.GameObjects.Sprite {
     this.scene.add.existing(this);
   }
   applyState(state: SnapshotEnemy) {
-    const {x, y} = toWorld(state);
+    const { x, y } = toWorld(state);
     this.movement.setTarget(x, y);
   }
 }
@@ -94,9 +111,25 @@ export default class MultiGameScene extends Scene implements INetworkScene {
   }
 
   nextAction(): Action | null {
-    const action = this.pendingAction;
-    this.pendingAction = null;
-    return action;
+    if (this.pendingAction) {
+      const action = this.pendingAction;
+      this.pendingAction = null;
+      return action;
+    }
+    if (!this.localInput) {
+      return null;
+    }
+    const direction = toDirectionFlag(this.localInput.getInputDirection());
+    if (direction === Direction.NONE) {
+      return null;
+    }
+    const move: Action = {
+      type: ActionType.MOVE,
+      direction: direction,
+      card: 0,
+      cards: [],
+    };
+    return move;
   }
 
   onActionSent(action: Action, seq: number): void {
