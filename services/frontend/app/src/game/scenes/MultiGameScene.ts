@@ -15,6 +15,7 @@ import { dungeonConfig, tileSetMap } from "./GameScene";
 import KeyboardComponent from "../components/KeyboardComponent";
 import { playerConfigs, PlayerNum, type IPlayerConfig } from "../gameobjects/Player";
 import { AssetsKey } from "../Assets";
+import { InterpolatedMovementComponent } from "../components/MultiMovementComponent";
 
 function toWorld(state: SnapshotPlayer | SnapshotEnemy) {
   const position: { x: number; y: number } = {
@@ -26,29 +27,37 @@ function toWorld(state: SnapshotPlayer | SnapshotEnemy) {
 
 class PlayerMulti extends Phaser.GameObjects.Sprite {
   readonly id: number;
+  readonly movement: InterpolatedMovementComponent;
 
   constructor(scene: Scene, state: SnapshotPlayer, config: IPlayerConfig) {
     const position = toWorld(state);
     super(scene, position.x, position.y, config.texture);
     this.id = state.player_id;
     this.name = `player_${state.player_id}`;
+    this.movement = new InterpolatedMovementComponent(this);
     this.scene.add.existing(this);
   }
-  applyState(state: SnapshotPlayer, receivedAt: number) {
-    // const {x, y} = toWorld(state);
-    // this.
+  applyState(state: SnapshotPlayer) {
+    const {x, y} = toWorld(state);
+    this.movement.setTarget(x, y);
   }
 }
 
 class EnemyMulti extends Phaser.GameObjects.Sprite {
   readonly id: number;
+  readonly movement: InterpolatedMovementComponent;
+
   constructor(scene: Scene, state: SnapshotEnemy) {
     const position = toWorld(state);
     super(scene, position.x, position.y, AssetsKey.Skeleton);
     this.id = state.enemy_id;
+    this.movement = new InterpolatedMovementComponent(this);
     this.scene.add.existing(this);
   }
-  applyState(state: SnapshotEnemy, receivedAt: number) {}
+  applyState(state: SnapshotEnemy) {
+    const {x, y} = toWorld(state);
+    this.movement.setTarget(x, y);
+  }
 }
 
 export default class MultiGameScene extends Scene implements INetworkScene {
@@ -100,8 +109,8 @@ export default class MultiGameScene extends Scene implements INetworkScene {
     if (snapshot.dungeon_seed !== this.dungeonSeed) {
       this.buildDungeon(snapshot.dungeon_seed);
     }
-    this.syncPlayers(snapshot.players, snapshot.receivedAt);
-    this.syncEnemies(snapshot.enemies, snapshot.receivedAt);
+    this.syncPlayers(snapshot.players);
+    this.syncEnemies(snapshot.enemies);
   }
 
   private buildDungeon(seed: number) {
@@ -112,7 +121,7 @@ export default class MultiGameScene extends Scene implements INetworkScene {
     // this.cameras.main.centerOn((this.dungeon.widthInPixels * 1.5) / 2, (this.dungeon.heightInPixels * 1.5) / 2);
   }
 
-  private syncPlayers(players: SnapshotPlayer[], receivedAt: number) {
+  private syncPlayers(players: SnapshotPlayer[]) {
     const inSnapshot = new Set(players.map((p) => p.player_id));
 
     const idToDelete = [...this.players.keys()].filter((id) => !inSnapshot.has(id));
@@ -140,11 +149,11 @@ export default class MultiGameScene extends Scene implements INetworkScene {
         }
         this.players.set(state.player_id, player);
       }
-      player.applyState(state, receivedAt);
+      player.applyState(state);
     }
   }
 
-  private syncEnemies(enemies: SnapshotEnemy[], receivedAt: number) {
+  private syncEnemies(enemies: SnapshotEnemy[]) {
     const inSnapshot = new Set(enemies.map((e) => e.enemy_id));
 
     const idToDelete = [...this.enemies.keys()].filter((id) => !inSnapshot.has(id));
@@ -160,7 +169,7 @@ export default class MultiGameScene extends Scene implements INetworkScene {
         enemy = new EnemyMulti(this, state);
         this.enemies.set(state.enemy_id, enemy);
       }
-      enemy.applyState(state, receivedAt);
+      enemy.applyState(state);
     }
   }
 
