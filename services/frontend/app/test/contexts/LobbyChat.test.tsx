@@ -14,7 +14,7 @@ const authMock = vi.hoisted(() => ({
         auth: {
             status: "authenticated" as "authenticated" | "unauthenticated",
             accessToken: "token" as string | null,
-            user: { id: 1, username: "alice" },
+            user: { id: 1, username: "alice" as string | null },
         },
     },
 }));
@@ -151,6 +151,7 @@ describe("Lobby chat integration", () =>
         websocketMock.open.clear();
         authMock.current.auth.status = "authenticated";
         authMock.current.auth.accessToken = "token";
+        authMock.current.auth.user.username = "alice";
         apiMock.getLobbies.mockResolvedValue([lobby]);
         apiMock.getLobbyMessages.mockResolvedValue([]);
         apiMock.sendLobbyMessage.mockResolvedValue(message(1));
@@ -165,6 +166,24 @@ describe("Lobby chat integration", () =>
         await act(async () => { root.unmount(); });
         container.remove();
         vi.unstubAllGlobals();
+    });
+
+    it("waits for username setup before loading lobbies or subscribing", async () =>
+    {
+        authMock.current.auth.user.username = null;
+        await render();
+        await act(async () => { await context.refreshLobbies(); });
+
+        expect(apiMock.getLobbies).not.toHaveBeenCalled();
+        expect(websocketMock.messages.size).toBe(0);
+        expect(websocketMock.open.size).toBe(0);
+
+        authMock.current.auth.user.username = "alice";
+        await render();
+
+        expect(apiMock.getLobbies).toHaveBeenCalledTimes(1);
+        expect(websocketMock.open.size).toBe(1);
+        expect(context.lobbies["7"]).toBeDefined();
     });
 
     it("adds the sender's saved HTTP response and receives the other player's WebSocket message", async () =>
