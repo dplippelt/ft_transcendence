@@ -14,6 +14,7 @@ from app.schemas.game import (
     Player,
     PlayerAction,
     PlayerState,
+    Direction,
 )
 
 # Combat starts as soon as a player joins, until combat can start from collisions.
@@ -82,13 +83,20 @@ class GameSimulation:
                 combat.play_cards(action.cards, self.tick_id)
             case ActionType.DRAW_CARD if combat:
                 combat.redraw(self.tick_id)
-            # case ActionType.MOVE:
+            case ActionType.MOVE if DEBUG_ACTIONS_ENABLED and combat is None:
+                self._debug_move(self.players[user_id], action.direction)
             # case ActionType.LEAVE:
             case ActionType.DEBUG_START_COMBAT:
                 if DEBUG_ACTIONS_ENABLED and combat is None and self.players[user_id].state & PlayerState.ALIVE:
                     self._start_combat(user_id)
             case _:
                 pass
+
+    def _debug_move(self, player: Player, direction: Direction) -> None:
+        dx = int(Direction.RIGHT in direction) - int(Direction.LEFT in direction)
+        dy = int(Direction.DOWN in direction) - int(Direction.UP in direction)
+        player.x += dx * 4
+        player.y += dy * 4
 
     def _start_combat(self, user_id: int) -> None:
         player = self.players[user_id]
