@@ -1,8 +1,9 @@
-import { createContext, useContext, useEffect, useState, useCallback } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from "react";
 import type { ReactNode } from "react";
 import guestAvatar from "../assets/guest_avatar_test.jpg";
 import { useAuth } from "./AuthContext";
 import { useChatHistory } from "./ChatHistoryContext";
+import { useWebSocket } from "./WebSocketContext";
 import useLatestRef from "../hooks/useLatestRef";
 import { getDisplayName } from "../utils/utils";
 import
@@ -75,9 +76,14 @@ interface IFriendsContext
 
 const FriendsContext = createContext<IFriendsContext | null>(null);
 
+const PRESENCE_RETRY_DELAY_MS = 3000;
+const PRESENCE_MAX_RETRIES = 2;
+
 export default function FriendsProvider( { children } : {children: ReactNode} )
 {
 	const { auth } = useAuth();
+	const canUseFriends = auth.status === "authenticated" && !!auth.accessToken && !!auth.user?.username;
+	const { subscribe, subscribeOpen } = useWebSocket();
 	const { addChatHistoryEntry, removeChatHistoryEntry } = useChatHistory();
 	const [friends, setFriends] = useState<Friends>({});
 	const [incomingRequests, setIncomingRequests] = useState<IFriendRequestData[]>([]);
@@ -85,14 +91,26 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 	const [selectedFriendID, setSelectedFriendID] = useState<string | undefined>(undefined);
 	const [activeFriendID, setActiveFriendID] = useState<string | undefined>(undefined);
 
-	// Tracks the access token a refreshFriends() call was made under, so a
+	// Tracks the access token each refresh was made under, so a
 	// response that resolves after logout/relogin (a different or null
 	// token by then) can be discarded instead of overwriting the new
 	// session's state with stale data.
 	const accessTokenRef = useLatestRef(auth.accessToken);
 
+	// Each snapshot has its own revision so a presence event cannot
+	// invalidate a pending-request fetch.
+	const friendListRevisionRef = useRef(0);
+	const friendRequestsRevisionRef = useRef(0);
+
+	// Track the last applied list outside React's state updaters so even
+	// overlapping refreshes can reconcile removed friends and chat entries.
+	const knownFriendIDsRef = useRef<Set<string>>(new Set());
+
 	const resetFriends = useCallback(() =>
 	{
+		friendListRevisionRef.current += 1;
+		friendRequestsRevisionRef.current += 1;
+		knownFriendIDsRef.current.clear();
 		setSelectedFriendID(undefined);
 		setActiveFriendID(undefined);
 		setFriends({});
@@ -100,106 +118,169 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 		setOutgoingRequests([]);
 	}, []);
 
-	// Fetches friends + pending requests fresh from the backend. Called on
-	// login and after every mutation (send/accept/reject/cancel/remove)
-	// rather than optimistically patching local state, since a request can
-	// be accepted/removed from the other side at any time too.
-	const refreshFriends = useCallback(async () =>
+	// Fetch the authoritative friends list, including current presence.
+	// Both presence events and full refreshes use this same revision guard.
+	const refreshFriendList = useCallback(async () =>
 	{
 		const requestToken = auth.accessToken;
 
-		if ( !requestToken )
+		if ( !canUseFriends || !requestToken || accessTokenRef.current !== requestToken )
 			return;
 
-		const [friendList, incoming, outgoing] = await Promise.all(
-		[
-			getFriends(requestToken),
-			getIncomingFriendRequests(requestToken),
-			getOutgoingFriendRequests(requestToken),
-		]);
+		const revision = ++friendListRevisionRef.current;
+		const friendList = await getFriends(requestToken);
 
-		// The session changed while this request was in flight (logout, or
-		// a different user logged in) -- this response no longer belongs
-		// to the active session, so don't let it clobber current state.
-		if ( accessTokenRef.current !== requestToken )
+		// Ignore stale responses and responses from previous login sessions.
+		if ( accessTokenRef.current !== requestToken || friendListRevisionRef.current !== revision )
 			return;
 
 		const newFriends: Friends = Object.fromEntries(
 			friendList.friends.map(entry => [String(entry.friend.id), toFriendData(entry.friend, entry.is_online)])
 		);
 
+		const newFriendIDs = new Set(Object.keys(newFriends));
+
+		// Passive refreshes can discover that the other user removed a
+		// friendship. Clear its local chat and selection state as well.
+		for ( const friendID of knownFriendIDsRef.current )
+		{
+			if ( !newFriendIDs.has(friendID) )
+				removeChatHistoryEntry(friendID);
+		}
+		knownFriendIDsRef.current = newFriendIDs;
+
 		setFriends(newFriends);
-		setIncomingRequests(incoming.map(request => toFriendRequestData(request.id, request.requester)));
-		setOutgoingRequests(outgoing.map(request => toFriendRequestData(request.id, request.recipient)));
+		setActiveFriendID(prev => prev && newFriends[prev] === undefined ? undefined : prev);
+		setSelectedFriendID(prev => prev && newFriends[prev] === undefined ? undefined : prev);
 
 		// addChatHistoryEntry no-ops if an entry already exists, so this is
 		// safe to call on every refresh regardless of who accepted the request.
-		for ( const friendID of Object.keys(newFriends) )
+		for ( const friendID of newFriendIDs )
 			addChatHistoryEntry(friendID);
-	}, [auth.accessToken, addChatHistoryEntry]);
+	}, [canUseFriends, auth.accessToken, accessTokenRef, addChatHistoryEntry, removeChatHistoryEntry]);
+
+	const refreshFriendRequests = useCallback(async () =>
+	{
+		const requestToken = auth.accessToken;
+
+		if ( !canUseFriends || !requestToken || accessTokenRef.current !== requestToken )
+			return;
+
+		const revision = ++friendRequestsRevisionRef.current;
+		const [incoming, outgoing] = await Promise.all(
+		[
+			getIncomingFriendRequests(requestToken),
+			getOutgoingFriendRequests(requestToken),
+		]);
+
+		if ( accessTokenRef.current !== requestToken || friendRequestsRevisionRef.current !== revision )
+			return;
+
+		setIncomingRequests(incoming.map(request => toFriendRequestData(request.id, request.requester)));
+		setOutgoingRequests(outgoing.map(request => toFriendRequestData(request.id, request.recipient)));
+	}, [canUseFriends, auth.accessToken, accessTokenRef]);
+
+	// Full refresh on login, reconnect and after friend mutations.
+	const refreshFriends = useCallback(async () =>
+	{
+		await Promise.all([refreshFriendList(), refreshFriendRequests()]);
+	}, [refreshFriendList, refreshFriendRequests]);
 
 	useEffect(() =>
 	{
-		if ( auth.status === "authenticated" )
+		if ( canUseFriends )
 		{
 			void refreshFriends().catch(() => {
-				// A background refresh failure just leaves the previous
-				// state in place; explicit actions (addFriend, etc.) surface
-				// their own errors to the user separately.
+				// A failed snapshot keeps its previous state. Explicit
+				// actions (addFriend, etc.) surface errors separately.
 			});
 		}
 		else if ( auth.status === "unauthenticated" )
 			resetFriends();
-	}, [auth.status, refreshFriends, resetFriends]);
+	}, [canUseFriends, auth.status, refreshFriends, resetFriends]);
 
-	// Until the shared WebSocket refactor merges, poll only presence. The
-	// regular refreshFriends() continues to own membership and requests.
+	// Presence only invalidates the friends list. Retry a failed fetch a
+	// bounded number of times without reintroducing periodic polling.
 	useEffect(() =>
 	{
 		const requestToken = auth.accessToken;
 
-		if ( auth.status !== "authenticated" || !requestToken )
+		if ( !canUseFriends || !requestToken )
 			return;
 
-		let inFlight = false;
-		const interval = window.setInterval(() =>
+		let cancelled = false;
+		let retryTimeoutID: number | undefined;
+
+		function clearRetry()
 		{
-			if ( inFlight )
+			window.clearTimeout(retryTimeoutID);
+			retryTimeoutID = undefined;
+		}
+
+		function isCurrent(revision: number)
+		{
+			return !cancelled && accessTokenRef.current === requestToken &&
+				friendListRevisionRef.current === revision;
+		}
+
+		async function refreshPresence(retriesLeft: number)
+		{
+			if ( cancelled || accessTokenRef.current !== requestToken )
 				return;
 
-			inFlight = true;
-			void getFriends(requestToken)
-				.then(friendList =>
+			clearRetry();
+
+			// refreshFriendList increments the revision before its first await.
+			const request = refreshFriendList();
+			const revision = friendListRevisionRef.current;
+
+			try
+			{
+				await request;
+			}
+			catch (error)
+			{
+				if ( !isCurrent(revision) )
+					return;
+
+				if ( retriesLeft === 0 )
 				{
-					if ( accessTokenRef.current !== requestToken )
-						return;
+					// Preserve the last known presence if all attempts fail.
+					console.warn("Failed to refresh friend presence", error);
+					return;
+				}
 
-					setFriends(previous =>
-					{
-						let changed = false;
-						const next = { ...previous };
+				retryTimeoutID = window.setTimeout(() =>
+				{
+					retryTimeoutID = undefined;
+					// A newer presence/full refresh supersedes this retry.
+					if ( isCurrent(revision) )
+						void refreshPresence(retriesLeft - 1);
+				}, PRESENCE_RETRY_DELAY_MS);
+			}
+		}
 
-						for ( const entry of friendList.friends )
-						{
-							const friendID = String(entry.friend.id);
-							const friend = next[friendID];
+		const unsubscribePresence = subscribe("friend_presence_changed", () =>
+			refreshPresence(PRESENCE_MAX_RETRIES)
+		);
 
-							if ( friend && friend.isOnline !== entry.is_online )
-							{
-								next[friendID] = { ...friend, isOnline: entry.is_online };
-								changed = true;
-							}
-						}
+		// A reconnect can also have missed friendship/request updates.
+		const unsubscribeOpen = subscribeOpen(() =>
+		{
+			clearRetry();
+			return refreshFriends().catch(() => {
+				// Keep the last known data if a snapshot cannot be loaded.
+			});
+		});
 
-						return changed ? next : previous;
-					});
-				})
-				.catch(() => {}) // Connection failure doesn't mean friends are offline.
-				.finally(() => { inFlight = false; });
-		}, 15000);
-
-		return () => window.clearInterval(interval);
-	}, [auth.accessToken, auth.status, accessTokenRef]);
+		return () =>
+		{
+			cancelled = true;
+			clearRetry();
+			unsubscribePresence();
+			unsubscribeOpen();
+		};
+	}, [canUseFriends, auth.accessToken, accessTokenRef, refreshFriendList, refreshFriends, subscribe, subscribeOpen]);
 
 	async function addFriend( username: string )
 	{
@@ -212,10 +293,15 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 
 	async function removeFriend( friendID: string )
 	{
-		if ( !auth.accessToken )
+		const requestToken = auth.accessToken;
+
+		if ( !requestToken )
 			return;
 
-		await removeFriendRequest(Number(friendID), auth.accessToken);
+		await removeFriendRequest(Number(friendID), requestToken);
+
+		if ( accessTokenRef.current !== requestToken )
+			return;
 
 		setFriends(prev => {
 			if ( prev[friendID] === undefined )
@@ -226,12 +312,18 @@ export default function FriendsProvider( { children } : {children: ReactNode} )
 			return newFriends;
 		});
 
-		if ( friendID === activeFriendID )
-			setActiveFriendID(undefined);
-		if ( friendID === selectedFriendID )
-			setSelectedFriendID(undefined);
+		setActiveFriendID(prev => prev === friendID ? undefined : prev);
+		setSelectedFriendID(prev => prev === friendID ? undefined : prev);
 
+		knownFriendIDsRef.current.delete(friendID);
 		removeChatHistoryEntry(friendID);
+
+		// The DELETE already succeeded. Invalidate older refreshes, but
+		// don't report a successful removal as failed if the refresh fails.
+		await refreshFriends().catch(error =>
+		{
+			console.warn("Failed to refresh friends after removal", error);
+		});
 	}
 
 	async function acceptRequest( requestId: number )
