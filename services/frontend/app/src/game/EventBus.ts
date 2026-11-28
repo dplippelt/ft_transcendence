@@ -9,7 +9,7 @@ export const EventBus = new Events.EventEmitter();
 // React component will mount first or the phaser class that subscribes to the event
 // is constructed first.
 // Returns a function that cancels the pending retry, so the loop can be stopped
-// when the listener would neve show up (after calling component unmounts)
+// when the listener would never show up (after calling component unmounts)
 export function emitWhenReady( event: string, ...args: unknown[] ) : () => void {
   let frameId: number | null = null;
 
