@@ -1,5 +1,5 @@
 import Phaser, { type Scene } from "phaser";
-import CardManager from "./cards/CardManager";
+import SingleCardManager from "./cards/SingleCardManager";
 import CombatTurnManager, { TurnEvents } from "./CombatTurnManager";
 import { initPlayerStatus, type PlayerStatus } from "../scenes/CombatScene";
 import CombatEnemy, { type EnemyData } from "./CombatEnemy";
@@ -25,7 +25,7 @@ export default class CombatManager {
   readonly scene: Scene;
   readonly player: CombatPlayer;
   readonly enemy: CombatEnemy;
-  readonly cardManager: CardManager;
+  readonly cardManager: SingleCardManager;
   readonly turnManager: CombatTurnManager;
   readonly executeManager: CombatExecuteManager;
   readonly events: Phaser.Events.EventEmitter;
@@ -38,7 +38,7 @@ export default class CombatManager {
     this.enemyData = enemyData;
     this.player = new CombatPlayer(scene, playerStatus);
     this.enemy = new CombatEnemy(scene, enemyData);
-    this.cardManager = new CardManager(scene, playerStatus);
+    this.cardManager = new SingleCardManager(scene);
     this.turnManager = new CombatTurnManager(this);
     this.onTurnAction();
     this.executeManager = new CombatExecuteManager();

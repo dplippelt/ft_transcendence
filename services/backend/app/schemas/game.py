@@ -1,7 +1,9 @@
 from enum import IntEnum, IntFlag, auto
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from app.schemas import combat
 
 
 class GameState(IntEnum):
@@ -49,6 +51,7 @@ class Action(BaseModel):
     type: ActionType
     direction: Direction
     card: int
+    cards: list[str] = Field(default_factory=list)
 
 
 class PlayerAction(BaseModel):
@@ -76,11 +79,6 @@ class Enemy(Entity):
     fsm_state: EnemyFSMState
 
 
-class Combat(BaseModel):
-    player_id: int
-    enemy_id: int
-
-
 class GameSnapshot(BaseModel):
     type: Literal["game.snapshot"]
     game_id: str
@@ -90,7 +88,7 @@ class GameSnapshot(BaseModel):
     user_player_id: int
     players: list[Player]
     enemies: list[Enemy]
-    combat: list[Combat]
+    combat: list[combat.CombatState]
 
 
 class NewGameSession(BaseModel):

@@ -1,11 +1,11 @@
 import Phaser, { Actions, Scene } from "phaser";
-import CombatManager from "./CombatManager";
+import type { ICombatView } from "./ICombatView";
+import type { ICardView } from "./cards/ICardView";
 import type CardBase from "./cards/CardBase";
-import type CardManager from "./cards/CardManager";
 import CombatPlayer from "./CombatPlayer";
 import type CombatEnemy from "./CombatEnemy";
 import CombatAnimation from "./CombatAnimation";
-import { CardActionEvents } from "./cards/CardManager";
+import { CardActionEvents } from "./cards/CardManagerBase";
 import type CardSlot from "./cards/CardSlot";
 
 // Must match the dimensions of the background image used in 'GameBackground.module.scss'
@@ -28,6 +28,12 @@ interface Background {
   scale: number;
   insetX: number;
   insetY: number;
+}
+
+interface DeckPosition {
+  x: number;
+  y: number;
+  scale: number;
 }
 
 interface Size {
@@ -138,9 +144,9 @@ export enum LayoutEvents {
 }
 
 export default class CombatLayoutManager {
-  readonly combatManger: CombatManager;
+  readonly combatManger: ICombatView;
   readonly scene: Scene;
-  readonly cardManager: CardManager;
+  readonly cardManager: ICardView;
   readonly player: CombatPlayer;
   readonly enemy: CombatEnemy;
   readonly events: Phaser.Events.EventEmitter;
@@ -149,8 +155,9 @@ export default class CombatLayoutManager {
   readonly layout: CombatLayout;
   readonly display!: Display;
   readonly background!: Background;
+  readonly deckPosition: DeckPosition;
 
-  constructor(combatManger: CombatManager) {
+  constructor(combatManger: ICombatView) {
     this.combatManger = combatManger;
     this.scene = this.combatManger.scene;
     this.cardManager = this.combatManger.cardManager;
@@ -164,10 +171,15 @@ export default class CombatLayoutManager {
     this.layout = combatLayout;
     this.display = { width: 0, height: 0, centerX: 0, centerY: 0, scale: 0 };
     this.background = { topY: 0, bottomY: 0, leftX: 0, centerX: 0, scale: 0, insetX: 0, insetY: 0 };
+    this.deckPosition = { x: 0, y: 0, scale: 1 };
     this.scene.scale.refresh();
     this.updateDisplay();
     this.updateLayout();
     this.scene.scale.on("resize", this.updateLayout, this);
+    // Scale is game-wide: remove our listener when our scene shuts down (single player and multiplayer)
+    this.scene.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
+        this.scene.scale.off("resize", this.updateLayout, this);
+    })
   }
 
   onCardActions() {
@@ -175,7 +187,6 @@ export default class CombatLayoutManager {
     events.on(CardActionEvents.SELECT, () => this.updateSelectionSlots(false), this);
     events.on(CardActionEvents.UNSELECT, () => this.updateSelectionSlots(false), this);
     events.on(CardActionEvents.UNSELECT, this.setCardPosition, this);
-    events.on(CardActionEvents.GENERATE_DECK, this.updateDeck, this);
     events.on(CardActionEvents.TRASH_CARD, this.trashCard, this);
   }
 
@@ -223,65 +234,37 @@ export default class CombatLayoutManager {
       this.updateDisplay();
     }
 
-    this.updateDeck(isResize);
+    this.updateDeckPosition();
     this.updateCardHand(isResize);
     this.updateSelectionSlots(isResize);
     this.updatePlayer();
     this.updateEnemy();
   }
 
-  updateDeck(isResize: boolean = true) {
+  updateDeckPosition() {
     const display = this.display;
     const background = this.background;
-    const deck = this.cardManager.cardDeck.getDeck();
     const deckLayout = this.layout.cards.deck;
     const targetX = background.leftX + deckLayout.xFromBgLeft * background.scale;
     const targetY = background.bottomY + deckLayout.yFromBgBottom * background.scale;
-    const angle = 0;
+    this.deckPosition.x = targetX;
+    this.deckPosition.y = targetY;
+    this.deckPosition.scale = display.scale;
+    const style = document.documentElement.style;
+    style.setProperty("--deck-x", `${targetX}px`);
+    style.setProperty("--deck-y", `${targetY}px`);
+    style.setProperty("--deck-width", `${this.spriteSize.card.width * display.scale}px`);
+    style.setProperty("--deck-height", `${this.spriteSize.card.height * display.scale}px`);
+  }
 
-    deck.forEach((card: CardBase) => {
-      card.setData({
-        [TransformInLayout.X]: targetX,
-        [TransformInLayout.Y]: targetY,
-        [TransformInLayout.ANGLE]: angle,
-        [TransformInLayout.SCALE]: display.scale,
-      });
-      if (isResize) {
-        this.setCardPosition(card);
-      } else {
-        this.events.emit(LayoutEvents.SET_CARD_POS, card);
-      }
-    });
-
-    const cover = this.cardManager.cardDeck.getCover();
-    cover.setData({
-      [TransformInLayout.X]: targetX,
-      [TransformInLayout.Y]: targetY,
-      [TransformInLayout.ANGLE]: angle,
-      [TransformInLayout.SCALE]: display.scale,
-    });
-    if (isResize) {
-      this.setCardPosition(cover);
-    } else {
-      this.events.emit(LayoutEvents.SET_CARD_POS, cover);
-    }
-
-    // Making cards in deck and cover card invisible in favor of
-    // a new deck image used for the React button
-    deck.forEach((card) => card.setVisible(false));
-    cover.setVisible(false);
-
-    // Setting deck position and size as properties so React can
-    // render an invisible button of the same size on top of it
-    document.documentElement.style.setProperty("--deck-x", `${targetX}px`);
-    document.documentElement.style.setProperty("--deck-y", `${targetY}px`);
-    document.documentElement.style.setProperty("--deck-width", `${this.spriteSize.card.width * display.scale}px`);
-    document.documentElement.style.setProperty("--deck-height", `${this.spriteSize.card.height * display.scale}px`);
+  placeAtDeck(card: CardBase) {
+    card.setPosition(this.deckPosition.x, this.deckPosition.y);
+    card.setScale(this.deckPosition.scale);
+    card.setAngle(0);
   }
 
   updateCardHand(isResize: boolean = true) {
     const handCards = this.cardManager.cardHand.getHandCards();
-    handCards.forEach((card) => card.setVisible(true)); // need to be made visible again as they were made invisible in the deck
     const totalCards = handCards.length;
     if (!totalCards) {
       return;
