@@ -74,19 +74,19 @@ test-all: test test-frontend
 test: ensure-env
 	./scripts/test.sh all
 
-test-auth: ensure-env
+test-auth:
 	./scripts/test.sh auth
 
-test-security: ensure-env
+test-security:
 	./scripts/test.sh security
 
-test-2fa: ensure-env
+test-2fa:
 	./scripts/test.sh two-factor
 
-test-lobby: ensure-env
+test-lobby:
 	./scripts/test.sh lobby
 
-test-friends: ensure-env
+test-friends:
 	./scripts/test.sh friends
 
 test-websocket: ensure-env
@@ -125,8 +125,12 @@ fre: fclean setup check up
 .PHONY: ensure-env rotate-2fa-key \
 	setup build check check-frontend check-backend \
 	lint-backend lint-backend-fix dead-code \
+<<<<<<< HEAD
+	test test-auth test-security test-2fa test-lobby test-friends\
+=======
 	test test-auth test-security test-2fa test-lobby \
 	test-friends test-websocket \
 	test-frontend test-frontend-contexts test-all \
+>>>>>>> master
 	migrate-db check-users-table check-2fa-migration \
 	up down start stop restart reset-db re clean fclean fre

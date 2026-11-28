@@ -2,6 +2,8 @@
 
 .env.secrets
 
-# Python cache
+# Python generated files
 __pycache__/
-*.py[cod]
+*.pyc
+.pytest_cache/
+.ruff_cache/

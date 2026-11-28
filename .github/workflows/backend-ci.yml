@@ -5,36 +5,39 @@ on:
     paths:
       - "services/backend/**"
       - ".github/workflows/backend-ci.yml"
+      - "docker-compose.test.yml"
+      - "scripts/test.sh"
+      - "Makefile"
   push:
     branches:
       - master
     paths:
       - "services/backend/**"
       - ".github/workflows/backend-ci.yml"
+      - "docker-compose.test.yml"
+      - "scripts/test.sh"
+      - "Makefile"
 
 jobs:
   test:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: services/backend
-    env:
-      DATABASE_URL: "sqlite+pysqlite:///:memory:"
-      SECRET_KEY: "ci-test-secret-key"
-      TWO_FACTOR_ENCRYPTION_KEY: "7oGz1lF3z1lF3z1lF3z1lF3z1lF3z1lF3z1lF3z1lFI="
-      TWO_FACTOR_RECOVERY_HMAC_KEY: "ci-test-recovery-hmac-key"
+
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.13"
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
       - name: Ruff
-        run: python -m ruff check app tests
+        run: |
+          docker compose -p ft_transcendence-test \
+            -f docker-compose.test.yml \
+            run --rm --no-deps --build backend-test \
+            python -m ruff check app tests
 
       - name: Pytest
-        run: python -m pytest -q
+        run: make test
+
+      - name: Cleanup
+        if: always()
+        run: |
+          docker compose -p ft_transcendence-test \
+            -f docker-compose.test.yml \
+            down --remove-orphans
