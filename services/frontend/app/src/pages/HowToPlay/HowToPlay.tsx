@@ -71,7 +71,7 @@ function HowToPlayWindow( { index, goTo } : ITopicNav )
       <TopicList index={index} goTo={goTo} />
       <div className={styles.topicArea}>
         <div className={styles.topicTitle}>{topic.title}</div>
-        <div className={styles.content} onClick={onContentClick}>{topic.content}</div>
+        <div key={topic.id} className={styles.content} onClick={onContentClick}>{topic.content}</div>
         <PrevNextButtons index={index} goTo={goTo} />
       </div>
       { zoomed && zoomed.topicId === topic.id &&
