@@ -17,8 +17,8 @@ type TestAuth = {
     };
 };
 
-// Mock only the authentication and URL dependencies. We exercise the actual
-// WebSocketContext with React effects and a fake browser WebSocket.
+// Mock authentication state and the browser's network boundaries. Keep the
+// real authApi/http helpers so the ticket request and ApiError handling are tested.
 const authMock = vi.hoisted(() => ({
     current: {
         auth: {
@@ -33,9 +33,23 @@ vi.mock("../../src/contexts/AuthContext", () => ({
     useAuth: () => authMock.current,
 }));
 
-vi.mock("../../src/api/http", () => ({
-    getWsUrl: (path: string) => `ws://localhost:8000${path}`,
-}));
+const fetchMock = vi.fn<typeof fetch>();
+
+// Only the response fields read by apiRequest are needed. Resolve JSON without
+// real network I/O or stream timers so reconnection timing stays deterministic.
+function jsonResponse(data: unknown, status = 200): Response
+{
+    return {
+        ok: status >= 200 && status < 300,
+        status,
+        json: async () => data,
+    } as Response;
+}
+
+function ticketResponse(ticket: string): Response
+{
+    return jsonResponse({ ticket, expires_in: 30 });
+}
 
 class MockWebSocket extends EventTarget
 {
@@ -111,11 +125,11 @@ function Listener({
     return null;
 }
 
-function deferred()
+function deferred<T = void>()
 {
-    let resolve!: () => void;
+    let resolve!: (value: T) => void;
     let reject!: (reason?: unknown) => void;
-    const promise = new Promise<void>((res, rej) =>
+    const promise = new Promise<T>((res, rej) =>
     {
         resolve = res;
         reject = rej;
@@ -143,6 +157,25 @@ describe("WebSocketContext", () =>
         return connection;
     }
 
+    function expectTicketRequest(index: number, accessToken: string)
+    {
+        const [input, options] = fetchMock.mock.calls[index];
+        const url = new URL(String(input));
+        expect(url.pathname).toMatch(/\/auth\/ws-ticket$/);
+        expect(url.search).toBe("");
+        expect(options?.method).toBe("POST");
+        expect(new Headers(options?.headers).get("Authorization")).toBe(`Bearer ${accessToken}`);
+        expect(options?.signal).toBeDefined();
+    }
+
+    async function advanceTime(ms: number)
+    {
+        await act(async () =>
+        {
+            await vi.advanceTimersByTimeAsync(ms);
+        });
+    }
+
     beforeEach(() =>
     {
         authMock.current = {
@@ -153,6 +186,11 @@ describe("WebSocketContext", () =>
             },
         };
         MockWebSocket.instances = [];
+        fetchMock.mockReset();
+        fetchMock.mockImplementation(async () =>
+            ticketResponse(`example ticket ${fetchMock.mock.calls.length}`),
+        );
+        vi.stubGlobal("fetch", fetchMock);
         vi.stubGlobal("WebSocket", MockWebSocket);
         vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
         container = document.createElement("div");
@@ -181,10 +219,13 @@ describe("WebSocketContext", () =>
             <Listener eventType="lobby_invite" onMessage={onLobby}/>
         </>);
 
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expectTicketRequest(0, "example token");
         expect(MockWebSocket.instances).toHaveLength(1);
-        expect(socket().url).toBe(
-            "ws://localhost:8000/chat/ws?token=example%20token",
-        );
+        const wsUrl = new URL(socket().url);
+        expect(wsUrl.pathname).toMatch(/\/chat\/ws$/);
+        expect(wsUrl.search).toBe("?ticket=example%20ticket%201");
+        expect(wsUrl.searchParams.has("token")).toBe(false);
 
         act(() => socket().receive({ type: "lobby_invite", lobby_id: 12 }));
         expect(onLobby).toHaveBeenCalledTimes(1);
@@ -214,6 +255,7 @@ describe("WebSocketContext", () =>
         };
         await render();
         expect(MockWebSocket.instances).toHaveLength(0);
+        expect(fetchMock).not.toHaveBeenCalled();
 
         authMock.current.auth = {
             status: "authenticated", accessToken: "example token", user: { id: 7, username: "TestUser" },
@@ -231,6 +273,7 @@ describe("WebSocketContext", () =>
         };
         await render();
         expect(MockWebSocket.instances).toHaveLength(0);
+        expect(fetchMock).not.toHaveBeenCalled();
 
         authMock.current.auth = {
             status: "authenticated",
@@ -290,12 +333,21 @@ describe("WebSocketContext", () =>
         act(() => socket().open());
         expect(onOpen).toHaveBeenCalledTimes(1);
 
-        act(() => socket().disconnect(1006));
-        act(() => vi.advanceTimersByTime(2999));
+        const oldSocket = socket();
+        act(() => oldSocket.disconnect(1006));
+        await advanceTime(2999);
         expect(MockWebSocket.instances).toHaveLength(1);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
 
-        act(() => vi.advanceTimersByTime(1));
+        await advanceTime(1);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expectTicketRequest(1, "example token");
         expect(MockWebSocket.instances).toHaveLength(2);
+        expect(new URL(socket(1).url).searchParams.get("ticket")).toBe("example ticket 2");
+        expect(socket(1).url).not.toBe(oldSocket.url);
+
+        act(() => oldSocket.open()); // stale socket events must be ignored
+        expect(onOpen).toHaveBeenCalledTimes(1);
         act(() => socket(1).open());
         expect(onOpen).toHaveBeenCalledTimes(2);
     });
@@ -305,8 +357,9 @@ describe("WebSocketContext", () =>
         vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
         await render();
         act(() => socket().disconnect(1008));
-        act(() => vi.advanceTimersByTime(10000));
+        await advanceTime(10000);
         expect(MockWebSocket.instances).toHaveLength(1);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
     it("closes the old socket and ignores stale events on logout", async () =>
@@ -326,10 +379,11 @@ describe("WebSocketContext", () =>
         {
             oldSocket.receive({ type: "chat_message" });
             oldSocket.disconnect(1006);
-            vi.advanceTimersByTime(10000);
         });
+        await advanceTime(10000);
         expect(onChat).not.toHaveBeenCalled();
         expect(MockWebSocket.instances).toHaveLength(1);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
     });
 
     it("replaces the connection when the token changes", async () =>
@@ -342,8 +396,140 @@ describe("WebSocketContext", () =>
         await render();
 
         expect(oldSocket.closeCount).toBe(1);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expectTicketRequest(1, "new-token");
         expect(MockWebSocket.instances).toHaveLength(2);
-        expect(socket(1).url).toContain("token=new-token");
+        expect(new URL(socket(1).url).search).toBe("?ticket=example%20ticket%202");
+        expect(socket(1).url).not.toContain("new-token");
+    });
+
+    it("waits for the HTTP ticket before opening the WebSocket", async () =>
+    {
+        const pending = deferred<Response>();
+        fetchMock.mockReturnValueOnce(pending.promise);
+
+        await render();
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expectTicketRequest(0, "example token");
+        expect(MockWebSocket.instances).toHaveLength(0);
+
+        await act(async () =>
+        {
+            pending.resolve(ticketResponse("issued-ticket"));
+            await pending.promise;
+        });
+
+        expect(MockWebSocket.instances).toHaveLength(1);
+        expect(new URL(socket().url).search).toBe("?ticket=issued-ticket");
+    });
+
+    it("aborts a pending ticket request on logout and ignores its late response", async () =>
+    {
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        const pending = deferred<Response>();
+        fetchMock.mockReturnValueOnce(pending.promise);
+        await render();
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const signal = fetchMock.mock.calls[0][1]?.signal;
+        expect(signal?.aborted).toBe(false);
+
+        authMock.current.auth = {
+            status: "unauthenticated", accessToken: null, user: null,
+        };
+        await render();
+        expect(signal?.aborted).toBe(true);
+
+        // Simulate a response that arrives despite the abort.
+        await act(async () =>
+        {
+            pending.resolve(ticketResponse("stale-ticket"));
+            await pending.promise;
+        });
+        await advanceTime(10000);
+        expect(MockWebSocket.instances).toHaveLength(0);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+    });
+
+    it("ignores an old ticket response when the access token changes", async () =>
+    {
+        const pending = deferred<Response>();
+        fetchMock.mockReturnValueOnce(pending.promise);
+        await render();
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        const signal = fetchMock.mock.calls[0][1]?.signal;
+        expect(signal?.aborted).toBe(false);
+
+        authMock.current.auth = {
+            status: "authenticated", accessToken: "new-token", user: { id: 7, username: "TestUser" },
+        };
+        await render();
+
+        expect(signal?.aborted).toBe(true);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expectTicketRequest(1, "new-token");
+        expect(MockWebSocket.instances).toHaveLength(1);
+        expect(new URL(socket().url).searchParams.get("ticket")).toBe("example ticket 2");
+
+        await act(async () =>
+        {
+            pending.resolve(ticketResponse("stale-ticket"));
+            await pending.promise;
+        });
+        expect(MockWebSocket.instances).toHaveLength(1);
+    });
+
+    it("cancels a scheduled reconnection on logout", async () =>
+    {
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        await render();
+
+        act(() => socket().disconnect(1006));
+        authMock.current.auth = {
+            status: "unauthenticated", accessToken: null, user: null,
+        };
+        await render();
+
+        await advanceTime(10000);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(MockWebSocket.instances).toHaveLength(1);
+    });
+
+    it("retries a temporarily failed ticket request after 3 seconds", async () =>
+    {
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+        fetchMock.mockRejectedValueOnce(new Error("HTTP request failed"));
+        await render();
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(MockWebSocket.instances).toHaveLength(0);
+        expect(warnSpy).toHaveBeenCalledWith("WebSocket connection attempt failed");
+
+        await advanceTime(2999);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        await advanceTime(1);
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expectTicketRequest(1, "example token");
+        expect(MockWebSocket.instances).toHaveLength(1);
+        expect(new URL(socket().url).searchParams.get("ticket")).toBe("example ticket 2");
+    });
+
+    it.each([401, 403])("does not retry ticket requests rejected with HTTP %i", async (status) =>
+    {
+        vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+        const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+        fetchMock.mockResolvedValueOnce(jsonResponse({ detail: "Authentication rejected" }, status));
+        await render();
+
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(MockWebSocket.instances).toHaveLength(0);
+        expect(warnSpy).toHaveBeenCalledWith("WebSocket authentication rejected");
+
+        await advanceTime(10000);
+        expect(fetchMock).toHaveBeenCalledTimes(1);
+        expect(MockWebSocket.instances).toHaveLength(0);
     });
 
     it("isolates synchronous and asynchronous message handler failures", async () =>
@@ -441,12 +627,20 @@ describe("WebSocketContext", () =>
     it("does not retain duplicate handlers after a Strict Mode effect remount", async () =>
     {
         const onMessage = vi.fn();
-        await render(
-            <StrictMode>
-                <Listener eventType="chat_message" onMessage={onMessage}/>
-            </StrictMode>,
-        );
+        await act(async () =>
+        {
+            root.render(
+                <StrictMode>
+                    <WebSocketProvider>
+                        <Listener eventType="chat_message" onMessage={onMessage}/>
+                    </WebSocketProvider>
+                </StrictMode>,
+            );
+        });
 
+        expect(fetchMock).toHaveBeenCalledTimes(2);
+        expect(fetchMock.mock.calls[0][1]?.signal?.aborted).toBe(true);
+        expect(MockWebSocket.instances).toHaveLength(1);
         act(() => socket().receive({ type: "chat_message" }));
         expect(onMessage).toHaveBeenCalledTimes(1);
     });
