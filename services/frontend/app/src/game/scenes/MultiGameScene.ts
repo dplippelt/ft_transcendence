@@ -13,17 +13,9 @@ import { GameType } from "../../utils/utils";
 import { gRandom } from "../map/random";
 import { dungeonConfig, tileSetMap } from "./GameScene";
 import KeyboardComponent from "../components/KeyboardComponent";
-import { playerConfigs, PlayerNum, type IPlayerConfig } from "../gameobjects/Player";
-import { AssetsKey } from "../Assets";
-import InterpolatedMovementComponent from "../components/InterpolatedMovementComponent";
-
-function toWorld(state: SnapshotPlayer | SnapshotEnemy) {
-  const position: { x: number; y: number } = {
-    x: state.x,
-    y: state.y,
-  };
-  return position;
-}
+import { playerConfigs, PlayerNum } from "../gameobjects/Player";
+import PlayerMulti from "../gameobjects/PlayerMulti";
+import EnemyMulti from "../gameobjects/EnemyMulti";
 
 function toDirectionFlag(vector: Phaser.Math.Vector2) {
   let flags = Direction.NONE;
@@ -40,41 +32,6 @@ function toDirectionFlag(vector: Phaser.Math.Vector2) {
     flags |= Direction.RIGHT;
   }
   return flags;
-}
-
-class PlayerMulti extends Phaser.GameObjects.Sprite {
-  readonly id: number;
-  readonly movement: InterpolatedMovementComponent;
-
-  constructor(scene: Scene, state: SnapshotPlayer, config: IPlayerConfig) {
-    const position = toWorld(state);
-    super(scene, position.x, position.y, config.texture);
-    this.id = state.player_id;
-    this.name = `player_${state.player_id}`;
-    this.movement = new InterpolatedMovementComponent(this);
-    this.scene.add.existing(this);
-  }
-  applyState(state: SnapshotPlayer) {
-    const { x, y } = toWorld(state);
-    this.movement.setTarget(x, y);
-  }
-}
-
-class EnemyMulti extends Phaser.GameObjects.Sprite {
-  readonly id: number;
-  readonly movement: InterpolatedMovementComponent;
-
-  constructor(scene: Scene, state: SnapshotEnemy) {
-    const position = toWorld(state);
-    super(scene, position.x, position.y, AssetsKey.Skeleton);
-    this.id = state.enemy_id;
-    this.movement = new InterpolatedMovementComponent(this);
-    this.scene.add.existing(this);
-  }
-  applyState(state: SnapshotEnemy) {
-    const { x, y } = toWorld(state);
-    this.movement.setTarget(x, y);
-  }
 }
 
 export default class MultiGameScene extends Scene implements INetworkScene {
@@ -147,11 +104,9 @@ export default class MultiGameScene extends Scene implements INetworkScene {
   }
 
   private buildDungeon(seed: number) {
-    // Same seed -> same map as the other players (and the server, once it builds the map)
     this.dungeonSeed = seed;
     gRandom.init_seed(seed);
     this.dungeon.build(dungeonConfig, tileSetMap, 1.5);
-    // this.cameras.main.centerOn((this.dungeon.widthInPixels * 1.5) / 2, (this.dungeon.heightInPixels * 1.5) / 2);
   }
 
   private syncPlayers(players: SnapshotPlayer[]) {
