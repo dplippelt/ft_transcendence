@@ -62,7 +62,10 @@ export class GameManagerScene extends Scene {
   }
 
   create() {
-    this.input.keyboard?.on("keydown-ESC", () => EventBus.emit(GameEvent.gameMenu));
+    this.input.keyboard?.on("keydown-ESC", () => {
+      if (!this._isGameVisible) return; // Ignore ESC when game is not visible.
+      EventBus.emit(GameEvent.gameMenu);
+    });
 
     this.game.events.on(Core.Events.BLUR, this.onBlur, this);
     this.game.events.on(Core.Events.HIDDEN, this.onBlur, this);
