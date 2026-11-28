@@ -93,13 +93,15 @@ class GameSimulation:
                 pass
 
     def _debug_move(self, player: Player, direction: Direction) -> None:
+        DEBUG_MOVE_SPEED = 4
         dx = int(Direction.RIGHT in direction) - int(Direction.LEFT in direction)
         dy = int(Direction.DOWN in direction) - int(Direction.UP in direction)
-        player.x += dx * 4
-        player.y += dy * 4
+        player.x += dx * DEBUG_MOVE_SPEED
+        player.y += dy * DEBUG_MOVE_SPEED
 
     def _start_combat(self, user_id: int) -> None:
         player = self.players[user_id]
+        # TODO: max_hp should come from Player.max_hp (add it to the Player model in the final PR)
         combat = CombatManager(
             combat_id=str(uuid4()),
             player_id=player.player_id,
