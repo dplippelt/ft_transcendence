@@ -18,9 +18,12 @@ export default function LevelIndicator()
     function updateLevelInfo( current: number, total: number ) { setLevelInfo({ current, total }); }
     EventBus.addListener(GameEvent.levelInfo, updateLevelInfo);
 
-    emitWhenReady(GameEvent.getLevelInfo);
+    const cancelRequest = emitWhenReady(GameEvent.getLevelInfo);
 
-    return () => { EventBus.removeListener(GameEvent.levelInfo, updateLevelInfo); };
+    return () => {
+      EventBus.removeListener(GameEvent.levelInfo, updateLevelInfo);
+      cancelRequest();
+    };
   }, []);
 
   if ( !levelInfo )

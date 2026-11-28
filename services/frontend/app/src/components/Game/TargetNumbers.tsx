@@ -113,12 +113,13 @@ export default function TargetNumbers()
 		function updateNumbers( numbers: Numbers ) { setNumbers(numbers); }
 		EventBus.addListener(CombatEvent.updateTargetNumbers, updateNumbers);
 
-		emitWhenReady(CombatEvent.getInitTargetNumbers);
+		const cancelRequest = emitWhenReady(CombatEvent.getInitTargetNumbers);
 
 		function cleanup() {
 			EventBus.removeListener(CombatEvent.initTargetNumbers, initNumbers);
 			EventBus.removeListener(CombatEvent.updateTargetNumbers, updateNumbers);
 			stopPollingRef.current?.();
+			cancelRequest();
 		}
 
 		return () => cleanup();

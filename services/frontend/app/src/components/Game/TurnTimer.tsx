@@ -29,7 +29,7 @@ export default function TurnTimer()
 		function onGameVisible( visible: boolean ) { if ( visible ) EventBus.emit(CombatEvent.getTurnTimerState); }
 		EventBus.addListener(GameEvent.gameVis, onGameVisible);
 
-		emitWhenReady(CombatEvent.getTurnTimerState);
+		const cancelRequest = emitWhenReady(CombatEvent.getTurnTimerState);
 
 		function cleanup()
 		{
@@ -37,6 +37,7 @@ export default function TurnTimer()
 			EventBus.removeListener(CombatEvent.turnEnded, endTurn);
 			EventBus.removeListener(CombatEvent.pauseTimer, pauseTimer);
 			EventBus.removeListener(GameEvent.gameVis, onGameVisible);
+			cancelRequest();
 		}
 
 		return () => cleanup();
