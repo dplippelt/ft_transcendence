@@ -18,6 +18,12 @@ export interface TokenResponse
     token_type: string;
 }
 
+export interface WebSocketTicketResponse
+{
+    ticket: string;
+    expires_in: number;
+}
+
 export interface TwoFactorAuthResponse
 {
     requires_two_factor: true;
@@ -88,6 +94,18 @@ export interface PasswordUpdateRequest
 {
     current_password?: string;
     new_password: string;
+}
+
+export function getWebSocketTicket(accessToken: string, signal?: AbortSignal): Promise<WebSocketTicketResponse>
+{
+    return apiRequest<WebSocketTicketResponse>(
+        "/auth/ws-ticket",
+        {
+            method: "POST",
+            signal,
+        },
+        accessToken,
+    );
 }
 
 export function loginUser(credentials: LoginRequest): Promise<LoginResponse>
