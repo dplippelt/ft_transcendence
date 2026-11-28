@@ -8,13 +8,13 @@ from app.schemas.combat import CombatPlayerStatus, CombatResult
 from app.schemas.game import (
     Action,
     ActionType,
+    Direction,
     Enemy,
     GameSnapshot,
     GameState,
     Player,
     PlayerAction,
     PlayerState,
-    Direction,
 )
 
 # Combat starts as soon as a player joins, until combat can start from collisions.
