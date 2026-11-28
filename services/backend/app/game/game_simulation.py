@@ -8,6 +8,7 @@ from app.schemas.combat import CombatPlayerStatus, CombatResult
 from app.schemas.game import (
     Action,
     ActionType,
+    Direction,
     Enemy,
     GameSnapshot,
     GameState,
@@ -82,7 +83,8 @@ class GameSimulation:
                 combat.play_cards(action.cards, self.tick_id)
             case ActionType.DRAW_CARD if combat:
                 combat.redraw(self.tick_id)
-            # case ActionType.MOVE:
+            case ActionType.MOVE if DEBUG_ACTIONS_ENABLED and combat is None:
+                self._debug_move(self.players[user_id], action.direction)
             # case ActionType.LEAVE:
             case ActionType.DEBUG_START_COMBAT:
                 if DEBUG_ACTIONS_ENABLED and combat is None and self.players[user_id].state & PlayerState.ALIVE:
@@ -90,8 +92,16 @@ class GameSimulation:
             case _:
                 pass
 
+    def _debug_move(self, player: Player, direction: Direction) -> None:
+        DEBUG_MOVE_SPEED = 4
+        dx = int(Direction.RIGHT in direction) - int(Direction.LEFT in direction)
+        dy = int(Direction.DOWN in direction) - int(Direction.UP in direction)
+        player.x += dx * DEBUG_MOVE_SPEED
+        player.y += dy * DEBUG_MOVE_SPEED
+
     def _start_combat(self, user_id: int) -> None:
         player = self.players[user_id]
+        # TODO: max_hp should come from Player.max_hp (add it to the Player model in the final PR)
         combat = CombatManager(
             combat_id=str(uuid4()),
             player_id=player.player_id,
