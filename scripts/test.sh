@@ -66,6 +66,11 @@ case "${1:-all}" in
 		run_pytest tests/friends "$@"
 		;;
 
+    websocket)
+        shift
+        run_pytest tests/websocket "$@"
+        ;;
+
 	*)
 		echo "Unknown test group: $1"
 		echo
@@ -76,6 +81,7 @@ case "${1:-all}" in
 		echo "  $0 two-factor"
 		echo "  $0 lobby"
         echo "  $0 friends"
+        echo "  $0 websocket"
 		exit 1
 		;;
 esac

@@ -4,7 +4,7 @@ from typing import Annotated
 
 import cachecontrol
 import requests
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from google.auth import exceptions as google_auth_exceptions
 from google.auth.transport import requests as google_requests
@@ -12,7 +12,7 @@ from google.oauth2 import id_token
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.api.dependencies import CurrentUser, DbSession
+from app.api.dependencies import CompletedUser, CurrentUser, DbSession
 from app.core.exceptions import (
     ErrorCode,
     bad_request,
@@ -53,6 +53,7 @@ from app.schemas.user import (
     UserRegister,
     UserResponse,
 )
+from app.schemas.websocket import WebSocketTicketResponse
 from app.services.two_factor_service import (
     decrypt_two_factor_secret,
     encrypt_two_factor_secret,
@@ -64,6 +65,10 @@ from app.services.two_factor_service import (
     verify_encrypted_two_factor_code,
 )
 from app.services.user_service import ensure_username_is_available
+from app.services.websocket_ticket_service import (
+    WS_TICKET_TTL_SECONDS,
+    create_websocket_ticket,
+)
 
 router = APIRouter()
 settings = get_settings()
@@ -553,6 +558,14 @@ def unlink_google_from_user(db: Session, user: User) -> None:
             "Google account could not be unlinked",
             code=ErrorCode.GOOGLE_UNLINK_FAILED,
         )
+
+@router.post("/ws-ticket", response_model=WebSocketTicketResponse)
+def issue_websocket_ticket(current_user: CompletedUser, db: DbSession, response: Response):
+    # Authenticated HTTP request: the reusable JWT is sent in the Bearer header, never in the WebSocket URL.
+    ticket = create_websocket_ticket(db, current_user.id)
+    response.headers["Cache-Control"] = "no-store"
+    return WebSocketTicketResponse(ticket=ticket, expires_in=WS_TICKET_TTL_SECONDS)
+
 
 @router.post("/register", response_model=UserResponse)
 def register_user(user_data: UserRegister, db: DbSession, request: Request):
