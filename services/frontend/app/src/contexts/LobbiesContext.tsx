@@ -163,6 +163,7 @@ function mergeLobbySnapshot(
 export default function LobbiesProvider({ children }: { children: ReactNode })
 {
     const { auth } = useAuth();
+    const canUseLobbies = auth.status === "authenticated" && !!auth.accessToken && !!auth.user?.username;
     const accessTokenRef = useLatestRef(auth.accessToken);
     const { subscribe, subscribeOpen } = useWebSocket();
     const [lobbies, setLobbies] = useState<Lobbies>({});
@@ -202,7 +203,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
     const refreshLobbies = useCallback(async () =>
     {
         const accessToken = auth.accessToken;
-        if (!accessToken)
+        if (!canUseLobbies || !accessToken)
             return;
 
         const session = sessionRef.current;
@@ -253,7 +254,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
                 startedAt,
             );
         });
-    }, [auth.accessToken, auth.user?.id]);
+    }, [canUseLobbies, auth.accessToken, auth.user?.id]);
 
     const loadLobby = useCallback(async (lobbyID: LobbyID): Promise<LobbyData> =>
     {
@@ -544,16 +545,16 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
 
     useEffect(() =>
     {
-        if (auth.status === "authenticated")
+        if (canUseLobbies)
             void refreshLobbies().catch(() => {});
 
         if (auth.status === "unauthenticated")
             resetLobbies();
-    }, [auth.status, refreshLobbies, resetLobbies]);
+    }, [canUseLobbies, auth.status, refreshLobbies, resetLobbies]);
 
     useEffect(() =>
     {
-        if (auth.status !== "authenticated" || !auth.accessToken || auth.user?.id === undefined)
+        if (!canUseLobbies || !auth.accessToken || auth.user?.id === undefined)
             return;
 
         const unsubscribeOpen = subscribeOpen(() =>
@@ -665,7 +666,7 @@ export default function LobbiesProvider({ children }: { children: ReactNode })
             unsubscribeLobbyMessage();
             unsubscribeLobbyStart();
         };
-    }, [auth.status, auth.accessToken, auth.user?.id, refreshLobbies, markLobbyChanged, dismissLobbyInvite, addLobbyMessage, subscribe, subscribeOpen]);
+    }, [canUseLobbies, auth.accessToken, auth.user?.id, refreshLobbies, markLobbyChanged, dismissLobbyInvite, addLobbyMessage, subscribe, subscribeOpen]);
 
     const value = useMemo(() => ({
         lobbies,

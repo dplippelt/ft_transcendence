@@ -1,13 +1,15 @@
 import React from "react";
+import { Link } from "react-router-dom";
 import useIsMobile from "../../hooks/useIsMobile";
 import Avatar from "../Avatar";
-import { PopupType, AvatarSize } from "../../utils/utils";
+import { PopupType, AvatarSize, RoutePath } from "../../utils/utils";
 import { InviteToPlayButton, SideBarBackButton } from "../Buttons";
 import styles from "./ChatTitle.module.scss";
 import { useFriends, type IFriendData } from "../../contexts/FriendsContext";
 
 interface IChatTitleSideBar
 {
+	activeFriendID: string;
 	activeFriend: IFriendData;
 }
 
@@ -18,15 +20,17 @@ interface IChatTitle
 	setPopupType: React.Dispatch<React.SetStateAction<PopupType>>;
 }
 
-export function ChatTitleSideBar( { activeFriend } : IChatTitleSideBar )
+export function ChatTitleSideBar( { activeFriendID, activeFriend } : IChatTitleSideBar )
 {
 	const { setActiveFriendID } = useFriends();
 
 	return(
 		<div className={styles.chatTitle}>
 			<SideBarBackButton onClick={ () => setActiveFriendID(undefined) } />
-			<Avatar src={activeFriend.avatar} alt={`${activeFriend.username}'s avatar`}  size={AvatarSize.small} />
-			<div className={styles.chatTitleText}>{activeFriend.username}</div>
+			<Link to={`${RoutePath.profile}/${activeFriendID}`} className={styles.profileLink}>
+				<Avatar src={activeFriend.avatar} alt={`${activeFriend.username}'s avatar`} size={AvatarSize.small} />
+				<div className={styles.chatTitleText}>{activeFriend.username}</div>
+			</Link>
 		</div>
 	);
 }
@@ -59,8 +63,12 @@ export function ChatTitle( { activeFriendID, activeFriend, setPopupType } : ICha
 
 	return(
 		<div className={styles.chatTitle}>
-			{ activeFriend && <Avatar src={activeFriend.avatar} alt={`${activeFriend.username}'s avatar`}  size={AvatarSize.small} /> }
-			<div className={`${styles.chatTitleText} ${extraStyling}`}>{chatTitle()}</div>
+			{ activeFriend && activeFriendID
+			? <Link to={`${RoutePath.profile}/${activeFriendID}`} className={styles.profileLink}>
+				<Avatar src={activeFriend.avatar} alt={`${activeFriend.username}'s avatar`} size={AvatarSize.small} />
+				<div className={styles.chatTitleText}>{activeFriend.username}</div>
+			  </Link>
+			: <div className={`${styles.chatTitleText} ${extraStyling}`}>{chatTitle()}</div> }
 			{ isMobile && activeFriend && <InviteToPlayButton onClick={ () => handleInviteToPlay() } />}
 		</div>
 	);

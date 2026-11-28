@@ -50,18 +50,12 @@ interface ITextButton
 	extraStyling?: string;
 }
 
-interface ITabButton
-{
-	label: string;
-	isSelected: boolean;
-	onClick: () => void;
-}
-
 interface IFriendButton
 {
 	username: string;
 	friendID: string;
 	avatar: string;
+	isOnline: boolean;
 	panel: boolean;
 	onClick: () => void;
 }
@@ -162,11 +156,6 @@ export function TextButton( { label, onClick, extraStyling="" } : ITextButton )
 	return <button className={`${styles.textButton} ${extraStyling}`} type="button" onClick={onClick}>{label}</button>
 }
 
-export function TabButton( { label, isSelected, onClick } : ITabButton )
-{
-	return <button className={ isSelected ? styles.tabSelected : styles.tabNotSelected } type="button" onClick={onClick}>{label}</button>
-}
-
 export function SendButton( { onClick } : ISendButton )
 {
 	return (
@@ -176,7 +165,7 @@ export function SendButton( { onClick } : ISendButton )
 	);
 }
 
-export function FriendButton( { username, friendID, avatar, panel, onClick } : IFriendButton )
+export function FriendButton( { username, friendID, avatar, isOnline, panel, onClick } : IFriendButton )
 {
 	const { countUnreadMsg } = useChatHistory();
 	const numUnreadMsg = countUnreadMsg(friendID);
@@ -194,11 +183,21 @@ export function FriendButton( { username, friendID, avatar, panel, onClick } : I
 	return (
 		<button className={styles.friendButton} type="button" onClick={onClick}>
 			<Avatar src={avatar} alt={`${username}'s avatar`} size={AvatarSize.smaller} />
+			<span className={`${styles.presenceIndicator} ${isOnline ? styles.online : styles.offline}`} aria-label={isOnline ? "Online" : "Offline"} title={isOnline ? "Online" : "Offline"} />
 			<div className={usernameStyle()}>{username}</div>
 			{ !panel && numUnreadMsg !== 0 && <div className={usernameStyle()}>{"(" + (numUnreadMsg > 99 ? "99+" : numUnreadMsg) + ")"}</div> }
 			{ panel && numUnreadMsg !== 0 && <Dot size={24} /> }
 		</button>
 	)
+}
+
+export function ChatButton( { onClick } : IActionButton )
+{
+	return (
+		<button className={styles.actionButton} type="button" aria-label="Open chat" title="Open chat" onClick={onClick}>
+			<MessageCircle size={20} />
+		</button>
+	);
 }
 
 export function InviteToPlayButton( { onClick } : IActionButton )

@@ -28,7 +28,6 @@ function Buttons()
 			<GameMenuButton label="Continue" onClick={ () => EventBus.emit(GameEvent.gameMenu) } />
 			{ loggedIn && <GameMenuButton label="Friends" onClick={ () => navigate(RoutePath.friends) } /> }
 			{ loggedIn && <GameMenuButton label="Profile" onClick={ () => navigate(RoutePath.profile) } /> }
-			{ loggedIn && <GameMenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard) } /> }
 			<GameMenuButton label="How to play" onClick={ () => {} } />
 			{ loggedIn && <GameMenuButton label="Return to main menu" onClick={ () => navigate(RoutePath.mainMenu, { replace: true }) } /> }
 			<GameMenuButton label={ loggedIn ? "Logout" : "Quit" } onClick={ handleLogout } />

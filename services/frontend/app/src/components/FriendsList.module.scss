@@ -10,7 +10,7 @@
 .friend
 {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) auto auto;
+	grid-template-columns: minmax(0, 1fr) auto auto auto;
 	width: 100%;
 	max-width: 90%;
 	column-gap: 0.4rem;

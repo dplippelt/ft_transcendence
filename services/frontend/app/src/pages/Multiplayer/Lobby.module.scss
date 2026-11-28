@@ -47,6 +47,17 @@
 	}
 }
 
+.playerLink
+{
+	color: inherit;
+	text-decoration: none;
+
+	&:hover .username, &:focus-visible .username
+	{
+		text-decoration: underline;
+	}
+}
+
 .username
 {
 	font-size: 1rem;

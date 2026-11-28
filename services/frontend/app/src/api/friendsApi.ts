@@ -13,6 +13,7 @@ export interface FriendResponse
     id: number;
     friend: PublicUser;
     created_at: string;
+    is_online: boolean;
 }
 
 export interface FriendListResponse

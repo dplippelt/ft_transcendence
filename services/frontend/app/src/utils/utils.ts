@@ -34,12 +34,6 @@ export enum PopupType
     operatorSelection,
 }
 
-export enum Tab
-{
-	account,
-	stats,
-}
-
 export enum SortBy
 {
 	name,
@@ -67,7 +61,7 @@ export enum RoutePath
 	mpBrowser = "/multiplayer/browser",
 	friends = "/friends",
 	profile = "/profile",
-	leaderboard = "/leaderboard",
+	playerProfile = "/profile/:userID",
 	howToPlay = "/how-to-play",
 	settings = "/settings",
 	game = "/game",

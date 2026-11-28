@@ -1,9 +1,11 @@
 import asyncio
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 
 import anyio.from_thread
 from fastapi import WebSocket
+
+from app.services.presence_service import notify_friend_presence_change
 
 logger = logging.getLogger(__name__)
 
@@ -16,24 +18,53 @@ class ConnectionManager:
     # from here. Fine for a single-process deployment; a multi-worker or
     # multi-instance setup would need a shared pub/sub layer (e.g. Redis)
     # instead.
-    def __init__(self) -> None:
+    def __init__(self, on_presence_changed: Callable[["ConnectionManager", int], Awaitable[None]] | None = None,) -> None:
         self.active_connections: dict[int, list[WebSocket]] = {}
+        self._on_presence_changed = on_presence_changed
+        self._presence_tasks: set[asyncio.Task] = set()
+
+    def _presence_changed(self, user_id: int) -> None:
+        # Schedule best-effort notifications on the connection's event loop.
+        # They must not block the handshake, disconnect cleanup or chat sends.
+        if self._on_presence_changed is None:
+            return
+        # Instead of waiting for all friends to receive the notification, schedule it as a background async task.
+        task = asyncio.create_task(self._notify_presence_changed(user_id))
+        # Maintain references to running tasks until they finish.
+        self._presence_tasks.add(task)
+        task.add_done_callback(self._presence_tasks.discard)
+
+    async def _notify_presence_changed(self, user_id: int) -> None:
+        try:
+            if self._on_presence_changed is not None:
+                await self._on_presence_changed(self, user_id)
+        except Exception:
+            logger.warning("Failed to notify friends of presence change for user %s", user_id, exc_info=True)
 
     async def connect(self, user_id: int, websocket: WebSocket) -> None:
         await websocket.accept()
+        was_online = self.is_online(user_id)
         self.active_connections.setdefault(user_id, []).append(websocket)
+
+        if not was_online:
+            self._presence_changed(user_id)
 
     def disconnect(self, user_id: int, websocket: WebSocket) -> None:
         connections = self.active_connections.get(user_id)
 
-        if not connections:
+        if not connections or websocket not in connections:
             return
 
-        if websocket in connections:
-            connections.remove(websocket)
+        connections.remove(websocket)
 
         if not connections:
             _ = self.active_connections.pop(user_id, None)
+            self._presence_changed(user_id)
+
+    def is_online(self, user_id: int) -> bool:
+        # One active authenticated chat connection is enough. Other tabs
+        # can disconnect without marking the user offline.
+        return bool(self.active_connections.get(user_id))
 
     async def send_to_user(self, user_id: int, payload: dict) -> bool:
         # Catch broadly per-socket: one dead/broken connection must not stop
@@ -113,4 +144,4 @@ class ConnectionManager:
         return self.notify(user_id, payload)
 
 
-connection_manager = ConnectionManager()
+connection_manager = ConnectionManager(on_presence_changed=notify_friend_presence_change)

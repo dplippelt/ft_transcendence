@@ -1,0 +1,16 @@
+@use '../../mixins' as *;
+
+.profileWindow
+{
+    @include window;
+    @include menuWindow;
+
+    height: auto;
+    min-height: 300px;
+}
+
+.profileInfo
+{
+    @include profileInfo;
+    grid-template-columns: max-content minmax(0, 1fr);
+}

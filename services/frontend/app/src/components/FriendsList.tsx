@@ -4,7 +4,7 @@ import { useFriends } from "../contexts/FriendsContext";
 
 interface IFriendsList
 {
-	children: (friendID: string, username: string, avatar: string) => React.ReactNode;
+	children: (friendID: string, username: string, avatar: string, isOnline: boolean) => React.ReactNode;
 }
 
 export default function FriendsList( { children } : IFriendsList )
@@ -21,9 +21,9 @@ export default function FriendsList( { children } : IFriendsList )
 
 	return (
 		<div className={styles.friendsList}>
-			{ friendsArr.map(([friendID, { username, avatar }]) =>
-				<div className={styles.friend} key={username}>
-					{ children(friendID, username, avatar) }
+			{ friendsArr.map(([friendID, { username, avatar, isOnline }]) =>
+				<div className={styles.friend} key={friendID}>
+					{ children(friendID, username, avatar, isOnline) }
 				</div>
 			)}
 		</div>

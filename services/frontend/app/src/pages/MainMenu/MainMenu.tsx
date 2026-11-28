@@ -44,7 +44,6 @@ function Buttons( { setPopupType } : IButtons )
 			<MenuButton label="Multiplayer" onClick={ () => navigate(RoutePath.multiplayer) } />
 			<MenuButton label="Friends" onClick={ () => navigate(RoutePath.friends) } />
 			<MenuButton label="Profile" onClick={ () => navigate(RoutePath.profile) } />
-			<MenuButton label="Leaderboard" onClick={ () => navigate(RoutePath.leaderboard) } />
 			<MenuButton label="How to play" onClick={ () => {} } />
 			<MenuButton label="Settings" onClick={ () => navigate(RoutePath.settings) } />
 			<MenuButton label="Logout" onClick={ handleLogout } />

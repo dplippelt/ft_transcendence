@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import StartGame from "../../game/main";
 import { EventBus } from "../../game/EventBus";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { matchPath, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { CombatEvent, DEFAULT_OPS_MASK, GameEvent, GameState, GameType, getPathToGame, isValidGameType, isValidOpsMaskStr, parseGameURL as parseGameURLParams, RouteParamKey, RouteParamValue, RoutePath, type GameURL } from "../../utils/utils";
 import styles from "./PhaserGame.module.scss";
 import { useAuth } from "../../contexts/AuthContext";
@@ -68,7 +68,7 @@ function Game( { currentActiveScene, gameRef, canStartGame, gameURL, userId, cle
  * changes instead of being unmounted/recreated per-route. isGameURL controls
  * visibility and whether a new game gets created. preserveGame() below decides on
  * whether to destroy the running instance on navigation using an explicit allowlist
- * of routes (Friends, Profile, Leaderboard, etc.) where the game should keep running
+ * of routes (Friends, Profile, etc.) where the game should keep running
  * in the background. */
 export default function PhaserGame( { currentActiveScene } : IPhaserGame )
 {
@@ -161,21 +161,19 @@ export default function PhaserGame( { currentActiveScene } : IPhaserGame )
     EventBus.emit(GameEvent.gameVis, isGameURL);
 
     function preserveGame() : boolean {
-      switch ( location.pathname )
-      {
+    if ( matchPath(RoutePath.playerProfile, location.pathname) )
+        return true;
+    
+    switch ( location.pathname )
+    {
         case RoutePath.game:
-          return true;
         case RoutePath.friends:
-          return true;
         case RoutePath.profile:
-          return true;
-        case RoutePath.leaderboard:
-          return true;
         case RoutePath.howToPlay:
-          return true;
+            return true;
         default:
-          return false;
-      }
+            return false;
+    }
     }
 
     function navToValidGameUrl() {

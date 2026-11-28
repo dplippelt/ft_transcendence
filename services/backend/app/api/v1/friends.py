@@ -4,6 +4,7 @@ from sqlalchemy.orm import joinedload
 
 from app.api.dependencies import CompletedUser, DbSession
 from app.core.exceptions import ErrorCode, not_found
+from app.core.websocket_manager import connection_manager
 from app.models.friend_request import FriendRequest
 from app.models.friendship import Friendship
 from app.models.user import User
@@ -40,6 +41,7 @@ def build_friend_response(friendship: Friendship, friend: User) -> FriendRespons
         id=friendship.id,
         friend=FriendUserResponse.model_validate(friend),
         created_at=friendship.created_at,
+        is_online=connection_manager.is_online(friend.id),
     )
 
 @router.get("", response_model=FriendListResponse)
@@ -195,4 +197,3 @@ def cancel_friend_request(request_id: int, current_user: CompletedUser, db: DbSe
         request_id=request_id,
         current_user=current_user,
     )
-
