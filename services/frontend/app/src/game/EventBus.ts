@@ -8,12 +8,21 @@ export const EventBus = new Events.EventEmitter();
 // This is to account for race conditions where we cannot predict whether the
 // React component will mount first or the phaser class that subscribes to the event
 // is constructed first.
-export function emitWhenReady( event: string, ...args: unknown[] ) {
-  if (EventBus.listenerCount(event) > 0) {
-    EventBus.emit(event, ...args);
-  } else {
-    requestAnimationFrame(() => emitWhenReady(event, ...args));
+// Returns a function that cancels the pending retry, so the loop can be stopped
+// when the listener would never show up (after calling component unmounts)
+export function emitWhenReady( event: string, ...args: unknown[] ) : () => void {
+  let frameId: number | null = null;
+
+  function tryEmit() {
+    frameId = null;
+    if ( EventBus.listenerCount(event) > 0 )
+      EventBus.emit(event, ...args);
+    else
+      frameId = requestAnimationFrame(tryEmit);
   }
+
+  tryEmit();
+  return () => { if ( frameId !== null ) cancelAnimationFrame(frameId); };
 }
 
 // Repeatedly emits an event once per animation frame, to request the current

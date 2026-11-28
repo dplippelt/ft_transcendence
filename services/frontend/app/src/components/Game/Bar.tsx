@@ -58,12 +58,13 @@ export function PlayerHPBar()
 		function updatePlayerHP( currPlayerHP: number ) { setCurrHP(currPlayerHP >= 0 ? currPlayerHP : 0); }
 		EventBus.addListener(CombatEvent.updatePlayerHP, updatePlayerHP);
 
-		emitWhenReady(CombatEvent.getInitPlayerHp);
+		const cancelRequest = emitWhenReady(CombatEvent.getInitPlayerHp);
 
 		function cleanup() {
 			EventBus.removeListener(CombatEvent.initPlayerHP, initPlayerHP);
 			EventBus.removeListener(CombatEvent.updatePlayerHP, updatePlayerHP);
 			stopPollingRef.current?.();
+			cancelRequest();
 		}
 
 		return () => cleanup();
@@ -90,12 +91,13 @@ export function EnemyHPBar()
 		function updateEnemyHP( currEnemyHP: number ) { setCurrHP(currEnemyHP >= 0 ? currEnemyHP : 0); }
 		EventBus.addListener(CombatEvent.updateEnemyHP, updateEnemyHP);
 
-		emitWhenReady(CombatEvent.getInitEnemyHp);
+		const cancelRequest = emitWhenReady(CombatEvent.getInitEnemyHp);
 
 		function cleanup() {
 			EventBus.removeListener(CombatEvent.initEnemyHP, initEnemyHP);
 			EventBus.removeListener(CombatEvent.updateEnemyHP, updateEnemyHP);
 			stopPollingRef.current?.();
+			cancelRequest();
 		}
 
 		return () => cleanup();
@@ -122,12 +124,13 @@ export function PlayerMPBar()
 		function updatePlayerMP( currPlayerMP: number ) { setCurrMP(currPlayerMP >= 0 ? currPlayerMP : 0); }
 		EventBus.addListener(CombatEvent.updatePlayerMP, updatePlayerMP);
 
-		emitWhenReady(CombatEvent.getInitPlayerMp);
+		const cancelRequest = emitWhenReady(CombatEvent.getInitPlayerMp);
 
 		function cleanup() {
 			EventBus.removeListener(CombatEvent.initPlayerMP, initPlayerMP);
 			EventBus.removeListener(CombatEvent.updatePlayerMP, updatePlayerMP);
 			stopPollingRef.current?.();
+			cancelRequest();
 		}
 
 		return () => cleanup();

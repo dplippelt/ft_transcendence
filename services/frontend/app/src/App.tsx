@@ -17,6 +17,7 @@ import LobbyInviteNotifications from "./components/LobbyInviteNotifications";
 import RequireUsernameRoute from "./components/RequireUsernameRoute";
 import CompleteProfile from "./pages/Profile/CompleteProfile";
 import MultiGameLauncher from "./components/MultiGameLauncher"
+import HowToPlay from "./pages/HowToPlay/HowToPlay"
 // import GameOver from "./pages/GameOver/GameOver"
 
 export default function App()
@@ -36,6 +37,8 @@ export default function App()
         <Route path={RoutePath.landingPage} element={ <LandingPage/> } />
         <Route path={RoutePath.auth} element={<Auth />} />
         <Route path={RoutePath.game} element={null} />
+        <Route path={RoutePath.howToPlay} element={ <HowToPlay/> } />
+        <Route path={RoutePath.howToPlay + RouteParam.howToPlaySection} element={ <HowToPlay/> } />
         <Route element={<ProtectedRoute />}>
             <Route path={RoutePath.completeProfile} element={<CompleteProfile />} />
             <Route element={<RequireUsernameRoute />}>

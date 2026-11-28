@@ -94,6 +94,7 @@ export enum RouteParamValue
 export enum RouteParam
 {
 	lobbyID = "/:lobbyID",
+	howToPlaySection = "/:topic",
 }
 
 export enum GameEvent
@@ -106,6 +107,8 @@ export enum GameEvent
   logout = "logout",
 	pause = "pause",
 	blur = "blur",
+	levelInfo = "level-info",
+	getLevelInfo = "get-level-info",
 }
 
 export enum CombatEvent
